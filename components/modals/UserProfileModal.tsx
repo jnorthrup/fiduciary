@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, UserRole } from '../../types';
-import { User as UserIcon, X, Save, Lock, Unlock, Phone, Briefcase, Building, Mail, Trash2, Shield } from 'lucide-react';
+import { User as UserIcon, X, Save, Lock, Unlock, Phone, Briefcase, Building, Mail, Trash2, Shield, EyeOff, RefreshCw } from 'lucide-react';
 
 interface Props {
   user: User;
@@ -26,6 +26,20 @@ export const UserProfileModal: React.FC<Props> = ({ user, currentUser, onSave, o
 
   const handleChange = (field: keyof User, value: any) => {
       setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAnonymize = () => {
+      const randomId = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      setFormData(prev => ({
+          ...prev,
+          name: "John Doe",
+          email: `john.doe.${randomId}@example.com`,
+          phoneNumber: "555-0199",
+          jobTitle: "Redacted",
+          department: "Private",
+          avatarInitials: "JD",
+          isPrivate: true
+      }));
   };
 
   const handleSave = () => {
@@ -60,9 +74,18 @@ export const UserProfileModal: React.FC<Props> = ({ user, currentUser, onSave, o
                     <p className="text-xs text-slate-500 font-mono">{user.id}</p>
                 </div>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600">
-                <X size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+                <button 
+                    onClick={handleAnonymize}
+                    className="p-2 hover:bg-slate-200 rounded text-slate-500 hover:text-indigo-600 transition-colors"
+                    title="Mask Identity (John Doe Mode)"
+                >
+                    <EyeOff size={18} />
+                </button>
+                <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600">
+                    <X size={20} />
+                </button>
+            </div>
         </div>
 
         {/* Content */}
