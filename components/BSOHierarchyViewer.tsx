@@ -1,14 +1,16 @@
+
 import React from 'react';
-import { Entity, BSORole, BSOSubmission, EntityRole } from '../types';
+import { Entity, BSORole, BSOSubmission, EntityRole, IRMDocument } from '../types';
 import { Building2, UserCheck, UploadCloud, CheckCircle2, AlertTriangle, ArrowRight, Shield } from 'lucide-react';
 
 interface Props {
   entities: Entity[];
   bsoRoles: BSORole[];
   submissions: BSOSubmission[];
+  documents: IRMDocument[];
 }
 
-export const BSOHierarchyViewer: React.FC<Props> = ({ entities, bsoRoles, submissions }) => {
+export const BSOHierarchyViewer: React.FC<Props> = ({ entities, bsoRoles, submissions, documents }) => {
   
   // Find key entities
   const trust = entities.find(e => e.role === EntityRole.HOLDING_TRUST);
@@ -18,6 +20,11 @@ export const BSOHierarchyViewer: React.FC<Props> = ({ entities, bsoRoles, submis
   const llcRole = bsoRoles.find(r => r.entityId === llc?.id);
 
   const llcSubmissions = submissions.filter(s => s.bsoRoleId === llcRole?.id);
+  
+  // Status Logic
+  const hasW2Submission = llcSubmissions.some(s => s.reportType.includes('W-2') && new Date(s.submissionDate).getFullYear() === 2025);
+  // Check for any enforcement or unpostable notices related to the LLC
+  const hasNotices = documents.some(d => d.entityId === llc?.id && (d.category === 'Enforcement' || d.category === 'Unpostable'));
 
   const UseCaseStep = ({ 
     icon: Icon, 
@@ -29,7 +36,7 @@ export const BSOHierarchyViewer: React.FC<Props> = ({ entities, bsoRoles, submis
     icon: any, 
     title: string, 
     desc: string, 
-    status: 'Complete' | 'Pending' | 'Action Required',
+    status: 'Complete' | 'Pending' | 'Action Required' | 'Monitoring',
     actor: string
   }) => (
     <div className={`p-4 rounded-lg border ${status === 'Complete' ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-200'} relative`}>
@@ -79,7 +86,7 @@ export const BSOHierarchyViewer: React.FC<Props> = ({ entities, bsoRoles, submis
             icon={Shield}
             title="2FA Verification"
             desc="ID.me or Login.gov verification required for 'Standard' user access."
-            status="Complete"
+            status={trustRole?.registrationStatus === 'Active' ? 'Complete' : 'Pending'}
             actor={trust?.name || 'Trust'}
           />
 
@@ -117,7 +124,7 @@ export const BSOHierarchyViewer: React.FC<Props> = ({ entities, bsoRoles, submis
             icon={UploadCloud}
             title="W-2 File Upload"
             desc="Upload EFW2 formatted text files for the tax year."
-            status="Action Required"
+            status={hasW2Submission ? 'Complete' : 'Action Required'}
             actor="System"
           />
         </div>
@@ -155,7 +162,7 @@ export const BSOHierarchyViewer: React.FC<Props> = ({ entities, bsoRoles, submis
             icon={AlertTriangle}
             title="Notice Handling"
             desc="Monitor for EDC (Employee Decentralized Correspondence) notices."
-            status="Pending"
+            status={hasNotices ? 'Action Required' : 'Monitoring'}
             actor="Trust"
           />
         </div>

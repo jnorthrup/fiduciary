@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { TaxModule, Employee } from '../../types';
 
 interface Props {
@@ -20,6 +21,15 @@ export const RunPayrollForm: React.FC<Props> = ({ entityId, employees, modules, 
   const estGross = activeEmployees.reduce((sum, e) => sum + (e.salary / 26), 0);
   const estTax = estGross * 0.0765;
 
+  const openModules = modules.filter(m => m.entityId === entityId && m.status === 'Open' && m.type === 'PAYROLL').sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+  // Smart Defaults
+  useEffect(() => {
+    if (openModules.length > 0 && !moduleId) {
+        setModuleId(openModules[0].id);
+    }
+  }, [openModules, moduleId]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!periodStart || !periodEnd || !moduleId) return;
@@ -27,8 +37,6 @@ export const RunPayrollForm: React.FC<Props> = ({ entityId, employees, modules, 
     setPeriodStart('');
     setPeriodEnd('');
   };
-
-  const openModules = modules.filter(m => m.entityId === entityId && m.status === 'Open' && m.type === 'PAYROLL');
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
