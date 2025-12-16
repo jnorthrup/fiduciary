@@ -1,9 +1,16 @@
+
+
 import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
+import { SystemOverview } from './components/SystemOverview';
 import { IRMTreeWidget } from './components/IRMTreeWidget';
 import { IRSApiConsole } from './components/IRSApiConsole';
+import { SettingsModal } from './components/modals/SettingsModal';
+import { UserProfileModal } from './components/modals/UserProfileModal'; // New Import
 import { useLedgerStore } from './services/ledgerService';
+import { Menu } from 'lucide-react';
+import { User } from './types';
 
 export const App: React.FC = () => {
   const { 
@@ -12,18 +19,27 @@ export const App: React.FC = () => {
     modules, 
     journals, 
     contractors, 
-    filings,
+    filings, 
     wallets,
     bsoRoles,
     bsoSubmissions,
     irsCreds,
     employees,
     payrollRuns,
+    ssaStatements,
     documents,
     transmissions,
     apiSystemStatus,
     searchResults,
     isSearching,
+    accords,
+    // User State
+    currentUser,
+    users,
+    addUser,
+    updateUser,
+    deleteUser,
+    // Actions
     postJournal,
     runPayroll,
     createFiling,
@@ -31,12 +47,30 @@ export const App: React.FC = () => {
     fileAllDrafts,
     linkDocument,
     submitFilingViaAPI,
-    performGroundingSearch
+    performGroundingSearch,
+    registerBSOEmployer,
+    submitW2Report,
+    createAccord,
+    createPrivateAdminEntry,
+    resolveTaxpayerAccount,
+    createReSitus,
+    addEntity,
+    updateEntity,
+    deleteEntity,
+    // Data Management
+    importData,
+    resetData,
+    ...rest // For export convenience
   } = useLedgerStore();
   
   const [activeEntityId, setActiveEntityId] = useState<string | null>(entities[0].id);
   const [isIRMOpen, setIsIRMOpen] = useState(false);
   const [isApiConsoleOpen, setIsApiConsoleOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
+  // User Profile State
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const activeEntity = entities.find(e => e.id === activeEntityId);
   
@@ -49,6 +83,39 @@ export const App: React.FC = () => {
     ? filings.filter(f => f.entityId === parentEntity.id)
     : undefined;
 
+  const handleExport = () => {
+      // Create a snapshot of the current state via the hook's return
+      // We reconstruct the state object from the destructured values plus 'rest'
+      const snapshot = {
+          version: 1,
+          headHash: "EXPORT",
+          changeGraph: rest.changeGraph,
+          secrets: rest.secrets || {},
+          settings: rest.settings || {},
+          currentUser,
+          users,
+          entities,
+          accounts,
+          modules,
+          journals,
+          contractors,
+          filings,
+          wallets,
+          documents,
+          bsoRoles,
+          bsoSubmissions,
+          irsCreds,
+          employees,
+          payrollRuns,
+          ssaStatements,
+          transmissions,
+          accords,
+          resolutions: rest.resolutions || [],
+          reSitusRecords: rest.reSitusRecords || []
+      };
+      return JSON.stringify(snapshot, null, 2);
+  };
+
   return (
     <div className="flex h-screen bg-slate-50 relative overflow-hidden">
       
@@ -60,6 +127,8 @@ export const App: React.FC = () => {
         documents={documents}
         accounts={accounts}
         journals={journals}
+        filings={filings}
+        accords={accords}
         onFileAll={fileAllDrafts}
         onLinkDocument={linkDocument}
       />
@@ -76,45 +145,105 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* Settings / Data Management Modal */}
+      {isSettingsOpen && (
+          <SettingsModal 
+              onClose={() => setIsSettingsOpen(false)}
+              onExport={handleExport}
+              onImport={importData}
+              onReset={resetData}
+          />
+      )}
+
+      {/* User Profile Modal (CRUD) */}
+      {editingUser && (
+        <UserProfileModal 
+          user={editingUser}
+          currentUser={currentUser}
+          onSave={updateUser}
+          onDelete={deleteUser}
+          onClose={() => setEditingUser(null)}
+        />
+      )}
+
       <Sidebar 
         activeEntityId={activeEntityId} 
         onSelectEntity={setActiveEntityId} 
         onOpenIRM={() => setIsIRMOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         entities={entities} 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        // Pass User Props
+        currentUser={currentUser}
+        users={users}
+        onAddUser={addUser}
+        onUpdateUser={updateUser}
+        onDeleteUser={deleteUser}
+        onEditUser={setEditingUser} // Pass handler to open modal
       />
       
-      {activeEntity ? (
-        <Dashboard 
-          entity={activeEntity}
-          entities={entities}
-          accounts={accounts}
-          modules={modules}
-          journals={journals}
-          contractors={contractors}
-          filings={filings}
-          wallets={wallets}
-          bsoRoles={bsoRoles}
-          bsoSubmissions={bsoSubmissions}
-          irsCreds={irsCreds}
-          employees={employees}
-          payrollRuns={payrollRuns}
-          parentEntity={parentEntity}
-          parentFilings={parentFilings}
-          postJournal={postJournal}
-          runPayroll={runPayroll}
-          onCreateFiling={createFiling}
-          onUpdateFilingStatus={updateFilingStatus}
-          onSubmitToApi={submitFilingViaAPI}
-          onOpenApiConsole={() => setIsApiConsoleOpen(true)}
-        />
-      ) : (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">System Overview</h2>
-            <p className="text-slate-500">Select an entity from the sidebar to manage ledgers.</p>
-          </div>
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Mobile Header Toggle */}
+        <div className="md:hidden p-4 bg-white border-b border-slate-200 flex items-center gap-3 shrink-0">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-slate-600 rounded hover:bg-slate-100">
+                <Menu size={24} />
+            </button>
+            <span className="font-bold text-slate-800">Trust Ledger System</span>
         </div>
-      )}
+
+        {/* Main Content Area */}
+        <div className="flex-1 relative overflow-hidden">
+            {activeEntity ? (
+              <div className="absolute inset-0 overflow-hidden bg-slate-50/50">
+                  <Dashboard 
+                    entity={activeEntity}
+                    entities={entities}
+                    accounts={accounts}
+                    modules={modules}
+                    journals={journals}
+                    contractors={contractors}
+                    filings={filings}
+                    wallets={wallets}
+                    bsoRoles={bsoRoles}
+                    bsoSubmissions={bsoSubmissions}
+                    irsCreds={irsCreds}
+                    employees={employees}
+                    payrollRuns={payrollRuns}
+                    ssaStatements={ssaStatements}
+                    documents={documents}
+                    parentEntity={parentEntity}
+                    parentFilings={parentFilings}
+                    postJournal={postJournal}
+                    runPayroll={runPayroll}
+                    onCreateFiling={createFiling}
+                    onUpdateFilingStatus={updateFilingStatus}
+                    onSubmitToApi={submitFilingViaAPI}
+                    onOpenApiConsole={() => setIsApiConsoleOpen(true)}
+                    registerBSOEmployer={registerBSOEmployer}
+                    submitW2Report={submitW2Report}
+                    createAccord={createAccord}
+                    createPrivateAdminEntry={createPrivateAdminEntry}
+                    resolveTaxpayerAccount={resolveTaxpayerAccount}
+                    createReSitus={createReSitus}
+                    onAddEntity={addEntity}
+                    onUpdateEntity={updateEntity}
+                    onDeleteEntity={deleteEntity}
+                  />
+              </div>
+            ) : (
+              <SystemOverview 
+                entities={entities}
+                accounts={accounts}
+                journals={journals}
+                wallets={wallets}
+                onAddEntity={addEntity}
+                onUpdateEntity={updateEntity}
+                onDeleteEntity={deleteEntity}
+              />
+            )}
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { TaxModule, DCFlag } from '../../types';
 
 interface Props {
@@ -13,6 +14,15 @@ export const TrustTaxForm: React.FC<Props> = ({ entityId, modules, onSubmit }) =
   const [moduleId, setModuleId] = useState('');
   const [method, setMethod] = useState('EFTPS');
 
+  const openModules = modules.filter(m => m.entityId === entityId && m.status === 'Open').sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+  // Smart Defaults
+  useEffect(() => {
+    if (openModules.length > 0 && !moduleId) {
+        setModuleId(openModules[0].id);
+    }
+  }, [openModules, moduleId]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !moduleId) return;
@@ -20,10 +30,19 @@ export const TrustTaxForm: React.FC<Props> = ({ entityId, modules, onSubmit }) =
     setAmount('');
   };
 
-  const openModules = modules.filter(m => m.entityId === entityId && m.status === 'Open');
-
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <style>
+        {`
+          @keyframes flashRed {
+            0%, 100% { background-color: white; color: #334155; }
+            50% { background-color: #ef4444; color: white; border-color: #b91c1c; }
+          }
+          .flash-highlight {
+            animation: flashRed 0.2s ease-in-out 3;
+          }
+        `}
+      </style>
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-slate-800">Record Estimated Tax Payment (1041)</h3>
         <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">PC-400 Rule</span>
@@ -72,7 +91,7 @@ export const TrustTaxForm: React.FC<Props> = ({ entityId, modules, onSubmit }) =
             <select 
               value={method} 
               onChange={e => setMethod(e.target.value)}
-              className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 border p-2 text-sm"
+              className="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 border p-2 text-sm flash-highlight transition-colors"
             >
               <option value="EFTPS">EFTPS</option>
               <option value="Direct Pay">IRS Direct Pay</option>
