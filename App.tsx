@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
@@ -7,7 +6,7 @@ import { SystemOverview } from './components/SystemOverview';
 import { IRMTreeWidget } from './components/IRMTreeWidget';
 import { IRSApiConsole } from './components/IRSApiConsole';
 import { SettingsModal } from './components/modals/SettingsModal';
-import { UserProfileModal } from './components/modals/UserProfileModal'; // New Import
+import { UserProfileModal } from './components/modals/UserProfileModal';
 import { useLedgerStore } from './services/ledgerService';
 import { Menu } from 'lucide-react';
 import { User } from './types';
@@ -57,6 +56,12 @@ export const App: React.FC = () => {
     addEntity,
     updateEntity,
     deleteEntity,
+    addEmployee,
+    updateEmployee,
+    deleteEmployee,
+    addContractor,
+    updateContractor,
+    deleteContractor,
     // Data Management
     importData,
     resetData,
@@ -229,6 +234,12 @@ export const App: React.FC = () => {
                     onAddEntity={addEntity}
                     onUpdateEntity={updateEntity}
                     onDeleteEntity={deleteEntity}
+                    addEmployee={addEmployee}
+                    updateEmployee={updateEmployee}
+                    deleteEmployee={deleteEmployee}
+                    addContractor={addContractor}
+                    updateContractor={updateContractor}
+                    deleteContractor={deleteContractor}
                   />
               </div>
             ) : (

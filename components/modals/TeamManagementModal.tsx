@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { User, UserRole } from '../../types';
-import { X, Plus, Shield, User as UserIcon, MoreHorizontal, Mail, Trash2, Check, Clock, Lock } from 'lucide-react';
+import { X, Plus, Shield, User as UserIcon, MoreHorizontal, Mail, Trash2, Check, Clock, Lock, Sparkles } from 'lucide-react';
 
 interface Props {
   users: User[];
@@ -38,6 +38,13 @@ export const TeamManagementModal: React.FC<Props> = ({ users, currentUser, onAdd
       setNewName('');
   };
 
+  const fillAnonymous = () => {
+      const randomId = Math.floor(Math.random() * 1000);
+      setNewName("John Doe");
+      setNewEmail(`john.doe.${randomId}@example.com`);
+      setNewRole('Viewer');
+  };
+
   const getRoleBadge = (role: UserRole) => {
       switch(role) {
           case 'Owner': return <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px] font-bold border border-purple-200">OWNER</span>;
@@ -70,8 +77,17 @@ export const TeamManagementModal: React.FC<Props> = ({ users, currentUser, onAdd
             
             {/* Invite Section */}
             {isInviteMode ? (
-                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6 animate-in slide-in-from-top-2">
-                    <h3 className="text-sm font-bold text-slate-700 mb-3">Invite New Member</h3>
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6 animate-in slide-in-from-top-2 relative">
+                    <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-sm font-bold text-slate-700">Invite New Member</h3>
+                        <button 
+                            onClick={fillAnonymous} 
+                            className="text-[10px] text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-bold bg-white px-2 py-1 rounded border border-indigo-100 hover:border-indigo-300 transition-colors"
+                        >
+                            <Sparkles size={10} /> Demo Identity
+                        </button>
+                    </div>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label className="block text-xs font-bold text-slate-500 mb-1">Full Name</label>

@@ -232,6 +232,7 @@ export interface JournalEntry {
   locked: boolean;
   reference?: string;
   isPrivateDomain?: boolean; // New flag for private admin
+  _version: string;
 }
 
 export interface Contractor {

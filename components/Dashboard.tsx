@@ -11,6 +11,7 @@ import { ConsolidatedTracker } from './ConsolidatedTracker';
 import { FractalViewer } from './FractalViewer';
 import { BSOHierarchyViewer } from './BSOHierarchyViewer';
 import { BSOWizard } from './BSOWizard';
+import { BSOEnrollmentWizard } from './BSOEnrollmentWizard';
 import { W2ReportingWizard } from './W2ReportingWizard';
 import { SSAStatementViewer } from './SSAStatementViewer';
 import { HRHeadcountViewer } from './HRHeadcountViewer';
@@ -22,11 +23,15 @@ import { ForensicBondWizard } from './ForensicBondWizard';
 import { BankruptcyWizard } from './BankruptcyWizard';
 import { ResitusWizard } from './ResitusWizard';
 import { AgencyCertificationWizard } from './AgencyCertificationWizard';
-import { TreasuryDirectWizard } from './TreasuryDirectWizard'; // New Import
-import { LegalFormsWizard } from './LegalFormsWizard'; // New Import
+import { TreasuryDirectWizard } from './TreasuryDirectWizard'; 
+import { LegalFormsWizard } from './LegalFormsWizard'; 
+import { CommercialIntercourseWizard } from './CommercialIntercourseWizard'; // New Import
 import { ComplexTrustDescriptionForm } from './forms/ComplexTrustDescriptionForm';
 import { EntityBuilder } from './EntityBuilder';
-import { Network, ShieldCheck, Users, Terminal, Wand, FileSpreadsheet, BookOpenCheck, Sparkles, Scale, Feather, Gavel, Hammer, Search, Activity, CheckCircle2, Lock, Server, X, AlertCircle, AlertOctagon, Map, CheckSquare, Scroll } from 'lucide-react';
+import { EmployeeModal } from './modals/EmployeeModal';
+import { ManualJournalEntryModal } from './modals/ManualJournalEntryModal';
+import { ContractorManagementModal } from './modals/ContractorManagementModal'; 
+import { Network, ShieldCheck, Users, Terminal, Wand, FileSpreadsheet, BookOpenCheck, Sparkles, Scale, Feather, Gavel, Hammer, Search, Activity, CheckCircle2, Lock, Server, X, AlertCircle, AlertOctagon, Map, CheckSquare, Scroll, UserPlus, FileText, UserCog, Calculator, HardHat, Ship } from 'lucide-react';
 
 interface Props {
   entity: Entity;
@@ -61,6 +66,12 @@ interface Props {
   onAddEntity: (parentId: string, type: EntityType, role: EntityRole, nameOverride?: string) => Promise<Entity>;
   onUpdateEntity: (id: string, updates: Partial<Entity>) => void;
   onDeleteEntity: (id: string) => void;
+  addEmployee?: (emp: Employee) => void;
+  updateEmployee?: (emp: Employee) => void;
+  deleteEmployee?: (id: string) => void;
+  addContractor?: (con: Contractor) => void;
+  updateContractor?: (con: Contractor) => void;
+  deleteContractor?: (id: string) => void;
 }
 
 export const Dashboard: React.FC<Props> = ({ 
@@ -70,7 +81,7 @@ export const Dashboard: React.FC<Props> = ({
   modules, 
   journals, 
   contractors, 
-  filings,
+  filings, 
   wallets,
   bsoRoles,
   bsoSubmissions,
@@ -95,128 +106,165 @@ export const Dashboard: React.FC<Props> = ({
   createReSitus,
   onAddEntity,
   onUpdateEntity,
-  onDeleteEntity
+  onDeleteEntity,
+  addEmployee,
+  updateEmployee,
+  deleteEmployee,
+  addContractor,
+  updateContractor,
+  deleteContractor
 }) => {
   const [activeTab, setActiveTab] = useState('Overview');
-  const [showApiStatus, setShowApiStatus] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | 'NEW' | null>(null);
+  const [showManualJournalModal, setShowManualJournalModal] = useState(false);
+  const [showContractorModal, setShowContractorModal] = useState(false); 
 
   // Filter Data
   const entityModules = modules.filter(m => m.entityId === entity.id);
   const entityFilings = filings.filter(f => f.entityId === entity.id);
-  
-  // Logic for API Status
-  const irsCred = irsCreds.find(c => c.entityId === entity.id && c.system === 'A2A');
-  const bsoRole = bsoRoles.find(r => r.entityId === entity.id);
-  
-  const irsActive = irsCred?.status === 'Active';
-  const bsoActive = bsoRole?.registrationStatus === 'Active';
+
+  const handlePostIntercourseFee = (amount: number, memo: string) => {
+      // Logic for 5% Fee posting: DR Expense, CR Cash
+      postJournal(
+          entity.id, 
+          new Date().toISOString().split('T')[0], 
+          memo, 
+          'PERMIT_FEE', 
+          [
+              { accountCode: '500500', dc: DCFlag.Debit, amount: amount }, // Permit Expense
+              { accountCode: '101000', dc: DCFlag.Credit, amount: amount } // Cash
+          ]
+      );
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'Overview':
         return (
           <div className="h-full overflow-y-auto p-6 md:p-8 custom-scrollbar">
-            <div className="grid grid-cols-12 gap-6 pb-12">
-              <div className="col-span-12 lg:col-span-8 space-y-6">
-                {/* Consolidated Tracker for Trusts */}
-                {entity.role === EntityRole.HOLDING_TRUST && (
-                   <ConsolidatedTracker 
-                      parent={entity} 
-                      childrenEntities={entities.filter(e => e.parentEntityId === entity.id)}
-                      allFilings={filings}
-                      allModules={modules}
-                   />
-                )}
+            <div className="max-w-[1600px] mx-auto">
+              <div className="grid grid-cols-12 gap-6 pb-12">
+                <div className="col-span-12 lg:col-span-8 space-y-6">
+                  {/* Consolidated Tracker for Trusts */}
+                  {entity.role === EntityRole.HOLDING_TRUST && (
+                     <ConsolidatedTracker 
+                        parent={entity} 
+                        childrenEntities={entities.filter(e => e.parentEntityId === entity.id)}
+                        allFilings={filings}
+                        allModules={modules}
+                     />
+                  )}
 
-                {/* Status Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                      <div className="flex justify-between items-start mb-4">
-                          <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                              <Activity size={20} />
-                          </div>
-                          <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">Q2 2025</span>
+                  {/* Status Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                <Activity size={20} />
+                            </div>
+                            <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">Q2 2025</span>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-800 mb-1">$0.00</div>
+                        <div className="text-sm text-slate-500">Projected Tax Liability</div>
+                     </div>
+                     
+                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                                <ShieldCheck size={20} />
+                            </div>
+                            <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">Compliance</span>
+                        </div>
+                        <div className="text-2xl font-bold text-slate-800 mb-1">
+                            {entityFilings.filter(f => f.status === 'Filed' || f.status === 'Accepted').length} / {entityFilings.length}
+                        </div>
+                        <div className="text-sm text-slate-500">Filings Completed</div>
+                     </div>
+                  </div>
+
+                  {/* Forms */}
+                  {entity.role === EntityRole.HOLDING_TRUST ? (
+                    <TrustTaxForm entityId={entity.id} modules={entityModules} onSubmit={(date, amt, mid, method) => {
+                      postJournal(entity.id, date, `Estimated Tax Payment (${method})`, 'DISBURSEMENT', [
+                         { accountCode: '102000', dc: DCFlag.Debit, amount: amt, moduleId: mid },
+                         { accountCode: '101000', dc: DCFlag.Credit, amount: amt }
+                      ]);
+                    }} />
+                  ) : (
+                    <>
+                      <LLCMaterialsForm onSubmit={(date, mat, tax, vendor, memo) => {
+                         postJournal(entity.id, date, memo, 'PURCHASE', [
+                            { accountCode: '520100', dc: DCFlag.Debit, amount: mat },
+                            { accountCode: '520110', dc: DCFlag.Debit, amount: tax },
+                            { accountCode: '101000', dc: DCFlag.Credit, amount: mat + tax }
+                         ]);
+                      }} />
+                      <div className="mt-6 relative">
+                        {/* Contractor Form & Management */}
+                        <div className="flex justify-between items-end mb-2 absolute right-6 top-6 z-10">
+                            <button 
+                                onClick={() => setShowContractorModal(true)}
+                                className="text-xs flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 px-3 py-1.5 rounded-lg font-bold transition-colors"
+                            >
+                                <HardHat size={14} /> Manage Contractors
+                            </button>
+                        </div>
+                        <LLCContractorForm 
+                            entityId={entity.id} 
+                            contractors={contractors} 
+                            modules={entityModules}
+                            onSubmit={(date, amount, cid, mid, memo) => {
+                                postJournal(entity.id, date, memo, 'BILL', [
+                                    { accountCode: '510100', dc: DCFlag.Debit, amount: amount, moduleId: mid },
+                                    { accountCode: '210100', dc: DCFlag.Credit, amount: amount }
+                                ]);
+                            }}
+                        />
                       </div>
-                      <div className="text-2xl font-bold text-slate-800 mb-1">$0.00</div>
-                      <div className="text-sm text-slate-500">Projected Tax Liability</div>
-                   </div>
-                   
-                   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                      <div className="flex justify-between items-start mb-4">
-                          <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                              <ShieldCheck size={20} />
-                          </div>
-                          <span className="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">Compliance</span>
-                      </div>
-                      <div className="text-2xl font-bold text-slate-800 mb-1">
-                          {entityFilings.filter(f => f.status === 'Filed' || f.status === 'Accepted').length} / {entityFilings.length}
-                      </div>
-                      <div className="text-sm text-slate-500">Filings Completed</div>
-                   </div>
+                    </>
+                  )}
+
+                  <div className="flex justify-between items-center pt-4">
+                      <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wide">Financial Records</h3>
+                      <button 
+                        onClick={() => setShowManualJournalModal(true)}
+                        className="text-xs flex items-center gap-1 bg-white border border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold text-slate-700 shadow-sm transition-colors"
+                      >
+                        <Calculator size={14} /> New Journal Entry
+                      </button>
+                  </div>
+                  <div className="-mt-4">
+                      <JournalRegister journals={journals} entityId={entity.id} />
+                  </div>
                 </div>
 
-                {/* Forms */}
-                {entity.role === EntityRole.HOLDING_TRUST ? (
-                  <TrustTaxForm entityId={entity.id} modules={entityModules} onSubmit={(date, amt, mid, method) => {
-                    postJournal(entity.id, date, `Estimated Tax Payment (${method})`, 'DISBURSEMENT', [
-                       { accountCode: '102000', dc: DCFlag.Debit, amount: amt, moduleId: mid },
-                       { accountCode: '101000', dc: DCFlag.Credit, amount: amt }
-                    ]);
-                  }} />
-                ) : (
-                  <>
-                    <LLCMaterialsForm onSubmit={(date, mat, tax, vendor, memo) => {
-                       postJournal(entity.id, date, memo, 'PURCHASE', [
-                          { accountCode: '520100', dc: DCFlag.Debit, amount: mat },
-                          { accountCode: '520110', dc: DCFlag.Debit, amount: tax },
-                          { accountCode: '101000', dc: DCFlag.Credit, amount: mat + tax }
-                       ]);
-                    }} />
-                    <div className="mt-6">
-                      <LLCContractorForm 
-                          entityId={entity.id} 
-                          contractors={contractors} 
-                          modules={entityModules}
-                          onSubmit={(date, amount, cid, mid, memo) => {
-                              postJournal(entity.id, date, memo, 'BILL', [
-                                  { accountCode: '510100', dc: DCFlag.Debit, amount: amount, moduleId: mid },
-                                  { accountCode: '210100', dc: DCFlag.Credit, amount: amount }
-                              ]);
-                          }}
-                      />
-                    </div>
-                  </>
-                )}
-
-                <JournalRegister journals={journals} entityId={entity.id} />
-              </div>
-
-              <div className="col-span-12 lg:col-span-4 space-y-6">
-                <ComplianceWidget 
-                  entity={entity} 
-                  filings={entityFilings} 
-                  modules={entityModules}
-                  parentFilings={parentFilings}
-                  bsoRoles={bsoRoles}
-                  irsCreds={irsCreds}
-                  onCreateFiling={onCreateFiling} 
-                  onUpdateStatus={onUpdateFilingStatus}
-                  onSubmitToApi={onSubmitToApi}
-                />
-                
-                {/* Contextual Tools */}
-                <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Quick Actions</h4>
-                    <div className="space-y-2">
-                        <button onClick={onOpenApiConsole} className="w-full flex items-center gap-2 p-2 bg-white border border-slate-200 rounded hover:bg-slate-50 text-xs font-bold text-slate-700">
-                            <Terminal size={14} className="text-indigo-500" />
-                            Open IRS API Console
-                        </button>
-                        <button onClick={() => setActiveTab('Visualizer')} className="w-full flex items-center gap-2 p-2 bg-white border border-slate-200 rounded hover:bg-slate-50 text-xs font-bold text-slate-700">
-                            <Network size={14} className="text-blue-500" />
-                            View Entity Graph
-                        </button>
-                    </div>
+                <div className="col-span-12 lg:col-span-4 space-y-6">
+                  <ComplianceWidget 
+                    entity={entity} 
+                    filings={entityFilings} 
+                    modules={entityModules}
+                    parentFilings={parentFilings}
+                    bsoRoles={bsoRoles}
+                    irsCreds={irsCreds}
+                    onCreateFiling={onCreateFiling} 
+                    onUpdateStatus={onUpdateFilingStatus}
+                    onSubmitToApi={onSubmitToApi}
+                  />
+                  
+                  {/* Contextual Tools */}
+                  <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                      <h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Quick Actions</h4>
+                      <div className="space-y-2">
+                          <button onClick={onOpenApiConsole} className="w-full flex items-center gap-2 p-2 bg-white border border-slate-200 rounded hover:bg-slate-50 text-xs font-bold text-slate-700">
+                              <Terminal size={14} className="text-indigo-500" />
+                              Open IRS API Console
+                          </button>
+                          <button onClick={() => setActiveTab('Visualizer')} className="w-full flex items-center gap-2 p-2 bg-white border border-slate-200 rounded hover:bg-slate-50 text-xs font-bold text-slate-700">
+                              <Network size={14} className="text-blue-500" />
+                              View Entity Graph
+                          </button>
+                      </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -251,6 +299,12 @@ export const Dashboard: React.FC<Props> = ({
               <BSOWizard entity={entity} onComplete={(bsoId) => registerBSOEmployer(entity.id, bsoId)} />
             </div>
           );
+      case 'Enrollment':
+          return (
+            <div className="h-full p-4 overflow-hidden">
+              <BSOEnrollmentWizard entity={entity} onComplete={() => setActiveTab('BSO')} />
+            </div>
+          );
       case 'Report W-2':
           return (
             <div className="h-full p-4 overflow-hidden">
@@ -266,7 +320,14 @@ export const Dashboard: React.FC<Props> = ({
       case 'HR':
           return (
             <div className="h-full p-4 overflow-hidden">
-              <HRHeadcountViewer entity={entity} employees={employees} payrollRuns={payrollRuns} />
+              <HRHeadcountViewer 
+                  entity={entity} 
+                  employees={employees} 
+                  payrollRuns={payrollRuns} 
+                  onAddEmployee={() => setEditingEmployee('NEW')}
+                  onEditEmployee={setEditingEmployee}
+                  onDeleteEmployee={deleteEmployee}
+              />
             </div>
           );
       case 'Simulation':
@@ -343,22 +404,75 @@ export const Dashboard: React.FC<Props> = ({
                 <LegalFormsWizard entity={entity} onClose={() => setActiveTab('Overview')} />
              </div>
           );
+      case 'Intercourse':
+          return (
+             <div className="h-full p-4 overflow-hidden">
+                <CommercialIntercourseWizard entity={entity} onPostFee={handlePostIntercourseFee} onClose={() => setActiveTab('Overview')} />
+             </div>
+          );
       default:
         return null;
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50">
+    <div className="flex flex-col h-full bg-slate-50/50 relative">
       
+      {/* Employee Modal */}
+      {editingEmployee && (
+          <EmployeeModal 
+              employee={editingEmployee === 'NEW' ? undefined : editingEmployee}
+              entityId={entity.id}
+              onSave={(emp) => {
+                  if (editingEmployee === 'NEW' && addEmployee) {
+                      addEmployee(emp);
+                  } else if (updateEmployee) {
+                      updateEmployee(emp);
+                  }
+              }}
+              onDelete={deleteEmployee}
+              onClose={() => setEditingEmployee(null)}
+          />
+      )}
+
+      {/* Manual Journal Entry Modal */}
+      {showManualJournalModal && (
+        <ManualJournalEntryModal 
+          entityId={entity.id}
+          accounts={accounts}
+          onSave={(date, memo, type, lines) => {
+            postJournal(entity.id, date, memo, type, lines);
+          }}
+          onClose={() => setShowManualJournalModal(false)}
+        />
+      )}
+
+      {/* Contractor Management Modal */}
+      {showContractorModal && addContractor && updateContractor && deleteContractor && (
+          <ContractorManagementModal 
+              contractors={contractors}
+              onAdd={addContractor}
+              onUpdate={updateContractor}
+              onDelete={deleteContractor}
+              onClose={() => setShowContractorModal(false)}
+          />
+      )}
+
       {/* Header */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 p-6 md:p-8 border-b border-slate-200 bg-slate-50 shrink-0">
         <div>
           <div className="flex items-center gap-2 mb-1">
              <h1 className="text-2xl font-bold text-slate-900">{entity.name}</h1>
-             {/* ... [API Dots code remains same] ... */}
+             {/* ... [API Dots code] ... */}
           </div>
-          {/* ... [Entity Badges remain same] ... */}
+          <div className="flex items-center gap-3">
+             <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border ${entity.role === EntityRole.HOLDING_TRUST ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>
+               {entity.role.replace('_', ' ')}
+             </span>
+             <span className="text-xs text-slate-500 font-mono">
+               EIN: **-***{entity.einLast4}
+             </span>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -377,7 +491,48 @@ export const Dashboard: React.FC<Props> = ({
            
            <div className="w-px h-8 bg-slate-300 mx-2 hidden md:block"></div>
            
-           {/* ... [Existing Buttons: BSO, Register, Report W-2] ... */}
+           <button 
+             onClick={() => setActiveTab('BSO')}
+             className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'BSO' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+             title="BSO Hierarchy"
+           >
+             <ShieldCheck size={16} />
+           </button>
+           <button 
+             onClick={() => setActiveTab('Register')}
+             className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'Register' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+             title="Register Employer (BSO)"
+           >
+             <UserPlus size={16} />
+           </button>
+           <button 
+             onClick={() => setActiveTab('Enrollment')}
+             className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'Enrollment' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+             title="Enroll New Employee User"
+           >
+             <UserCog size={16} />
+           </button>
+           <button 
+             onClick={() => setActiveTab('Report W-2')}
+             className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'Report W-2' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+             title="Report W-2"
+           >
+             <FileText size={16} />
+           </button>
+           <button 
+             onClick={() => setActiveTab('SSA Statement')}
+             className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'SSA Statement' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+             title="SSA Statement"
+           >
+             <BookOpenCheck size={16} />
+           </button>
+           <button 
+             onClick={() => setActiveTab('HR')}
+             className={`px-3 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'HR' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+             title="HR Headcount"
+           >
+             <Users size={16} />
+           </button>
 
             {/* Extended Menu for Trust specific tools */}
             {entity.role === EntityRole.HOLDING_TRUST && (
@@ -387,6 +542,9 @@ export const Dashboard: React.FC<Props> = ({
                     </button>
                     <button onClick={() => setActiveTab('Private')} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600" title="Private Admin">
                         <Feather size={18} />
+                    </button>
+                    <button onClick={() => setActiveTab('Intercourse')} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-amber-700" title="Commercial Intercourse (1863)">
+                        <Ship size={18} />
                     </button>
                     <button onClick={() => setActiveTab('Resolve')} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-red-600" title="Taxpayer Resolution">
                         <Gavel size={18} />
@@ -415,8 +573,9 @@ export const Dashboard: React.FC<Props> = ({
             <button onClick={() => setActiveTab('Re-Situs')} className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50">
                 <Map size={16} /> Re-Situs
             </button>
-            
-            {/* ... [Remaining buttons] ... */}
+            <button onClick={() => setActiveTab('Bankruptcy')} className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50">
+                <AlertOctagon size={16} className="text-red-500" />
+            </button>
         </div>
       </div>
 
