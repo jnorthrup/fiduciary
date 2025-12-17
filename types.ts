@@ -1,5 +1,4 @@
 
-
 export enum EntityRole {
   HOLDING_TRUST = "HOLDING_TRUST",
   OPERATING_LLC = "OPERATING_LLC",
@@ -384,6 +383,48 @@ export interface ResolutionRecord {
   voucherCode?: string; // NEW: The For-Payor Account Voucher code
 }
 
+// --- FIDUCIARY GOVERNANCE TYPES (CO-TRUSTEE) ---
+export type VoteType = 'For' | 'Against' | 'Abstain';
+export type FiduciaryActionType = 'Distribution' | 'Liquidation' | 'Investment' | 'Amendment' | 'Appointment';
+
+export interface FiduciaryVote {
+    trusteeId: string;
+    trusteeName: string;
+    vote: VoteType;
+    timestamp: string;
+}
+
+export interface FiduciaryAction {
+    id: string;
+    entityId: string;
+    type: FiduciaryActionType;
+    description: string;
+    amount?: number;
+    upiaAllocation: { income: number; principal: number }; // Uniform Principal and Income Act
+    votes: FiduciaryVote[];
+    status: 'Proposed' | 'Ratified' | 'Rejected' | 'Executed';
+    dateCreated: string;
+    dateExecuted?: string;
+}
+
+// --- BOI / FINCEN TYPES ---
+export interface BOIReport {
+    id: string;
+    entityId: string;
+    filingType: 'Initial' | 'Update' | 'Correction';
+    status: 'Draft' | 'Submitted' | 'Accepted' | 'Rejected';
+    submissionDate?: string;
+    finCENId?: string;
+    beneficialOwners: {
+        legalName: string;
+        dob: string;
+        address: string;
+        idType: 'Passport' | 'Driver License';
+        idNumber: string;
+        isExempt: boolean;
+    }[];
+}
+
 // --- RE-SITUS TYPES ---
 export interface ReSitusRecord {
   id: string;
@@ -394,6 +435,31 @@ export interface ReSitusRecord {
   effectiveDate: string;
   documentType: 'Articles of Continuance' | 'Declaration of Re-situs' | 'Bill in Equity';
   status: 'Draft' | 'Filed' | 'Recorded';
+}
+
+// --- INDENTURE & CERTIFICATES ---
+export interface TrustCertificate {
+  id: string;
+  entityId: string;
+  holderName: string;
+  units: number;
+  type: 'Capital' | 'Income' | 'Combined';
+  issueDate: string;
+  certNumber: string;
+  status: 'Active' | 'Redeemed' | 'Void';
+}
+
+export interface Indenture {
+  id: string;
+  entityId: string;
+  name: string;
+  dateCreated: string;
+  articles: {
+    id: string;
+    title: string;
+    content: string;
+  }[];
+  status: 'Draft' | 'Executed';
 }
 
 // --- FORENSIC BOND TYPES ---

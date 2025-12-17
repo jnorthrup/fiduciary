@@ -25,13 +25,15 @@ import { ResitusWizard } from './ResitusWizard';
 import { AgencyCertificationWizard } from './AgencyCertificationWizard';
 import { TreasuryDirectWizard } from './TreasuryDirectWizard'; 
 import { LegalFormsWizard } from './LegalFormsWizard'; 
-import { CommercialIntercourseWizard } from './CommercialIntercourseWizard'; // New Import
+import { CommercialIntercourseWizard } from './CommercialIntercourseWizard';
 import { ComplexTrustDescriptionForm } from './forms/ComplexTrustDescriptionForm';
 import { EntityBuilder } from './EntityBuilder';
+import { IndentureWorkshop } from './IndentureWorkshop';
+import { TrustCertificateGenerator } from './TrustCertificateGenerator';
 import { EmployeeModal } from './modals/EmployeeModal';
 import { ManualJournalEntryModal } from './modals/ManualJournalEntryModal';
 import { ContractorManagementModal } from './modals/ContractorManagementModal'; 
-import { Network, ShieldCheck, Users, Terminal, Wand, FileSpreadsheet, BookOpenCheck, Sparkles, Scale, Feather, Gavel, Hammer, Search, Activity, CheckCircle2, Lock, Server, X, AlertCircle, AlertOctagon, Map, CheckSquare, Scroll, UserPlus, FileText, UserCog, Calculator, HardHat, Ship } from 'lucide-react';
+import { Network, ShieldCheck, Users, Terminal, Wand, FileSpreadsheet, BookOpenCheck, Sparkles, Scale, Feather, Gavel, Hammer, Search, Activity, CheckCircle2, Lock, Server, X, AlertCircle, AlertOctagon, Map, CheckSquare, Scroll, UserPlus, FileText, UserCog, Calculator, HardHat, Ship, ScrollText, Award } from 'lucide-react';
 
 interface Props {
   entity: Entity;
@@ -49,6 +51,7 @@ interface Props {
   payrollRuns: PayrollRun[];
   ssaStatements: SSAStatement[];
   documents: IRMDocument[];
+  resolutions?: ResolutionRecord[]; // Added Prop
   parentEntity?: Entity;
   parentFilings?: ComplianceFiling[];
   postJournal: (entityId: string, date: string, memo: string, type: string, lines: any[]) => void;
@@ -90,6 +93,7 @@ export const Dashboard: React.FC<Props> = ({
   payrollRuns,
   ssaStatements,
   documents,
+  resolutions = [],
   parentEntity,
   parentFilings,
   postJournal,
@@ -122,9 +126,9 @@ export const Dashboard: React.FC<Props> = ({
   // Filter Data
   const entityModules = modules.filter(m => m.entityId === entity.id);
   const entityFilings = filings.filter(f => f.entityId === entity.id);
+  const entityResolutions = resolutions.filter(r => r.entityId === entity.id);
 
   const handlePostIntercourseFee = (amount: number, memo: string) => {
-      // Logic for 5% Fee posting: DR Expense, CR Cash
       postJournal(
           entity.id, 
           new Date().toISOString().split('T')[0], 
@@ -351,7 +355,7 @@ export const Dashboard: React.FC<Props> = ({
       case 'Resolve':
           return (
             <div className="h-full p-4 overflow-hidden">
-              <TaxpayerResolutionWizard entity={entity} modules={entityModules} onComplete={resolveTaxpayerAccount} onExit={() => setActiveTab('Overview')} />
+              <TaxpayerResolutionWizard entity={entity} modules={entityModules} resolutions={entityResolutions} onComplete={resolveTaxpayerAccount} onExit={() => setActiveTab('Overview')} />
             </div>
           );
       case 'Forensic':
@@ -408,6 +412,18 @@ export const Dashboard: React.FC<Props> = ({
           return (
              <div className="h-full p-4 overflow-hidden">
                 <CommercialIntercourseWizard entity={entity} onPostFee={handlePostIntercourseFee} onClose={() => setActiveTab('Overview')} />
+             </div>
+          );
+      case 'Indenture':
+          return (
+             <div className="h-full p-4 overflow-hidden">
+                <IndentureWorkshop entity={entity} onClose={() => setActiveTab('Overview')} />
+             </div>
+          );
+      case 'Certificates':
+          return (
+             <div className="h-full p-4 overflow-hidden">
+                <TrustCertificateGenerator entity={entity} onClose={() => setActiveTab('Overview')} />
              </div>
           );
       default:
@@ -545,6 +561,12 @@ export const Dashboard: React.FC<Props> = ({
                     </button>
                     <button onClick={() => setActiveTab('Intercourse')} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-amber-700" title="Commercial Intercourse (1863)">
                         <Ship size={18} />
+                    </button>
+                    <button onClick={() => setActiveTab('Indenture')} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-amber-800" title="Indenture Workshop">
+                        <ScrollText size={18} />
+                    </button>
+                    <button onClick={() => setActiveTab('Certificates')} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-800" title="Issue Certificates (TCBI)">
+                        <Award size={18} />
                     </button>
                     <button onClick={() => setActiveTab('Resolve')} className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-red-600" title="Taxpayer Resolution">
                         <Gavel size={18} />
