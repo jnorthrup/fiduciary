@@ -1,5 +1,5 @@
 
-import { Entity, EntityRole, EntityType, Account, AccountType, DCFlag, TaxModule, Contractor, ComplianceFiling, WalletCredential, BSORole, BSOSubmission, IRSAPICredential, Employee, PayrollRun, IRMDocument, SSAStatement } from '../types';
+import { Entity, EntityRole, EntityType, Account, AccountType, DCFlag, TaxModule, Contractor, ComplianceFiling, WalletCredential, BSORole, BSOSubmission, IRSAPICredential, Employee, PayrollRun, IRMDocument, SSAStatement, ResolutionRecord } from '../types';
 
 const GENESIS_HASH = "0000000000000000";
 
@@ -154,4 +154,17 @@ export const SEED_DOCUMENTS: IRMDocument[] = [
   // Resolution & Enforcement Docs
   { id: "DOC-003", entityId: "ENT-001", taxYear: 2024, formType: "15103", fileName: "Form15103_PmtTrace_EFTPS.pdf", generatedDate: "2025-02-15", status: "Tracer Active", size: "88 KB", category: "Remittance", campusDestination: "Ogden, UT" },
   { id: "DOC-004", entityId: "ENT-002", taxYear: 2025, formType: "668-W", fileName: "Form668W_Levy_Notice.pdf", generatedDate: "2025-02-20", status: "Suspense", size: "405 KB", category: "Enforcement", campusDestination: "Fresno, CA" },
+];
+
+// --- RESOLUTIONS / VOUCHERS ---
+export const SEED_RESOLUTIONS: ResolutionRecord[] = [
+  {
+    id: "RES-SEED-001",
+    entityId: "ENT-001",
+    accountNumber: "**-***9982",
+    expression: "I, the undersigned, hereby express that I am resolving this account via private administrative remedy and setoff.",
+    date: "2024-11-01",
+    status: "Executed",
+    voucherCode: "VCH-2024-882910"
+  }
 ];

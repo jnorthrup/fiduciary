@@ -9,8 +9,8 @@ interface Props {
   onClose: () => void;
 }
 
-// Regulation XXXVIII & XXII from PDF
-const PROHIBITED_ITEMS = ['Bullion', 'Gold Coin', 'Silver Coin', 'Cannon', 'Gunpowder', 'Saltpetre', 'Percussion Caps'];
+// Regulation XXXVIII & XXII from 1863 Circular
+const PROHIBITED_ITEMS = ['Bullion', 'Gold Coin', 'Silver Coin', 'Cannon', 'Gunpowder', 'Saltpetre', 'Percussion Caps', 'Pikes', 'Swords'];
 
 export const CommercialIntercourseWizard: React.FC<Props> = ({ entity, onPostFee, onClose }) => {
   const [activeTab, setActiveTab] = useState<'Permit' | 'Property' | 'Regulations'>('Permit');
@@ -24,7 +24,6 @@ export const CommercialIntercourseWizard: React.FC<Props> = ({ entity, onPostFee
 
   // Property State
   const [propType, setPropType] = useState<'Abandoned' | 'Captured'>('Abandoned');
-  const [propLocation, setPropLocation] = useState('');
   const [claimant, setClaimant] = useState('');
 
   // Calculations (Reg XLII: 5% fee on invoice value)
@@ -42,7 +41,7 @@ export const CommercialIntercourseWizard: React.FC<Props> = ({ entity, onPostFee
   };
 
   return (
-    <div className="bg-[#fdf6e3] p-6 rounded-xl border border-[#e6dcc3] h-full flex flex-col font-serif relative overflow-hidden shadow-inner">
+    <div className="bg-[#fdf6e3] p-6 rounded-xl border border-[#e6dcc3] h-full flex flex-col font-serif relative overflow-hidden shadow-inner text-[#5c4033]">
       {/* Texture Overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/aged-paper.png")' }}></div>
 
@@ -57,7 +56,7 @@ export const CommercialIntercourseWizard: React.FC<Props> = ({ entity, onPostFee
                 Treasury Department Circular • September 11, 1863
             </p>
         </div>
-        <button onClick={onClose} className="text-[#8b7355] hover:text-[#5c4033]">
+        <button onClick={onClose} className="text-[#8b7355] hover:text-[#3e2b22] hover:scale-110 transition-transform">
             <X size={24} />
         </button>
       </div>
@@ -100,7 +99,7 @@ export const CommercialIntercourseWizard: React.FC<Props> = ({ entity, onPostFee
                                 placeholder="e.g. 50 Bales of Cotton, Tobacco, Naval Stores..."
                               />
                               {isProhibited && (
-                                  <div className="mt-2 text-red-700 text-xs font-bold flex items-center gap-2 bg-red-50 p-2 border border-red-200">
+                                  <div className="mt-2 text-red-800 text-xs font-bold flex items-center gap-2 bg-red-50 p-2 border border-red-200">
                                       <Ban size={12} /> PROHIBITED: Regulation XXXVIII
                                   </div>
                               )}
@@ -147,7 +146,7 @@ export const CommercialIntercourseWizard: React.FC<Props> = ({ entity, onPostFee
                                 type="checkbox" 
                                 checked={!isBlockaded} 
                                 onChange={() => setIsBlockaded(!isBlockaded)}
-                                className="accent-[#5c4033]"
+                                className="accent-[#5c4033] w-4 h-4"
                               />
                               <span className="text-sm text-[#5c4033]">I certify this port is NOT under Blockade (Reg. VIII).</span>
                           </div>
@@ -156,16 +155,16 @@ export const CommercialIntercourseWizard: React.FC<Props> = ({ entity, onPostFee
                               <button 
                                 onClick={handleGrantPermit}
                                 disabled={!goodsDescription || invoiceValue <= 0}
-                                className="bg-[#5c4033] text-[#fdf6e3] px-6 py-2 font-bold uppercase text-sm hover:bg-[#4a332a] disabled:opacity-50 flex items-center gap-2 shadow-md border border-[#3e2b22]"
+                                className="bg-[#5c4033] text-[#fdf6e3] px-6 py-2 font-bold uppercase text-sm hover:bg-[#4a332a] disabled:opacity-50 flex items-center gap-2 shadow-md border border-[#3e2b22] active:scale-95 transition-transform"
                               >
                                   <Stamp size={16} /> Grant Permit
                               </button>
                           ) : permitStatus === 'Seized' ? (
-                              <div className="bg-red-800 text-white px-6 py-2 font-bold uppercase text-sm flex items-center gap-2">
-                                  <AlertTriangle size={16} /> SEIZED FORFEITURE
+                              <div className="bg-red-900 text-[#fdf6e3] px-6 py-2 font-bold uppercase text-sm flex items-center gap-2 border border-red-950">
+                                  <AlertTriangle size={16} /> SEIZED: FORFEITURE
                               </div>
                           ) : (
-                              <div className="bg-emerald-800 text-white px-6 py-2 font-bold uppercase text-sm flex items-center gap-2">
+                              <div className="bg-emerald-900 text-[#fdf6e3] px-6 py-2 font-bold uppercase text-sm flex items-center gap-2 border border-emerald-950">
                                   <CheckCircle2 size={16} /> PERMIT ISSUED
                               </div>
                           )}
@@ -201,7 +200,7 @@ export const CommercialIntercourseWizard: React.FC<Props> = ({ entity, onPostFee
                           <h3 className="text-xl font-bold text-[#5c4033] uppercase tracking-widest border-b-2 border-double border-[#5c4033] inline-block pb-1">
                               Receipt for {propType} Property
                           </h3>
-                          <p className="text-xs text-slate-500 mt-2 font-bold">FORM NO. 10 (Reg. VI)</p>
+                          <p className="text-xs text-slate-500 mt-2 font-bold text-[#8b7355]">FORM NO. 10 (Reg. VI)</p>
                       </div>
 
                       <div className="space-y-6 text-[#5c4033]">
@@ -247,7 +246,7 @@ export const CommercialIntercourseWizard: React.FC<Props> = ({ entity, onPostFee
                       </div>
 
                       <div className="mt-8 flex justify-end">
-                          <button className="bg-[#5c4033] text-[#fdf6e3] px-8 py-3 font-bold uppercase text-sm hover:bg-[#4a332a] flex items-center gap-2 shadow-lg border border-[#3e2b22]">
+                          <button className="bg-[#5c4033] text-[#fdf6e3] px-8 py-3 font-bold uppercase text-sm hover:bg-[#4a332a] flex items-center gap-2 shadow-lg border border-[#3e2b22] active:scale-95 transition-transform">
                               <Feather size={16} /> Sign & Issue Receipt
                           </button>
                       </div>

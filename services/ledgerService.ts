@@ -7,12 +7,13 @@ import {
   PayrollRun, IRMDocument, SSAStatement, TransmissionLog, SystemStatus, 
   SearchResult, AccordRecord, PrivateAdminRecord, ResolutionRecord, 
   ReSitusRecord, User, ChangeSet, ApiSecrets, SystemSettings,
-  EntityType, EntityRole, IRSFormType, DCFlag
+  EntityType, EntityRole, IRSFormType, DCFlag, FiduciaryAction, BOIReport
 } from '../types';
 import { 
   SEED_ENTITIES, SEED_ACCOUNTS, SEED_MODULES, SEED_CONTRACTORS, SEED_FILINGS, 
   SEED_WALLETS, SEED_BSO_ROLES, SEED_BSO_SUBMISSIONS, SEED_IRS_CREDS, 
-  SEED_EMPLOYEES, SEED_PAYROLL_RUNS, SEED_DOCUMENTS, SEED_SSA_STATEMENTS 
+  SEED_EMPLOYEES, SEED_PAYROLL_RUNS, SEED_DOCUMENTS, SEED_SSA_STATEMENTS,
+  SEED_RESOLUTIONS
 } from './mockData';
 import { simulateTransmission, getSystemStatus, searchIRSManual } from './irsApiService';
 
@@ -36,6 +37,10 @@ interface LedgerState {
   resolutions: ResolutionRecord[];
   reSitusRecords: ReSitusRecord[];
   
+  // Fiduciary & Governance
+  fiduciaryActions: FiduciaryAction[];
+  boiReports: BOIReport[];
+
   // System
   apiSystemStatus: SystemStatus[];
   searchResults: SearchResult[];
@@ -71,8 +76,10 @@ const INITIAL_STATE: LedgerState = {
   documents: SEED_DOCUMENTS,
   transmissions: [],
   accords: [],
-  resolutions: [],
+  resolutions: SEED_RESOLUTIONS, // Repopulated
   reSitusRecords: [],
+  fiduciaryActions: [],
+  boiReports: [],
   apiSystemStatus: getSystemStatus(),
   searchResults: [],
   isSearching: false,
@@ -260,6 +267,11 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const updateContractor = (con: Contractor) => dispatch({ type: 'GENERIC_UPDATE', collection: 'contractors', item: con, op: 'update' });
   const deleteContractor = (id: string) => dispatch({ type: 'GENERIC_UPDATE', collection: 'contractors', item: id, op: 'delete' });
 
+  // Fiduciary & Governance
+  const addFiduciaryAction = (action: FiduciaryAction) => dispatch({ type: 'GENERIC_UPDATE', collection: 'fiduciaryActions', item: action, op: 'add' });
+  const updateFiduciaryAction = (action: FiduciaryAction) => dispatch({ type: 'GENERIC_UPDATE', collection: 'fiduciaryActions', item: action, op: 'update' });
+  const addBOIReport = (report: BOIReport) => dispatch({ type: 'GENERIC_UPDATE', collection: 'boiReports', item: report, op: 'add' });
+
   const value = {
     ...state,
     addEntity,
@@ -291,6 +303,9 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     addContractor,
     updateContractor,
     deleteContractor,
+    addFiduciaryAction,
+    updateFiduciaryAction,
+    addBOIReport,
     fileAllDrafts: () => {},
     linkDocument: () => {}
   };
