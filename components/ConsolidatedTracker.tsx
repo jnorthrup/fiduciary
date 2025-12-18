@@ -1,16 +1,18 @@
 
 import React from 'react';
 import { Entity, ComplianceFiling, TaxModule, EntityRole } from '../types';
-import { Activity, AlertTriangle, Calendar, CheckCircle2, ChevronRight, Layers } from 'lucide-react';
+import { Activity, AlertTriangle, Calendar, CheckCircle2, ChevronRight, Layers, Edit2, Trash2 } from 'lucide-react';
 
 interface Props {
   parent: Entity;
   childrenEntities: Entity[];
   allFilings: ComplianceFiling[];
   allModules: TaxModule[];
+  onEditEntity?: (id: string) => void;
+  onDeleteEntity?: (id: string) => void;
 }
 
-export const ConsolidatedTracker: React.FC<Props> = ({ parent, childrenEntities, allFilings, allModules }) => {
+export const ConsolidatedTracker: React.FC<Props> = ({ parent, childrenEntities, allFilings, allModules, onEditEntity, onDeleteEntity }) => {
   
   const renderEntityStatus = (ent: Entity, isChild = false) => {
     const entFilings = allFilings.filter(f => f.entityId === ent.id);
@@ -25,15 +27,34 @@ export const ConsolidatedTracker: React.FC<Props> = ({ parent, childrenEntities,
     });
 
     return (
-      <div key={ent.id} className={`flex items-start gap-4 p-4 ${isChild ? 'bg-white border-l-4 border-l-indigo-500 ml-6' : 'bg-slate-50 border-l-4 border-l-amber-500'} rounded-r-lg border-y border-r border-slate-200 shadow-sm mb-3`}>
+      <div key={ent.id} className={`flex items-start gap-4 p-4 ${isChild ? 'bg-white border-l-4 border-l-indigo-500 ml-6' : 'bg-slate-50 border-l-4 border-l-amber-500'} rounded-r-lg border-y border-r border-slate-200 shadow-sm mb-3 group`}>
         <div className="flex-1">
-           <div className="flex items-center gap-2 mb-2">
-               {isChild && <div className="text-slate-300"><ChevronRight size={16}/></div>}
-               <h4 className="font-bold text-slate-800">{ent.name}</h4>
-               <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${isChild ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
-                   {ent.role === EntityRole.HOLDING_TRUST ? 'Holding' : 'Operating'}
-               </span>
-               {ent.einLast4 && <span className="text-xs font-mono text-slate-500">EIN: ***{ent.einLast4}</span>}
+           <div className="flex items-center justify-between mb-2">
+               <div className="flex items-center gap-2 flex-wrap">
+                   {isChild && <div className="text-slate-300"><ChevronRight size={16}/></div>}
+                   <h4 className="font-bold text-slate-800">{ent.name}</h4>
+                   <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold whitespace-nowrap ${isChild ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                       {ent.role === EntityRole.HOLDING_TRUST ? 'Holding' : 'Operating'}
+                   </span>
+                   {ent.einLast4 && <span className="text-xs font-mono text-slate-500 whitespace-nowrap">EIN: ***{ent.einLast4}</span>}
+               </div>
+               
+               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button 
+                    onClick={() => onEditEntity?.(ent.id)}
+                    className="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-indigo-600 transition-colors"
+                    title="Edit Entity"
+                   >
+                       <Edit2 size={14} />
+                   </button>
+                   <button 
+                    onClick={() => onDeleteEntity?.(ent.id)}
+                    className="p-1 hover:bg-red-100 rounded text-slate-500 hover:text-red-600 transition-colors"
+                    title="Delete Entity"
+                   >
+                       <Trash2 size={14} />
+                   </button>
+               </div>
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

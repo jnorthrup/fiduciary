@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Entity, TaxModule, ResolutionRecord } from '../types';
-import { Gavel, FileSignature, ShieldAlert, ArrowRight, Stamp, Scale, CheckCircle2, Ticket, QrCode, Lock, Building, Archive, History, Plus } from 'lucide-react';
+import { Gavel, FileSignature, ShieldAlert, ArrowRight, Stamp, Scale, CheckCircle2, Ticket, QrCode, Lock, Building, Archive, History, Plus, Ticket as TicketIcon } from 'lucide-react';
 
 interface Props {
   entity: Entity;
@@ -45,62 +45,54 @@ export const TaxpayerResolutionWizard: React.FC<Props> = ({ entity, modules, res
   };
 
   const renderVoucher = (code: string, date: string, accNum: string) => (
-      <div className="w-full max-w-3xl bg-[#f4f1ea] border-4 border-double border-slate-700 p-2 shadow-2xl relative overflow-hidden animate-in zoom-in">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-5 pointer-events-none flex items-center justify-center">
-            <Building size={400} className="text-slate-900" />
+      <div className="w-full max-w-4xl animate-in zoom-in duration-300">
+        <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-2">
+                <TicketIcon className="h-6 w-6 text-emerald-700" />
+                <h3 className="text-2xl font-bold text-slate-900 font-serif">Instrument Created</h3>
+            </div>
+            <p className="text-slate-600 font-serif">The following voucher has been issued for private setoff.</p>
         </div>
 
-        <div className="border-2 border-slate-700 p-8 relative">
-             {/* Header */}
-             <div className="flex justify-between items-start border-b-2 border-slate-700 pb-4 mb-6">
-                 <div className="flex items-center gap-4">
-                     <div className="p-3 bg-slate-800 text-white rounded-full">
-                         <Scale size={32} />
-                     </div>
-                     <div>
-                         <h2 className="text-2xl font-bold uppercase tracking-widest text-slate-900">For-Payor Account Voucher</h2>
-                         <p className="text-xs font-mono uppercase tracking-widest text-slate-600">Non-Negotiable • Private Use Only</p>
-                     </div>
-                 </div>
-                 <div className="text-right">
-                     <div className="text-3xl font-mono font-bold text-emerald-800">{code}</div>
-                     <div className="text-[10px] uppercase font-bold text-slate-500">Voucher Reference No.</div>
-                 </div>
-             </div>
+        <div className="bg-[#fcfbf9] border-[6px] border-double border-slate-700 p-2 shadow-2xl relative overflow-hidden">
+            <div className="border-2 border-slate-800 p-8 flex items-center justify-between bg-[#f4f1ea] relative">
+                {/* Left Side: Icon & Title */}
+                <div className="flex items-center gap-6">
+                    <div className="bg-slate-800 rounded-full p-4 text-white shadow-lg">
+                        <Scale size={40} />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold font-serif text-slate-900 uppercase tracking-widest leading-tight">
+                            For-Payor Account<br/>Voucher
+                        </h1>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">
+                            Non-Negotiable • Private Use Only
+                        </p>
+                    </div>
+                </div>
 
-             {/* Body */}
-             <div className="grid grid-cols-3 gap-8 mb-8">
-                 <div className="col-span-2 space-y-4">
-                     <div>
-                         <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">Pay To The Order Of (Beneficiary)</div>
-                         <div className="text-xl font-serif font-bold text-slate-900 border-b border-slate-400 pb-1">{entity.name}</div>
-                     </div>
-                     <div>
-                         <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">For The Purpose Of</div>
-                         <div className="text-lg font-serif italic text-slate-800">Setoff and Discharge of Public Obligation #{accNum}</div>
-                     </div>
-                 </div>
-                 <div className="col-span-1 flex flex-col justify-center items-center border-l border-slate-300 pl-8">
-                     <QrCode size={96} className="text-slate-800 mb-2" />
-                     <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase">
-                         <Lock size={10} /> Authenticated
-                     </div>
-                 </div>
-             </div>
+                {/* Right Side: Code */}
+                <div className="text-right">
+                    <div className="text-4xl font-mono font-bold text-emerald-800 tracking-tight">{code}</div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Voucher Reference No.</div>
+                </div>
 
-             {/* Footer */}
-             <div className="flex justify-between items-end border-t-2 border-slate-700 pt-4">
-                 <div className="text-xs font-mono text-slate-500">
-                     <div>ISSUED: {date}</div>
-                     <div>LOC: {entity.regionCode || 'UNKNOWN'}</div>
-                 </div>
-                 <div className="text-center">
-                     <div className="font-script text-3xl text-slate-800 mb-1 px-8 transform -rotate-2">Authorized Signature</div>
-                     <div className="border-t border-slate-800 w-48 mx-auto"></div>
-                     <div className="text-[10px] uppercase font-bold text-slate-500 mt-1">Acceptance for Value</div>
-                 </div>
-             </div>
+                {/* Background Decor */}
+                <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none">
+                    <div className="w-32 h-32 rounded-full bg-slate-900"></div>
+                    <div className="w-32 h-32 rounded-full bg-slate-900 ml-12"></div>
+                    <div className="w-32 h-32 rounded-full bg-slate-900 ml-12"></div>
+                </div>
+            </div>
+        </div>
+
+        <div className="flex justify-center gap-6 mt-10 font-serif text-sm">
+            <button className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-bold">
+                <Stamp size={16} /> Print Copy
+            </button>
+            <button onClick={() => setActiveTab('Archive')} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-bold">
+                <CheckCircle2 size={16} /> Archive to Ledger
+            </button>
         </div>
     </div>
   );
@@ -117,23 +109,23 @@ export const TaxpayerResolutionWizard: React.FC<Props> = ({ entity, modules, res
                 Administrative Remedy • Status Correction • Ministerial Record
             </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 font-sans">
             <button 
-                onClick={() => setActiveTab('New')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold font-sans transition-colors ${activeTab === 'New' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                onClick={() => { setActiveTab('New'); setStep(1); setGeneratedVoucher(null); setConfirmed(false); }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeTab === 'New' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'}`}
             >
                 <Plus size={14} /> New Resolution
             </button>
             <button 
                 onClick={() => setActiveTab('Archive')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold font-sans transition-colors ${activeTab === 'Archive' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${activeTab === 'Archive' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'}`}
             >
                 <Archive size={14} /> Voucher Archive
             </button>
         </div>
       </div>
 
-      <div className="flex-1 bg-[#fdfbf7] rounded-xl border border-[#e8e4d9] shadow-inner p-10 overflow-y-auto relative">
+      <div className="flex-1 bg-[#fffbf5] rounded-xl border border-[#e8e4d9] shadow-inner p-10 overflow-y-auto relative">
         
         {/* ARCHIVE TAB */}
         {activeTab === 'Archive' && (
@@ -303,30 +295,10 @@ export const TaxpayerResolutionWizard: React.FC<Props> = ({ entity, modules, res
                     </div>
                 )}
 
-                {/* STEP 4: VOUCHER ISSUANCE */}
+                {/* STEP 4: VOUCHER ISSUANCE (MATCHING SCREENSHOT) */}
                 {step === 4 && (
-                    <div className="space-y-8 animate-in zoom-in h-full flex flex-col items-center justify-center">
-                        <div className="text-center mb-4">
-                            <h3 className="text-2xl font-bold text-slate-900 flex items-center justify-center gap-2">
-                                <Ticket className="h-8 w-8 text-emerald-700" />
-                                Instrument Created
-                            </h3>
-                            <p className="text-slate-600 mt-2">The following voucher has been issued for private setoff.</p>
-                        </div>
-
+                    <div className="h-full flex flex-col items-center justify-center">
                         {renderVoucher(generatedVoucher!, new Date().toLocaleDateString(), accountNumber)}
-
-                        <div className="mt-8 flex gap-4 font-sans">
-                            <button className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-bold bg-white px-4 py-2 rounded border border-slate-300">
-                                <Stamp size={16} /> Print Copy
-                            </button>
-                            <button 
-                                onClick={() => setActiveTab('Archive')}
-                                className="flex items-center gap-2 text-sm text-white bg-slate-900 hover:bg-slate-800 px-6 py-2 rounded font-bold"
-                            >
-                                <CheckCircle2 size={16} /> Save to Archive
-                            </button>
-                        </div>
                     </div>
                 )}
             </>

@@ -1,7 +1,6 @@
 
-
 import React, { useState } from 'react';
-import { Building2, ShieldCheck, FileText, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users } from 'lucide-react';
+import { Building2, ShieldCheck, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock } from 'lucide-react';
 import { Entity, EntityRole, User } from '../types';
 import { TeamManagementModal } from './modals/TeamManagementModal';
 
@@ -18,7 +17,7 @@ interface SidebarProps {
   onAddUser: (user: User) => void;
   onUpdateUser: (user: User) => void;
   onDeleteUser: (id: string) => void;
-  onEditUser: (user: User) => void; // New Prop to trigger edit modal
+  onEditUser: (user: User) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -27,134 +26,113 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [showTeamModal, setShowTeamModal] = useState(false);
 
-  const parents = entities.filter(e => !e.parentEntityId);
+  const roots = entities.filter(e => !e.parentEntityId);
   const getChildren = (parentId: string) => entities.filter(e => e.parentEntityId === parentId);
 
-  const handleSelect = (id: string | null) => {
-    onSelectEntity(id);
-    onClose(); 
-  };
-
-  const renderEntityButton = (ent: Entity, isChild = false) => (
+  const NavItem = ({ icon: Icon, label, active, onClick, color = "text-slate-400" }: any) => (
     <button
-      key={ent.id}
-      onClick={() => handleSelect(ent.id)}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-        activeEntityId === ent.id 
-          ? 'bg-slate-800 text-white border border-slate-700' 
-          : 'hover:bg-slate-800 hover:text-white'
-      } ${isChild ? 'ml-6 w-[calc(100%-1.5rem)]' : ''}`}
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
+        active 
+          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40' 
+          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+      }`}
     >
-      {isChild ? (
-        <CornerDownRight className="h-4 w-4 text-slate-500" />
-      ) : (
-        <Building2 className={`h-5 w-5 ${ent.role === EntityRole.HOLDING_TRUST ? 'text-amber-500' : 'text-emerald-500'}`} />
-      )}
-      
-      <div className="text-left leading-tight overflow-hidden">
-        <span className="block truncate">{ent.name}</span>
-        <span className="text-[10px] text-slate-500 font-normal">{ent.role === EntityRole.HOLDING_TRUST ? 'Trust (1041)' : 'LLC (Operating)'}</span>
-      </div>
+      <Icon size={16} className={active ? 'text-white' : color} />
+      {label}
     </button>
   );
 
   return (
     <>
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 md:hidden"
-          onClick={onClose}
-        />
-      )}
+      {isOpen && <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 md:hidden" onClick={onClose} />}
 
-      {/* Sidebar Container */}
       <div className={`
         fixed md:static inset-y-0 left-0 z-50
-        w-64 bg-slate-900 text-slate-300 flex flex-col h-full border-r border-slate-800
-        transform transition-transform duration-300 ease-in-out
+        w-72 bg-slate-950 text-slate-300 flex flex-col h-full border-r border-slate-900
+        transform transition-transform duration-300 ease-in-out shadow-2xl
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        <div className="p-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-white font-bold text-xl tracking-tight flex items-center gap-2">
-              <ShieldCheck className="h-6 w-6 text-blue-500" />
-              Trust Ledger
-            </h1>
-            <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">System v1.1</p>
+        {/* Brand */}
+        <div className="p-8 border-b border-slate-900 bg-slate-950/50 shrink-0">
+          <div className="flex justify-between items-center mb-1">
+             <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-600 rounded-lg shadow-inner">
+                    <ShieldCheck className="h-6 w-6 text-white" />
+                </div>
+                <h1 className="text-white font-bold text-lg tracking-tighter leading-tight">
+                  Trust Ledger<br/><span className="text-[10px] text-slate-500 uppercase tracking-[0.3em]">Institutional</span>
+                </h1>
+             </div>
+             <button onClick={onClose} className="md:hidden text-slate-500"><X size={20}/></button>
           </div>
-          <button onClick={onClose} className="md:hidden text-slate-400 hover:text-white">
-            <X size={20} />
-          </button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
-          <button
-            onClick={() => handleSelect(null)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-              activeEntityId === null 
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' 
-                : 'hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <LayoutDashboard className="h-5 w-5" />
-            Overview
-          </button>
-
-          <div className="pt-4 pb-2">
-            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Structure</p>
+        <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto no-scrollbar">
+          {/* Global Actions */}
+          <div className="space-y-1">
+            <NavItem 
+                label="Infrastructure" 
+                icon={Globe} 
+                active={activeEntityId === null} 
+                onClick={() => { onSelectEntity(null); onClose(); }} 
+            />
           </div>
 
-          {parents.map(parent => (
-            <div key={parent.id} className="space-y-1">
-              {renderEntityButton(parent)}
-              {getChildren(parent.id).map(child => renderEntityButton(child, true))}
-            </div>
-          ))}
-
-          <div className="pt-4 pb-2">
-            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tools</p>
+          {/* Organizational Hierarchy */}
+          <div className="space-y-4">
+             <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">Management Stack</p>
+             <div className="space-y-1">
+                {roots.map(root => (
+                    <div key={root.id}>
+                        <NavItem 
+                            label={root.name} 
+                            icon={Building2} 
+                            color={root.role === EntityRole.HOLDING_TRUST ? "text-amber-500" : "text-emerald-500"}
+                            active={activeEntityId === root.id}
+                            onClick={() => { onSelectEntity(root.id); onClose(); }}
+                        />
+                        {getChildren(root.id).map(child => (
+                            <div key={child.id} className="ml-4 pl-4 border-l border-slate-800 my-1">
+                                <NavItem 
+                                    label={child.name} 
+                                    icon={CornerDownRight} 
+                                    active={activeEntityId === child.id}
+                                    onClick={() => { onSelectEntity(child.id); onClose(); }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                ))}
+             </div>
           </div>
 
-          <button 
-            onClick={() => { onOpenIRM(); onClose(); }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white text-slate-400"
-          >
-            <FileBadge className="h-5 w-5 text-indigo-400" />
-            IRM / Documents
-          </button>
-
-          <button 
-            onClick={() => setShowTeamModal(true)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white text-slate-400"
-          >
-            <Users className="h-5 w-5 text-purple-400" />
-            Team Access
-          </button>
-
-          <button 
-            onClick={() => { onOpenSettings(); onClose(); }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white text-slate-400"
-          >
-            <Settings className="h-5 w-5" />
-            Node Settings
-          </button>
+          {/* Institutional Tools */}
+          <div className="space-y-4">
+             <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">System Resources</p>
+             <div className="space-y-1">
+                <NavItem label="Reference Library" icon={FileBadge} onClick={onOpenIRM} />
+                <NavItem label="Team Access" icon={Users} onClick={() => setShowTeamModal(true)} />
+                <NavItem label="Node Settings" icon={Settings} onClick={onOpenSettings} />
+             </div>
+          </div>
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
+        {/* User Profile Hook */}
+        <div className="p-4 border-t border-slate-900 bg-slate-950/80">
           <button 
             onClick={() => onEditUser(currentUser)}
-            className="flex items-center gap-3 w-full hover:bg-slate-800 p-2 rounded-lg transition-colors group"
-            title="Edit My Profile"
+            className="flex items-center gap-3 w-full p-2.5 rounded-xl hover:bg-slate-900 transition-all group border border-transparent hover:border-slate-800"
           >
-            <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white border border-slate-600 group-hover:border-slate-400 transition-colors">
+            <div className="h-10 w-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-bold text-white group-hover:border-indigo-500 transition-colors">
               {currentUser.avatarInitials}
             </div>
             <div className="text-left flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{currentUser.name}</p>
-              <p className="text-xs text-slate-500 uppercase font-bold truncate">
+              <p className="text-sm font-bold text-white truncate">{currentUser.name}</p>
+              <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black flex items-center gap-1">
                   {currentUser.role}
-                  {currentUser.isPrivate && <span className="ml-1 text-[9px] text-indigo-400 lowercase italic">(private)</span>}
+                  {/* Import the missing Lock icon from lucide-react to fix the JSX component error on line 134. */}
+                  {currentUser.isPrivate && <Lock size={8} className="text-indigo-400" />}
               </p>
             </div>
             <Settings size={14} className="text-slate-600 group-hover:text-slate-400" />
