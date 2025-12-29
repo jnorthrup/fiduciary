@@ -1,109 +1,105 @@
 
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import * as d3 from 'd3';
-import mermaid from 'mermaid';
-import { Entity, Account, JournalEntry, WalletCredential, EntityRole, DCFlag, EntityType, EntityModelData } from '../types';
-import { ZoomIn, ZoomOut, Move, Key, FileText, ScrollText, Plus, Trash2, Edit, Activity, Network, BarChart3, Database, Info, Fingerprint, Shield, GitBranch, Layout, ChevronDown, CheckCircle2, Building2, ReceiptText, ArrowRight } from 'lucide-react';
-import { useLedgerStore } from '../services/ledgerService';
-
-// Initialize Mermaid
-mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+import { Entity, Account, JournalEntry, WalletCredential, EntityRole, EntityType, IntrusionRecord, JurisdictionType } from '../types';
+import { 
+  ZoomIn, ZoomOut, Move, Edit, GitBranch, 
+  Shield, Globe, Landmark, Layout, 
+  Eye, EyeOff, Layers, Fingerprint, Skull, AlertOctagon, Filter
+} from 'lucide-react';
 
 interface Props {
   entities: Entity[];
   accounts: Account[];
   journals: JournalEntry[];
   wallets: WalletCredential[];
+  intrusions?: IntrusionRecord[]; // Added Intrusions prop
   onEditEntity?: (id: string) => void;
 }
 
-// --- CONSTANTS ---
 const NODE_WIDTH = 580; 
 const BASE_NODE_HEIGHT = 200;
 const LEVEL_SEPARATION = 550; 
 const SIBLING_SEPARATION = 120;
 
-export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, accounts, journals, wallets, onEditEntity }) => {
-  const { addEntity, updateEntity, deleteEntity } = useLedgerStore();
+export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, accounts, journals, wallets, intrusions = [], onEditEntity }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  
-  // Layout State
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 0.6 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [layoutReady, setLayoutReady] = useState(false);
-  const [uiHovered, setUiHovered] = useState(false);
   
-  // Modeling Mode State
-  const [isModelMode, setIsModelMode] = useState(false);
+  // Jurisdictional State
+  const [showOverlay, setShowOverlay] = useState(true);
+  const [activeTouchTest, setActiveTouchTest] = useState<JurisdictionType | null>(null);
 
-  // --- D3 HIERARCHY COMPUTATION ---
-  const { nodes, links } = useMemo(() => {
-    if (initialEntities.length === 0) return { nodes: [], links: [] };
+  const getJurisdiction = (entity: Entity): JurisdictionType => {
+      if (entity.trustSubType === 'ECCLESIASTICAL' || entity.id.includes('MIN')) return 'Ecclesiastical';
+      if (entity.type === EntityType.TRUST || entity.type === EntityType.ESTATE) return 'Article 3 (Private)';
+      if (entity.role === EntityRole.TRUSTEE && entity.type === EntityType.INDIVIDUAL) return 'Article 3 (Private)';
+      if (entity.role === EntityRole.OPERATING_LLC || entity.type === EntityType.LLC) return 'Article 1 (Statutory)';
+      return 'Local/State';
+  };
 
-    const roots = initialEntities.filter(e => !e.parentEntityId || !initialEntities.find(p => p.id === e.parentEntityId));
+  const getRootId = (entityId: string): string => {
+    let current = initialEntities.find(e => e.id === entityId);
+    while (current?.parentEntityId) {
+      const parent = initialEntities.find(p => p.id === current?.parentEntityId);
+      if (!parent) break;
+      current = parent;
+    }
+    return current?.id || entityId;
+  };
+
+  const { nodes, links, intrusionNodes, intrusionLinks } = useMemo(() => {
+    if (initialEntities.length === 0) return { nodes: [], links: [], intrusionNodes: [], intrusionLinks: [] };
     
+    // 1. Build Entity Tree
+    const roots = initialEntities.filter(e => !e.parentEntityId || !initialEntities.find(p => p.id === e.parentEntityId));
     const buildTree = (root: Entity): any => {
         const children = initialEntities.filter(e => e.parentEntityId === root.id);
         return { ...root, children: children.map(buildTree) };
     };
+    let hRoot;
+    if (roots.length > 1) hRoot = (d3 as any).hierarchy({ id: 'ROOT', children: roots.map(buildTree) } as any);
+    else if (roots.length === 1) hRoot = (d3 as any).hierarchy(buildTree(roots[0]));
+    else return { nodes: [], links: [], intrusionNodes: [], intrusionLinks: [] };
 
-    let hierarchyRoot;
+    const treeLayout = (d3 as any).tree().nodeSize([NODE_WIDTH + SIBLING_SEPARATION, LEVEL_SEPARATION]).separation((a: any, b: any) => (a.parent === b.parent ? 1.2 : 1.8));
+    treeLayout(hRoot);
+    let pNodes = hRoot.descendants();
+    let pLinks = hRoot.links();
     if (roots.length > 1) {
-        hierarchyRoot = (d3 as any).hierarchy({ id: 'ROOT', children: roots.map(buildTree) } as any);
-    } else if (roots.length === 1) {
-        hierarchyRoot = (d3 as any).hierarchy(buildTree(roots[0]));
-    } else {
-        return { nodes: [], links: [] };
+        pNodes = pNodes.filter((n: any) => n.data.id !== 'ROOT');
+        pLinks = pLinks.filter((l: any) => l.source.data.id !== 'ROOT');
     }
 
-    const treeLayout = (d3 as any).tree()
-        .nodeSize([NODE_WIDTH + SIBLING_SEPARATION, LEVEL_SEPARATION])
-        .separation((a: any, b: any) => (a.parent === b.parent ? 1.2 : 1.8));
+    // 2. Build Intrusion Nodes (Evil Nodes)
+    // These nodes float relative to their target entity but aren't part of the D3 tree layout calc
+    const iNodes: any[] = [];
+    const iLinks: any[] = [];
 
-    treeLayout(hierarchyRoot);
+    intrusions.forEach((intrusion, idx) => {
+        const targetNode = pNodes.find((n: any) => n.data.id === intrusion.targetEntityId);
+        if (targetNode) {
+            // Position "Evil" nodes to the left or right of the target based on index parity
+            const offsetX = (idx % 2 === 0 ? -1 : 1) * (NODE_WIDTH * 0.85);
+            const offsetY = -80 + (idx * 40); // Stagger vertically slightly
+            
+            const iNode = {
+                ...intrusion,
+                x: targetNode.x + offsetX,
+                y: targetNode.y + offsetY,
+                targetX: targetNode.x,
+                targetY: targetNode.y
+            };
+            iNodes.push(iNode);
+            iLinks.push({ source: iNode, target: targetNode });
+        }
+    });
 
-    let processedNodes = hierarchyRoot.descendants();
-    let processedLinks = hierarchyRoot.links();
-
-    if (roots.length > 1) {
-        processedNodes = processedNodes.filter((n: any) => n.data.id !== 'ROOT');
-        processedLinks = processedLinks.filter((l: any) => l.source.data.id !== 'ROOT');
-    }
-
-    // --- ENHANCED SMART SNAP LOGIC ---
-    // At high zoom, we collapse X coordinates to center to present a continuous sheet view.
-    const isDeepZoom = transform.k > 1.2;
-    if (isDeepZoom) {
-        processedNodes.forEach((n: any) => {
-            const factor = Math.min(1, (transform.k - 1.2) * 2);
-            n.x = n.x * (1 - factor); 
-        });
-    }
-
-    return { nodes: processedNodes, links: processedLinks };
-  }, [initialEntities, transform.k]);
-
-  // Determine focused node for isolation at extreme zoom
-  const focusedNodeId = useMemo(() => {
-      if (transform.k < 1.8 || !containerRef.current) return null;
-      const rect = containerRef.current.getBoundingClientRect();
-      const centerX = (rect.width / 2 - transform.x) / transform.k;
-      const centerY = (rect.height / 2 - transform.y) / transform.k;
-      
-      let closest = null;
-      let minDist = Infinity;
-      
-      nodes.forEach((n: any) => {
-          const d = Math.sqrt((n.x - centerX)**2 + (n.y - centerY)**2);
-          if (d < minDist) {
-              minDist = d;
-              closest = n.data.id;
-          }
-      });
-      return closest;
-  }, [nodes, transform, transform.k]);
+    return { nodes: pNodes, links: pLinks, intrusionNodes: iNodes, intrusionLinks: iLinks };
+  }, [initialEntities, intrusions]);
 
   useEffect(() => {
       if (nodes.length > 0 && !layoutReady && containerRef.current) {
@@ -113,29 +109,20 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
       }
   }, [nodes, layoutReady]);
 
-  // --- INTERACTION HANDLERS ---
   const handleWheel = (e: React.WheelEvent) => {
-    if ((e.target as HTMLElement).closest('.ledger-scroll-container')) return;
     e.preventDefault();
     const scaleFactor = 1.15; 
     const delta = -e.deltaY;
     if (!containerRef.current) return;
-    
     const rect = containerRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-    
-    // Calculate world position under mouse
     const worldX = (mouseX - transform.x) / transform.k;
     const worldY = (mouseY - transform.y) / transform.k;
-    
     let newScale = delta > 0 ? transform.k * scaleFactor : transform.k / scaleFactor;
     newScale = Math.max(0.05, Math.min(newScale, 12));
-
-    // Calculate new top-left to keep worldX/Y under mouseX/Y
     const newX = mouseX - worldX * newScale;
     const newY = mouseY - worldY * newScale;
-    
     setTransform({ x: newX, y: newY, k: newScale });
   };
 
@@ -154,75 +141,71 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
   const handleMouseUp = () => setIsDragging(false);
 
   const renderOrthogonalLink = (source: any, target: any) => {
-      // Hide links if we are isolating a single sheet or zoom is extremely high
-      if (transform.k > 2.5) return "";
-
-      const sx = source.x;
-      const sy = source.y + BASE_NODE_HEIGHT / 2;
-      const tx = target.x;
-      const ty = target.y - BASE_NODE_HEIGHT / 2;
-      
-      const dx = tx - sx;
-      const dy = ty - sy;
-      const r = 25; 
-      const vGap = 60;
-      
-      const points: {x: number, y: number}[] = [{ x: sx, y: sy }];
-      
-      if (dy > vGap * 2) {
-          const midY = sy + dy / 2;
-          points.push({ x: sx, y: midY }, { x: tx, y: midY }, { x: tx, y: ty });
-      } else {
-          const detourX = sx + (dx >= 0 ? 1 : -1) * (NODE_WIDTH / 2 + 100);
-          const exitY = sy + vGap;
-          const entryY = ty - vGap;
-          points.push({ x: sx, y: exitY }, { x: detourX, y: exitY }, { x: detourX, y: entryY }, { x: tx, y: entryY }, { x: tx, y: ty });
-      }
-
-      let d = `M ${points[0].x} ${points[0].y}`;
-      for (let i = 1; i < points.length; i++) {
-          const curr = points[i];
-          const prev = points[i-1];
-          if (i < points.length - 1) {
-              const next = points[i+1];
-              const v1x = curr.x - prev.x, v1y = curr.y - prev.y;
-              const len1 = Math.sqrt(v1x*v1x + v1y*v1y);
-              const u1x = len1 === 0 ? 0 : v1x / len1, u1y = len1 === 0 ? 0 : v1y / len1;
-              const segLen = Math.sqrt((curr.x - prev.x)**2 + (curr.y - prev.y)**2);
-              const actualR = Math.min(r, segLen / 2);
-              d += ` L ${curr.x - u1x * actualR} ${curr.y - u1y * actualR}`;
-              const v2x = next.x - curr.x, v2y = next.y - curr.y;
-              const len2 = Math.sqrt(v2x*v2x + v2y*v2y);
-              const u2x = len2 === 0 ? 0 : v2x / len2, u2y = len2 === 0 ? 0 : v2y / len2;
-              const nextR = Math.min(r, len2 / 2);
-              d += ` Q ${curr.x} ${curr.y} ${curr.x + u2x * nextR} ${curr.y + u2y * nextR}`;
-          } else {
-              d += ` L ${curr.x} ${curr.y}`;
-          }
-      }
-      return d;
+      const sx = source.x, sy = source.y + BASE_NODE_HEIGHT / 2;
+      const tx = target.x, ty = target.y - BASE_NODE_HEIGHT / 2;
+      const midY = sy + (ty - sy) / 2;
+      return `M ${sx} ${sy} V ${midY} H ${tx} V ${ty}`;
   };
+
+  const JURISDICTION_OPTIONS: JurisdictionType[] = [
+      'Federal (IRS)', 
+      'Article 1 (Statutory)', 
+      'Local/State', 
+      'Article 3 (Private)', 
+      'Ecclesiastical'
+  ];
 
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full overflow-hidden bg-slate-100 select-none cursor-grab active:cursor-grabbing"
+      className="relative w-full h-full overflow-hidden bg-[#f0f4f8] select-none cursor-grab active:cursor-grabbing"
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      {/* HUD Header - Polite fading */}
-      <div 
-        className={`absolute top-6 left-6 z-50 transition-all duration-700 ${transform.k > 1.8 ? 'opacity-0 translate-x-[-20px] pointer-events-none' : 'opacity-100 translate-x-0'}`}
-      >
-          <div className="bg-white/80 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-200 shadow-xl">
-              <h3 className="text-slate-900 font-bold flex items-center gap-2">
-                  <GitBranch size={16} className="text-indigo-600" />
-                  Neural Infrastructure Graph
-              </h3>
-              <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">Precision Visualization v4.2</p>
+      {/* Jurisdictional Overlay HUD */}
+      <div className="absolute top-6 left-6 z-[60] flex flex-col gap-3">
+          <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-xl border border-slate-200 shadow-xl min-w-[280px]">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-slate-900 font-bold flex items-center gap-2">
+                    <Layers size={16} className="text-indigo-600" />
+                    Jurisdictional Touch Test
+                </h3>
+                <button 
+                  onClick={() => setShowOverlay(!showOverlay)}
+                  className={`p-1.5 rounded-lg transition-colors ${showOverlay ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}
+                  title="Toggle Overlay"
+                >
+                  <Filter size={14} />
+                </button>
+              </div>
+              
+              {showOverlay && (
+                <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Select Active Scope</div>
+                  {JURISDICTION_OPTIONS.map(j => (
+                    <button 
+                      key={j}
+                      onClick={() => setActiveTouchTest(activeTouchTest === j ? null : j)}
+                      className={`w-full flex items-center justify-between p-2 rounded-lg border text-left transition-all text-xs font-bold ${
+                          activeTouchTest === j 
+                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' 
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      {j}
+                      {activeTouchTest === j && <CheckCircle size={14} />}
+                    </button>
+                  ))}
+                  {activeTouchTest && (
+                      <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-800 leading-tight">
+                          <strong>Visualization Filter Active:</strong> Only entities subject to {activeTouchTest} jurisdiction are fully opaque.
+                      </div>
+                  )}
+                </div>
+              )}
           </div>
       </div>
 
@@ -233,33 +216,61 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
           transformOrigin: '0 0'
         }}
       >
-        <svg ref={svgRef} className="absolute inset-0 pointer-events-none overflow-visible w-full h-full">
+        {/* Background Grids for perspective */}
+        <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
+
+        <svg className="absolute inset-0 pointer-events-none overflow-visible w-full h-full">
+          <defs>
+            <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444" />
+            </marker>
+            <linearGradient id="parentage-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#6366f1" stopOpacity="0.6" />
+            </linearGradient>
+          </defs>
+
+          {/* Standard Entity Links */}
           <g>
             {links.map((link: any, i: number) => (
-              <path
-                key={i}
-                d={renderOrthogonalLink(link.source, link.target)}
-                fill="none"
-                stroke="#cbd5e1"
-                strokeWidth={4 / transform.k}
-                strokeLinecap="round"
-                className="transition-all duration-500 opacity-40"
-              />
+                <path
+                  key={i}
+                  d={renderOrthogonalLink(link.source, link.target)}
+                  fill="none"
+                  stroke="#cbd5e1"
+                  strokeWidth={3 / transform.k}
+                  strokeLinecap="round"
+                  className="transition-all duration-500"
+                />
             ))}
+          </g>
+
+          {/* Intrusion Links (Piercing Arrows) */}
+          <g>
+              {intrusionLinks.map((link: any, i: number) => (
+                  <line 
+                    key={`int-${i}`}
+                    x1={link.source.x + (link.source.x < link.target.x ? 140 : -140)} 
+                    y1={link.source.y}
+                    x2={link.target.x} 
+                    y2={link.target.y}
+                    stroke="#ef4444" 
+                    strokeWidth={4 / transform.k} 
+                    strokeDasharray="10,5"
+                    markerEnd="url(#arrowhead-red)"
+                    className="animate-pulse"
+                  />
+              ))}
           </g>
         </svg>
 
+        {/* --- ENTITY NODES --- */}
         {nodes.map((node: any) => {
             const entity = node.data as Entity;
+            const jurisdiction = getJurisdiction(entity);
+            const isFaded = activeTouchTest && activeTouchTest !== jurisdiction;
             const entityAccounts = accounts.filter(a => a.entityId === entity.id);
-            const entityJournals = journals.filter(j => j.entityId === entity.id).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
-            const isTrust = entity.role === EntityRole.HOLDING_TRUST;
-            
-            // Isolation calculation
-            const isIsolated = focusedNodeId !== null && focusedNodeId !== entity.id;
-            const isolationOpacity = isIsolated ? Math.max(0, 1 - (transform.k - 1.8) * 2) : 1;
-
-            const isDeepDetail = transform.k > 1.1;
+            const isRoot = !entity.parentEntityId;
 
             return (
               <div
@@ -270,82 +281,97 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                   top: node.y,
                   transform: 'translate(-50%, -50%)',
                   width: NODE_WIDTH,
-                  zIndex: focusedNodeId === entity.id ? 50 : 10,
-                  opacity: isolationOpacity,
-                  visibility: isolationOpacity === 0 ? 'hidden' : 'visible'
+                  zIndex: 10,
                 }}
-                className={`ledger-content bg-white rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border-[4px] transition-all duration-300 ${isTrust ? 'border-amber-400' : 'border-emerald-400'}`}
+                className={`ledger-content bg-white rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border-[4px] p-8 transition-all duration-500 
+                  ${isRoot ? 'border-indigo-400' : entity.role === EntityRole.HOLDING_TRUST ? 'border-amber-400' : 'border-emerald-400'}
+                  ${isFaded ? 'opacity-20 grayscale blur-[1px]' : 'opacity-100'}
+                `}
               >
-                {/* Entity Header Badge */}
-                <div className="px-10 pt-10 pb-6">
-                    <div className="flex justify-between items-start">
-                        <span className={`px-4 py-1 rounded-full text-[12px] font-black uppercase tracking-[0.15em] border-2 ${isTrust ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
-                            {entity.role.replace('_', ' ')}
-                        </span>
-                        <div className="flex gap-2">
-                             <button onClick={() => onEditEntity?.(entity.id)} className="p-2 hover:bg-slate-50 rounded-lg text-slate-300 hover:text-indigo-600 transition-colors">
-                                 <Edit size={18} />
-                             </button>
+                <div className="mb-6 flex justify-between items-start">
+                    <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${isRoot ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : entity.role === EntityRole.HOLDING_TRUST ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
+                              {entity.role.replace('_', ' ')}
+                          </span>
+                          <span className="flex items-center gap-1 bg-slate-100 text-slate-500 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter border border-slate-200">
+                              <Landmark size={8} /> {jurisdiction}
+                          </span>
                         </div>
+                        <h3 className="text-4xl font-black text-slate-900 tracking-tight mt-2">{entity.name}</h3>
+                        {showOverlay && (
+                          <div className="mt-2 flex items-center gap-2 text-[10px] font-mono text-slate-400 font-bold uppercase">
+                            <Fingerprint size={12} className="text-indigo-400" />
+                            ID: {entity.id.slice(0, 8)} • EIN: {entity.einLast4 ? `**-***${entity.einLast4}` : 'N/A'}
+                          </div>
+                        )}
                     </div>
-                    <h3 className="text-5xl font-black text-slate-900 tracking-tight mt-4">{entity.name}</h3>
-                    
-                    {isDeepDetail && (
-                        <div className="flex items-center gap-6 mt-6">
-                             <div className="flex items-center gap-3">
-                                 <Navigation className="text-slate-300" size={24} />
-                                 <div className="text-3xl font-black text-slate-800 font-mono">EIN: **-***{entity.einLast4 || 'PENDING'}</div>
-                             </div>
-                             <div className="px-4 py-1.5 border-2 border-slate-200 rounded-xl text-xl font-black text-slate-400 uppercase tracking-widest">{entity.type}</div>
-                        </div>
-                    )}
+                    <button onClick={() => onEditEntity?.(entity.id)} className="p-2 hover:bg-slate-50 rounded-lg text-slate-300 hover:text-indigo-600 transition-colors">
+                        <Edit size={20} />
+                    </button>
                 </div>
 
-                {/* Main Content Area (Matches Screenshot Likeness) */}
-                <div className="px-10 pb-10 space-y-10">
-                    {entityAccounts.map(acc => (
-                        <div key={acc.id} className="bg-white rounded-2xl border-2 border-slate-100 p-8 shadow-sm flex justify-between items-center group hover:border-slate-200 transition-all">
-                             <span className="text-4xl font-black text-slate-800">{acc.name}</span>
-                             <span className="text-5xl font-black text-slate-900 font-mono tracking-tighter">${acc.balance.toLocaleString()}</span>
-                        </div>
-                    ))}
-
-                    {isDeepDetail && (
-                        <div className="space-y-8">
-                             <div className="border-t-4 border-slate-100 border-dashed pt-8">
-                                 <h4 className="text-2xl font-black text-slate-500 uppercase tracking-[0.2em] mb-8">RECENT TRANSACTIONS (DTC-SYNCHRONIZED)</h4>
-                                 <div className="space-y-4">
-                                     {entityJournals.map(j => (
-                                         <div key={j.id} className="bg-slate-50/50 rounded-2xl border-2 border-slate-100 p-6 flex justify-between items-center group">
-                                             <div>
-                                                 <div className="text-xl font-bold text-slate-400 font-mono mb-1">{j.date}</div>
-                                                 <div className="text-2xl font-black text-slate-700 tracking-tight">{j.memo.length > 35 ? j.memo.substring(0, 35) + '...' : j.memo}</div>
-                                             </div>
-                                             <div className="text-3xl font-black text-slate-900 font-mono">
-                                                 {j.lines[0]?.dc === DCFlag.Debit ? '+' : '-'}${j.lines[0]?.amount.toLocaleString()}
-                                             </div>
-                                         </div>
-                                     ))}
-                                     {entityJournals.length === 0 && (
-                                         <div className="py-12 text-center text-xl text-slate-400 italic">NO RECENT ACTIVITY DETECTED IN LEDGER EPOC.</div>
-                                     )}
-                                 </div>
+                <div className="space-y-4">
+                    {entityAccounts.length > 0 ? entityAccounts.map(acc => (
+                        <div key={acc.id} className="bg-slate-50/50 rounded-2xl border-2 border-slate-100 p-6 flex justify-between items-center group hover:border-slate-200 transition-all">
+                             <div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">{acc.type}</span>
+                                <span className="text-2xl font-black text-slate-800">{acc.name}</span>
                              </div>
+                             <span className="text-4xl font-black text-slate-900 font-mono tracking-tighter">${acc.balance.toLocaleString()}</span>
                         </div>
+                    )) : (
+                        <div className="py-8 text-center text-slate-400 italic font-medium">No associated treasury accounts.</div>
                     )}
                 </div>
               </div>
             );
         })}
+
+        {/* --- INTRUSION NODES (EVIL) --- */}
+        {intrusionNodes.map((node: any) => (
+            <div
+                key={node.id}
+                style={{
+                    position: 'absolute',
+                    left: node.x,
+                    top: node.y,
+                    transform: 'translate(-50%, -50%)',
+                    width: 280,
+                    zIndex: 50
+                }}
+                className="bg-red-950/90 text-white rounded-2xl border-4 border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.4)] p-6 animate-pulse"
+            >
+                <div className="flex items-start gap-4 mb-2">
+                    <div className="p-3 bg-red-600 rounded-full shadow-lg">
+                        <Skull size={24} className="text-white" />
+                    </div>
+                    <div>
+                        <h4 className="text-lg font-black uppercase tracking-tight">{node.name}</h4>
+                        <span className="text-[10px] font-bold bg-red-800 px-2 py-0.5 rounded text-red-200 uppercase tracking-widest">
+                            {node.type}
+                        </span>
+                    </div>
+                </div>
+                <div className="text-xs text-red-200 mt-2 font-mono border-t border-red-800 pt-2">
+                    JURISDICTION: {node.jurisdiction}
+                    <br/>
+                    SEVERITY: {node.severity}
+                </div>
+                <div className="absolute -bottom-3 -right-3">
+                    <AlertOctagon size={48} className="text-red-500 opacity-20 rotate-12" />
+                </div>
+            </div>
+        ))}
+
       </div>
       
-      {/* Floating HUD Controls - Polite sliding */}
-      <div className={`absolute bottom-10 left-1/2 -translate-x-1/2 z-50 transition-all duration-700 ${transform.k > 2.2 ? 'translate-y-[100px] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
-          <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-2xl p-2 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10">
+      {/* Controller HUD */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50">
+          <div className="flex items-center gap-2 bg-[#1e293b]/90 backdrop-blur-2xl p-2 rounded-2xl shadow-2xl border border-white/10">
               <button 
                 onClick={() => setTransform(t => ({ ...t, k: Math.min(t.k * 1.3, 12) }))} 
                 className="p-3 hover:bg-white/10 rounded-xl transition-all group"
-                title="Zoom In"
               >
                 <ZoomIn size={24} className="text-slate-400 group-hover:text-white" />
               </button>
@@ -353,7 +379,6 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
               <button 
                 onClick={() => setTransform(t => ({ ...t, k: Math.max(t.k / 1.3, 0.05) }))} 
                 className="p-3 hover:bg-white/10 rounded-xl transition-all group"
-                title="Zoom Out"
               >
                 <ZoomOut size={24} className="text-slate-400 group-hover:text-white" />
               </button>
@@ -368,7 +393,6 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                     }
                 }} 
                 className="p-3 hover:bg-white/10 rounded-xl transition-all group"
-                title="Reset View"
               >
                 <Move size={24} className="text-slate-400 group-hover:text-white" />
               </button>
@@ -384,8 +408,10 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
   );
 };
 
-const Navigation = ({ size, className }: { size: number, className: string }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d="M3 11l19-9-9 19-2-8-8-2z" />
+// Simple Icon fallback if import fails or using standard lucide
+const CheckCircle = ({ size }: { size: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
     </svg>
 );

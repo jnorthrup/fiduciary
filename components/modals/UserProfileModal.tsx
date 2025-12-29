@@ -16,9 +16,9 @@ export const UserProfileModal: React.FC<Props> = ({ user, currentUser, onSave, o
   const [isSaving, setIsSaving] = useState(false);
 
   // Determine if current user has permission to edit role
-  const canEditRole = (currentUser.role === 'Owner' || currentUser.role === 'Admin') && currentUser.id !== user.id;
-  // Determine if user can delete this profile (Admins can delete others, Users can't delete themselves in this simple model without re-auth, but let's allow admins to delete)
-  const canDelete = (currentUser.role === 'Owner' || currentUser.role === 'Admin') && currentUser.id !== user.id;
+  const canEditRole = (currentUser.role === 'Owner' || currentUser.role === 'Admin' || currentUser.role === 'Beneficial Owner') && currentUser.id !== user.id;
+  // Determine if user can delete this profile
+  const canDelete = (currentUser.role === 'Owner' || currentUser.role === 'Admin' || currentUser.role === 'Beneficial Owner') && currentUser.id !== user.id;
   
   useEffect(() => {
     setFormData({ ...user });
@@ -169,11 +169,11 @@ export const UserProfileModal: React.FC<Props> = ({ user, currentUser, onSave, o
                         disabled={!canEditRole}
                         className={`w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white ${!canEditRole ? 'opacity-70 cursor-not-allowed bg-slate-50' : 'focus:ring-2 focus:ring-indigo-500'}`}
                     >
-                        {['Owner', 'Admin', 'Editor', 'Viewer'].map(r => (
+                        {['Owner', 'Beneficial Owner', 'Admin', 'Editor', 'Viewer'].map(r => (
                             <option key={r} value={r}>{r}</option>
                         ))}
                     </select>
-                    {!canEditRole && <p className="text-[10px] text-slate-400 mt-1 italic">Only Owners/Admins can change roles for other users.</p>}
+                    {!canEditRole && <p className="text-[10px] text-slate-400 mt-1 italic">Only Owners, Beneficial Owners, or Admins can change roles for other users.</p>}
                 </div>
             </div>
 

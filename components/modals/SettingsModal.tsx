@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Download, Upload, Trash2, Database, HardDrive, RefreshCw, X, AlertTriangle, FileJson, CheckCircle } from 'lucide-react';
+import { Download, Upload, Trash2, Database, HardDrive, RefreshCw, X, AlertTriangle, FileJson, CheckCircle, AlertOctagon } from 'lucide-react';
 
 interface Props {
   onClose: () => void;
@@ -12,6 +12,8 @@ interface Props {
 export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, onReset }) => {
   const [activeTab, setActiveTab] = useState<'Storage' | 'Backup' | 'Reset'>('Storage');
   const [importStatus, setImportStatus] = useState<string>('');
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [isWiping, setIsWiping] = useState(false);
 
   // Calculate mock storage stats
   const storageUsed = (JSON.stringify(localStorage).length / 1024).toFixed(2);
@@ -45,6 +47,26 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
       reader.readAsText(file);
   };
 
+  const handleFactoryReset = () => {
+      setIsWiping(true);
+      
+      // 1. Trigger service cleanup (sets flags to stop auto-save)
+      try {
+        onReset();
+      } catch (e) {
+        console.error("Service reset failed", e);
+      }
+      
+      // 2. Aggressive Storage Wipe
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // 3. Force Reload with slight delay to ensure storage IO completes
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+  };
+
   return (
     <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
@@ -68,7 +90,7 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
             {['Storage', 'Backup', 'Reset'].map(tab => (
                 <button
                     key={tab}
-                    onClick={() => setActiveTab(tab as any)}
+                    onClick={() => { setActiveTab(tab as any); setConfirmReset(false); }}
                     className={`flex-1 py-3 text-sm font-bold transition-colors ${activeTab === tab ? 'bg-white text-indigo-600 border-b-2 border-indigo-600' : 'bg-slate-50 text-slate-500 hover:text-slate-700'}`}
                 >
                     {tab}
@@ -158,28 +180,52 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
 
             {activeTab === 'Reset' && (
                 <div className="space-y-6 text-center">
-                    <div className="inline-flex p-4 bg-red-50 rounded-full text-red-600 border border-red-100 mb-2">
-                        <Trash2 size={32} />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-red-700">Factory Reset</h3>
-                        <p className="text-sm text-slate-500 max-w-sm mx-auto mt-2">
-                            This action will wipe all data from the browser's local storage. This cannot be undone.
-                        </p>
-                    </div>
-                    
-                    <button 
-                        onClick={() => {
-                            if(confirm("Are you sure you want to wipe all ledger data? This is irreversible.")) {
-                                onReset();
-                                onClose();
-                                window.location.reload();
-                            }
-                        }}
-                        className="px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 shadow-lg transition-colors flex items-center gap-2 mx-auto"
-                    >
-                        <RefreshCw size={16} /> Execute Wipe
-                    </button>
+                    {!confirmReset ? (
+                        <>
+                            <div className="inline-flex p-4 bg-red-50 rounded-full text-red-600 border border-red-100 mb-2">
+                                <Trash2 size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-red-700">Factory Reset</h3>
+                                <p className="text-sm text-slate-500 max-w-sm mx-auto mt-2">
+                                    This action will wipe all data from the browser's local storage. This cannot be undone.
+                                </p>
+                            </div>
+                            
+                            <button 
+                                onClick={() => setConfirmReset(true)}
+                                className="px-6 py-3 bg-white border-2 border-red-200 text-red-600 font-bold rounded-lg hover:bg-red-50 hover:border-red-300 shadow-sm transition-colors flex items-center gap-2 mx-auto"
+                            >
+                                <AlertOctagon size={16} /> Initiate Wipe Sequence
+                            </button>
+                        </>
+                    ) : (
+                        <div className="animate-in zoom-in-95 bg-red-50 p-6 rounded-xl border-2 border-red-200">
+                            <h4 className="text-lg font-bold text-red-800 mb-2">Final Confirmation</h4>
+                            <p className="text-xs text-red-700 mb-6">
+                                Are you absolutely sure? All entities, journals, and credentials will be lost.
+                            </p>
+                            <div className="flex gap-4 justify-center">
+                                <button 
+                                    onClick={() => setConfirmReset(false)}
+                                    className="px-4 py-2 bg-white border border-red-200 text-red-700 font-bold rounded-lg hover:bg-red-100 transition-colors text-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleFactoryReset}
+                                    disabled={isWiping}
+                                    className="px-6 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 shadow-lg transition-colors flex items-center gap-2 text-sm"
+                                >
+                                    {isWiping ? (
+                                        <>Wiping Data...</>
+                                    ) : (
+                                        <><RefreshCw size={16} /> Yes, Execute Wipe</>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

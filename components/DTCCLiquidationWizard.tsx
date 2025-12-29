@@ -5,7 +5,8 @@ import {
   Building2, ShieldCheck, Zap, BarChart3, Database, 
   ArrowRight, Search, Landmark, Scale, Lock, 
   CheckCircle2, Loader2, AlertTriangle, FileCode, History,
-  TrendingDown, Coins, Trash2
+  TrendingDown, Coins, Trash2, TrendingUp, ArrowUpRight, ArrowDownRight,
+  Receipt
 } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -35,6 +36,8 @@ export const DTCCLiquidationWizard: React.FC<Props> = ({
   const [selectedPledgeId, setSelectedPledgeId] = useState<string | null>(null);
 
   const entityRecords = records.filter(r => r.entityId === entity.id);
+  const activeRecords = entityRecords.filter(r => r.status === 'Active');
+  const liquidatedRecords = entityRecords.filter(r => r.status === 'Liquidated');
 
   const handleVerifyCUSIP = async () => {
     if (!cusip) return;
@@ -128,6 +131,27 @@ export const DTCCLiquidationWizard: React.FC<Props> = ({
           setLoading(false);
           setActiveTab('Registry');
       }, 2000);
+  };
+
+  const handleMarketBuy = (record: DTCCPledgeRecord) => {
+      // Simulate buying 10% more of the current position
+      const additionalQty = Math.ceil(record.quantity * 0.1);
+      const unitPrice = record.marketValue / record.quantity;
+      const cost = additionalQty * unitPrice;
+      
+      const updated: DTCCPledgeRecord = {
+          ...record,
+          quantity: record.quantity + additionalQty,
+          marketValue: record.marketValue + cost,
+          collateralValue: (record.marketValue + cost) * (1 - record.haircutPercent / 100),
+          timestamp: new Date().toISOString()
+      };
+      
+      onUpdateRecord(updated);
+      onPostJournal(entity.id, updated.timestamp.split('T')[0], `Market Acquisition: ${record.cusip}`, 'BUY', [
+          { accountCode: '109000', dc: DCFlag.Debit, amount: cost },
+          { accountCode: '101000', dc: DCFlag.Credit, amount: cost }
+      ]);
   };
 
   return (
@@ -273,7 +297,7 @@ export const DTCCLiquidationWizard: React.FC<Props> = ({
                                <button 
                                 onClick={handleExecutePledge}
                                 disabled={loading}
-                                className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-3 transition-transform active:scale-95"
+                                className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg shadow-xl shadow-indigo-900/20 flex items-center justify-center gap-3 transition-transform active:scale-95"
                                >
                                    {loading ? <Loader2 className="animate-spin" /> : <><Zap size={20} /> Execute DTCC Pledge Protocol</>}
                                </button>
@@ -316,69 +340,133 @@ export const DTCCLiquidationWizard: React.FC<Props> = ({
 
           {/* TAB: REGISTRY */}
           {activeTab === 'Registry' && (
-              <div className="space-y-6">
-                  <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                          <History size={16} /> Asset Pledge Audit Trail
-                      </h3>
-                      <div className="text-[10px] text-slate-600 bg-slate-950 px-3 py-1 rounded-full border border-slate-800">
-                          TOTAL PLEDGED: ${entityRecords.filter(r => r.status === 'Active').reduce((s, r) => s + r.collateralValue, 0).toLocaleString()}
+              <div className="space-y-12">
+                  {/* Active Registry Section */}
+                  <div className="space-y-6">
+                      <div className="flex justify-between items-center">
+                          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                              <Database size={16} className="text-indigo-400" /> Active Security Registry
+                          </h3>
+                          <div className="text-[10px] text-slate-600 bg-slate-950 px-3 py-1 rounded-full border border-slate-800 font-mono">
+                              PLEDGED_MV: ${activeRecords.reduce((s, r) => s + r.marketValue, 0).toLocaleString()}
+                          </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                          {activeRecords.map(record => (
+                              <div key={record.id} className="bg-slate-800/40 border border-slate-700 rounded-xl p-5 hover:border-indigo-500/50 transition-all group overflow-hidden relative">
+                                  <div className="flex justify-between items-start mb-4 relative z-10">
+                                      <div>
+                                          <div className="text-white font-bold text-lg">{record.assetName}</div>
+                                          <div className="text-xs font-mono text-indigo-400">CUSIP: {record.cusip} • QTY: {record.quantity}</div>
+                                      </div>
+                                      <div className="flex gap-2">
+                                          <button 
+                                            onClick={() => handleMarketBuy(record)}
+                                            className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-all group/btn flex items-center gap-1.5"
+                                            title="Buy Market"
+                                          >
+                                              <TrendingUp size={14} />
+                                              <span className="text-[10px] font-bold">BUY</span>
+                                          </button>
+                                          <button 
+                                            onClick={() => { setSelectedPledgeId(record.id); setActiveTab('Liquidation'); }}
+                                            className="p-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-all group/btn flex items-center gap-1.5"
+                                            title="Initiate Liquidation"
+                                          >
+                                              <TrendingDown size={14} />
+                                              <span className="text-[10px] font-bold">SELL</span>
+                                          </button>
+                                      </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-3 gap-4 mb-6 relative z-10">
+                                      <div className="bg-slate-950/50 p-2 rounded">
+                                          <span className="text-[9px] text-slate-600 uppercase block mb-1">Market Value</span>
+                                          <span className="text-xs text-white font-mono">${record.marketValue.toLocaleString()}</span>
+                                      </div>
+                                      <div className="bg-slate-950/50 p-2 rounded">
+                                          <span className="text-[9px] text-slate-600 uppercase block mb-1">DTC Haircut</span>
+                                          <span className="text-xs text-white font-mono">{record.haircutPercent}%</span>
+                                      </div>
+                                      <div className="bg-slate-950/50 p-2 rounded border border-indigo-500/20">
+                                          <span className="text-[9px] text-indigo-400 uppercase block mb-1">Pledge Value</span>
+                                          <span className="text-xs text-white font-mono font-bold">${record.collateralValue.toLocaleString()}</span>
+                                      </div>
+                                  </div>
+
+                                  <div className="flex justify-between items-center pt-4 border-t border-slate-700/50 relative z-10">
+                                      <div className="text-[10px] font-mono text-slate-500 flex items-center gap-2">
+                                          <FileCode size={12} /> {record.controlNumber}
+                                      </div>
+                                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">LIVE_COLLATERAL</span>
+                                  </div>
+                              </div>
+                          ))}
+                          {activeRecords.length === 0 && (
+                              <div className="col-span-full py-16 text-center text-slate-600 italic border-2 border-dashed border-slate-800 rounded-xl">
+                                  No active DTCC pledge records found in node memory.
+                              </div>
+                          )}
                       </div>
                   </div>
 
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                      {entityRecords.map(record => (
-                          <div key={record.id} className="bg-slate-800/40 border border-slate-700 rounded-xl p-5 hover:border-indigo-500/50 transition-all group">
-                              <div className="flex justify-between items-start mb-4">
-                                  <div>
-                                      <div className="text-white font-bold text-lg">{record.assetName}</div>
-                                      <div className="text-xs font-mono text-indigo-400">CUSIP: {record.cusip} • QTY: {record.quantity}</div>
-                                  </div>
-                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${record.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-700 text-slate-400 border border-slate-600'}`}>
-                                      {record.status}
-                                  </span>
-                              </div>
+                  {/* Liquidation History Section */}
+                  <div className="space-y-6 pt-6 border-t border-slate-800">
+                      <div className="flex justify-between items-center">
+                          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                              <History size={16} className="text-red-400" /> Market Liquidation Ledger
+                          </h3>
+                          <div className="text-[10px] text-slate-600 bg-slate-950 px-3 py-1 rounded-full border border-slate-800 font-mono">
+                              REVENUE_PROC: ${liquidatedRecords.reduce((s, r) => s + (r.liquidationProceeds || 0), 0).toLocaleString()}
+                          </div>
+                      </div>
 
-                              <div className="grid grid-cols-3 gap-4 mb-6">
-                                  <div className="bg-slate-950/50 p-2 rounded">
-                                      <span className="text-[9px] text-slate-600 uppercase block mb-1">Market Value</span>
-                                      <span className="text-xs text-white font-mono">${record.marketValue.toLocaleString()}</span>
-                                  </div>
-                                  <div className="bg-slate-950/50 p-2 rounded">
-                                      <span className="text-[9px] text-slate-600 uppercase block mb-1">DTC Haircut</span>
-                                      <span className="text-xs text-white font-mono">{record.haircutPercent}%</span>
-                                  </div>
-                                  <div className="bg-slate-950/50 p-2 rounded border border-indigo-500/20">
-                                      <span className="text-[9px] text-indigo-400 uppercase block mb-1">Pledge Value</span>
-                                      <span className="text-xs text-white font-mono font-bold">${record.collateralValue.toLocaleString()}</span>
-                                  </div>
-                              </div>
-
-                              <div className="flex justify-between items-center pt-4 border-t border-slate-700/50">
-                                  <div className="text-[10px] font-mono text-slate-500 flex items-center gap-2">
-                                      <FileCode size={12} /> {record.controlNumber}
-                                  </div>
-                                  {record.status === 'Active' && (
-                                      <button 
-                                        onClick={() => { setSelectedPledgeId(record.id); setActiveTab('Liquidation'); }}
-                                        className="text-[10px] font-bold text-red-400 hover:text-red-300 uppercase tracking-widest bg-red-400/10 px-3 py-1.5 rounded transition-all border border-red-400/20 hover:border-red-400/40"
-                                      >
-                                          Mark for Liquidation
-                                      </button>
+                      <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+                          <table className="w-full text-left border-collapse">
+                              <thead className="bg-slate-900/50 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-800">
+                                  <tr>
+                                      <th className="px-6 py-4">Settled Date</th>
+                                      <th className="px-6 py-4">Asset / CUSIP</th>
+                                      <th className="px-6 py-4">Quantity</th>
+                                      <th className="px-6 py-4 text-right">Market Value</th>
+                                      <th className="px-6 py-4 text-right text-red-400">Fees / Slippage</th>
+                                      <th className="px-6 py-4 text-right text-emerald-400">Net Proceeds</th>
+                                  </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-800/50">
+                                  {liquidatedRecords.map(record => {
+                                      const proceeds = record.liquidationProceeds || 0;
+                                      const fees = record.marketValue - proceeds;
+                                      return (
+                                          <tr key={record.id} className="group hover:bg-slate-900 transition-colors">
+                                              <td className="px-6 py-4 text-xs font-mono text-slate-400">{record.timestamp.split('T')[0]}</td>
+                                              <td className="px-6 py-4">
+                                                  <div className="text-sm font-bold text-slate-200">{record.assetName}</div>
+                                                  <div className="text-[10px] font-mono text-slate-500">{record.cusip}</div>
+                                              </td>
+                                              <td className="px-6 py-4 text-xs text-slate-400">{record.quantity}</td>
+                                              <td className="px-6 py-4 text-right text-xs font-mono">${record.marketValue.toLocaleString()}</td>
+                                              <td className="px-6 py-4 text-right text-xs font-mono text-red-500/70">-${fees.toLocaleString()}</td>
+                                              <td className="px-6 py-4 text-right text-sm font-mono font-bold text-emerald-400">${proceeds.toLocaleString()}</td>
+                                          </tr>
+                                      );
+                                  })}
+                                  {liquidatedRecords.length === 0 && (
+                                      <tr>
+                                          <td colSpan={6} className="px-6 py-12 text-center text-slate-600 text-sm italic">
+                                              No liquidation events recorded in historical archive.
+                                          </td>
+                                      </tr>
                                   )}
-                              </div>
-                          </div>
-                      ))}
-                      {entityRecords.length === 0 && (
-                          <div className="col-span-full py-20 text-center text-slate-600 italic border-2 border-dashed border-slate-800 rounded-xl">
-                              No active DTCC pledge records found in node memory.
-                          </div>
-                      )}
+                              </tbody>
+                          </table>
+                      </div>
                   </div>
               </div>
           )}
 
-          {/* TAB: LIQUIDATION */}
+          {/* TAB: LIQUIDATION COMMAND */}
           {activeTab === 'Liquidation' && (
               <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in">
                   <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-xl flex items-start gap-4">
@@ -393,7 +481,7 @@ export const DTCCLiquidationWizard: React.FC<Props> = ({
                       <div className="space-y-4">
                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Select Pledged Asset to Liquidate</h4>
                            <div className="space-y-2">
-                               {entityRecords.filter(r => r.status === 'Active').map(r => (
+                               {activeRecords.map(r => (
                                    <div 
                                     key={r.id}
                                     onClick={() => setSelectedPledgeId(r.id)}
@@ -408,7 +496,7 @@ export const DTCCLiquidationWizard: React.FC<Props> = ({
                                        </button>
                                    </div>
                                ))}
-                               {entityRecords.filter(r => r.status === 'Active').length === 0 && (
+                               {activeRecords.length === 0 && (
                                    <div className="text-center py-10 text-slate-600 italic">No eligible pledged assets available.</div>
                                )}
                            </div>

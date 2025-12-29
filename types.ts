@@ -4,6 +4,7 @@ export enum EntityRole {
   OPERATING_LLC = "OPERATING_LLC",
   LIVING_ESTATE = "LIVING_ESTATE",
   BENEFICIARY = "BENEFICIARY",
+  BENEFICIAL_OWNER = "BENEFICIAL_OWNER",
   TRUSTEE = "TRUSTEE",
   LIVESTOCK = "LIVESTOCK",
   OTHER = "OTHER"
@@ -28,6 +29,18 @@ export enum TrustSubType {
   UNSPECIFIED = "UNSPECIFIED"
 }
 
+export type JurisdictionType = 'Article 1 (Statutory)' | 'Article 3 (Private)' | 'Ecclesiastical' | 'Federal (IRS)' | 'Local/State';
+
+export interface IntrusionRecord {
+  id: string;
+  targetEntityId: string;
+  name: string;
+  type: 'Audit' | 'Lien' | 'Inquiry' | 'Lawsuit';
+  jurisdiction: JurisdictionType;
+  severity: 'Low' | 'Medium' | 'Critical';
+  status: 'Active' | 'Mitigated';
+}
+
 export enum AccountType {
   ASSET = "Asset",
   LIABILITY = "Liability",
@@ -42,7 +55,8 @@ export enum DCFlag {
   Credit = "C"
 }
 
-export type UserRole = 'Owner' | 'Admin' | 'Editor' | 'Viewer';
+export type UserRole = 'Owner' | 'Beneficial Owner' | 'Admin' | 'Editor' | 'Viewer';
+export type StorageSource = 'Persistence' | 'Simulation';
 
 export interface User {
   id: string;
@@ -56,6 +70,41 @@ export interface User {
   phoneNumber?: string;
   isPrivate?: boolean;
   _version: string;
+}
+
+export interface CreditDefenseRecord {
+  id: string;
+  entityId: string;
+  targetAgency: 'Equifax' | 'Experian' | 'TransUnion' | 'LexisNexis' | 'Sagestream' | 'Innovis';
+  type: 'Dispute' | 'Litigation' | 'Fraud Alert' | 'Security Freeze' | 'CFPB Complaint' | 'CCPA Request';
+  referenceNumber: string;
+  status: 'Draft' | 'Sent' | 'In Dispute' | 'Resolved' | 'Litigation Active' | 'Complaint Filed';
+  dateFiled: string;
+  legalBasis: string; 
+  outcome?: string;
+  documents?: string[];
+}
+
+export interface ChanceryFiling {
+  id: string;
+  entityId: string;
+  title: string;
+  type: 'Bill in Equity' | 'Petition for Accounting' | 'Declaratory Judgement';
+  res: string; 
+  status: 'Draft' | 'Sealed' | 'Filed' | 'Served';
+  date: string;
+  perfectionRef?: string;
+}
+
+export interface PerfectionInstruction {
+  id: string;
+  filingId: string;
+  method: '1st Class Mail' | 'Certified Return Receipt' | 'Private Courier';
+  recipientName: string;
+  address: string;
+  trackingNumber?: string;
+  isPerfected: boolean;
+  perfectionDate?: string;
 }
 
 export interface WalletCredential {
@@ -97,12 +146,63 @@ export interface DTCCPledgeRecord {
   haircutPercent: number;
   collateralValue: number;
   pledgeAccountId: string;
-  participantId: string; // 8-digit DTC Participant ID
+  participantId: string;
   controlNumber: string;
   status: 'Active' | 'Liquidated' | 'Released';
   timestamp: string;
   liquidationProceeds?: number;
   _version: string;
+}
+
+export interface EscrowAccount {
+  id: string;
+  entityId: string;
+  title: string;
+  counterpartyId: string;
+  targetAmount: number;
+  currentBalance: number;
+  status: 'Draft' | 'Funded' | 'Disbursing' | 'Closed' | 'Disputed';
+  conditions: { id: string; description: string; met: boolean }[];
+  openDate: string;
+  closeDate?: string;
+}
+
+export interface TicklerRecord {
+  id: string;
+  entityId: string;
+  title: string;
+  dueDate: string;
+  frequency: 'Once' | 'Monthly' | 'Quarterly' | 'Annually';
+  category: 'Accounting' | 'Legal' | 'Asset' | 'Tax';
+  status: 'Pending' | 'Completed' | 'Overdue';
+  completedDate?: string;
+}
+
+export interface FedwireRecord {
+  id: string;
+  entityId: string;
+  imad: string;
+  omad?: string;
+  senderABA: string;
+  receiverABA: string;
+  amount: number;
+  beneficiaryName: string;
+  beneficiaryAccount: string;
+  type: 'Wire' | 'FedNow' | 'NSS';
+  status: 'Initiated' | 'Sent' | 'Settled' | 'Failed';
+  timestamp: string;
+  _version: string;
+}
+
+export interface CanalRecord {
+  id: string;
+  entityId: string;
+  type: 'Deposit' | 'Draw' | 'Toll';
+  amount: number;
+  description: string;
+  date: string;
+  status: 'Pending' | 'Cleared' | 'Contested';
+  voucherId?: string;
 }
 
 export interface AgencyCertification {
@@ -310,7 +410,7 @@ export interface Interaction {
 
 export interface CRMPerson {
   id: string;
-  entityId: string; // The Trust/LLC that owns this relationship
+  entityId: string; 
   name: string;
   type: 'Individual' | 'Organization';
   industry?: string;
@@ -505,6 +605,17 @@ export interface FiduciaryAction {
     dateExecuted?: string;
 }
 
+export interface FiduciaryReview {
+  id: string;
+  entityId: string;
+  reviewDate: string;
+  type: 'Reg-9.6a-Acceptance' | 'Reg-9.6b-Annual' | 'Reg-9.6c-Closing';
+  conductedBy: string;
+  status: 'Pass' | 'Fail' | 'Pending';
+  notes: string;
+  _version: string;
+}
+
 export interface BOIReport {
     id: string;
     entityId: string;
@@ -567,14 +678,14 @@ export interface ForensicSearchRecord {
   timestamp: string;
 }
 
-export type ApiChannel = 'MeF' | 'AIR' | 'IRIS' | 'TIN_MATCH';
+export type ApiChannel = 'MeF' | 'AIR' | 'IRIS' | 'TIN_MATCH' | 'FEDWIRE' | 'FEDNOW';
 export type TransmissionStatus = 'Queued' | 'Transmitting' | 'Received' | 'Accepted' | 'Rejected';
 
 export interface TransmissionLog {
   id: string;
   timestamp: string;
   channel: ApiChannel;
-  formType: IRSFormType;
+  formType: IRSFormType | 'FED_WIRE' | 'FED_NOW';
   entityId: string;
   status: TransmissionStatus;
   submissionId: string;
@@ -651,4 +762,21 @@ export interface ChangeSet {
   author: string;
   description: string;
   operations: PatchOperation[];
+}
+
+// Compliance / Metarules
+export interface ComplianceViolation {
+  ruleId: string;
+  title: string;
+  citation: string;
+  severity: 'Block' | 'Warning';
+  details: string;
+}
+
+export interface MetaRule {
+  id: string;
+  name: string;
+  citation: string; // e.g. "Circular 230 § 10.28"
+  description: string;
+  evaluate: (context: any) => ComplianceViolation | null;
 }

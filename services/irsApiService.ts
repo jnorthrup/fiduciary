@@ -43,10 +43,6 @@ export const mockBSORegistration = async (userId: string, secrets: ApiSecrets, f
     const fuzzer = new ProtocolFuzzer(fuzzConfig);
     await fuzzer.injectLatency();
 
-    if (fuzzConfig.enabled && !secrets.bsoUserId) {
-        // Enforce secret presence if fuzzing is strict, or just warn in mock
-    }
-
     if (fuzzer.shouldError()) {
         throw fuzzer.getRandomError('BSO');
     }
@@ -63,7 +59,7 @@ export const mockBSOSubmission = async (bsoId: string, secrets: ApiSecrets, fuzz
     }
 
     // Simulate AccuWage check
-    await new Promise(r => setTimeout(r, 800)); // Extra processing time
+    await new Promise(r => setTimeout(r, 800)); 
 
     return { 
         status: Math.random() > 0.1 ? 'AccuWage-Pass' : 'AccuWage-Errors', 
@@ -77,6 +73,8 @@ export const getSystemStatus = (): SystemStatus[] => [
   { channel: 'MeF', status: 'Operational', latency: '45ms', uptime: '99.98%' },
   { channel: 'AIR', status: 'Operational', latency: '120ms', uptime: '99.5%' },
   { channel: 'IRIS', status: 'Degraded', latency: '800ms', uptime: '98.2%' },
+  { channel: 'FEDWIRE', status: 'Operational', latency: '12ms', uptime: '99.99%' },
+  { channel: 'FEDNOW', status: 'Operational', latency: '3ms', uptime: '99.99%' },
   { channel: 'TIN_MATCH', status: 'Maintenance', latency: '-', uptime: '0%' },
 ];
 
@@ -100,7 +98,7 @@ const generateMockXML = (entity: Entity, formType: IRSFormType) => {
       <efile:FormType>${formType}</efile:FormType>
       <efile:TaxYear>2025</efile:TaxYear>
       <efile:ReturnHeader>
-        <efile:ReturnType>1041</efile:ReturnType>
+        <efile:ReturnType>Institutional</efile:ReturnType>
         <efile:Filer>
           <efile:Name>${entity.name}</efile:Name>
         </efile:Filer>
@@ -136,13 +134,11 @@ export const simulateTransmission = async (
   let status: 'Accepted' | 'Rejected' = 'Accepted';
   let errorMsg = '';
 
-  // Apply Fuzzing Logic
   if (fuzzer.shouldError()) {
       status = 'Rejected';
       const err = fuzzer.getRandomError('MeF');
       errorMsg = err.message;
   } else {
-      // Default light random fail if not fuzzing hard
       const isSuccess = Math.random() > 0.05; 
       if (!isSuccess) {
           status = 'Rejected';
@@ -164,71 +160,27 @@ export const simulateTransmission = async (
   };
 };
 
-// --- CIR (Collections Information Repository) EXTRACT GENERATION ---
-// Supports XML 5.0.3 schema for Digital Wallets (PayPal/Amazon)
-
 export const generateCIRExtract = (extractType: CIRExtractType, filter: DigitalWalletFilter): string => {
     const timestamp = new Date().toISOString();
     const isPayPal = filter === 'PayPal' || filter === 'All';
     const isAmazon = filter === 'Amazon' || filter === 'All';
     
-    // Header - Updated for XML 5.0.3 (Sep 29, 2022 Spec)
-    // Note: Namespace updated to reflect 2022 standards if applicable, usually kept consistent in legacy systems
     let xml = `<?xml version="1.0" encoding="ISO-8859-1"?>
 <CollRpt xsi:schemaLocation="urn:us:gov:treasury CollectionsReport_x.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`;
 
     if (isPayPal) {
         xml += `
-  <Sumry ID="1488229${Math.floor(Math.random() * 1000000)}" ALC="000099909" AgtRTN="121000248">
-    <BnkPostDt="2014-10-06" CshFlwID="0000990909" CshFlwNm="Agency 9909">
-      <ChnlTypCd="Internet" CAN="${CIR_CANS.PAYPAL}" CollBusDt="2014-10-06">
-        <CollStatCd="Settled" ComlBnkInd="1" CrInd="1" IptSysTxt="PAYGOV">
-          <IRS_TaxInd="0" RptPgmNm="Pay.gov" RptSbprgNm="Hosted Form (web)">
-             <SttlMchsmCd="Other" RcptMchsmCd="Other">
-                <!-- Vchr Element updated with 5.0.3 Attributes -->
-                <Vchr ID="1" PartlInd="0" VchrFormCd="215" VchrDt="2014-10-06">
-                   <VchrNr="104999" SmrzdDtlCnt="2" AgcyCmtTxt="PayPal" NonDomCollInd="0" />
-                   ${extractType !== 'Summary Only' ? `
-                   <!-- Detail Data -->
-                   <AcctCls CrInd="1" Amt="99.00">
-                      <CKey CkeyNm="Pay.gov ALC+2" CkeyVal="0000990909" />
-                   </AcctCls>
-                   <BT_PgmDta ID="25HRNN99" AgcyFormNr="Form Nbr" UserDtaCnt="2">
-                      <UDF ID="1">CUI_Ind="0"</UDF>
-                      <![CDATA[<Agency><page1><firstName>John</firstName><lastName>Doe</lastName><POC_email>john@example.com</POC_email></page1></Agency>]]>
-                   </BT_PgmDta>` : ''}
-                </Vchr>
-             </SttlMchsmCd>
-          </IRS_TaxInd>
-        </CollStatCd>
-      </ChnlTypCd>
-    </BnkPostDt>
-  </Sumry>`;
-    }
-
-    if (isAmazon) {
-        xml += `
-  <Sumry ID="1762106${Math.floor(Math.random() * 1000000)}" ALC="75395125" AgtRTN="121000248">
-    <BnkPostDt="2016-05-12" CshFlwID="7539512506" CshFlwNm="SAT112 Simple form">
-      <ChnlTypCd="Internet" CAN="${CIR_CANS.AMAZON}" CollBusDt="2016-05-12">
-        <CollStatCd="Settled" ComlBnkInd="1" CrInd="1" IptSysTxt="PAYGOV">
-          <IRS_TaxInd="0" RptPgmNm="Pay.gov" RptSbprgNm="Hosted Form (web)">
-             <SttlMchsmCd="Other" RcptMchsmCd="Other">
-                <!-- Vchr Element updated with 5.0.3 Attributes -->
-                <Vchr ID="1762140" PartlInd="0" VchrFormCd="215" VchrDt="2016-05-12">
-                   <VchrNr="127001" SmrzdDtlCnt="2" AgcyCmtTxt="Amazon" NonDomCollInd="0" />
-                   ${extractType !== 'Summary Only' ? `
-                   <!-- Detail Data -->
-                   <AcctCls CrInd="1" Amt="1999.99">
-                      <CKey CkeyNm="Classificat Key name" CkeyVal="Classification Key" />
-                   </AcctCls>
-                   <BT_PgmDta ID="24TLO4K4" AgcyFormNr="SAT112_Form_001" FormRvsnFileNm="DOI_Mustangs_v1.xdp">
-                      <UDF ID="1">CUI_Ind="0"</UDF>
-                      <![CDATA[<DOI_Mustangs_v1><RemittanceNetAmount>1999.99</RemittanceNetAmount><PaygovCollection/></DOI_Mustangs_v1>]]>
-                   </BT_PgmDta>` : ''}
-                </Vchr>
-             </SttlMchsmCd>
-          </IRS_TaxInd>
+  <Sumry ID="P-${Math.floor(Math.random() * 1000000)}" ALC="000099909" AgtRTN="121000248">
+    <BnkPostDt="${timestamp}" CshFlwNm="Institutional Clearing">
+      <ChnlTypCd="Internet" CAN="${CIR_CANS.PAYPAL}">
+        <CollStatCd="Settled">
+          <Vchr ID="1" VchrFormCd="215">
+             <VchrNr="104999" AgcyCmtTxt="PayPal Settlement" />
+             ${extractType !== 'Summary Only' ? `
+             <AcctCls CrInd="1" Amt="99.00">
+                <CKey CkeyNm="Institutional ID" CkeyVal="SOV-001" />
+             </AcctCls>` : ''}
+          </Vchr>
         </CollStatCd>
       </ChnlTypCd>
     </BnkPostDt>
@@ -240,7 +192,6 @@ export const generateCIRExtract = (extractType: CIRExtractType, filter: DigitalW
     return xml;
 };
 
-// Grounding Search Simulation
 export const searchIRSManual = async (query: string): Promise<SearchResult[]> => {
   await new Promise(resolve => setTimeout(resolve, 600)); 
 
@@ -252,39 +203,15 @@ export const searchIRSManual = async (query: string): Promise<SearchResult[]> =>
     {
       id: 'IRM-3.8.45',
       title: 'IRM 3.8.45 - Manual Deposit Process',
-      snippet: '...instructions for processing manual deposits. <strong>Separation of Duties</strong> is required for remittance perfection technicians.',
+      snippet: 'Official instructions for processing manual institutional deposits.',
       source: 'IRM',
       url: 'https://www.irs.gov/irm/part3/irm_03-008-045r',
       relevance: 0.95
     },
     {
-      id: 'IRM-21.3.7',
-      title: 'IRM 21.3.7 - Processing Third Party Authorizations',
-      snippet: '...guidance on Form 2848 and Form 8821. <strong>Centralized Authorization File (CAF)</strong> integration requirements.',
-      source: 'IRM',
-      url: 'https://www.irs.gov/irm/part21/irm_21-003-007r',
-      relevance: 0.90
-    },
-    {
-      id: 'PUB-1220',
-      title: 'Pub 1220 - Specifications for Filing Forms 1097, 1098, 1099',
-      snippet: '...electronic filing requirements for Information Returns via the <strong>FIRE System</strong> or <strong>IRIS</strong>.',
-      source: 'Pub',
-      url: 'https://www.irs.gov/pub/irs-pdf/p1220.pdf',
-      relevance: 0.85
-    },
-    {
-      id: 'IRM-5.11.2',
-      title: 'IRM 5.11.2 - Serving Levies',
-      snippet: '...procedures for issuing Form 668-W. <strong>Garnishment</strong> calculations and exempt amount tables.',
-      source: 'IRM',
-      url: 'https://www.irs.gov/irm/part5/irm_05-011-002',
-      relevance: 0.80
-    },
-    {
       id: 'TFM-4A-4000',
-      title: 'TFM Vol I, Part 4A, Ch 4000 - Requirements for Non-Treasury Disbursing Officers',
-      snippet: '...policies and procedures for <strong>Delegated Disbursing Authority</strong>. Includes requirements for separation of duties and physical security.',
+      title: 'TFM Vol I, Part 4A, Ch 4000 - Non-Treasury Disbursing Officers',
+      snippet: 'Policies and procedures for delegated institutional disbursing authority.',
       source: 'IRM',
       url: 'https://tfm.fiscal.treasury.gov/v1/p4/ac400.html',
       relevance: 0.99
