@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Building2, ShieldCheck, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock } from 'lucide-react';
+import { Building2, ShieldCheck, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock, UserCog } from 'lucide-react';
 import { Entity, EntityRole, User } from '../types';
 import { TeamManagementModal } from './modals/TeamManagementModal';
 
@@ -118,24 +118,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </nav>
 
-        {/* User Profile Hook */}
+        {/* User Profile Hook - Modified for nameless OWNER state */}
         <div className="p-4 border-t border-slate-900 bg-slate-950/80">
           <button 
-            onClick={() => onEditUser(currentUser)}
-            className="flex items-center gap-3 w-full p-2.5 rounded-xl hover:bg-slate-900 transition-all group border border-transparent hover:border-slate-800"
+            onClick={() => currentUser.name && onEditUser(currentUser)}
+            disabled={!currentUser.name}
+            className={`flex items-center gap-3 w-full p-2.5 rounded-xl transition-all group border border-transparent ${currentUser.name ? 'hover:bg-slate-900 hover:border-slate-800' : 'opacity-50 cursor-not-allowed'}`}
           >
             <div className="h-10 w-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-bold text-white group-hover:border-indigo-500 transition-colors">
               {currentUser.avatarInitials}
             </div>
             <div className="text-left flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate">{currentUser.name}</p>
+              <p className="text-sm font-bold text-white truncate">{currentUser.name || 'Nameless Owner'}</p>
               <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black flex items-center gap-1">
                   {currentUser.role}
-                  {/* Import the missing Lock icon from lucide-react to fix the JSX component error on line 134. */}
                   {currentUser.isPrivate && <Lock size={8} className="text-indigo-400" />}
               </p>
             </div>
-            <Settings size={14} className="text-slate-600 group-hover:text-slate-400" />
+            {currentUser.name ? <Settings size={14} className="text-slate-600 group-hover:text-slate-400" /> : <UserCog size={14} className="text-slate-700" />}
           </button>
         </div>
       </div>

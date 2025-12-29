@@ -7,6 +7,8 @@ import { IRMTreeWidget } from './components/IRMTreeWidget';
 import { IRSApiConsole } from './components/IRSApiConsole';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { UserProfileModal } from './components/modals/UserProfileModal';
+import { ComplianceAlertModal } from './components/modals/ComplianceAlertModal';
+import { LaunchScreen } from './components/LaunchScreen';
 import { useLedgerStore } from './services/ledgerService';
 import { Menu, Globe } from 'lucide-react';
 import { User } from './types';
@@ -16,26 +18,46 @@ export const App: React.FC = () => {
     entities, 
     currentUser,
     users,
+    canResume,
     updateUser,
     deleteUser,
     addUser,
     importData,
     resetData,
+    setInitialOwner,
+    loadJimProfile,
+    loadSyntheticFuzz,
+    resumePersistent,
     schemaHash,
     changeGraph,
     secrets,
     settings,
+    activeViolation,
+    clearViolation,
     ...rest 
   } = useLedgerStore();
   
-  const [activeEntityId, setActiveEntityId] = useState<string | null>(entities.length > 0 ? entities[0].id : null);
+  const [activeEntityId, setActiveEntityId] = useState<string | null>(null);
   const [isIRMOpen, setIsIRMOpen] = useState(false);
   const [isApiConsoleOpen, setIsApiConsoleOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  const activeEntity = entities.find(e => e.id === activeEntityId);
+  const activeEntity = entities.find((e: any) => e.id === activeEntityId);
+
+  // Requirement: Blank OWNER requires a name before dashboard access
+  if (!currentUser.name) {
+    return (
+      <LaunchScreen 
+        onLaunch={setInitialOwner} 
+        onJimProfile={loadJimProfile} 
+        onSyntheticFuzz={loadSyntheticFuzz}
+        onResumePersistent={resumePersistent}
+        canResume={canResume}
+      />
+    );
+  }
 
   const handleExport = () => {
       const snapshot = {
@@ -54,6 +76,14 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-slate-50 relative overflow-hidden">
+      
+      {activeViolation && (
+        <ComplianceAlertModal 
+          violation={activeViolation} 
+          onAcknowledge={clearViolation} 
+        />
+      )}
+
       <IRMTreeWidget 
         isOpen={isIRMOpen}
         onClose={() => setIsIRMOpen(false)}

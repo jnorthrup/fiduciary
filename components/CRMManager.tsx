@@ -5,7 +5,7 @@ import {
   Users, UserPlus, Search, Mail, Phone, MapPin, Building2, 
   CreditCard, ShieldCheck, Clock, MessageSquare, Plus, 
   Trash2, Edit2, Filter, MoreVertical, CheckCircle2, 
-  AlertCircle, Ban, ArrowRight, ExternalLink, Briefcase
+  AlertCircle, Ban, ArrowRight, ExternalLink, Briefcase, X
 } from 'lucide-react';
 
 interface Props {
@@ -161,7 +161,7 @@ export const CRMManager: React.FC<Props> = ({
              <div className="w-full max-w-lg bg-white p-8 rounded-xl border border-slate-200 shadow-xl">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-bold text-slate-800">New Counterparty Entry</h3>
-                  <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600"><XIcon size={20}/></button>
+                  <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600 transition-colors"><X size={20}/></button>
                 </div>
                 
                 <div className="space-y-4">
@@ -187,7 +187,7 @@ export const CRMManager: React.FC<Props> = ({
                     <input 
                       value={formData.name}
                       onChange={e => setFormData({...formData, name: e.target.value})}
-                      className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-slate-900"
                       placeholder="e.g. Acme Global Holdings"
                     />
                   </div>
@@ -198,7 +198,7 @@ export const CRMManager: React.FC<Props> = ({
                       <input 
                         value={formData.industry}
                         onChange={e => setFormData({...formData, industry: e.target.value})}
-                        className="w-full border border-slate-300 rounded-lg p-2.5 text-sm"
+                        className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white text-slate-900"
                         placeholder="Real Estate / Tech"
                       />
                     </div>
@@ -207,7 +207,7 @@ export const CRMManager: React.FC<Props> = ({
                       <select 
                         value={formData.status}
                         onChange={e => setFormData({...formData, status: e.target.value as any})}
-                        className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white"
+                        className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none"
                       >
                         <option>Prospect</option>
                         <option>Active</option>
@@ -339,7 +339,7 @@ export const CRMManager: React.FC<Props> = ({
                   <textarea 
                     value={interactionNotes}
                     onChange={e => setInteractionNotes(e.target.value)}
-                    className="w-full p-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-24"
+                    className="w-full p-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-24 bg-white text-slate-900"
                     placeholder="Record a call, meeting, or internal note..."
                   />
                   <button 
@@ -387,5 +387,3 @@ export const CRMManager: React.FC<Props> = ({
     </div>
   );
 };
-
-const XIcon = ({ size }: { size: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;

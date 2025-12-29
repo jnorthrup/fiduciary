@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Account, DCFlag, JournalLine } from '../../types';
-import { X, Plus, Trash2, Save, AlertTriangle, Calculator, ArrowRightLeft } from 'lucide-react';
+// Fixed missing CheckCircle2 import from lucide-react
+import { X, Plus, Trash2, Save, AlertTriangle, Calculator, ArrowRightLeft, CheckCircle2 } from 'lucide-react';
 
 interface Props {
   entityId: string;
@@ -109,14 +109,14 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
         </div>
 
         {/* Form Header */}
-        <div className="p-6 grid grid-cols-3 gap-6 bg-white shrink-0">
+        <div className="p-6 grid grid-cols-3 gap-6 bg-white shrink-0 border-b border-slate-100">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
             <input 
               type="date" 
               value={date}
               onChange={e => setDate(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white text-slate-900"
             />
           </div>
           <div>
@@ -126,7 +126,7 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
               value={memo}
               onChange={e => setMemo(e.target.value)}
               placeholder="e.g. Opening Balance Adjustment"
-              className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white text-slate-900"
             />
           </div>
           <div>
@@ -134,7 +134,7 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
             <select 
               value={type}
               onChange={e => setType(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-900"
             >
               <option value="GENERAL">General Journal</option>
               <option value="ADJUSTMENT">Adjustment</option>
@@ -145,25 +145,25 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
         </div>
 
         {/* Lines Grid */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 sticky top-0 z-10">
+        <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar bg-slate-50/30">
+          <table className="w-full text-sm mt-4">
+            <thead className="bg-slate-100/80 sticky top-0 z-10">
               <tr>
-                <th className="text-left py-2 px-3 font-bold text-slate-500 w-[35%]">Account</th>
-                <th className="text-left py-2 px-3 font-bold text-slate-500 w-[25%]">Description (Optional)</th>
-                <th className="text-right py-2 px-3 font-bold text-slate-500 w-[15%]">Debit</th>
-                <th className="text-right py-2 px-3 font-bold text-slate-500 w-[15%]">Credit</th>
+                <th className="text-left py-2 px-3 font-bold text-slate-500 w-[35%] uppercase text-[10px] tracking-widest">Account</th>
+                <th className="text-left py-2 px-3 font-bold text-slate-500 w-[25%] uppercase text-[10px] tracking-widest">Description (Optional)</th>
+                <th className="text-right py-2 px-3 font-bold text-slate-500 w-[15%] uppercase text-[10px] tracking-widest">Debit</th>
+                <th className="text-right py-2 px-3 font-bold text-slate-500 w-[15%] uppercase text-[10px] tracking-widest">Credit</th>
                 <th className="w-[10%]"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-200">
               {lines.map((line) => (
-                <tr key={line.id} className="group hover:bg-slate-50 transition-colors">
+                <tr key={line.id} className="group hover:bg-white transition-colors bg-white/50">
                   <td className="p-2">
                     <select 
                       value={line.accountId}
                       onChange={e => handleLineChange(line.id, 'accountId', e.target.value)}
-                      className="w-full border border-slate-200 rounded p-1.5 bg-transparent focus:bg-white focus:border-indigo-500 outline-none"
+                      className="w-full border border-slate-200 rounded-lg p-2 text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-900"
                     >
                       <option value="">Select Account...</option>
                       {entityAccounts.map(acc => (
@@ -178,7 +178,7 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
                       type="text" 
                       value={line.description}
                       onChange={e => handleLineChange(line.id, 'description', e.target.value)}
-                      className="w-full border border-slate-200 rounded p-1.5 bg-transparent focus:bg-white focus:border-indigo-500 outline-none"
+                      className="w-full border border-slate-200 rounded-lg p-2 text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-900"
                       placeholder={memo}
                     />
                   </td>
@@ -188,7 +188,7 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
                       step="0.01"
                       value={line.debit}
                       onChange={e => handleLineChange(line.id, 'debit', e.target.value)}
-                      className="w-full text-right border border-slate-200 rounded p-1.5 bg-transparent focus:bg-white focus:border-indigo-500 outline-none font-mono"
+                      className="w-full text-right border border-slate-200 rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white text-slate-900"
                       placeholder="0.00"
                       disabled={!!line.credit}
                     />
@@ -199,7 +199,7 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
                       step="0.01"
                       value={line.credit}
                       onChange={e => handleLineChange(line.id, 'credit', e.target.value)}
-                      className="w-full text-right border border-slate-200 rounded p-1.5 bg-transparent focus:bg-white focus:border-indigo-500 outline-none font-mono"
+                      className="w-full text-right border border-slate-200 rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white text-slate-900"
                       placeholder="0.00"
                       disabled={!!line.debit}
                     />
@@ -210,7 +210,7 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
                       className="text-slate-300 hover:text-red-500 transition-colors p-1"
                       disabled={lines.length <= 2}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                     </button>
                   </td>
                 </tr>
@@ -220,49 +220,54 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
           
           <button 
             onClick={addLine}
-            className="mt-4 flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded hover:bg-indigo-50 transition-colors"
+            className="mt-6 flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 px-4 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 transition-colors border border-indigo-200"
           >
-            <Plus size={14} /> Add Line Item
+            <Plus size={16} /> Add Line Item
           </button>
         </div>
 
         {/* Footer / Totals */}
-        <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 shrink-0">
-          <div className="flex justify-end gap-8 mb-4 text-sm font-mono">
+        <div className="bg-slate-900 px-8 py-6 shrink-0 text-slate-300">
+          <div className="flex justify-end gap-12 mb-6 text-sm font-mono">
             <div className="text-right">
-              <div className="text-xs text-slate-500 font-sans font-bold uppercase mb-1">Total Debits</div>
-              <div className="font-bold text-slate-800">{totalDebit.toFixed(2)}</div>
+              <div className="text-[10px] text-slate-500 font-sans font-bold uppercase tracking-widest mb-1">Total Debits</div>
+              <div className="font-bold text-white text-xl">{totalDebit.toFixed(2)}</div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-slate-500 font-sans font-bold uppercase mb-1">Total Credits</div>
-              <div className="font-bold text-slate-800">{totalCredit.toFixed(2)}</div>
+              <div className="text-[10px] text-slate-500 font-sans font-bold uppercase tracking-widest mb-1">Total Credits</div>
+              <div className="font-bold text-white text-xl">{totalCredit.toFixed(2)}</div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-slate-500 font-sans font-bold uppercase mb-1">Difference</div>
-              <div className={`font-bold ${isBalanced ? 'text-emerald-600' : 'text-red-600'}`}>
+              <div className="text-[10px] text-slate-500 font-sans font-bold uppercase tracking-widest mb-1">Difference</div>
+              <div className={`font-bold text-xl ${isBalanced ? 'text-emerald-400' : 'text-red-400'}`}>
                 {Math.abs(difference).toFixed(2)}
               </div>
             </div>
           </div>
 
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
+          <div className="flex justify-between items-center pt-4 border-t border-slate-800">
+            <div className="flex items-center gap-3">
               {!isBalanced && (
-                <span className="text-xs text-red-600 font-bold bg-red-50 px-2 py-1 rounded border border-red-200 flex items-center gap-1">
-                  <AlertTriangle size={12} /> Entry must balance to zero.
+                <span className="text-xs text-red-400 font-bold bg-red-400/10 px-3 py-1.5 rounded-lg border border-red-400/20 flex items-center gap-2">
+                  <AlertTriangle size={14} /> Entry must balance to zero.
+                </span>
+              )}
+              {isBalanced && (
+                <span className="text-xs text-emerald-400 font-bold bg-emerald-400/10 px-3 py-1.5 rounded-lg border border-emerald-400/20 flex items-center gap-2">
+                  <CheckCircle2 size={14} /> Ready to post.
                 </span>
               )}
             </div>
-            <div className="flex gap-3">
-              <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors">
+            <div className="flex gap-4">
+              <button onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-slate-400 hover:text-white transition-colors">
                 Cancel
               </button>
               <button 
                 onClick={handleSubmit}
                 disabled={!isBalanced || totalDebit === 0}
-                className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-bold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
               >
-                <Save size={16} /> Post Journal
+                <Save size={18} /> Post Journal
               </button>
             </div>
           </div>

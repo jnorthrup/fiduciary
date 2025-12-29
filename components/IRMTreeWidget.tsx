@@ -5,7 +5,7 @@ import {
     FolderOpen, FileText, ChevronRight, ChevronDown, CheckCircle2, 
     FileCheck, X, FileBadge, AlertCircle, FileQuestion, 
     RefreshCcw, Scale, ShieldAlert, BadgeDollarSign, MapPin, Link as LinkIcon, Plus, FileSignature, Anchor, Hash, Globe,
-    Landmark, Book, Library, Briefcase, Calculator, Gavel, Scroll, Bookmark as BookmarkIcon
+    Landmark, Book, Library, Briefcase, Calculator, Gavel, Scroll, Bookmark as BookmarkIcon, Shield, Mail
 } from 'lucide-react';
 
 interface Props {
@@ -47,6 +47,21 @@ const IRM_TAXONOMY = [
   { code: '668-W', desc: 'Notice of Levy on Wages/Property', section: 'IRM 5.11.2', category: 'Enforcement' },
   { code: 'CP-2000', desc: 'Underreporter Inquiry', section: 'IRM 4.19.3', category: 'Enforcement' },
   { code: 'Probate', desc: 'Probate Proceeding Record', section: 'IRM 25.3', category: 'Court' },
+];
+
+const CHANCERY_RULES = [
+    { code: 'Rule 4', title: 'Process Service', desc: 'Methods of initiating equitable jurisdiction via First Class perfection.' },
+    { code: 'Rule 65', title: 'Injunctions', desc: 'Procedural requirements for temporary restraining orders and equitable relief.' },
+    { code: 'Rule 23', title: 'Class Actions', desc: 'Equitable representation of groups in Chancery.' },
+    { code: 'Equity Maxims', title: 'Conscience of the Law', desc: 'Fundamental principles guiding Chancery Court decisions.' }
+];
+
+const OCC_REG_MAP = [
+    { code: '9.6(a)', title: 'Acceptance Reviews', desc: 'Review of fiduciary accounts upon acceptance to ensure legality and administrative feasibility.', category: 'Audit' },
+    { code: '9.6(b)', title: 'Investment Reviews', desc: 'Annual review of all assets in each fiduciary account for which the bank has investment discretion.', category: 'Audit' },
+    { code: '9.6(c)', title: 'Closing Reviews', desc: 'Final review of fiduciary accounts upon closing.', category: 'Audit' },
+    { code: '9.13', title: 'Asset Custody', desc: 'Joint custody and segregation of fiduciary assets from bank assets.', category: 'Control' },
+    { code: 'Prudent Man', title: 'Prudent Investment', desc: 'Exercise of care, skill, prudence, and diligence in asset management.', category: 'Policy' }
 ];
 
 const TREASURY_BOOKS = [
@@ -114,18 +129,10 @@ const TREASURY_BOOKS = [
     }
 ];
 
-// FFM Business Use Cases (FIBF) - Full list in production, shortened here for brevity
-const FFM_USE_CASES = [
-    { id: '010', title: 'Budget Formulation-to-Execution', items: [
-        { code: '010.FFM.L1.01', name: 'Budget Authority Set-Up' },
-    ]},
-    // ... (rest of FFM for brevity, assumed existing content preserved)
-];
-
 export const IRMTreeWidget: React.FC<Props> = ({ 
     isOpen, onClose, entities, documents, accounts, journals, filings, accords, onFileAll, onLinkDocument
 }) => {
-  const [activeTab, setActiveTab] = useState<'IRM' | 'Treasury' | 'FFM'>('IRM');
+  const [activeTab, setActiveTab] = useState<'IRM' | 'Treasury' | 'OCC' | 'Chancery'>('IRM');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedBook, setExpandedBook] = useState<string | null>(null);
 
@@ -146,12 +153,12 @@ export const IRMTreeWidget: React.FC<Props> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-200">
-            {['IRM', 'Treasury', 'FFM'].map(tab => (
+        <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar">
+            {['IRM', 'Treasury', 'OCC', 'Chancery'].map(tab => (
                 <button
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
-                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === tab ? 'bg-white text-indigo-600 border-b-2 border-indigo-600' : 'bg-slate-50 text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-3 px-4 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap ${activeTab === tab ? 'bg-white text-indigo-600 border-b-2 border-indigo-600' : 'bg-slate-50 text-slate-500 hover:text-slate-700'}`}
                 >
                     {tab}
                 </button>
@@ -226,24 +233,55 @@ export const IRMTreeWidget: React.FC<Props> = ({
                 </div>
             )}
 
-            {activeTab === 'FFM' && (
+            {activeTab === 'OCC' && (
                 <div className="space-y-4">
-                    <div className="bg-amber-50 p-3 rounded text-xs text-amber-800 border border-amber-100 mb-2">
-                        <strong>FIBF Standard:</strong> Federal Integrated Business Framework use cases for financial management.
-                    </div>
-                    {FFM_USE_CASES.map(uc => (
-                        <div key={uc.id} className="border border-slate-200 rounded-lg p-3">
-                            <h4 className="font-bold text-xs text-slate-800 mb-2">{uc.id} - {uc.title}</h4>
-                            <div className="space-y-1">
-                                {uc.items.map(item => (
-                                    <div key={item.code} className="text-[10px] text-slate-600 pl-2 border-l-2 border-slate-200">
-                                        <span className="font-mono text-slate-400 mr-1">{item.code}</span>
-                                        {item.name}
-                                    </div>
-                                ))}
-                            </div>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-2">
+                        <div className="flex items-center gap-2 text-blue-700 font-bold text-sm mb-1">
+                            <Shield size={16} /> Personal Fiduciary Activities
                         </div>
-                    ))}
+                        <p className="text-[10px] text-blue-600 leading-relaxed uppercase tracking-tighter">Office of the Comptroller of the Currency Handbook mapping</p>
+                    </div>
+                    <div className="space-y-3">
+                        {OCC_REG_MAP.map(reg => (
+                            <div key={reg.code} className="p-3 border border-slate-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50/30 transition-all cursor-pointer group">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="font-mono text-xs font-bold text-indigo-600">{reg.code}</span>
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded uppercase">{reg.category}</span>
+                                </div>
+                                <h4 className="text-xs font-bold text-slate-800 mb-1">{reg.title}</h4>
+                                <p className="text-[10px] text-slate-500 leading-relaxed group-hover:text-slate-600">{reg.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'Chancery' && (
+                <div className="space-y-4">
+                    <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 mb-2">
+                        <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm mb-1 uppercase tracking-widest">
+                            <Gavel size={16} /> Equitable Jurisdiction
+                        </div>
+                        <p className="text-[10px] text-slate-500 leading-relaxed uppercase tracking-tighter font-serif italic">The conscience of the Court over Statutory Law</p>
+                    </div>
+                    <div className="space-y-3">
+                        {CHANCERY_RULES.map(reg => (
+                            <div key={reg.code} className="p-3 border border-slate-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50/30 transition-all cursor-pointer group font-serif">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="font-bold text-indigo-900 italic">{reg.code}</span>
+                                </div>
+                                <h4 className="text-sm font-bold text-slate-800 mb-1">{reg.title}</h4>
+                                <p className="text-xs text-slate-600 leading-relaxed">{reg.desc}</p>
+                            </div>
+                        ))}
+                        <div className="h-px bg-slate-200 my-4"></div>
+                        <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg text-xs text-indigo-800 space-y-2">
+                            <div className="flex items-center gap-2 font-bold uppercase tracking-widest">
+                                <Mail size={14} /> Service Perfection
+                            </div>
+                            <p>Rule 4 requires 1st Class Mail delivery to be "perfected" by a Certificate of Service to invoke equitable power over the subject matter.</p>
+                        </div>
+                    </div>
                 </div>
             )}
 
