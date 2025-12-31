@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Entity, EntityRole, DCFlag, IRSFormType, AccordRecord, PrivateAdminRecord, ResolutionRecord, EntityType, ReSitusRecord, ParcelRecord, EdgarResearchRecord, ACHRecord, Interaction, InstrumentExchangeRecord, ComplianceFiling, CRMPerson, DTCCPledgeRecord, EscrowAccount, TicklerRecord, FedwireRecord, CanalRecord, StorageSource, ChanceryFiling, PerfectionInstruction, CreditDefenseRecord } from '../types';
+import { Entity, EntityRole, DCFlag, IRSFormType, AccordRecord, PrivateAdminRecord, ResolutionRecord, EntityType, ReSitusRecord, ParcelRecord, EdgarResearchRecord, ACHRecord, Interaction, InstrumentExchangeRecord, ComplianceFiling, CRMPerson, DTCCPledgeRecord, EscrowAccount, TicklerRecord, FedwireRecord, CanalRecord, StorageSource, ChanceryFiling, PerfectionInstruction, CreditDefenseRecord, MaradRecord } from '../types';
 import { useLedgerStore } from '../services/ledgerService';
 import { 
     Network, ShieldCheck, Users, Terminal, Wand, FileSpreadsheet, 
@@ -9,7 +9,7 @@ import {
     Scroll, UserPlus, FileText, UserCog, Calculator, HardHat, 
     Ship, ScrollText, Award, Gift, MapPin, Building, Globe, 
     ArrowRightLeft, Briefcase, Layout, History, Eye, BookOpen, Edit2, RotateCcw,
-    Zap, BarChart3, Landmark, Shield, BrainCircuit, Waves, ChevronDown, Layers, Database, Mail, ShieldAlert
+    Zap, BarChart3, Landmark, Shield, BrainCircuit, Waves, ChevronDown, Layers, Database, Mail, ShieldAlert, ScanLine, Anchor, Printer
 } from 'lucide-react';
 
 // Feature Modules
@@ -59,6 +59,8 @@ import { CanalDepository } from './CanalDepository';
 import { ChanceryWizard } from './ChanceryWizard';
 import { PerfectionWizard } from './PerfectionWizard';
 import { CreditDefenseWizard } from './CreditDefenseWizard';
+import { DocumentCaptureWizard } from './DocumentCaptureWizard';
+import { MARADAuthorityWizard } from './MARADAuthorityWizard';
 
 /**
  * Overview Tab Sub-Component for Consolidation
@@ -68,8 +70,9 @@ const OverviewTab: React.FC<{
     store: any, 
     onOpenApiConsole: () => void, 
     setShowManualJournalModal: (v: boolean) => void,
+    setShowReceiptCapture: (v: boolean) => void,
     onEditEntity: (id: string) => void
-}> = ({ entity, store, onOpenApiConsole, setShowManualJournalModal, onEditEntity }) => {
+}> = ({ entity, store, onOpenApiConsole, setShowManualJournalModal, setShowReceiptCapture, onEditEntity }) => {
     const entityFilings = store.filings.filter((f: any) => f.entityId === entity.id);
     const entityACH = store.achRecords.filter((r: any) => r.entityId === entity.id);
     const entityRelationships = store.crmPeople.filter((p: any) => p.entityId === entity.id);
@@ -101,8 +104,16 @@ const OverviewTab: React.FC<{
 
                         <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Transaction Capture</h3>
-                                <Sparkles size={16} className="text-indigo-400" />
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Transaction Capture</h3>
+                                    <Sparkles size={16} className="text-indigo-400" />
+                                </div>
+                                <button 
+                                    onClick={() => setShowReceiptCapture(true)}
+                                    className="flex items-center gap-2 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                                >
+                                    <ScanLine size={14} /> AI Document Capture
+                                </button>
                             </div>
                             <div className="p-6">
                                 {entity.role === EntityRole.HOLDING_TRUST ? (
@@ -165,6 +176,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ entity, onOpenApiConsole }
   const [activeTab, setActiveTab] = useState('Overview');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [showManualJournalModal, setShowManualJournalModal] = useState(false);
+  const [showReceiptCapture, setShowReceiptCapture] = useState(false);
   const [editingEntityId, setEditingEntityId] = useState<string | null>(null);
   const [selectedChanceryId, setSelectedChanceryId] = useState<string | null>(null);
   
@@ -184,17 +196,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ entity, onOpenApiConsole }
 
   const FEATURE_GROUPS: Record<string, { label: string, icon: any, features: string[] }> = {
     'Hub': { label: 'Command Hub', icon: Layout, features: ['Overview', 'Strategist', 'SimPlan'] },
-    'Treasury': { label: 'Treasury & Funds', icon: Landmark, features: ['ACH', 'Fed', 'Escrow', 'Canal', 'Gift', 'Certificates', 'DTCC'] },
+    'Treasury': { label: 'Treasury & Funds', icon: Landmark, features: ['ACH', 'Fed', 'Escrow', 'Canal', 'MARAD', 'Gift', 'Certificates', 'DTCC'] },
     'Equity': { label: 'Equity & Chancery', icon: Gavel, features: ['Chancery', 'Perfection', 'Indenture', 'Settlement', 'Private', 'Exchange', 'Intercourse'] },
     'Compliance': { label: 'Ops & Admin', icon: ShieldCheck, features: ['Audit', 'W2', 'HR', 'CRM', 'Tickler', 'Description', 'Agency', 'Resolution', 'Defense'] },
     'Research': { label: 'Discovery', icon: Search, features: ['Edgar', 'Parcel', 'Forensic', 'Builder', 'Visualizer'] }
   };
 
   const ALL_FEATURES: Record<string, Feature> = {
-    'Overview': { label: 'Executive Pulse', icon: Layout, component: <OverviewTab entity={entity} store={store} onOpenApiConsole={onOpenApiConsole} setShowManualJournalModal={setShowManualJournalModal} onEditEntity={setEditingEntityId} /> },
+    'Overview': { label: 'Executive Pulse', icon: Layout, component: <OverviewTab entity={entity} store={store} onOpenApiConsole={onOpenApiConsole} setShowManualJournalModal={setShowManualJournalModal} setShowReceiptCapture={setShowReceiptCapture} onEditEntity={setEditingEntityId} /> },
     'Chancery': { label: 'Chancery Filings', icon: Gavel, component: <ChanceryWizard entity={entity} onComplete={(f) => { store.addChanceryFiling(f); setActiveTab('Overview'); }} />, roles: [EntityRole.HOLDING_TRUST, EntityRole.TRUSTEE] },
     'Perfection': { label: 'Delivery Perfection', icon: Mail, component: <PerfectionWizard filingId={selectedChanceryId || 'ROOT'} onComplete={(p) => { store.addPerfection(p); setActiveTab('Overview'); }} /> },
     'Canal': { label: 'Canal Depository', icon: Waves, component: <CanalDepository entity={entity} />, roles: [EntityRole.HOLDING_TRUST] },
+    'MARAD': { label: 'Maritime Authority', icon: Anchor, component: <MARADAuthorityWizard entity={entity} onComplete={(r) => { store.addMaradRecord(r); setActiveTab('Overview'); }} onPostJournal={store.postJournal} onClose={() => setActiveTab('Overview')} /> },
     'Strategist': { label: 'AI Strategist', icon: BrainCircuit, component: <AIStrategist entity={entity} /> },
     'Fed': { label: 'FRB / FedLine', icon: Landmark, component: <FedGateway entity={entity} fedWires={store.fedWires} crmPeople={store.crmPeople} onOriginate={store.addFedwire} onPostJournal={store.postJournal} /> },
     'Tickler': { label: 'Compliance Ticks', icon: CheckSquare, component: <TicklerManager entity={entity} ticks={store.ticks} onAddTick={store.addTick} onUpdateTick={store.updateTick} /> },
@@ -261,10 +274,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ entity, onOpenApiConsole }
                 </div>
             </div>
             <div className="flex items-center gap-2">
-                {/* LIVE BADGE */}
+                <button className="flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold bg-white border border-slate-300 text-slate-600 shadow-sm hover:bg-slate-50" onClick={() => window.print()}>
+                    <Printer size={14} /> Print Forms
+                </button>
+                {/* LIVE BADGE - Updated for Graph/LSM */}
                 <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm transition-all ${store.source === 'Persistence' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse'}`}>
                     <Database size={10} />
-                    {store.source === 'Persistence' ? 'Live: Persistent' : 'Volatile: Sim Context'}
+                    {store.source === 'Persistence' ? 'Live: Graph+LSM' : 'Volatile: Sim Context'}
                 </div>
 
                 <button onClick={onOpenApiConsole} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200" title="API Gateway"><Terminal size={20} /></button>
@@ -348,6 +364,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ entity, onOpenApiConsole }
           onSave={store.postJournal}
           onClose={() => setShowManualJournalModal(false)}
         />
+      )}
+
+      {showReceiptCapture && (
+          <DocumentCaptureWizard 
+              entityId={entity.id}
+              accounts={store.accounts}
+              onPost={store.postJournal}
+              onClose={() => setShowReceiptCapture(false)}
+          />
       )}
 
       {editingEntity && (

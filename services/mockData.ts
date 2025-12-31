@@ -17,7 +17,13 @@ export const SEED_ENTITIES: Entity[] = [
     role: EntityRole.TRUSTEE,
     einLast4: "0055", // 38-00-0055
     parentEntityId: null,
-    _version: GENESIS_HASH
+    _version: GENESIS_HASH,
+    imfProfile: {
+        dsaStatus: 'Sustainable',
+        arrearsPolicy: 'None',
+        financingAssurances: true,
+        programStatus: 'On Track'
+    }
   },
   // ECCLESIASTICAL LAYER
   {
@@ -28,9 +34,15 @@ export const SEED_ENTITIES: Entity[] = [
     role: EntityRole.HOLDING_TRUST,
     einLast4: "0085", // 33-00-0085
     parentEntityId: "ENT-ROOT",
-    _version: GENESIS_HASH
+    _version: GENESIS_HASH,
+    imfProfile: {
+        dsaStatus: 'Sustainable',
+        arrearsPolicy: 'NTP',
+        financingAssurances: true,
+        programStatus: 'On Track'
+    }
   },
-  // ESTATE LAYER
+  // ESTATE LAYER - With Arrears Scenario for Demo
   {
     id: "ENT-EST-JRN",
     name: "Estate of James R. Northrup Jr.",
@@ -38,7 +50,13 @@ export const SEED_ENTITIES: Entity[] = [
     role: EntityRole.LIVING_ESTATE,
     einLast4: "0075", // 99-00-0075
     parentEntityId: "ENT-ROOT",
-    _version: GENESIS_HASH
+    _version: GENESIS_HASH,
+    imfProfile: {
+        dsaStatus: 'Unsustainable',
+        arrearsPolicy: 'LIA',
+        financingAssurances: false,
+        programStatus: 'Review Pending'
+    }
   },
   // TRUST ARMS (Stem from Estate)
   {
@@ -49,7 +67,13 @@ export const SEED_ENTITIES: Entity[] = [
     role: EntityRole.HOLDING_TRUST,
     einLast4: "0060", // 33-00-0060
     parentEntityId: "ENT-EST-JRN",
-    _version: GENESIS_HASH
+    _version: GENESIS_HASH,
+    imfProfile: {
+        dsaStatus: 'Sustainable (High Prob)',
+        arrearsPolicy: 'None',
+        financingAssurances: true,
+        programStatus: 'On Track'
+    }
   },
   {
     id: "ENT-AAA-WTH",
@@ -67,7 +91,13 @@ export const SEED_ENTITIES: Entity[] = [
     role: EntityRole.OPERATING_LLC,
     einLast4: "0073", // 33-00-0073
     parentEntityId: "ENT-AAA-TRUST",
-    _version: GENESIS_HASH
+    _version: GENESIS_HASH,
+    imfProfile: {
+        dsaStatus: 'Sustainable',
+        arrearsPolicy: 'None',
+        financingAssurances: true,
+        programStatus: 'On Track'
+    }
   },
   {
     id: "ENT-BAO-PVT",
@@ -95,7 +125,13 @@ export const SEED_ENTITIES: Entity[] = [
     role: EntityRole.HOLDING_TRUST,
     einLast4: "0008", // 33-00-0008
     parentEntityId: "ENT-EST-JRN",
-    _version: GENESIS_HASH
+    _version: GENESIS_HASH,
+    imfProfile: {
+        dsaStatus: 'Exceptional Uncertainty',
+        arrearsPolicy: 'LIOA-4',
+        financingAssurances: false,
+        programStatus: 'Off Track'
+    }
   },
   // FOREIGN GRANTOR TRUSTS
   {
@@ -150,6 +186,8 @@ export const SEED_ACCOUNTS: Account[] = [
   // Trust Accounts
   { id: "AC-T-INC", entityId: "ENT-AAA-TRUST", code: "410000", name: "Distribution Income", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0, _version: GENESIS_HASH },
   { id: "AC-T-EXP", entityId: "ENT-AAA-TRUST", code: "520000", name: "Trustee Fees", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, _version: GENESIS_HASH },
+  // Universal Backfill Account
+  { id: "AC-UNCAT", entityId: "ENT-VERSA-LLC", code: "599000", name: "Uncategorized Expense", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, _version: GENESIS_HASH },
 ];
 
 export const SEED_MODULES: TaxModule[] = [

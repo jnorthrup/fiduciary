@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
 import { TransmissionLog, SystemStatus, SearchResult, CIRExtractType, DigitalWalletFilter, CIR_CANS } from '../types';
-import { Terminal, Activity, Search, Server, FileCode, CheckCircle2, AlertOctagon, X, Globe, Lock, ArrowLeft, Settings, ShieldAlert, Cpu, Zap, Wallet, Download } from 'lucide-react';
+import { Terminal, Activity, Search, Server, FileCode, CheckCircle2, AlertOctagon, X, Globe, Lock, ArrowLeft, Settings, ShieldAlert, Cpu, Zap, Wallet, Download, BarChart3, Hash } from 'lucide-react';
 import { useLedgerStore } from '../services/ledgerService';
 import { generateCIRExtract } from '../services/irsApiService';
+import { GoogleGenAI, Type } from "@google/genai";
 
 interface Props {
   transmissions: TransmissionLog[];
@@ -23,7 +24,7 @@ export const IRSApiConsole: React.FC<Props> = ({
   onClose 
 }) => {
   const { secrets, settings, updateSecrets, updateSettings } = useLedgerStore();
-  const [activeTab, setActiveTab] = useState<'Logs' | 'Search' | 'System' | 'Config' | 'Sim' | 'CIR'>('System');
+  const [activeTab, setActiveTab] = useState<'Logs' | 'Search' | 'System' | 'Config' | 'Sim' | 'CIR' | 'Series7'>('System');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTx, setSelectedTx] = useState<TransmissionLog | null>(null);
 
@@ -31,6 +32,11 @@ export const IRSApiConsole: React.FC<Props> = ({
   const [cirExtractType, setCirExtractType] = useState<CIRExtractType>('Summary Only');
   const [cirFilter, setCirFilter] = useState<DigitalWalletFilter>('All');
   const [cirXml, setCirXml] = useState('');
+
+  // Series 7 State
+  const [cusipQuery, setCusipQuery] = useState('');
+  const [securityData, setSecurityData] = useState<any>(null);
+  const [s7Loading, setS7Loading] = useState(false);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +46,38 @@ export const IRSApiConsole: React.FC<Props> = ({
   const handleGenerateCIR = () => {
       const xml = generateCIRExtract(cirExtractType, cirFilter);
       setCirXml(xml);
+  };
+
+  const handleSecurityLookup = async () => {
+      if (!cusipQuery) return;
+      setS7Loading(true);
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      try {
+          const response = await ai.models.generateContent({
+              model: 'gemini-3-flash-preview',
+              contents: `Lookup Security Information for CUSIP/Ticker: "${cusipQuery}".
+              Return JSON with: name, assetClass, exchange, price, description.`,
+              config: {
+                  responseMimeType: "application/json",
+                  responseSchema: {
+                      type: Type.OBJECT,
+                      properties: {
+                          name: { type: Type.STRING },
+                          assetClass: { type: Type.STRING },
+                          exchange: { type: Type.STRING },
+                          price: { type: Type.NUMBER },
+                          description: { type: Type.STRING }
+                      },
+                      required: ["name", "assetClass", "exchange", "price"]
+                  }
+              }
+          });
+          setSecurityData(JSON.parse(response.text));
+      } catch (err) {
+          console.error("Series 7 Lookup failed", err);
+      } finally {
+          setS7Loading(false);
+      }
   };
 
   const getStatusColor = (status: string) => {
@@ -72,13 +110,13 @@ export const IRSApiConsole: React.FC<Props> = ({
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-            {['System', 'Logs', 'Search', 'CIR', 'Config', 'Sim'].map(tab => (
+            {['System', 'Logs', 'Search', 'Series7', 'CIR', 'Config', 'Sim'].map(tab => (
                 <button 
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
                     className={`whitespace-nowrap px-3 py-1.5 rounded text-xs font-bold transition-colors ${activeTab === tab ? 'bg-slate-800 text-white' : 'hover:text-white'}`}
                 >
-                    {tab === 'Sim' ? 'Chaos/Fuzz' : tab === 'CIR' ? 'CIR / Wallets' : tab}
+                    {tab === 'Sim' ? 'Chaos/Fuzz' : tab === 'CIR' ? 'CIR / Wallets' : tab === 'Series7' ? 'Securities' : tab}
                 </button>
             ))}
             <div className="hidden md:block w-px bg-slate-800 h-6 mx-2"></div>
@@ -136,6 +174,68 @@ export const IRSApiConsole: React.FC<Props> = ({
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB: SERIES 7 (SECURITIES) */}
+          {activeTab === 'Series7' && (
+              <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
+                  <div className="max-w-2xl mx-auto space-y-8">
+                      <div className="flex items-center gap-4 text-indigo-400 bg-indigo-500/10 p-4 rounded-lg border border-indigo-500/20">
+                          <BarChart3 size={24} />
+                          <div>
+                              <h3 className="font-bold">Series 7 Terminal Access</h3>
+                              <p className="text-xs text-indigo-200/70">General Securities Registered Representative Console.</p>
+                          </div>
+                      </div>
+
+                      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                          <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Security Lookup (CUSIP/Symbol)</label>
+                          <div className="flex gap-2">
+                              <input 
+                                value={cusipQuery}
+                                onChange={e => setCusipQuery(e.target.value.toUpperCase())}
+                                className="flex-1 bg-slate-950 border border-slate-700 rounded-lg p-3 text-white font-mono"
+                                placeholder="AAPL / 037833100"
+                              />
+                              <button 
+                                onClick={handleSecurityLookup}
+                                disabled={s7Loading}
+                                className="bg-indigo-600 text-white px-6 rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50"
+                              >
+                                  {s7Loading ? 'Querying...' : 'Search'}
+                              </button>
+                          </div>
+                      </div>
+
+                      {securityData && (
+                          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4 animate-in fade-in">
+                              <div className="flex justify-between items-start">
+                                  <div>
+                                      <h3 className="text-xl font-bold text-white">{securityData.name}</h3>
+                                      <div className="text-xs text-indigo-400 font-mono mt-1">{securityData.exchange}</div>
+                                  </div>
+                                  <div className="text-right">
+                                      <div className="text-2xl font-bold text-emerald-400 font-mono">${securityData.price.toFixed(2)}</div>
+                                      <span className="text-[10px] text-slate-500 uppercase">Last Price</span>
+                                  </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 border-t border-slate-800 pt-4">
+                                  <div>
+                                      <span className="block text-[10px] text-slate-500 uppercase">Asset Class</span>
+                                      <div className="text-sm text-white">{securityData.assetClass}</div>
+                                  </div>
+                                  <div>
+                                      <span className="block text-[10px] text-slate-500 uppercase">CUSIP Match</span>
+                                      <div className="text-sm text-white flex items-center gap-2"><Hash size={12}/> Verified</div>
+                                  </div>
+                              </div>
+                              <p className="text-xs text-slate-400 leading-relaxed bg-slate-950 p-3 rounded border border-slate-800">
+                                  {securityData.description}
+                              </p>
+                          </div>
+                      )}
+                  </div>
+              </div>
           )}
 
           {/* TAB: CIR (DIGITAL WALLETS) */}

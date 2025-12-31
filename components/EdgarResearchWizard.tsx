@@ -73,7 +73,7 @@ export const EdgarResearchWizard: React.FC<Props> = ({ entity, onRecordResearch 
     setLoading(true);
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
-        // Use Gemini Pro to perform the forensic extraction from the specific filing found
+        // Use Gemini Pro with Thinking to perform the forensic extraction
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: `Perform a forensic audit of the SEC ${filing.filingType} filing for ${filing.companyName} (Acc: ${filing.accessionNumber}). 
@@ -88,6 +88,7 @@ export const EdgarResearchWizard: React.FC<Props> = ({ entity, onRecordResearch 
             Use grounding to verify if these details exist in public records.`,
             config: {
                 tools: [{ googleSearch: {} }],
+                thinkingConfig: { thinkingBudget: 32768 },
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
