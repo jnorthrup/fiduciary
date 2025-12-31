@@ -3,9 +3,8 @@ import React, { useRef, useState, useEffect, useMemo } from 'react';
 import * as d3 from 'd3';
 import { Entity, Account, JournalEntry, WalletCredential, EntityRole, EntityType, IntrusionRecord, JurisdictionType } from '../types';
 import { 
-  ZoomIn, ZoomOut, Move, Edit, GitBranch, 
-  Shield, Globe, Landmark, Layout, 
-  Eye, EyeOff, Layers, Fingerprint, Skull, AlertOctagon, Filter
+  ZoomIn, ZoomOut, Move, Edit, Layers, Fingerprint, Skull, AlertOctagon, Filter, 
+  Grid, LayoutTemplate, Share2, Hexagon, Circle, Square, Triangle, Ship, Globe
 } from 'lucide-react';
 
 interface Props {
@@ -13,101 +12,165 @@ interface Props {
   accounts: Account[];
   journals: JournalEntry[];
   wallets: WalletCredential[];
-  intrusions?: IntrusionRecord[]; // Added Intrusions prop
+  intrusions?: IntrusionRecord[];
   onEditEntity?: (id: string) => void;
 }
 
-const NODE_WIDTH = 580; 
-const BASE_NODE_HEIGHT = 200;
-const LEVEL_SEPARATION = 550; 
-const SIBLING_SEPARATION = 120;
+// Lattice Configuration
+const COL_WIDTH = 400;
+const ROW_HEIGHT = 200;
+const SWIMLANES = {
+  [EntityType.INDIVIDUAL]: { index: 0, label: 'Grantor / Source' },
+  [EntityType.ESTATE]: { index: 0, label: 'Grantor / Source' },
+  [EntityType.TRUST]: { index: 1, label: 'Governance (Trusts)' },
+  [EntityType.LLC]: { index: 2, label: 'Operations (LLC)' },
+  [EntityType.VESSEL]: { index: 3, label: 'Maritime Assets' },
+  [EntityType.VENDOR]: { index: 4, label: 'External / Vendor' },
+  [EntityType.CONTRACTOR]: { index: 4, label: 'External / Vendor' },
+  [EntityType.BIOLOGICAL_ASSET]: { index: 4, label: 'External / Vendor' },
+  [EntityType.FOREIGN_BUSINESS_TRUST]: { index: 1, label: 'Governance (Trusts)' },
+};
+
+const DEFAULT_LANE = { index: 4, label: 'Uncategorized' };
 
 export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, accounts, journals, wallets, intrusions = [], onEditEntity }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [transform, setTransform] = useState({ x: 0, y: 0, k: 0.6 });
+  const [transform, setTransform] = useState({ x: 0, y: 0, k: 0.7 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [layoutReady, setLayoutReady] = useState(false);
   
   // Jurisdictional State
   const [showOverlay, setShowOverlay] = useState(true);
+  const [imfOverlayMode, setImfOverlayMode] = useState(false);
   const [activeTouchTest, setActiveTouchTest] = useState<JurisdictionType | null>(null);
 
   const getJurisdiction = (entity: Entity): JurisdictionType => {
-      if (entity.trustSubType === 'ECCLESIASTICAL' || entity.id.includes('MIN')) return 'Ecclesiastical';
+      if (!entity) return 'Local/State'; 
+      if (entity.type === EntityType.VESSEL) return 'Admiralty/Maritime';
+      // Safe access using optional chaining to prevent undefined errors
+      if (entity?.trustSubType === 'ECCLESIASTICAL' || entity?.id?.includes('MIN')) return 'Ecclesiastical';
       if (entity.type === EntityType.TRUST || entity.type === EntityType.ESTATE) return 'Article 3 (Private)';
       if (entity.role === EntityRole.TRUSTEE && entity.type === EntityType.INDIVIDUAL) return 'Article 3 (Private)';
       if (entity.role === EntityRole.OPERATING_LLC || entity.type === EntityType.LLC) return 'Article 1 (Statutory)';
       return 'Local/State';
   };
 
-  const getRootId = (entityId: string): string => {
-    let current = initialEntities.find(e => e.id === entityId);
-    while (current?.parentEntityId) {
-      const parent = initialEntities.find(p => p.id === current?.parentEntityId);
-      if (!parent) break;
-      current = parent;
-    }
-    return current?.id || entityId;
-  };
+  // --- LATTICE LAYOUT ENGINE ---
+  const { nodes, links, intrusionNodes, intrusionLinks, lanes } = useMemo(() => {
+    if (initialEntities.length === 0) return { nodes: [], links: [], intrusionNodes: [], intrusionLinks: [], lanes: [] };
 
-  const { nodes, links, intrusionNodes, intrusionLinks } = useMemo(() => {
-    if (initialEntities.length === 0) return { nodes: [], links: [], intrusionNodes: [], intrusionLinks: [] };
-    
-    // 1. Build Entity Tree
-    const roots = initialEntities.filter(e => !e.parentEntityId || !initialEntities.find(p => p.id === e.parentEntityId));
-    const buildTree = (root: Entity): any => {
-        const children = initialEntities.filter(e => e.parentEntityId === root.id);
-        return { ...root, children: children.map(buildTree) };
+    // 1. Calculate Hierarchy Depth for Y-Axis
+    const depthMap = new Map<string, number>();
+    const getDepth = (id: string, currentDepth = 0): number => {
+        if (depthMap.has(id)) return depthMap.get(id)!;
+        const parent = initialEntities.find(e => e.id === id)?.parentEntityId;
+        if (!parent) {
+            depthMap.set(id, 0);
+            return 0;
+        }
+        const d = getDepth(parent, currentDepth) + 1;
+        depthMap.set(id, d);
+        return d;
     };
-    let hRoot;
-    if (roots.length > 1) hRoot = (d3 as any).hierarchy({ id: 'ROOT', children: roots.map(buildTree) } as any);
-    else if (roots.length === 1) hRoot = (d3 as any).hierarchy(buildTree(roots[0]));
-    else return { nodes: [], links: [], intrusionNodes: [], intrusionLinks: [] };
+    initialEntities.forEach(e => getDepth(e.id));
 
-    const treeLayout = (d3 as any).tree().nodeSize([NODE_WIDTH + SIBLING_SEPARATION, LEVEL_SEPARATION]).separation((a: any, b: any) => (a.parent === b.parent ? 1.2 : 1.8));
-    treeLayout(hRoot);
-    let pNodes = hRoot.descendants();
-    let pLinks = hRoot.links();
-    if (roots.length > 1) {
-        pNodes = pNodes.filter((n: any) => n.data.id !== 'ROOT');
-        pLinks = pLinks.filter((l: any) => l.source.data.id !== 'ROOT');
-    }
+    // 2. Prepare Nodes with Swimlane (X) and Depth (Y) coordinates
+    const layoutNodes = initialEntities.map(entity => {
+        const laneConfig = SWIMLANES[entity.type] || DEFAULT_LANE;
+        const depth = depthMap.get(entity.id) || 0;
+        
+        // Base positioning logic
+        const baseX = laneConfig.index * COL_WIDTH;
+        const baseY = depth * ROW_HEIGHT;
 
-    // 2. Build Intrusion Nodes (Evil Nodes)
-    // These nodes float relative to their target entity but aren't part of the D3 tree layout calc
-    const iNodes: any[] = [];
-    const iLinks: any[] = [];
+        return {
+            ...entity,
+            x: baseX,
+            y: baseY,
+            lane: laneConfig.index,
+            depth: depth
+        };
+    });
 
-    intrusions.forEach((intrusion, idx) => {
-        const targetNode = pNodes.find((n: any) => n.data.id === intrusion.targetEntityId);
-        if (targetNode) {
-            // Position "Evil" nodes to the left or right of the target based on index parity
-            const offsetX = (idx % 2 === 0 ? -1 : 1) * (NODE_WIDTH * 0.85);
-            const offsetY = -80 + (idx * 40); // Stagger vertically slightly
-            
-            const iNode = {
-                ...intrusion,
-                x: targetNode.x + offsetX,
-                y: targetNode.y + offsetY,
-                targetX: targetNode.x,
-                targetY: targetNode.y
-            };
-            iNodes.push(iNode);
-            iLinks.push({ source: iNode, target: targetNode });
+    // 3. Force Simulation for Local Adjustments (Collision Avoidance within Lanes)
+    const simulation = d3.forceSimulation(layoutNodes as any)
+        .force("x", d3.forceX((d: any) => d.lane * COL_WIDTH).strength(1)) // Snap to column
+        .force("y", d3.forceY((d: any) => d.depth * ROW_HEIGHT).strength(0.5)) // Snap to row
+        .force("collide", d3.forceCollide(140)) // Prevent overlap
+        .stop();
+
+    // Run simulation tick to resolve collisions
+    for (let i = 0; i < 120; ++i) simulation.tick();
+
+    // 4. Build Links
+    const layoutLinks: any[] = [];
+    layoutNodes.forEach(node => {
+        if (node.parentEntityId) {
+            const parent = layoutNodes.find(n => n.id === node.parentEntityId);
+            if (parent) {
+                layoutLinks.push({ source: parent, target: node });
+            }
         }
     });
 
-    return { nodes: pNodes, links: pLinks, intrusionNodes: iNodes, intrusionLinks: iLinks };
+    // 5. Build Intrusion Nodes (Relative to layout nodes)
+    const iNodes: any[] = [];
+    const iLinks: any[] = [];
+    intrusions.forEach((intrusion, idx) => {
+        const targetNode = layoutNodes.find(n => n.id === intrusion.targetEntityId);
+        if (targetNode) {
+            const x = targetNode.x + 200;
+            const y = targetNode.y - 50 + (idx * 60);
+            iNodes.push({
+                ...intrusion,
+                x, // Offset to the right
+                y,
+                targetX: targetNode.x,
+                targetY: targetNode.y
+            });
+            iLinks.push({
+                source: { x, y },
+                target: { x: targetNode.x, y: targetNode.y }
+            });
+        }
+    });
+
+    // 6. Define Lanes for Background Rendering
+    const uniqueLanes = Array.from(new Set(Object.values(SWIMLANES).map(l => JSON.stringify(l)))).map(s => JSON.parse(s));
+    uniqueLanes.sort((a,b) => a.index - b.index);
+
+    return { nodes: layoutNodes, links: layoutLinks, intrusionNodes: iNodes, intrusionLinks: iLinks, lanes: uniqueLanes };
   }, [initialEntities, intrusions]);
+
+  const jurisdictionCounts = useMemo(() => {
+      const counts: Record<string, number> = {};
+      const JURISDICTION_OPTIONS: JurisdictionType[] = [
+          'Federal (IRS)', 
+          'Article 1 (Statutory)', 
+          'Local/State', 
+          'Article 3 (Private)', 
+          'Ecclesiastical',
+          'Admiralty/Maritime'
+      ];
+      JURISDICTION_OPTIONS.forEach(j => counts[j] = 0);
+      initialEntities.forEach(e => {
+          const j = getJurisdiction(e);
+          if (counts[j] !== undefined) counts[j]++;
+      });
+      return counts;
+  }, [initialEntities]);
 
   useEffect(() => {
       if (nodes.length > 0 && !layoutReady && containerRef.current) {
           const rect = containerRef.current.getBoundingClientRect();
-          setTransform({ x: rect.width / 2, y: 120, k: 0.6 });
+          // Center the view roughly
+          setTransform({ x: rect.width / 2 - COL_WIDTH, y: 100, k: 0.7 });
           setLayoutReady(true);
       }
   }, [nodes, layoutReady]);
+
+  // --- INTERACTION HANDLERS ---
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
@@ -120,14 +183,14 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
     const worldX = (mouseX - transform.x) / transform.k;
     const worldY = (mouseY - transform.y) / transform.k;
     let newScale = delta > 0 ? transform.k * scaleFactor : transform.k / scaleFactor;
-    newScale = Math.max(0.05, Math.min(newScale, 12));
+    newScale = Math.max(0.1, Math.min(newScale, 4));
     const newX = mouseX - worldX * newScale;
     const newY = mouseY - worldY * newScale;
     setTransform({ x: newX, y: newY, k: newScale });
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.ledger-content, button')) return;
+    if ((e.target as HTMLElement).closest('.ledger-node, button')) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - transform.x, y: e.clientY - transform.y });
   };
@@ -140,11 +203,15 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
 
   const handleMouseUp = () => setIsDragging(false);
 
-  const renderOrthogonalLink = (source: any, target: any) => {
-      const sx = source.x, sy = source.y + BASE_NODE_HEIGHT / 2;
-      const tx = target.x, ty = target.y - BASE_NODE_HEIGHT / 2;
-      const midY = sy + (ty - sy) / 2;
-      return `M ${sx} ${sy} V ${midY} H ${tx} V ${ty}`;
+  // Bezier Curves for "Chalkboard" look
+  const renderLink = (source: any, target: any) => {
+      const sx = source.x;
+      const sy = source.y;
+      const tx = target.x;
+      const ty = target.y;
+      
+      // Curvy connector
+      return `M ${sx} ${sy} C ${sx} ${sy + 100}, ${tx} ${ty - 100}, ${tx} ${ty}`;
   };
 
   const JURISDICTION_OPTIONS: JurisdictionType[] = [
@@ -152,59 +219,98 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
       'Article 1 (Statutory)', 
       'Local/State', 
       'Article 3 (Private)', 
-      'Ecclesiastical'
+      'Ecclesiastical',
+      'Admiralty/Maritime'
   ];
 
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full overflow-hidden bg-[#f0f4f8] select-none cursor-grab active:cursor-grabbing"
+      className="relative w-full h-full overflow-hidden bg-[#0f172a] select-none cursor-grab active:cursor-grabbing font-mono"
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
+      {/* Background Blackboard Pattern */}
+      <div className="absolute inset-0 pointer-events-none opacity-20" 
+           style={{ 
+               backgroundImage: `
+                   linear-gradient(to right, #334155 1px, transparent 1px),
+                   linear-gradient(to bottom, #334155 1px, transparent 1px)
+               `,
+               backgroundSize: '40px 40px',
+               backgroundPosition: `${transform.x}px ${transform.y}px`,
+               transform: `scale(${transform.k})`,
+               transformOrigin: '0 0'
+           }} 
+      />
+
       {/* Jurisdictional Overlay HUD */}
       <div className="absolute top-6 left-6 z-[60] flex flex-col gap-3">
-          <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-xl border border-slate-200 shadow-xl min-w-[280px]">
+          <div className="bg-slate-900/90 backdrop-blur-md px-4 py-3 rounded-xl border border-slate-700 shadow-xl min-w-[280px]">
               <div className="flex justify-between items-center mb-3">
-                <h3 className="text-slate-900 font-bold flex items-center gap-2">
-                    <Layers size={16} className="text-indigo-600" />
-                    Jurisdictional Touch Test
+                <h3 className="text-white font-bold flex items-center gap-2 text-sm uppercase tracking-widest">
+                    <Grid size={16} className="text-indigo-400" />
+                    Lattice View
                 </h3>
-                <button 
-                  onClick={() => setShowOverlay(!showOverlay)}
-                  className={`p-1.5 rounded-lg transition-colors ${showOverlay ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}
-                  title="Toggle Overlay"
-                >
-                  <Filter size={14} />
-                </button>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => { setImfOverlayMode(!imfOverlayMode); setShowOverlay(false); }}
+                        className={`p-1.5 rounded-lg transition-colors ${imfOverlayMode ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+                        title="IMF Sovereign View"
+                    >
+                        <Globe size={14} />
+                    </button>
+                    <button 
+                        onClick={() => { setShowOverlay(!showOverlay); setImfOverlayMode(false); }}
+                        className={`p-1.5 rounded-lg transition-colors ${showOverlay ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`}
+                        title="Toggle Jurisdiction Scope"
+                    >
+                        <Filter size={14} />
+                    </button>
+                </div>
               </div>
               
               {showOverlay && (
                 <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Select Active Scope</div>
+                  <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Scope Filter</div>
                   {JURISDICTION_OPTIONS.map(j => (
                     <button 
                       key={j}
                       onClick={() => setActiveTouchTest(activeTouchTest === j ? null : j)}
-                      className={`w-full flex items-center justify-between p-2 rounded-lg border text-left transition-all text-xs font-bold ${
+                      className={`w-full flex items-center justify-between p-2 rounded border text-left transition-all text-xs font-bold ${
                           activeTouchTest === j 
-                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-md' 
-                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                            ? 'bg-indigo-900/50 text-indigo-100 border-indigo-500 shadow-md' 
+                            : 'bg-slate-950/50 text-slate-400 border-slate-800 hover:bg-slate-800'
                       }`}
                     >
-                      {j}
-                      {activeTouchTest === j && <CheckCircle size={14} />}
+                      <span className="flex-1">{j}</span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-mono ${activeTouchTest === j ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-500'}`}>
+                          {jurisdictionCounts[j] || 0}
+                      </span>
                     </button>
                   ))}
-                  {activeTouchTest && (
-                      <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-800 leading-tight">
-                          <strong>Visualization Filter Active:</strong> Only entities subject to {activeTouchTest} jurisdiction are fully opaque.
-                      </div>
-                  )}
                 </div>
+              )}
+
+              {imfOverlayMode && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-2 border-b border-amber-900/30 pb-1">Sovereign Debt Status</div>
+                      <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold p-1">
+                          <div className="w-3 h-3 border-2 border-emerald-500 bg-emerald-900/20 rounded-sm"></div>
+                          Sustainable
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-amber-400 font-bold p-1">
+                          <div className="w-3 h-3 border-2 border-dashed border-amber-500 bg-amber-900/20 rounded-sm"></div>
+                          Restructuring (Pre-emptive)
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-red-400 font-bold p-1">
+                          <div className="w-3 h-3 border-4 border-double border-red-500 bg-red-900/20 rounded-sm"></div>
+                          Unsustainable / Arrears
+                      </div>
+                  </div>
               )}
           </div>
       </div>
@@ -216,61 +322,128 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
           transformOrigin: '0 0'
         }}
       >
-        {/* Background Grids for perspective */}
-        <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)', backgroundSize: '100px 100px' }} />
+        {/* Render Swimlane Headers/Backgrounds in World Space */}
+        <div className="absolute top-[-1000px] bottom-[-1000px] pointer-events-none flex">
+            {lanes.map(lane => (
+                <div 
+                    key={lane.index} 
+                    className="border-l border-r border-dashed border-white/5 flex flex-col items-center pt-4"
+                    style={{ 
+                        position: 'absolute', 
+                        left: lane.index * COL_WIDTH - (COL_WIDTH/2), 
+                        width: COL_WIDTH,
+                        height: '10000px',
+                        top: -5000
+                    }}
+                >
+                    <div className="text-white/10 text-[80px] font-black uppercase tracking-widest opacity-20 rotate-90 mt-96 whitespace-nowrap transform translate-x-10">
+                        {lane.label}
+                    </div>
+                </div>
+            ))}
+        </div>
 
         <svg className="absolute inset-0 pointer-events-none overflow-visible w-full h-full">
           <defs>
-            <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444" />
+            <marker id="chalk-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L9,3 z" fill="#94a3b8" />
             </marker>
-            <linearGradient id="parentage-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#6366f1" stopOpacity="0.6" />
-            </linearGradient>
           </defs>
 
-          {/* Standard Entity Links */}
+          {/* Connectors */}
           <g>
-            {links.map((link: any, i: number) => (
-                <path
-                  key={i}
-                  d={renderOrthogonalLink(link.source, link.target)}
-                  fill="none"
-                  stroke="#cbd5e1"
-                  strokeWidth={3 / transform.k}
-                  strokeLinecap="round"
-                  className="transition-all duration-500"
-                />
-            ))}
+            {links.map((link: any, i: number) => {
+                const source = link.source as Entity;
+                const target = link.target as Entity;
+                
+                // IMF Color Coding for Links
+                let strokeColor = "#94a3b8"; // Default slate
+                let strokeDash = "5,5";
+
+                if (imfOverlayMode) {
+                    if (source.imfProfile?.dsaStatus === 'Unsustainable') strokeColor = "#ef4444"; // Red
+                    else if (source.imfProfile?.dsaStatus === 'Sustainable (High Prob)') strokeColor = "#10b981"; // Emerald
+                }
+
+                return (
+                    <path
+                      key={i}
+                      d={renderLink(source, target)}
+                      fill="none"
+                      stroke={strokeColor}
+                      strokeWidth={2 / transform.k}
+                      strokeDasharray={strokeDash}
+                      className="opacity-50"
+                    />
+                );
+            })}
           </g>
 
-          {/* Intrusion Links (Piercing Arrows) */}
+          {/* Intrusion Vectors */}
           <g>
               {intrusionLinks.map((link: any, i: number) => (
                   <line 
                     key={`int-${i}`}
-                    x1={link.source.x + (link.source.x < link.target.x ? 140 : -140)} 
+                    x1={link.source.x} 
                     y1={link.source.y}
-                    x2={link.target.x} 
+                    x2={link.target.x + 20} 
                     y2={link.target.y}
                     stroke="#ef4444" 
-                    strokeWidth={4 / transform.k} 
-                    strokeDasharray="10,5"
-                    markerEnd="url(#arrowhead-red)"
+                    strokeWidth={2 / transform.k} 
+                    strokeDasharray="2,2"
+                    markerEnd="url(#chalk-arrow)"
                     className="animate-pulse"
                   />
               ))}
           </g>
         </svg>
 
-        {/* --- ENTITY NODES --- */}
+        {/* --- ENTITY NODES (CHALKBOARD STYLE) --- */}
         {nodes.map((node: any) => {
-            const entity = node.data as Entity;
+            const entity = node as Entity; 
             const jurisdiction = getJurisdiction(entity);
-            const isFaded = activeTouchTest && activeTouchTest !== jurisdiction;
+            const isFaded = !imfOverlayMode && activeTouchTest && activeTouchTest !== jurisdiction;
             const entityAccounts = accounts.filter(a => a.entityId === entity.id);
-            const isRoot = !entity.parentEntityId;
+            const totalAsset = entityAccounts.filter(a => a.type === 'Asset').reduce((s,a) => s + a.balance, 0);
+
+            // Shape based on Type
+            const Icon = entity.type === EntityType.INDIVIDUAL ? Circle : 
+                         entity.type === EntityType.LLC ? Square : 
+                         entity.type === EntityType.TRUST ? Hexagon : 
+                         entity.type === EntityType.VESSEL ? Ship : Triangle;
+
+            // IMF Overlay Logic
+            let borderClass = 'border-white/20';
+            let shadowClass = 'shadow-slate-900/50';
+            let statusBadge = null;
+
+            if (imfOverlayMode) {
+                const status = entity.imfProfile?.dsaStatus;
+                const policy = entity.imfProfile?.arrearsPolicy;
+
+                if (status === 'Sustainable' || status === 'Sustainable (High Prob)') {
+                    borderClass = 'border-emerald-500 bg-emerald-900/10';
+                    shadowClass = 'shadow-emerald-900/40';
+                } else if (status === 'Unsustainable' || status === 'Exceptional Uncertainty') {
+                    borderClass = 'border-red-500 border-double border-4 bg-red-900/10';
+                    shadowClass = 'shadow-red-900/40';
+                } else {
+                    borderClass = 'border-amber-500 border-dashed bg-amber-900/10';
+                }
+
+                if (policy && policy !== 'None') {
+                    statusBadge = (
+                        <div className="absolute -top-3 right-4 bg-slate-900 border border-white/20 text-[9px] font-bold text-white px-2 py-0.5 rounded-full uppercase tracking-widest shadow-lg transform rotate-2">
+                            {policy}
+                        </div>
+                    );
+                }
+            } else {
+                // Default Jurisdiction Styling
+                if (entity.role === EntityRole.HOLDING_TRUST) { borderClass = 'border-amber-500/50 bg-amber-50/5'; shadowClass = 'shadow-amber-900/20'; }
+                else if (entity.role === EntityRole.OPERATING_LLC) { borderClass = 'border-emerald-500/50 bg-emerald-50/5'; shadowClass = 'shadow-emerald-900/20'; }
+                else if (entity.type === EntityType.VESSEL) { borderClass = 'border-cyan-500/50 bg-cyan-50/5'; shadowClass = 'shadow-cyan-900/20'; }
+            }
 
             return (
               <div
@@ -280,55 +453,56 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                   left: node.x,
                   top: node.y,
                   transform: 'translate(-50%, -50%)',
-                  width: NODE_WIDTH,
+                  width: 280,
                   zIndex: 10,
                 }}
-                className={`ledger-content bg-white rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border-[4px] p-8 transition-all duration-500 
-                  ${isRoot ? 'border-indigo-400' : entity.role === EntityRole.HOLDING_TRUST ? 'border-amber-400' : 'border-emerald-400'}
-                  ${isFaded ? 'opacity-20 grayscale blur-[1px]' : 'opacity-100'}
+                className={`ledger-node bg-slate-900 border-2 rounded-lg p-4 transition-all duration-500 shadow-2xl
+                  ${borderClass} ${shadowClass}
+                  ${isFaded ? 'opacity-20 blur-[1px]' : 'opacity-100'}
                 `}
               >
-                <div className="mb-6 flex justify-between items-start">
-                    <div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${isRoot ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : entity.role === EntityRole.HOLDING_TRUST ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
-                              {entity.role.replace('_', ' ')}
-                          </span>
-                          <span className="flex items-center gap-1 bg-slate-100 text-slate-500 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter border border-slate-200">
-                              <Landmark size={8} /> {jurisdiction}
-                          </span>
-                        </div>
-                        <h3 className="text-4xl font-black text-slate-900 tracking-tight mt-2">{entity.name}</h3>
-                        {showOverlay && (
-                          <div className="mt-2 flex items-center gap-2 text-[10px] font-mono text-slate-400 font-bold uppercase">
-                            <Fingerprint size={12} className="text-indigo-400" />
-                            ID: {entity.id.slice(0, 8)} • EIN: {entity.einLast4 ? `**-***${entity.einLast4}` : 'N/A'}
-                          </div>
-                        )}
+                {statusBadge}
+                
+                <div className="flex justify-between items-start mb-3 border-b border-white/10 pb-2">
+                    <div className="flex items-center gap-2">
+                        <Icon size={16} className={imfOverlayMode ? 'text-white' : entity.role === EntityRole.HOLDING_TRUST ? 'text-amber-400' : entity.type === EntityType.VESSEL ? 'text-cyan-400' : 'text-slate-400'} />
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{entity.role.replace('_', ' ')}</span>
                     </div>
-                    <button onClick={() => onEditEntity?.(entity.id)} className="p-2 hover:bg-slate-50 rounded-lg text-slate-300 hover:text-indigo-600 transition-colors">
-                        <Edit size={20} />
+                    <button onClick={() => onEditEntity?.(entity.id)} className="text-slate-500 hover:text-white transition-colors">
+                        <Edit size={12} />
                     </button>
                 </div>
 
-                <div className="space-y-4">
-                    {entityAccounts.length > 0 ? entityAccounts.map(acc => (
-                        <div key={acc.id} className="bg-slate-50/50 rounded-2xl border-2 border-slate-100 p-6 flex justify-between items-center group hover:border-slate-200 transition-all">
-                             <div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">{acc.type}</span>
-                                <span className="text-2xl font-black text-slate-800">{acc.name}</span>
-                             </div>
-                             <span className="text-4xl font-black text-slate-900 font-mono tracking-tighter">${acc.balance.toLocaleString()}</span>
+                <h3 className="text-sm font-bold text-white mb-1 leading-tight">{entity.name}</h3>
+                
+                {imfOverlayMode ? (
+                    <div className="text-[9px] font-mono mb-3 space-y-1">
+                        <div className={`font-bold ${entity.imfProfile?.dsaStatus === 'Unsustainable' ? 'text-red-400' : 'text-emerald-400'}`}>
+                            DSA: {entity.imfProfile?.dsaStatus || 'N/A'}
                         </div>
-                    )) : (
-                        <div className="py-8 text-center text-slate-400 italic font-medium">No associated treasury accounts.</div>
-                    )}
-                </div>
+                        <div className="text-slate-500">
+                             Financing: {entity.imfProfile?.financingAssurances ? 'ASSURED' : 'GAP DETECTED'}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-[10px] text-slate-500 font-mono mb-3">
+                        ID: {entity.id.slice(0, 8)} • <span className="text-slate-400">{jurisdiction}</span>
+                    </div>
+                )}
+
+                {entityAccounts.length > 0 && (
+                    <div className="bg-white/5 rounded p-2 border border-white/5">
+                        <div className="flex justify-between items-center text-[10px] text-slate-300">
+                            <span>ASSETS</span>
+                            <span className="font-mono font-bold text-emerald-400">${totalAsset.toLocaleString()}</span>
+                        </div>
+                    </div>
+                )}
               </div>
             );
         })}
 
-        {/* --- INTRUSION NODES (EVIL) --- */}
+        {/* --- INTRUSION NODES (RED CHALK) --- */}
         {intrusionNodes.map((node: any) => (
             <div
                 key={node.id}
@@ -337,29 +511,19 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                     left: node.x,
                     top: node.y,
                     transform: 'translate(-50%, -50%)',
-                    width: 280,
+                    width: 200,
                     zIndex: 50
                 }}
-                className="bg-red-950/90 text-white rounded-2xl border-4 border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.4)] p-6 animate-pulse"
+                className="bg-red-950/80 text-red-200 border-2 border-red-500/50 border-dashed p-3 font-mono text-xs shadow-[0_0_20px_rgba(220,38,38,0.2)] rotate-2"
             >
-                <div className="flex items-start gap-4 mb-2">
-                    <div className="p-3 bg-red-600 rounded-full shadow-lg">
-                        <Skull size={24} className="text-white" />
-                    </div>
-                    <div>
-                        <h4 className="text-lg font-black uppercase tracking-tight">{node.name}</h4>
-                        <span className="text-[10px] font-bold bg-red-800 px-2 py-0.5 rounded text-red-200 uppercase tracking-widest">
-                            {node.type}
-                        </span>
-                    </div>
+                <div className="flex items-center gap-2 mb-1 border-b border-red-500/30 pb-1">
+                    <Skull size={14} className="text-red-500" />
+                    <span className="font-bold uppercase tracking-wider text-[10px]">Threat Vector</span>
                 </div>
-                <div className="text-xs text-red-200 mt-2 font-mono border-t border-red-800 pt-2">
-                    JURISDICTION: {node.jurisdiction}
-                    <br/>
-                    SEVERITY: {node.severity}
-                </div>
-                <div className="absolute -bottom-3 -right-3">
-                    <AlertOctagon size={48} className="text-red-500 opacity-20 rotate-12" />
+                <div className="font-bold text-white mb-1">{node.name}</div>
+                <div className="flex justify-between text-[9px] text-red-400">
+                    <span>{node.type}</span>
+                    <span className="uppercase">{node.severity}</span>
                 </div>
             </div>
         ))}
@@ -368,38 +532,36 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
       
       {/* Controller HUD */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50">
-          <div className="flex items-center gap-2 bg-[#1e293b]/90 backdrop-blur-2xl p-2 rounded-2xl shadow-2xl border border-white/10">
+          <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-2xl p-2 rounded-xl shadow-2xl border border-white/10">
               <button 
-                onClick={() => setTransform(t => ({ ...t, k: Math.min(t.k * 1.3, 12) }))} 
-                className="p-3 hover:bg-white/10 rounded-xl transition-all group"
+                onClick={() => setTransform(t => ({ ...t, k: Math.min(t.k * 1.3, 4) }))} 
+                className="p-3 hover:bg-white/10 rounded-lg transition-all group"
               >
-                <ZoomIn size={24} className="text-slate-400 group-hover:text-white" />
+                <ZoomIn size={20} className="text-slate-400 group-hover:text-white" />
               </button>
               
               <button 
-                onClick={() => setTransform(t => ({ ...t, k: Math.max(t.k / 1.3, 0.05) }))} 
-                className="p-3 hover:bg-white/10 rounded-xl transition-all group"
+                onClick={() => setTransform(t => ({ ...t, k: Math.max(t.k / 1.3, 0.1) }))} 
+                className="p-3 hover:bg-white/10 rounded-lg transition-all group"
               >
-                <ZoomOut size={24} className="text-slate-400 group-hover:text-white" />
+                <ZoomOut size={20} className="text-slate-400 group-hover:text-white" />
               </button>
               
-              <div className="w-px h-8 bg-white/10 mx-2"></div>
+              <div className="w-px h-6 bg-white/10 mx-2"></div>
               
               <button 
                 onClick={() => {
                     if (containerRef.current) {
                         const rect = containerRef.current.getBoundingClientRect();
-                        setTransform({ x: rect.width / 2, y: 120, k: 0.6 });
+                        setTransform({ x: rect.width / 2 - COL_WIDTH, y: 100, k: 0.7 });
                     }
                 }} 
-                className="p-3 hover:bg-white/10 rounded-xl transition-all group"
+                className="p-3 hover:bg-white/10 rounded-lg transition-all group"
               >
-                <Move size={24} className="text-slate-400 group-hover:text-white" />
+                <LayoutTemplate size={20} className="text-slate-400 group-hover:text-white" />
               </button>
 
-              <div className="w-px h-8 bg-white/10 mx-2"></div>
-
-              <div className="px-6 text-sm font-mono font-black text-indigo-400 tracking-widest">
+              <div className="px-4 text-[10px] font-mono font-bold text-indigo-400 tracking-widest">
                   {(transform.k * 100).toFixed(0)}%
               </div>
           </div>
@@ -407,11 +569,3 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
     </div>
   );
 };
-
-// Simple Icon fallback if import fails or using standard lucide
-const CheckCircle = ({ size }: { size: number }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-        <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-);

@@ -7,17 +7,22 @@ export enum EntityRole {
   BENEFICIAL_OWNER = "BENEFICIAL_OWNER",
   TRUSTEE = "TRUSTEE",
   LIVESTOCK = "LIVESTOCK",
+  VESSEL = "VESSEL",
+  JOINT_VENTURE = "JOINT_VENTURE",
+  SURETY = "SURETY",
   OTHER = "OTHER"
 }
 
 export enum EntityType {
   TRUST = "TRUST",
+  FOREIGN_BUSINESS_TRUST = "FOREIGN_BUSINESS_TRUST",
   LLC = "LLC",
   VENDOR = "VENDOR",
   CONTRACTOR = "CONTRACTOR",
   ESTATE = "ESTATE",
   INDIVIDUAL = "INDIVIDUAL",
-  BIOLOGICAL_ASSET = "BIOLOGICAL_ASSET"
+  BIOLOGICAL_ASSET = "BIOLOGICAL_ASSET",
+  VESSEL = "VESSEL"
 }
 
 export enum TrustSubType {
@@ -29,7 +34,18 @@ export enum TrustSubType {
   UNSPECIFIED = "UNSPECIFIED"
 }
 
-export type JurisdictionType = 'Article 1 (Statutory)' | 'Article 3 (Private)' | 'Ecclesiastical' | 'Federal (IRS)' | 'Local/State';
+export type JurisdictionType = 'Article 1 (Statutory)' | 'Article 3 (Private)' | 'Ecclesiastical' | 'Federal (IRS)' | 'Local/State' | 'Admiralty/Maritime' | 'Prize Court (Navy)';
+
+// --- IMF POLICY TYPES ---
+export type DebtSustainabilityStatus = 'Sustainable' | 'Sustainable (High Prob)' | 'Unsustainable' | 'Exceptional Uncertainty';
+export type ArrearsPolicyType = 'None' | 'NTP' | 'LIOA-1' | 'LIOA-2' | 'LIOA-3' | 'LIOA-4' | 'LIA' | 'De Minimis';
+
+export interface IMFProfile {
+  dsaStatus: DebtSustainabilityStatus;
+  arrearsPolicy: ArrearsPolicyType;
+  financingAssurances: boolean; // Is program fully financed?
+  programStatus: 'On Track' | 'Review Pending' | 'Off Track';
+}
 
 export interface IntrusionRecord {
   id: string;
@@ -205,6 +221,26 @@ export interface CanalRecord {
   voucherId?: string;
 }
 
+export interface MaradRecord {
+  id: string;
+  entityId: string;
+  vesselName: string;
+  type: 'Charter' | 'Requisition';
+  status: 'Active' | 'Surrendered' | 'Restored';
+  emergencyRef: string;
+  valuation: number;
+  compensationStatus: 'Accepted' | '75% Paid - Litigating';
+  timestamp: string;
+  relinquishmentType?: 'Standard MARAD' | 'Navy Prize';
+  warRiskCovered?: boolean;
+  usppi?: string; // US Principal Party in Interest
+  allocations?: {
+      state: number;
+      dod: number;
+      jointVenture: number;
+  };
+}
+
 export interface AgencyCertification {
   id: string;
   entityId: string;
@@ -307,6 +343,7 @@ export interface Entity {
   regionCode?: 'OSC' | 'KCSC' | 'FSC';
   modelData?: EntityModelData;
   uiPosition?: EntityPosition;
+  imfProfile?: IMFProfile; // New IMF Policy Context
   _version: string;
 }
 
@@ -779,4 +816,18 @@ export interface MetaRule {
   citation: string; // e.g. "Circular 230 § 10.28"
   description: string;
   evaluate: (context: any) => ComplianceViolation | null;
+}
+
+// --- GRAPH REDUX STRUCTURES ---
+export interface EntityGraph {
+  nodeMap: Record<string, Entity>; // O(1) Lookup
+  adjacencyList: Record<string, string[]>; // Parent -> Children[]
+  roots: string[]; // Top-level nodes
+}
+
+// --- LSM TIME-SERIES STRUCTURES ---
+export interface LSMStore {
+  memTable: JournalEntry[]; // Unsorted / Recent
+  l0: JournalEntry[]; // Sorted by Date (Recent History)
+  l1: JournalEntry[]; // Archived / Compressed (Deep History)
 }

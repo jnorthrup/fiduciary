@@ -1,8 +1,10 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import * as d3 from 'd3';
 import { Entity, EntityType, EntityRole, TrustSubType } from '../types';
 import { useLedgerStore } from '../services/ledgerService';
-import { Box, GripVertical, Plus, Shield, Building2, Trash2, Edit2, Link, Save, X, Network, BookOpen, Fingerprint, Workflow, UserPlus, Users, User, ZoomIn, ZoomOut, Move, Layout, ArrowUpRight, Anchor, Landmark } from 'lucide-react';
+import { Box, GripVertical, Plus, Shield, Building2, Trash2, Edit2, Link, Save, X, Network, BookOpen, Fingerprint, Workflow, UserPlus, Users, User, ZoomIn, ZoomOut, Move, Layout, ArrowUpRight, Anchor, Landmark, Ship, Globe, Sparkles } from 'lucide-react';
+import { OrgStructureScanner } from './OrgStructureScanner';
 
 interface Props {
   entities: Entity[];
@@ -26,6 +28,7 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoveredEntityId, setHoveredEntityId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [showAiScanner, setShowAiScanner] = useState(false);
   
   const [localDraggedPos, setLocalDraggedPos] = useState<{x: number, y: number} | null>(null);
 
@@ -169,6 +172,21 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
       if (containerRef.current) setTransform({ x: containerRef.current.clientWidth / 2, y: 100, k: 0.65 });
   };
 
+  const handleDeployMARAD = async () => {
+      // 1. Create Foreign Business Trust (Root)
+      const trust = await onAddEntity('', EntityType.FOREIGN_BUSINESS_TRUST, EntityRole.HOLDING_TRUST, 'Foreign Business Trust');
+      
+      // 2. Create the Domestic Individual / Vessel (Surety)
+      // This is JOSHUA DONALD JONIO as the domestic vessel.
+      const vessel = await onAddEntity(trust.id, EntityType.INDIVIDUAL, EntityRole.SURETY, 'DOMESTIC INDIVIDUAL (Surety)');
+      
+      // 3. Create Rogue Roots Joint Venture (The Export/Import Arm)
+      const jv = await onAddEntity(trust.id, EntityType.LLC, EntityRole.JOINT_VENTURE, 'Rogue Roots Joint Venture');
+      
+      // Auto-layout after creation
+      setTimeout(performAutoLayout, 500);
+  };
+
   const handleCreatePerson = () => {
       const name = `${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]}`;
       handleCreate(EntityType.INDIVIDUAL, EntityRole.BENEFICIARY, name);
@@ -217,20 +235,51 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
 
   return (
     <div className="flex h-full bg-slate-100 overflow-hidden">
+      
+      {showAiScanner && <OrgStructureScanner onClose={() => { setShowAiScanner(false); performAutoLayout(); }} />}
+
       <div className="w-80 bg-white border-r border-slate-200 flex flex-col p-4 shadow-lg z-10 overflow-hidden">
         <div className="mb-6 shrink-0">
             <h3 className="font-bold text-slate-800 flex items-center gap-2"><Network className="text-indigo-600" /> Structure Builder</h3>
             <p className="text-xs text-slate-500 mt-1">Design your persistent entity hierarchy.</p>
         </div>
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            
+            {/* AI Scanner Button */}
+            <div className="mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg p-4 text-white shadow-lg shadow-indigo-200">
+                <div className="flex items-center gap-2 font-bold mb-2">
+                    <Sparkles size={16} /> AI Architect
+                </div>
+                <p className="text-[10px] text-indigo-100 mb-3 leading-tight">
+                    Scan documents, org charts, or dictate structure via voice command.
+                </p>
+                <button 
+                    onClick={() => setShowAiScanner(true)}
+                    className="w-full py-2 bg-white text-indigo-600 rounded font-bold text-xs hover:bg-indigo-50 transition-colors shadow-sm"
+                >
+                    Launch Scanner
+                </button>
+            </div>
+
             <div className="mb-6 bg-indigo-50 border border-indigo-100 rounded-lg p-3">
                 <div className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-2 flex items-center gap-2"><UserPlus size={14} /> Identity Generator</div>
                 <button onClick={handleCreatePerson} className="w-full flex items-center justify-center gap-2 p-2 bg-white border border-indigo-200 rounded hover:bg-indigo-50 transition-colors text-xs font-bold text-indigo-700 shadow-sm"><User size={14} /> New Beneficiary</button>
             </div>
+            
+            <div className="mb-6 bg-slate-900 border border-slate-800 rounded-lg p-3 text-center">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-center gap-2"><Ship size={14} /> MARAD Protocol</div>
+                <button onClick={handleDeployMARAD} className="w-full p-2 bg-indigo-600 text-white rounded font-bold text-xs hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-900/50">
+                    Deploy Foreign Trust / Surety
+                </button>
+                <div className="text-[9px] text-slate-500 mt-2">
+                    Foreign Business Trust (Root) {'>'} Domestic Individual (Surety) {'>'} Rogue Roots JV.
+                </div>
+            </div>
+
             <div className="space-y-3 mb-6">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Quick Add</p>
                 <button onClick={() => handleCreate(EntityType.TRUST, EntityRole.HOLDING_TRUST)} className="w-full flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 text-left transition-all active:scale-95"><Shield className="text-amber-600" size={20} /><div><div className="text-sm font-bold text-amber-900">Holding Trust</div><div className="text-[10px] text-amber-700">Passive / Asset Protection</div></div></button>
-                <button onClick={() => handleCreate(EntityType.TRUST, EntityRole.HOLDING_TRUST, "New Living Trust", TrustSubType.REVOCABLE)} className="w-full flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 text-left transition-all active:scale-95"><Shield className="text-blue-600" size={20} /><div><div className="text-sm font-bold text-blue-900">Living Trust</div><div className="text-[10px] text-blue-700">Revocable / Estate Planning</div></div></button>
+                <button onClick={() => handleCreate(EntityType.FOREIGN_BUSINESS_TRUST, EntityRole.HOLDING_TRUST)} className="w-full flex items-center gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 text-left transition-all active:scale-95"><Globe className="text-purple-600" size={20} /><div><div className="text-sm font-bold text-purple-900">Foreign Business Trust</div><div className="text-[10px] text-purple-700">Int'l / Non-Domestic</div></div></button>
                 <button onClick={() => handleCreate(EntityType.LLC, EntityRole.OPERATING_LLC)} className="w-full flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 text-left transition-all active:scale-95"><Building2 className="text-emerald-600" size={20} /><div><div className="text-sm font-bold text-emerald-900">Operating LLC</div><div className="text-[10px] text-emerald-700">Active Trade / Business</div></div></button>
             </div>
             <div className="mb-6">
@@ -366,11 +415,21 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
                             ${isSelected ? 'ring-4 ring-indigo-500/20 border-indigo-500' : isJurisdictionallyActive ? 'border-indigo-400/50 shadow-indigo-100 shadow-xl' : 'hover:border-slate-400'} 
                             ${isDraggingNode ? 'scale-105 shadow-2xl opacity-90 cursor-grabbing' : 'cursor-grab'} 
                             ${isHoverTarget ? 'border-indigo-600 ring-8 ring-indigo-100 scale-105' : ''} 
-                            ${ent.role === EntityRole.HOLDING_TRUST ? 'border-amber-400 bg-amber-50/30' : ent.role === EntityRole.OPERATING_LLC ? 'border-emerald-400 bg-emerald-50/30' : 'border-slate-300'}`}
+                            ${ent.type === EntityType.FOREIGN_BUSINESS_TRUST ? 'border-purple-400 bg-purple-50/30' : 
+                              ent.role === EntityRole.SURETY ? 'border-rose-400 bg-rose-50/30' : 
+                              ent.role === EntityRole.HOLDING_TRUST ? 'border-amber-400 bg-amber-50/30' : 
+                              ent.role === EntityRole.OPERATING_LLC ? 'border-emerald-400 bg-emerald-50/30' : 
+                              ent.role === EntityRole.JOINT_VENTURE ? 'border-indigo-400 bg-indigo-50/30' :
+                              'border-slate-300'}`}
                     >
                         <div className="p-6 pb-2">
                             <div className="flex justify-between items-center mb-2">
-                                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${ent.role === EntityRole.HOLDING_TRUST ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${
+                                    ent.role === EntityRole.HOLDING_TRUST ? 'bg-amber-100 text-amber-700' : 
+                                    ent.role === EntityRole.SURETY ? 'bg-rose-100 text-rose-700' :
+                                    ent.role === EntityRole.JOINT_VENTURE ? 'bg-indigo-100 text-indigo-700' :
+                                    ent.type === EntityType.FOREIGN_BUSINESS_TRUST ? 'bg-purple-100 text-purple-700' :
+                                    'bg-emerald-100 text-emerald-700'}`}>
                                     {ent.role.replace('_', ' ')}
                                 </span>
                                 {isJurisdictionallyActive && !isSelected && (

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Entity, IndustryVertical, Web8KCode, AccordRecord } from '../types';
-import { Scale, FileText, CheckCircle2, Shield, Anchor, Server, Link, ArrowRight, Gavel, Cpu } from 'lucide-react';
+import { Scale, FileText, CheckCircle2, Shield, Anchor, Server, Link, ArrowRight, Gavel, Cpu, Plus, X, GitMerge } from 'lucide-react';
 
 interface Props {
   entity: Entity;
@@ -11,7 +11,7 @@ interface Props {
 const STEPS = [
   { id: 1, title: 'Obligation Context', icon: Gavel },
   { id: 2, title: 'Industry & Codex', icon: Server },
-  { id: 3, title: 'Instrument', icon: FileText },
+  { id: 3, title: 'Instrument Builder', icon: FileText },
   { id: 4, title: 'OC10 Anchoring', icon: Anchor }
 ];
 
@@ -43,6 +43,16 @@ export const AccordSatisfactionWizard: React.FC<Props> = ({ entity, onComplete }
   const [codex, setCodex] = useState<Web8KCode>('Item 1.01');
   const [anchorHash, setAnchorHash] = useState('');
 
+  // Endorsement Builder State
+  const [primaryAction, setPrimaryAction] = useState('PAY TO THE ORDER OF');
+  const [primaryTarget, setPrimaryTarget] = useState(entity.name);
+  const [scope, setScope] = useState('WITHOUT RECOURSE');
+  
+  const [hasSecondary, setHasSecondary] = useState(false);
+  const [conjunction, setConjunction] = useState<'AND' | 'OR' | 'THEN'>('AND');
+  const [secondaryAction, setSecondaryAction] = useState('DEPOSIT TO');
+  const [secondaryTarget, setSecondaryTarget] = useState('');
+
   const generateAnchor = () => {
     setLoading(true);
     // Simulate OC10 Hashing
@@ -54,6 +64,17 @@ export const AccordSatisfactionWizard: React.FC<Props> = ({ entity, onComplete }
     }, 2000);
   };
 
+  const getEndorsementText = () => {
+      let baseText = `${primaryAction} ${primaryTarget}`;
+      if (scope && scope !== 'NONE') baseText += ` ${scope}`;
+      
+      if (hasSecondary && secondaryTarget) {
+          baseText += ` ${conjunction} ${secondaryAction} ${secondaryTarget}`;
+      }
+      
+      return (baseText + " TENDERED AS FULL SATISFACTION OF ALL CLAIMS").toUpperCase();
+  };
+
   const handleFinish = () => {
       onComplete({
           id: `ACC-${Date.now()}`,
@@ -63,7 +84,7 @@ export const AccordSatisfactionWizard: React.FC<Props> = ({ entity, onComplete }
           settlementAmount: settleAmount,
           industry,
           codexItem: codex,
-          restrictiveEndorsementText: "TENDERED AS FULL SATISFACTION OF ALL CLAIMS",
+          restrictiveEndorsementText: getEndorsementText(),
           oc10Anchor: {
               anchorId: `ANC-${Math.floor(Math.random()*10000)}`,
               hash: anchorHash,
@@ -192,33 +213,114 @@ export const AccordSatisfactionWizard: React.FC<Props> = ({ entity, onComplete }
             </div>
         )}
 
-        {/* STEP 3: INSTRUMENT */}
+        {/* STEP 3: INSTRUMENT BUILDER */}
         {step === 3 && (
             <div className="space-y-6 animate-in slide-in-from-right-4 fade-in">
                  <div className="bg-amber-50 border border-amber-100 p-4 rounded-lg flex items-start gap-3">
                     <Shield className="text-amber-600 shrink-0 mt-1" size={18} />
                     <div>
-                        <h3 className="font-bold text-amber-800 text-sm mb-1">Restrictive Endorsement Generation</h3>
-                        <p className="text-xs text-amber-600">The following text will be legally encoded onto the payment instrument.</p>
+                        <h3 className="font-bold text-amber-800 text-sm mb-1">Endorsement Builder (EBNF)</h3>
+                        <p className="text-xs text-amber-600">Construct compound orders using standard conjunctions (AND/OR/THEN).</p>
                     </div>
                 </div>
 
-                <div className="p-6 bg-slate-100 border-2 border-slate-300 border-dashed rounded-lg font-mono text-sm text-slate-700 relative">
-                    <div className="absolute top-2 right-2 text-[10px] text-slate-400 font-bold uppercase">Back of Instrument</div>
-                    <p className="mb-4">
-                        TENDERED AS FULL SATISFACTION OF ALL CLAIMS, DISPUTES, AND OBLIGATIONS BETWEEN <strong>{entity.name.toUpperCase()}</strong> AND <strong>{counterparty.toUpperCase()}</strong>.
+                {/* Primary Order */}
+                <div className="p-4 border border-slate-200 rounded-lg bg-slate-50/50">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Primary Order</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <select 
+                            value={primaryAction}
+                            onChange={e => setPrimaryAction(e.target.value)}
+                            className="border border-slate-300 rounded p-2 text-sm bg-white font-bold"
+                        >
+                            <option value="PAY TO THE ORDER OF">PAY TO THE ORDER OF</option>
+                            <option value="TRANSFER TO">TRANSFER TO</option>
+                            <option value="DEPOSIT TO">DEPOSIT TO</option>
+                            <option value="EXCHANGE FOR">EXCHANGE FOR</option>
+                            <option value="DISCHARGE">DISCHARGE</option>
+                        </select>
+                        <input 
+                            value={primaryTarget}
+                            onChange={e => setPrimaryTarget(e.target.value)}
+                            className="border border-slate-300 rounded p-2 text-sm"
+                            placeholder="Payee / Account / Value"
+                        />
+                    </div>
+                    <select 
+                        value={scope}
+                        onChange={e => setScope(e.target.value)}
+                        className="w-full border border-slate-300 rounded p-2 text-sm bg-white"
+                    >
+                        <option value="WITHOUT RECOURSE">Qualified: WITHOUT RECOURSE</option>
+                        <option value="FOR DEPOSIT ONLY">Restrictive: FOR DEPOSIT ONLY</option>
+                        <option value="IN TRUST FOR">Restrictive: IN TRUST FOR...</option>
+                        <option value="NONE">Unrestricted</option>
+                    </select>
+                </div>
+
+                {/* Compound Logic Toggle */}
+                {!hasSecondary ? (
+                    <button 
+                        onClick={() => setHasSecondary(true)}
+                        className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 mx-auto"
+                    >
+                        <Plus size={14} /> Add Compound Instruction
+                    </button>
+                ) : (
+                    <div className="relative border-l-2 border-indigo-200 pl-4 ml-4 space-y-4">
+                        <div className="absolute -left-[9px] top-0 bg-white border border-indigo-200 rounded-full p-0.5">
+                            <GitMerge size={12} className="text-indigo-400" />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                            <label className="block text-[10px] font-bold text-indigo-400 uppercase">Conjunction</label>
+                            <button onClick={() => setHasSecondary(false)} className="text-slate-400 hover:text-red-500"><X size={14} /></button>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                            {['AND', 'OR', 'THEN'].map(c => (
+                                <button
+                                    key={c}
+                                    onClick={() => setConjunction(c as any)}
+                                    className={`flex-1 py-1.5 text-xs font-bold rounded border ${conjunction === c ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    {c}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <select 
+                                value={secondaryAction}
+                                onChange={e => setSecondaryAction(e.target.value as any)}
+                                className="border border-slate-300 rounded p-2 text-sm bg-white font-bold"
+                            >
+                                <option value="DEPOSIT TO">DEPOSIT TO</option>
+                                <option value="CREDIT TO">CREDIT TO</option>
+                                <option value="DELIVER TO">DELIVER TO</option>
+                                <option value="RETURN">RETURN</option>
+                            </select>
+                            <input 
+                                value={secondaryTarget}
+                                onChange={e => setSecondaryTarget(e.target.value)}
+                                className="border border-slate-300 rounded p-2 text-sm"
+                                placeholder="Account / Entity"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                <div className="p-6 bg-slate-100 border-2 border-slate-300 border-dashed rounded-lg font-mono text-sm text-slate-700 relative mt-4">
+                    <div className="absolute top-2 right-2 text-[10px] text-slate-400 font-bold uppercase">Endorsement Preview</div>
+                    <p className="mb-4 font-bold text-slate-900 leading-relaxed">
+                        {getEndorsementText()}
                     </p>
-                    <p className="mb-4">
+                    <p className="mb-4 text-xs">
                         BY ENDORSING OR NEGOTIATING THIS INSTRUMENT, THE PAYEE AGREES TO THE ACCORD AND SATISFACTION OF THE DEBT IN THE ORIGINAL AMOUNT OF <strong>${origAmount.toFixed(2)}</strong> FOR THE SETTLEMENT AMOUNT OF <strong>${settleAmount.toFixed(2)}</strong>.
                     </p>
-                    <p>
+                    <p className="text-[10px] text-slate-500">
                         CODEX: [{codex}] // REF: {entity.id.split('-')[1]}-{Date.now().toString().slice(-6)}
                     </p>
-                </div>
-                
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <CheckCircle2 size={12} className="text-emerald-500" />
-                    <span>UCC 3-311 Compliant Language Detected</span>
                 </div>
             </div>
         )}
