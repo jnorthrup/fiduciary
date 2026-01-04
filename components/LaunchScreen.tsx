@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Rocket, ChevronRight, Lock, Globe, Server, Cpu, Database, Fingerprint, Activity, User, History, Sparkles } from 'lucide-react';
+import { ShieldCheck, Rocket, ChevronRight, Lock, Globe, Server, Cpu, Database, Fingerprint, Activity, User, History, Sparkles, Plus, AlertCircle } from 'lucide-react';
 
 interface Props {
   onLaunch: (name: string, email: string) => void;
@@ -14,7 +15,8 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
   const [email, setEmail] = useState('');
   const [phase, setPhase] = useState<'Init' | 'Naming' | 'Booting'>('Init');
   const [bootProgress, setBootProgress] = useState(0);
-  const [activeStrategy, setActiveStrategy] = useState<'Manual' | 'Jim' | 'Fuzz'>('Manual');
+  const [activeStrategy, setActiveStrategy] = useState<'Manual' | 'Jim' | 'Fuzz' | 'Resume'>('Manual');
+  const [resumeError, setResumeError] = useState(false);
 
   useEffect(() => {
     if (phase === 'Booting') {
@@ -24,6 +26,7 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
             clearInterval(interval);
             if (activeStrategy === 'Jim') onJimProfile();
             else if (activeStrategy === 'Fuzz') onSyntheticFuzz();
+            else if (activeStrategy === 'Resume') onResumePersistent();
             else onLaunch(name, email);
             return 100;
           }
@@ -32,25 +35,31 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
       }, 40);
       return () => clearInterval(interval);
     }
-  }, [phase, onLaunch, onJimProfile, onSyntheticFuzz, name, email, activeStrategy]);
+  }, [phase, onLaunch, onJimProfile, onSyntheticFuzz, onResumePersistent, name, email, activeStrategy]);
 
-  const handleOption1 = () => {
-    if (canResume) {
-        setActiveStrategy('Manual');
-        setPhase('Booting');
-    } else {
-        setPhase('Naming');
-    }
+  const handleFresh = () => {
+    setActiveStrategy('Manual');
+    setPhase('Naming');
   };
 
-  const handleOption2 = () => {
+  const handleJim = () => {
       setActiveStrategy('Jim');
       setPhase('Booting');
   };
 
-  const handleOption3 = () => {
+  const handleFuzz = () => {
       setActiveStrategy('Fuzz');
       setPhase('Booting');
+  };
+
+  const handleResume = () => {
+      if (canResume) {
+        setActiveStrategy('Resume');
+        setPhase('Booting');
+      } else {
+        setResumeError(true);
+        setTimeout(() => setResumeError(false), 2000);
+      }
   };
 
   return (
@@ -89,32 +98,54 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 max-w-sm mx-auto">
+            <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto w-full">
+                {/* Option 1: Fresh */}
                 <button 
-                    onClick={handleOption1}
-                    className="group flex items-center justify-center gap-4 w-full px-6 py-5 bg-white text-slate-950 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-indigo-50 transition-all shadow-2xl active:scale-95 border border-white/20"
+                    onClick={handleFresh}
+                    className="group flex flex-col items-center justify-center gap-3 p-6 bg-slate-900/80 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 border border-white/5"
                 >
-                    <History size={18} className="text-indigo-600 group-hover:scale-110 transition-transform" />
-                    {canResume ? "#1 Resume Persistent" : "#1 Start Fresh Node"}
-                    <ChevronRight className="group-hover:translate-x-2 transition-transform ml-auto" />
+                    <div className="p-3 bg-white/5 rounded-full group-hover:bg-white/10 transition-colors">
+                        <Plus size={24} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+                    </div>
+                    #1 Fresh Node
                 </button>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <button 
-                        onClick={handleOption2}
-                        className="group flex flex-col items-center justify-center gap-2 p-6 bg-slate-900/80 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 border border-white/5"
-                    >
-                        <User size={20} className="text-indigo-400 group-hover:scale-110 transition-transform" />
-                        #2 Jim Profile
-                    </button>
-                    <button 
-                        onClick={handleOption3}
-                        className="group flex flex-col items-center justify-center gap-2 p-6 bg-slate-900/80 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 border border-white/5"
-                    >
-                        <Sparkles size={20} className="text-indigo-400 group-hover:scale-110 transition-transform" />
-                        #3 Synthetic Fuzz
-                    </button>
-                </div>
+                {/* Option 2: Jim */}
+                <button 
+                    onClick={handleJim}
+                    className="group flex flex-col items-center justify-center gap-3 p-6 bg-slate-900/80 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 border border-white/5"
+                >
+                    <div className="p-3 bg-white/5 rounded-full group-hover:bg-white/10 transition-colors">
+                        <User size={24} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                    </div>
+                    #2 Jim Profile
+                </button>
+
+                {/* Option 3: Fuzz */}
+                <button 
+                    onClick={handleFuzz}
+                    className="group flex flex-col items-center justify-center gap-3 p-6 bg-slate-900/80 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 border border-white/5"
+                >
+                    <div className="p-3 bg-white/5 rounded-full group-hover:bg-white/10 transition-colors">
+                        <Sparkles size={24} className="text-amber-400 group-hover:scale-110 transition-transform" />
+                    </div>
+                    #3 Synthetic Fuzz
+                </button>
+
+                {/* Option 4: Resume */}
+                <button 
+                    onClick={handleResume}
+                    className={`group flex flex-col items-center justify-center gap-3 p-6 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl active:scale-95 border duration-300 ${
+                        resumeError ? 'bg-red-900/80 border-red-500 shadow-red-900/50' :
+                        canResume ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-500 shadow-indigo-900/50' : 
+                        'bg-slate-900/80 text-slate-400 hover:bg-slate-800 border-white/10 hover:border-white/20'
+                    }`}
+                >
+                    <div className={`p-3 rounded-full transition-colors ${resumeError ? 'bg-red-500/20' : canResume ? 'bg-white/10 group-hover:bg-white/20' : 'bg-white/5'}`}>
+                        {resumeError ? <AlertCircle size={24} className="text-red-400" /> : <History size={24} className={`${canResume ? 'text-white' : 'text-slate-400 group-hover:text-white'} transition-colors`} />}
+                    </div>
+                    {resumeError ? <span className="text-red-300 animate-pulse">NO SAVED GRAPH</span> : '#4 Resume Graph'}
+                </button>
             </div>
           </div>
         )}
@@ -137,7 +168,7 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
                             value={name}
                             onChange={e => setName(e.target.value)}
                             className="w-full bg-[#020617] border border-slate-800 rounded-xl p-5 text-white text-xl focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none transition-all placeholder:text-slate-700"
-                            placeholder="e.g. John Doe"
+                            placeholder="e.g. John Q. Public"
                             autoFocus
                         />
                         <Lock className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-700" size={20} />
@@ -162,7 +193,7 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
                 <button 
                     onClick={() => name && email && setPhase('Booting')}
                     disabled={!name || !email}
-                    className="group w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-indigo-900/40 hover:bg-indigo-500 disabled:opacity-20 disabled:grayscale transition-all flex items-center justify-center gap-4 active:scale-95"
+                    className="group w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-indigo-900/40 hover:bg-indigo-50 disabled:opacity-20 disabled:grayscale transition-all flex items-center justify-center gap-4 active:scale-95"
                 >
                     <Rocket size={20} className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" /> 
                     Initialize Architecture
@@ -178,8 +209,12 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
                     <div className="absolute inset-0 bg-indigo-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
                     <Activity className="text-indigo-400 h-16 w-16 relative z-10 mx-auto" />
                 </div>
-                <h3 className="text-4xl font-black text-white italic tracking-tighter uppercase">Authenticating...</h3>
-                <p className="text-[10px] font-mono text-indigo-500 mt-3 tracking-[0.4em] uppercase">Encrypting Genesis Payload :: SHA-512</p>
+                <h3 className="text-4xl font-black text-white italic tracking-tighter uppercase">
+                    {activeStrategy === 'Resume' ? 'Resuming...' : 'Authenticating...'}
+                </h3>
+                <p className="text-[10px] font-mono text-indigo-500 mt-3 tracking-[0.4em] uppercase">
+                    {activeStrategy === 'Resume' ? 'DECRYPTING STORAGE :: AES-256' : 'ENCRYPTING GENESIS PAYLOAD :: SHA-512'}
+                </p>
             </div>
 
             <div className="space-y-5 max-w-sm mx-auto">

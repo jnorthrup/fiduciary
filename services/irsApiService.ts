@@ -128,7 +128,11 @@ export const simulateTransmission = async (
   await fuzzer.injectLatency();
 
   const channel: ApiChannel = formType === '1041' || formType === '941' ? 'MeF' : 'IRIS';
-  const submissionId = uuidv4().replace(/-/g, '').substring(0, 20);
+  
+  // Safely generate submission ID
+  const idVal = uuidv4() || ''; 
+  const submissionId = idVal.replace(/-/g, '').substring(0, 20);
+  
   const payload = generateMockXML(entity, formType);
   
   let status: 'Accepted' | 'Rejected' = 'Accepted';

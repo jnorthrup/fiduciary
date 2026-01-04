@@ -430,7 +430,7 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
                                     ent.role === EntityRole.JOINT_VENTURE ? 'bg-indigo-100 text-indigo-700' :
                                     ent.type === EntityType.FOREIGN_BUSINESS_TRUST ? 'bg-purple-100 text-purple-700' :
                                     'bg-emerald-100 text-emerald-700'}`}>
-                                    {ent.role.replace('_', ' ')}
+                                    {ent.role?.replace('_', ' ') || 'UNKNOWN'}
                                 </span>
                                 {isJurisdictionallyActive && !isSelected && (
                                   <span className="text-[8px] font-bold text-indigo-500 flex items-center gap-1">

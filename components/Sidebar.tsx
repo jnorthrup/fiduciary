@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Building2, ShieldCheck, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock, UserCog } from 'lucide-react';
 import { Entity, EntityRole, User } from '../types';
 import { TeamManagementModal } from './modals/TeamManagementModal';
+import { UseCaseLogger } from '../services/useCaseLogger'; // Import
 
 interface SidebarProps {
   activeEntityId: string | null;
@@ -28,6 +29,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const roots = entities.filter(e => !e.parentEntityId);
   const getChildren = (parentId: string) => entities.filter(e => e.parentEntityId === parentId);
+
+  const handleSelect = (id: string | null, name: string) => {
+      UseCaseLogger.log('UI', 'Sidebar Navigation', { target: name, id });
+      onSelectEntity(id);
+      onClose();
+  };
 
   const NavItem = ({ icon: Icon, label, active, onClick, color = "text-slate-400" }: any) => (
     <button
@@ -75,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 label="Infrastructure" 
                 icon={Globe} 
                 active={activeEntityId === null} 
-                onClick={() => { onSelectEntity(null); onClose(); }} 
+                onClick={() => handleSelect(null, 'Infrastructure')} 
             />
           </div>
 
@@ -90,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             icon={Building2} 
                             color={root.role === EntityRole.HOLDING_TRUST ? "text-amber-500" : "text-emerald-500"}
                             active={activeEntityId === root.id}
-                            onClick={() => { onSelectEntity(root.id); onClose(); }}
+                            onClick={() => handleSelect(root.id, root.name)}
                         />
                         {getChildren(root.id).map(child => (
                             <div key={child.id} className="ml-4 pl-4 border-l border-slate-800 my-1">
@@ -98,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     label={child.name} 
                                     icon={CornerDownRight} 
                                     active={activeEntityId === child.id}
-                                    onClick={() => { onSelectEntity(child.id); onClose(); }}
+                                    onClick={() => handleSelect(child.id, child.name)}
                                 />
                             </div>
                         ))}

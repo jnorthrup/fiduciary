@@ -1,420 +1,404 @@
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Entity, EntityRole, DCFlag, IRSFormType, AccordRecord, PrivateAdminRecord, ResolutionRecord, EntityType, ReSitusRecord, ParcelRecord, EdgarResearchRecord, ACHRecord, Interaction, InstrumentExchangeRecord, ComplianceFiling, CRMPerson, DTCCPledgeRecord, EscrowAccount, TicklerRecord, FedwireRecord, CanalRecord, StorageSource, ChanceryFiling, PerfectionInstruction, CreditDefenseRecord, MaradRecord } from '../types';
+import React, { useState } from 'react';
+import { Entity, EntityRole, EntityType } from '../types';
 import { useLedgerStore } from '../services/ledgerService';
-import { 
-    Network, ShieldCheck, Users, Terminal, Wand, FileSpreadsheet, 
-    Sparkles, Scale, Feather, Gavel, Hammer, Search, Activity, 
-    CheckCircle2, Lock, Server, X, AlertCircle, Map, CheckSquare, 
-    Scroll, UserPlus, FileText, UserCog, Calculator, HardHat, 
-    Ship, ScrollText, Award, Gift, MapPin, Building, Globe, 
-    ArrowRightLeft, Briefcase, Layout, History, Eye, BookOpen, Edit2, RotateCcw,
-    Zap, BarChart3, Landmark, Shield, BrainCircuit, Waves, ChevronDown, Layers, Database, Mail, ShieldAlert, ScanLine, Anchor, Printer
-} from 'lucide-react';
-
-// Feature Modules
-import { TrustTaxForm } from './forms/TrustTaxForm';
-import { LLCMaterialsForm } from './forms/LLCMaterialsForm';
-import { LLCContractorForm } from './forms/LLCContractorForm';
-import { RunPayrollForm } from './forms/RunPayrollForm';
-import { JournalRegister } from './JournalRegister';
+import { UseCaseLogger } from '../services/useCaseLogger'; // Import
 import { ComplianceWidget } from './ComplianceWidget';
-import { ConsolidatedTracker } from './ConsolidatedTracker';
-import { FractalViewer } from './FractalViewer';
-import { BSOHierarchyViewer } from './BSOHierarchyViewer';
-import { BSOWizard } from './BSOWizard';
-import { W2ReportingWizard } from './W2ReportingWizard';
-import { SSAStatementViewer } from './SSAStatementViewer';
-import { HRHeadcountViewer } from './HRHeadcountViewer';
-import { SimulatedTimelineViewer } from './SimulatedTimelineViewer';
-import { AccordSatisfactionWizard } from './AccordSatisfactionWizard';
-import { PrivateAdminWizard } from './PrivateAdminWizard';
-import { TaxpayerResolutionWizard } from './TaxpayerResolutionWizard';
-import { ForensicBondWizard } from './ForensicBondWizard';
-import { EdgarResearchWizard } from './EdgarResearchWizard'; 
-import { ACHMovementWizard } from './ACHMovementWizard'; 
 import { CRMManager } from './CRMManager';
-import { BankruptcyWizard } from './BankruptcyWizard';
-import { ResitusWizard } from './ResitusWizard';
-import { AgencyCertificationWizard } from './AgencyCertificationWizard';
-import { TreasuryDirectWizard } from './TreasuryDirectWizard'; 
-import { LegalFormsWizard } from './LegalFormsWizard'; 
-import { CommercialIntercourseWizard } from './CommercialIntercourseWizard';
-import { GiftTaxWizard } from './GiftTaxWizard'; 
-import { ParcelLookupWizard } from './ParcelLookupWizard';
-import { ComplexTrustDescriptionForm } from './forms/ComplexTrustDescriptionForm';
-import { EntityBuilder } from './EntityBuilder';
-import { IndentureWorkshop } from './IndentureWorkshop';
-import { TrustCertificateGenerator } from './TrustCertificateGenerator';
-import { ManualJournalEntryModal } from './modals/ManualJournalEntryModal';
-import { EntityCRUDModal } from './modals/EntityCRUDModal';
-import { InstrumentExchangeWizard } from './InstrumentExchangeWizard';
-import { DTCCLiquidationWizard } from './DTCCLiquidationWizard';
-import { FiduciaryAuditWizard } from './FiduciaryAuditWizard';
+import { HRHeadcountViewer } from './HRHeadcountViewer';
+import { CanalDepository } from './CanalDepository';
+import { FiduciaryGovernanceWidget } from './FiduciaryGovernanceWidget';
 import { EscrowManager } from './EscrowManager';
 import { TicklerManager } from './TicklerManager';
 import { FedGateway } from './FedGateway';
 import { AIStrategist } from './AIStrategist';
-import { CanalDepository } from './CanalDepository';
-import { ChanceryWizard } from './ChanceryWizard';
-import { PerfectionWizard } from './PerfectionWizard';
-import { CreditDefenseWizard } from './CreditDefenseWizard';
-import { DocumentCaptureWizard } from './DocumentCaptureWizard';
+import { BSOHierarchyViewer } from './BSOHierarchyViewer';
+import { SimulatedTimelineViewer } from './SimulatedTimelineViewer';
+import { ConsolidatedTracker } from './ConsolidatedTracker';
+import { JournalRegister } from './JournalRegister';
+// Wizards
+import { BSOWizard } from './BSOWizard';
+import { W2ReportingWizard } from './W2ReportingWizard';
+import { SSAStatementViewer } from './SSAStatementViewer';
+import { ComplexTrustDescriptionForm } from './forms/ComplexTrustDescriptionForm';
+import { TrustTaxForm } from './forms/TrustTaxForm';
+import { RunPayrollForm } from './forms/RunPayrollForm';
+import { LLCContractorForm } from './forms/LLCContractorForm';
+import { LLCMaterialsForm } from './forms/LLCMaterialsForm';
+import { TreasuryDirectWizard } from './TreasuryDirectWizard';
+import { AgencyCertificationWizard } from './AgencyCertificationWizard';
 import { MARADAuthorityWizard } from './MARADAuthorityWizard';
+import { ForensicBondWizard } from './ForensicBondWizard';
+import { BankruptcyWizard } from './BankruptcyWizard';
+import { ResitusWizard } from './ResitusWizard';
+import { TrustCertificateGenerator } from './TrustCertificateGenerator';
+import { IndentureWorkshop } from './IndentureWorkshop';
+import { FiduciaryAuditWizard } from './FiduciaryAuditWizard';
+import { DTCCLiquidationWizard } from './DTCCLiquidationWizard';
+import { InstrumentExchangeWizard } from './InstrumentExchangeWizard';
+import { ACHMovementWizard } from './ACHMovementWizard';
+import { EdgarResearchWizard } from './EdgarResearchWizard';
+import { ParcelLookupWizard } from './ParcelLookupWizard';
+import { GiftTaxWizard } from './GiftTaxWizard';
+import { CreditDefenseWizard } from './CreditDefenseWizard';
+import { PerfectionWizard } from './PerfectionWizard';
+import { ChanceryWizard } from './ChanceryWizard';
+import { LegalFormsWizard } from './LegalFormsWizard';
+import { PrivateAdminWizard } from './PrivateAdminWizard';
+import { AccordSatisfactionWizard } from './AccordSatisfactionWizard';
+import { TaxpayerResolutionWizard } from './TaxpayerResolutionWizard';
+import { DocumentCaptureWizard } from './DocumentCaptureWizard';
+import { ReceiptCaptureWizard } from './ReceiptCaptureWizard';
+import { ManualJournalEntryModal } from './modals/ManualJournalEntryModal';
+import { ContractorManagementModal } from './modals/ContractorManagementModal';
+import { EmployeeModal } from './modals/EmployeeModal';
+import { RealEstateAcquisitionWizard } from './RealEstateAcquisitionWizard';
 
-/**
- * Overview Tab Sub-Component for Consolidation
- */
-const OverviewTab: React.FC<{ 
-    entity: Entity, 
-    store: any, 
-    onOpenApiConsole: () => void, 
-    setShowManualJournalModal: (v: boolean) => void,
-    setShowReceiptCapture: (v: boolean) => void,
-    onEditEntity: (id: string) => void
-}> = ({ entity, store, onOpenApiConsole, setShowManualJournalModal, setShowReceiptCapture, onEditEntity }) => {
-    const entityFilings = store.filings.filter((f: any) => f.entityId === entity.id);
-    const entityACH = store.achRecords.filter((r: any) => r.entityId === entity.id);
-    const entityRelationships = store.crmPeople.filter((p: any) => p.entityId === entity.id);
+import { 
+  Building2, Shield, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock, UserCog,
+  Briefcase, Activity, FileText, Upload, Plus, Home
+} from 'lucide-react';
 
-    return (
-        <div className="p-6 md:p-8 animate-in fade-in duration-500">
-            <div className="max-w-7xl mx-auto space-y-8 pb-12">
-                
-                {/* Status Dashboard */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard label="Current Liability" value="$0.00" icon={BadgeDollarSign} color="text-slate-400" />
-                    <StatCard label="Accepted Filings" value={entityFilings.filter((f: any) => f.status === 'Accepted').length} icon={ShieldCheck} color="text-emerald-500" />
-                    <StatCard label="Active Contacts" value={entityRelationships.length} icon={Users} color="text-indigo-500" />
-                    <StatCard label="ACH Pipeline" value={entityACH.length} icon={ArrowRightLeft} color="text-blue-500" />
-                </div>
-
-                <div className="grid grid-cols-12 gap-8">
-                    <div className="col-span-12 lg:col-span-8 space-y-8">
-                        {entity.role === EntityRole.HOLDING_TRUST && (
-                            <ConsolidatedTracker 
-                                parent={entity} 
-                                childrenEntities={store.entities.filter((e: any) => e.parentEntityId === entity.id)}
-                                allFilings={store.filings}
-                                allModules={store.modules}
-                                onEditEntity={onEditEntity}
-                                onDeleteEntity={store.deleteEntity}
-                            />
-                        )}
-
-                        <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Transaction Capture</h3>
-                                    <Sparkles size={16} className="text-indigo-400" />
-                                </div>
-                                <button 
-                                    onClick={() => setShowReceiptCapture(true)}
-                                    className="flex items-center gap-2 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors"
-                                >
-                                    <ScanLine size={14} /> AI Document Capture
-                                </button>
-                            </div>
-                            <div className="p-6">
-                                {entity.role === EntityRole.HOLDING_TRUST ? (
-                                    <TrustTaxForm entityId={entity.id} modules={store.modules} onSubmit={(d, a, mid, m) => {
-                                        store.postJournal(entity.id, d, `Tax Pmt (${m})`, 'TAX', [{accountCode: '102000', dc: DCFlag.Debit, amount: a}, {accountCode: '101000', dc: DCFlag.Credit, amount: a}]);
-                                    }} />
-                                ) : (
-                                    <LLCMaterialsForm onSubmit={(d, m, t, v, memo) => {
-                                        store.postJournal(entity.id, d, memo, 'PURCHASE', [{accountCode: '520100', dc: DCFlag.Debit, amount: m}, {accountCode: '101000', dc: DCFlag.Credit, amount: m+t}]);
-                                    }} />
-                                )}
-                            </div>
-                        </section>
-
-                        <section>
-                            <JournalRegister journals={store.journals} entityId={entity.id} />
-                        </section>
-                    </div>
-
-                    <div className="col-span-12 lg:col-span-4 space-y-8">
-                        <ComplianceWidget 
-                            entity={entity} 
-                            filings={entityFilings} 
-                            modules={store.modules}
-                            onCreateFiling={store.createFiling} 
-                            onUpdateStatus={store.updateFilingStatus}
-                            onSubmitToApi={store.submitFilingViaAPI}
-                        />
-
-                        <div className="bg-slate-900 rounded-xl p-6 shadow-xl border border-slate-800 text-slate-300">
-                            <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                <Server size={14} /> System Node Link
-                            </h4>
-                            <div className="space-y-3">
-                                <QuickAction icon={Terminal} label="API Console" onClick={onOpenApiConsole} />
-                                <QuickAction icon={History} label="Audit Trail" onClick={() => {}} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-interface Feature {
-    label: string;
-    icon: any;
-    component: React.ReactNode;
-    roles?: EntityRole[];
-}
-
-interface DashboardProps {
+interface Props {
   entity: Entity;
   onOpenApiConsole: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ entity, onOpenApiConsole }) => {
+const WizardModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => (
+  <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden relative">
+      <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 bg-slate-100 rounded-full hover:bg-slate-200">
+        <X />
+      </button>
+      {children}
+    </div>
+  </div>
+);
+
+export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole }) => {
   const store = useLedgerStore();
   const [activeTab, setActiveTab] = useState('Overview');
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [showManualJournalModal, setShowManualJournalModal] = useState(false);
-  const [showReceiptCapture, setShowReceiptCapture] = useState(false);
-  const [editingEntityId, setEditingEntityId] = useState<string | null>(null);
-  const [selectedChanceryId, setSelectedChanceryId] = useState<string | null>(null);
   
-  const categoryMenuRef = useRef<HTMLDivElement>(null);
+  // Wizards State
+  const [showWizard, setShowWizard] = useState<string | null>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-        if (categoryMenuRef.current && !categoryMenuRef.current.contains(event.target as Node)) {
-            setActiveCategory(null);
-        }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const entityFilings = store.filings.filter(f => f.entityId === entity.id);
+  const childrenEntities = store.entities.filter(e => e.parentEntityId === entity.id);
 
-  const editingEntity = store.entities.find((e: Entity) => e.id === editingEntityId);
-
-  const FEATURE_GROUPS: Record<string, { label: string, icon: any, features: string[] }> = {
-    'Hub': { label: 'Command Hub', icon: Layout, features: ['Overview', 'Strategist', 'SimPlan'] },
-    'Treasury': { label: 'Treasury & Funds', icon: Landmark, features: ['ACH', 'Fed', 'Escrow', 'Canal', 'MARAD', 'Gift', 'Certificates', 'DTCC'] },
-    'Equity': { label: 'Equity & Chancery', icon: Gavel, features: ['Chancery', 'Perfection', 'Indenture', 'Settlement', 'Private', 'Exchange', 'Intercourse'] },
-    'Compliance': { label: 'Ops & Admin', icon: ShieldCheck, features: ['Audit', 'W2', 'HR', 'CRM', 'Tickler', 'Description', 'Agency', 'Resolution', 'Defense'] },
-    'Research': { label: 'Discovery', icon: Search, features: ['Edgar', 'Parcel', 'Forensic', 'Builder', 'Visualizer'] }
+  // Helper Wrapper for logging
+  const openWizard = (id: string) => {
+      UseCaseLogger.log('UI', 'Opened Wizard', { wizard: id, entity: entity.name });
+      setShowWizard(id);
   };
 
-  const ALL_FEATURES: Record<string, Feature> = {
-    'Overview': { label: 'Executive Pulse', icon: Layout, component: <OverviewTab entity={entity} store={store} onOpenApiConsole={onOpenApiConsole} setShowManualJournalModal={setShowManualJournalModal} setShowReceiptCapture={setShowReceiptCapture} onEditEntity={setEditingEntityId} /> },
-    'Chancery': { label: 'Chancery Filings', icon: Gavel, component: <ChanceryWizard entity={entity} onComplete={(f) => { store.addChanceryFiling(f); setActiveTab('Overview'); }} />, roles: [EntityRole.HOLDING_TRUST, EntityRole.TRUSTEE] },
-    'Perfection': { label: 'Delivery Perfection', icon: Mail, component: <PerfectionWizard filingId={selectedChanceryId || 'ROOT'} onComplete={(p) => { store.addPerfection(p); setActiveTab('Overview'); }} /> },
-    'Canal': { label: 'Canal Depository', icon: Waves, component: <CanalDepository entity={entity} />, roles: [EntityRole.HOLDING_TRUST] },
-    'MARAD': { label: 'Maritime Authority', icon: Anchor, component: <MARADAuthorityWizard entity={entity} onComplete={(r) => { store.addMaradRecord(r); setActiveTab('Overview'); }} onPostJournal={store.postJournal} onClose={() => setActiveTab('Overview')} /> },
-    'Strategist': { label: 'AI Strategist', icon: BrainCircuit, component: <AIStrategist entity={entity} /> },
-    'Fed': { label: 'FRB / FedLine', icon: Landmark, component: <FedGateway entity={entity} fedWires={store.fedWires} crmPeople={store.crmPeople} onOriginate={store.addFedwire} onPostJournal={store.postJournal} /> },
-    'Tickler': { label: 'Compliance Ticks', icon: CheckSquare, component: <TicklerManager entity={entity} ticks={store.ticks} onAddTick={store.addTick} onUpdateTick={store.updateTick} /> },
-    'Escrow': { label: 'Escrow Vault', icon: Lock, component: <EscrowManager entity={entity} escrows={store.escrows} crmPeople={store.crmPeople} onAddEscrow={store.addEscrow} onUpdateEscrow={store.updateEscrow} onPostJournal={store.postJournal} /> },
-    'Audit': { label: 'Fiduciary Audit', icon: Shield, component: <FiduciaryAuditWizard entity={entity} reviews={store.fiduciaryReviews} onCompleteReview={store.addFiduciaryReview} />, roles: [EntityRole.HOLDING_TRUST] },
-    'CRM': { label: 'Counterparties', icon: Users, component: <CRMManager entity={entity} people={store.crmPeople} onAdd={store.addCRMPerson} onUpdate={store.updateCRMPerson} onDelete={store.deleteCRMPerson} onAddInteraction={store.addInteraction} currentUser={store.currentUser} /> },
-    'DTCC': { label: 'DTCC Collateral', icon: Landmark, component: <DTCCLiquidationWizard entity={entity} records={store.dtccRecords} onAddRecord={store.addDTCCRecord} onUpdateRecord={store.updateDTCCRecord} onPostJournal={store.postJournal} />, roles: [EntityRole.HOLDING_TRUST] },
-    'ACH': { label: 'Green Book ACH', icon: ArrowRightLeft, component: <ACHMovementWizard entity={entity} onOriginate={(r) => { store.addACHRecord(r); store.postJournal(entity.id, r.effectiveDate, `ACH ${r.type}`, 'ACH', [{accountCode: '101000', dc: r.type === 'Credit' ? DCFlag.Credit : DCFlag.Debit, amount: r.amount}]); setActiveTab('Overview'); }} /> },
-    'W2': { label: 'W-2 Reporting', icon: FileText, component: <W2ReportingWizard entity={entity} onComplete={store.submitW2Report} /> },
-    'HR': { label: 'HR Headcount', icon: HardHat, component: <HRHeadcountViewer entity={entity} employees={store.employees} payrollRuns={store.payrollRuns} onAddEmployee={() => {}} /> },
-    'Builder': { label: 'Arch Builder', icon: Hammer, component: <EntityBuilder entities={store.entities} onUpdateEntity={store.updateEntity} onAddEntity={store.addEntity} onDeleteEntity={store.deleteEntity} onEditEntity={setEditingEntityId} /> },
-    'Visualizer': { label: 'Neural Graph', icon: Network, component: <FractalViewer entities={store.entities} accounts={store.accounts} journals={store.journals} wallets={store.wallets} onEditEntity={setEditingEntityId} /> },
-    'Settlement': { label: 'Accord / 8K', icon: Scale, component: <AccordSatisfactionWizard entity={entity} onComplete={(r) => { store.createAccord(r); setActiveTab('Overview'); }} /> },
-    'Private': { label: 'Private Admin', icon: Feather, component: <PrivateAdminWizard entity={entity} onComplete={(r) => { store.createPrivateAdminEntry(r); setActiveTab('Overview'); }} /> },
-    'Resolve': { label: 'Account Resolve', icon: Gavel, component: <TaxpayerResolutionWizard entity={entity} modules={store.modules} resolutions={store.resolutions} onComplete={store.resolveTaxpayerAccount} onExit={() => setActiveTab('Overview')} /> },
-    'Forensic': { label: 'Forensic Search', icon: Search, component: <ForensicBondWizard entity={entity} /> },
-    'Edgar': { label: 'SEC Research', icon: Globe, component: <EdgarResearchWizard entity={entity} onRecordResearch={(r) => { store.addEdgarRecord(r); setActiveTab('Overview'); }} /> },
-    'Parcel': { label: 'GIS Mapping', icon: MapPin, component: <ParcelLookupWizard entity={entity} onRecordAsset={(p) => { store.addParcel(p); setActiveTab('Overview'); }} /> },
-    'Gift': { label: 'Gift Tax 709', icon: Gift, component: <GiftTaxWizard entity={entity} entities={store.entities} onComplete={() => setActiveTab('Overview')} /> },
-    'Exchange': { label: 'Title Exchange', icon: RotateCcw, component: <InstrumentExchangeWizard entity={entity} onComplete={(r) => { store.addInstrumentExchange(r); setActiveTab('Overview'); }} />, roles: [EntityRole.HOLDING_TRUST] },
-    'Bankruptcy': { label: 'Title 11 BK', icon: AlertCircle, component: <BankruptcyWizard entity={entity} onComplete={() => setActiveTab('Overview')} /> },
-    'Resitus': { label: 'Jurisdiction', icon: Map, component: <ResitusWizard entity={entity} onComplete={(r) => { store.createReSitus(r); setActiveTab('Overview'); }} /> },
-    'Indenture': { label: 'Indenture Shop', icon: ScrollText, component: <IndentureWorkshop entity={entity} onClose={() => setActiveTab('Overview')} /> },
-    'Certificates': { label: 'Trust Units', icon: Award, component: <TrustCertificateGenerator entity={entity} onClose={() => setActiveTab('Overview')} />, roles: [EntityRole.HOLDING_TRUST] },
-    'Intercourse': { label: '1863 Trade', icon: Ship, component: <CommercialIntercourseWizard entity={entity} onPostFee={() => {}} onClose={() => setActiveTab('Overview')} />, roles: [EntityRole.HOLDING_TRUST] },
-    'Description': { label: 'IRM Mirror', icon: BookOpen, component: <ComplexTrustDescriptionForm entity={entity} />, roles: [EntityRole.HOLDING_TRUST] },
-    'SimPlan': { label: 'Compliance Sim', icon: Activity, component: <SimulatedTimelineViewer entity={entity} /> },
-    'Agency': { label: 'NTDO Cert', icon: ShieldCheck, component: <AgencyCertificationWizard entity={entity} onComplete={() => {}} onClose={() => setActiveTab('Overview')} />, roles: [EntityRole.HOLDING_TRUST] },
-    'Resolution': { label: 'FS-1010 Reso', icon: Scroll, component: <TreasuryDirectWizard entity={entity} onComplete={() => {}} onClose={() => setActiveTab('Overview')} /> },
-    'Defense': { label: 'Credit Defense', icon: ShieldAlert, component: <CreditDefenseWizard entity={entity} onComplete={(r) => { store.addCreditDefenseRecord(r); setActiveTab('Overview'); }} /> }
+  const closeWizard = () => {
+      UseCaseLogger.log('UI', 'Closed Wizard', { wizard: showWizard });
+      setShowWizard(null);
   };
 
-  const getActiveGroup = () => {
-      for (const group in FEATURE_GROUPS) {
-          if (FEATURE_GROUPS[group].features.includes(activeTab)) return group;
+  const switchTab = (tab: string) => {
+      UseCaseLogger.log('UI', 'Switched Dashboard Tab', { tab, entity: entity.name });
+      setActiveTab(tab);
+  };
+
+  // Form Handlers connecting to Automated Rules
+  const handleTaxPayment = (date: string, amount: number, moduleId: string, method: string) => {
+      store.executeAutoRule('TAX_PAYMENT', entity.id, amount, date, `Est. Tax Payment (${method}) - Module ${moduleId.slice(-6)}`);
+  };
+
+  const handleMaterialsPurchase = (date: string, matAmount: number, taxAmount: number, vendor: string, memo: string) => {
+      store.executeAutoRule('MATERIAL_PURCHASE', entity.id, matAmount + taxAmount, date, `Vendor: ${vendor} - ${memo}`);
+  };
+
+  const handleContractorInvoice = (date: string, amount: number, contractorId: string, moduleId: string, memo: string) => {
+      const contractor = store.contractors.find(c => c.id === contractorId);
+      store.executeAutoRule('CONTRACTOR_INVOICE', entity.id, amount, date, `Inv: ${contractor?.name} - ${memo}`);
+  };
+
+  // Helper to render wizard modal
+  const renderWizardModal = () => {
+      if (!showWizard) return null;
+      
+      switch(showWizard) {
+          case 'BSO': return <WizardModalWrapper onClose={closeWizard}><BSOWizard entity={entity} onComplete={closeWizard} /></WizardModalWrapper>;
+          case 'W2': return <WizardModalWrapper onClose={closeWizard}><W2ReportingWizard entity={entity} onComplete={closeWizard} /></WizardModalWrapper>;
+          case 'TREASURY': return <WizardModalWrapper onClose={closeWizard}><TreasuryDirectWizard entity={entity} onComplete={store.completeFSForm1010} onClose={closeWizard} /></WizardModalWrapper>;
+          case 'MARAD': return <WizardModalWrapper onClose={closeWizard}><MARADAuthorityWizard entity={entity} onComplete={() => {}} onPostJournal={store.postJournal} onClose={closeWizard} /></WizardModalWrapper>;
+          case 'FORENSIC': return <WizardModalWrapper onClose={closeWizard}><ForensicBondWizard entity={entity} /></WizardModalWrapper>;
+          case 'BANKRUPTCY': return <WizardModalWrapper onClose={closeWizard}><BankruptcyWizard entity={entity} onComplete={closeWizard} /></WizardModalWrapper>;
+          case 'RESITUS': return <WizardModalWrapper onClose={closeWizard}><ResitusWizard entity={entity} onComplete={store.completeReSitus} /></WizardModalWrapper>;
+          case 'CERT': return <WizardModalWrapper onClose={closeWizard}><TrustCertificateGenerator entity={entity} onClose={closeWizard} /></WizardModalWrapper>;
+          case 'INDENTURE': return <WizardModalWrapper onClose={closeWizard}><IndentureWorkshop entity={entity} onClose={closeWizard} /></WizardModalWrapper>;
+          case 'AUDIT': return <WizardModalWrapper onClose={closeWizard}><FiduciaryAuditWizard entity={entity} reviews={store.fiduciaryReviews} onCompleteReview={store.completeReview} /></WizardModalWrapper>;
+          case 'DTCC': return <WizardModalWrapper onClose={closeWizard}><DTCCLiquidationWizard entity={entity} records={store.dtccPledgeRecords} onAddRecord={store.addDTCCRecord} onUpdateRecord={store.updateDTCCRecord} onPostJournal={store.postJournal} /></WizardModalWrapper>;
+          case 'EXCHANGE': return <WizardModalWrapper onClose={closeWizard}><InstrumentExchangeWizard entity={entity} onComplete={store.exchangeInstrument} /></WizardModalWrapper>;
+          case 'ACH': return <WizardModalWrapper onClose={closeWizard}><ACHMovementWizard entity={entity} onOriginate={store.originateACH} /></WizardModalWrapper>;
+          case 'EDGAR': return <WizardModalWrapper onClose={closeWizard}><EdgarResearchWizard entity={entity} onRecordResearch={store.recordResearch} /></WizardModalWrapper>;
+          case 'PARCEL': return <WizardModalWrapper onClose={closeWizard}><ParcelLookupWizard entity={entity} onRecordAsset={store.recordAsset} /></WizardModalWrapper>;
+          case 'GIFT': return <WizardModalWrapper onClose={closeWizard}><GiftTaxWizard entity={entity} entities={store.entities} onComplete={store.completeGiftTax} /></WizardModalWrapper>;
+          case 'CREDIT': return <WizardModalWrapper onClose={closeWizard}><CreditDefenseWizard entity={entity} onComplete={store.completeCreditDefense} /></WizardModalWrapper>;
+          case 'CHANCERY': return <WizardModalWrapper onClose={closeWizard}><ChanceryWizard entity={entity} onComplete={store.completeChanceryFiling} /></WizardModalWrapper>;
+          case 'PERFECTION': return <WizardModalWrapper onClose={closeWizard}><PerfectionWizard filingId="PENDING" onComplete={store.completePerfection} /></WizardModalWrapper>;
+          case 'LEGAL': return <WizardModalWrapper onClose={closeWizard}><LegalFormsWizard entity={entity} onClose={closeWizard} /></WizardModalWrapper>;
+          case 'PRIVATE': return <WizardModalWrapper onClose={closeWizard}><PrivateAdminWizard entity={entity} onComplete={closeWizard} /></WizardModalWrapper>;
+          case 'ACCORD': return <WizardModalWrapper onClose={closeWizard}><AccordSatisfactionWizard entity={entity} onComplete={closeWizard} /></WizardModalWrapper>;
+          case 'TAXPAYER': return <WizardModalWrapper onClose={closeWizard}><TaxpayerResolutionWizard entity={entity} modules={store.modules} onComplete={store.addResolution} onExit={closeWizard} /></WizardModalWrapper>;
+          case 'DOC_CAPTURE': return <DocumentCaptureWizard entityId={entity.id} accounts={store.accounts} onPost={(d, m, t, l) => store.postJournal(entity.id, d, m, t, l)} onClose={closeWizard} />;
+          case 'RECEIPT': return <ReceiptCaptureWizard entityId={entity.id} accounts={store.accounts} onPost={(d, m, t, l) => store.postJournal(entity.id, d, m, t, l)} onClose={closeWizard} />;
+          case 'MANUAL_JNL': return <ManualJournalEntryModal entityId={entity.id} accounts={store.accounts} onSave={(d, m, t, l) => store.postJournal(entity.id, d, m, t, l)} onClose={closeWizard} />;
+          case 'CONTRACTOR': return <ContractorManagementModal contractors={store.contractors} onAdd={store.addContractor} onUpdate={store.updateContractor} onDelete={store.deleteContractor} onClose={closeWizard} />;
+          case 'EMPLOYEE': return <EmployeeModal entityId={entity.id} onSave={store.addEmployee} onClose={closeWizard} />;
+          case 'REAL_ESTATE': return <WizardModalWrapper onClose={closeWizard}><RealEstateAcquisitionWizard entity={entity} onClose={closeWizard} /></WizardModalWrapper>;
+          case 'AGENCY_CERT': return <WizardModalWrapper onClose={closeWizard}><AgencyCertificationWizard entity={entity} onComplete={store.completeCertification} onClose={closeWizard} /></WizardModalWrapper>;
+          default: return null;
       }
-      return 'Hub';
   };
 
   return (
-    <div className="flex flex-col h-full bg-white relative overflow-hidden">
-      {/* Entity Command Header */}
-      <header className="px-6 py-6 border-b border-slate-200 bg-slate-50/80 backdrop-blur shrink-0 z-50">
-        <div className="flex justify-between items-start mb-6">
-            <div className="group relative pr-10">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                    {entity.name}
-                    <button 
-                        onClick={() => setEditingEntityId(entity.id)}
-                        className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-white rounded transition-all opacity-0 group-hover:opacity-100"
-                        title="Edit Entity Name"
-                    >
-                        <Edit2 size={16} />
-                    </button>
-                </h1>
-                <div className="flex items-center gap-3 mt-1.5">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 font-mono shadow-sm">ID: {entity.id.slice(0, 8)}</span>
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-widest border shadow-sm ${entity.role === EntityRole.HOLDING_TRUST ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
-                        {entity.role.replace('_', ' ')}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400 font-mono">
-                        EIN: {entity.einLast4 ? `***${entity.einLast4}` : <span className="text-red-400 italic">INVALID</span>}
-                    </span>
-                </div>
-            </div>
-            <div className="flex items-center gap-2">
-                <button className="flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold bg-white border border-slate-300 text-slate-600 shadow-sm hover:bg-slate-50" onClick={() => window.print()}>
-                    <Printer size={14} /> Print Forms
-                </button>
-                {/* LIVE BADGE - Updated for Graph/LSM */}
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm transition-all ${store.source === 'Persistence' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse'}`}>
-                    <Database size={10} />
-                    {store.source === 'Persistence' ? 'Live: Graph+LSM' : 'Volatile: Sim Context'}
-                </div>
+    <div className="h-full flex flex-col bg-slate-50 overflow-hidden relative">
+      {renderWizardModal()}
 
-                <button onClick={onOpenApiConsole} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg border border-transparent hover:border-slate-200" title="API Gateway"><Terminal size={20} /></button>
-                <button onClick={() => setShowManualJournalModal(true)} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 shadow-md active:scale-95"><Calculator size={14} /> New Entry</button>
+      {/* Entity Header */}
+      <div className="bg-white border-b border-slate-200 px-8 py-6 flex justify-between items-center shrink-0 shadow-sm z-10">
+        <div>
+            <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight">{entity.name}</h1>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${entity.role === EntityRole.HOLDING_TRUST ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                    {entity.role.replace('_', ' ')}
+                </span>
+            </div>
+            <div className="flex gap-4 text-xs text-slate-500 font-mono">
+                <span>ID: {entity.id}</span>
+                <span>EIN: {entity.einLast4 ? `**-***${entity.einLast4}` : 'PENDING'}</span>
             </div>
         </div>
-
-        {/* CLUSTERED NAVIGATION */}
-        <div className="flex items-center gap-1.5" ref={categoryMenuRef}>
-           {Object.entries(FEATURE_GROUPS).map(([catKey, group]) => {
-               const CategoryIcon = group.icon;
-               const isGroupActive = getActiveGroup() === catKey;
-               const isMenuOpen = activeCategory === catKey;
-               
-               const validFeatures = group.features.filter(f => {
-                   const feat = ALL_FEATURES[f];
-                   return !feat.roles || feat.roles.includes(entity.role);
-               });
-
-               if (validFeatures.length === 0) return null;
-
-               return (
-                   <div key={catKey} className="relative">
-                       <button
-                        onClick={() => setActiveCategory(isMenuOpen ? null : catKey)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap border ${isGroupActive ? 'bg-indigo-600 text-white border-indigo-700 shadow-lg' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-800'}`}
-                       >
-                           <CategoryIcon size={14} className={isGroupActive ? 'text-indigo-100' : 'text-slate-400'} />
-                           {group.label}
-                           <ChevronDown size={14} className={`transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
-                       </button>
-
-                       {/* Sub-Feature Dropdown */}
-                       {isMenuOpen && (
-                           <div className="absolute top-full left-0 mt-2 w-72 bg-slate-900 rounded-xl shadow-2xl border border-slate-800 p-2 z-[60] animate-in slide-in-from-top-2 duration-200">
-                               <div className="px-3 py-2 border-b border-slate-800 mb-1">
-                                   <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">{group.label} Cluster</span>
-                               </div>
-                               <div className="grid gap-1">
-                                   {validFeatures.map(fKey => {
-                                       const feature = ALL_FEATURES[fKey];
-                                       const FeatIcon = feature.icon;
-                                       const isFeatActive = activeTab === fKey;
-                                       return (
-                                           <button
-                                            key={fKey}
-                                            onClick={() => { setActiveTab(fKey); setActiveCategory(null); }}
-                                            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-all ${isFeatActive ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-                                           >
-                                               <div className={`p-1.5 rounded ${isFeatActive ? 'bg-indigo-500' : 'bg-slate-800'}`}>
-                                                    <FeatIcon size={14} />
-                                               </div>
-                                               <div className="flex-1">
-                                                   <div className="text-xs font-bold">{feature.label}</div>
-                                               </div>
-                                               {isFeatActive && <CheckCircle2 size={14} />}
-                                           </button>
-                                       );
-                                   })}
-                               </div>
-                           </div>
-                       )}
-                   </div>
-               );
-           })}
+        
+        <div className="flex gap-3">
+            <button 
+                onClick={() => openWizard('MANUAL_JNL')}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-bold text-xs transition-colors"
+            >
+                <Plus size={14} /> Journal Entry
+            </button>
+            <button 
+                onClick={() => openWizard('DOC_CAPTURE')}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-bold text-xs transition-colors"
+            >
+                <Upload size={14} /> Scan Doc
+            </button>
+            <button 
+                onClick={onOpenApiConsole}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-xs shadow-lg shadow-indigo-200 transition-colors"
+            >
+                <Network size={14} /> API Console
+            </button>
         </div>
-      </header>
+      </div>
 
-      {/* Main Feature Content Container */}
-      <main className="flex-1 overflow-hidden relative bg-slate-50/50">
-          <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
-            {ALL_FEATURES[activeTab]?.component}
-          </div>
-      </main>
+      {/* Tabs */}
+      <div className="px-8 border-b border-slate-200 bg-white shrink-0 flex gap-1">
+          {['Overview', 'Compliance', 'Financials', 'Governance', 'Operations', 'Intelligence'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => switchTab(tab)}
+                className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${activeTab === tab ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+              >
+                  {tab}
+              </button>
+          ))}
+      </div>
 
-      {/* Modals */}
-      {showManualJournalModal && (
-        <ManualJournalEntryModal 
-          entityId={entity.id}
-          accounts={store.accounts}
-          onSave={store.postJournal}
-          onClose={() => setShowManualJournalModal(false)}
-        />
-      )}
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+          
+          {activeTab === 'Overview' && (
+              <div className="grid grid-cols-12 gap-8">
+                  <div className="col-span-12 lg:col-span-8 space-y-8">
+                      <ConsolidatedTracker 
+                          parent={entity} 
+                          childrenEntities={childrenEntities}
+                          allFilings={store.filings}
+                          allModules={store.modules}
+                      />
+                      <SimulatedTimelineViewer entity={entity} />
+                  </div>
+                  <div className="col-span-12 lg:col-span-4 space-y-8">
+                      <TicklerManager 
+                          entity={entity} 
+                          ticks={store.ticks} 
+                          onAddTick={store.addTick} 
+                          onUpdateTick={store.updateTick} 
+                      />
+                      
+                      {/* Shortcuts */}
+                      <div className="bg-white p-6 rounded-xl border border-slate-200">
+                          <h3 className="text-sm font-bold text-slate-700 uppercase mb-4">Action Shortcuts</h3>
+                          <div className="grid grid-cols-2 gap-3">
+                              {entity.role === EntityRole.HOLDING_TRUST && (
+                                  <>
+                                      <button onClick={() => openWizard('CERT')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Issue Certs</button>
+                                      <button onClick={() => openWizard('INDENTURE')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Trust Indenture</button>
+                                      <button onClick={() => openWizard('AUDIT')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Fiduciary Audit</button>
+                                      <button onClick={() => openWizard('DTCC')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">DTCC Pledge</button>
+                                  </>
+                              )}
+                              {entity.role === EntityRole.OPERATING_LLC && (
+                                  <>
+                                      <button onClick={() => openWizard('BSO')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">BSO Enroll</button>
+                                      <button onClick={() => openWizard('CONTRACTOR')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Contractors</button>
+                                      <button onClick={() => openWizard('EMPLOYEE')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Employees</button>
+                                      <button onClick={() => openWizard('ACH')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">ACH Originate</button>
+                                  </>
+                              )}
+                              <button onClick={() => openWizard('PARCEL')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Asset Lookup</button>
+                              <button onClick={() => openWizard('EDGAR')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">SEC Research</button>
+                              <button onClick={() => openWizard('REAL_ESTATE')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600 flex items-center gap-1"><Home size={12}/> Acquire Property</button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          )}
 
-      {showReceiptCapture && (
-          <DocumentCaptureWizard 
-              entityId={entity.id}
-              accounts={store.accounts}
-              onPost={store.postJournal}
-              onClose={() => setShowReceiptCapture(false)}
-          />
-      )}
+          {activeTab === 'Compliance' && (
+              <div className="grid grid-cols-12 gap-8">
+                  <div className="col-span-12 lg:col-span-4">
+                      <ComplianceWidget 
+                          entity={entity} 
+                          filings={entityFilings}
+                          modules={store.modules}
+                          onCreateFiling={store.createFiling}
+                          onUpdateStatus={store.updateFilingStatus}
+                          onSubmitToApi={store.submitFilingViaAPI}
+                          onAddModule={store.addTaxModule}
+                      />
+                  </div>
+                  <div className="col-span-12 lg:col-span-8 grid grid-cols-1 gap-6">
+                      <div className="bg-white p-6 rounded-xl border border-slate-200">
+                          <h3 className="text-sm font-bold text-slate-700 uppercase mb-4">Regulatory Workflows</h3>
+                          <div className="flex flex-wrap gap-4">
+                              <button onClick={() => openWizard('TREASURY')} className="px-4 py-2 bg-blue-50 text-blue-700 font-bold rounded text-xs border border-blue-100 hover:bg-blue-100">TreasuryDirect (FS 1010)</button>
+                              <button onClick={() => openWizard('MARAD')} className="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded text-xs border border-indigo-100 hover:bg-indigo-100">MARAD Authority</button>
+                              <button onClick={() => openWizard('AGENCY_CERT')} className="px-4 py-2 bg-emerald-50 text-emerald-700 font-bold rounded text-xs border border-emerald-100 hover:bg-emerald-100">Agency Certification</button>
+                              <button onClick={() => openWizard('BANKRUPTCY')} className="px-4 py-2 bg-red-50 text-red-700 font-bold rounded text-xs border border-red-100 hover:bg-red-100">Insolvency / Ch.11</button>
+                              <button onClick={() => openWizard('RESITUS')} className="px-4 py-2 bg-purple-50 text-purple-700 font-bold rounded text-xs border border-purple-100 hover:bg-purple-100">Domestication / Re-Situs</button>
+                              <button onClick={() => openWizard('TAXPAYER')} className="px-4 py-2 bg-amber-50 text-amber-700 font-bold rounded text-xs border border-amber-100 hover:bg-amber-100">Taxpayer Resolution</button>
+                              <button onClick={() => openWizard('CREDIT')} className="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded text-xs border border-indigo-100 hover:bg-indigo-100">Credit Defense</button>
+                              <button onClick={() => openWizard('CHANCERY')} className="px-4 py-2 bg-slate-50 text-slate-700 font-bold rounded text-xs border border-slate-200 hover:bg-slate-100">Chancery Filing</button>
+                          </div>
+                      </div>
+                      
+                      {entity.role === EntityRole.HOLDING_TRUST && (
+                          <ComplexTrustDescriptionForm entity={entity} />
+                      )}
+                      
+                      {/* BSO Widget if needed */}
+                      {entity.role === EntityRole.OPERATING_LLC && (
+                          <BSOHierarchyViewer 
+                              entities={store.entities} 
+                              bsoRoles={store.bsoRoles} 
+                              submissions={store.bsoSubmissions} 
+                              documents={store.documents} 
+                          />
+                      )}
+                  </div>
+              </div>
+          )}
 
-      {editingEntity && (
-          <EntityCRUDModal 
-              entity={editingEntity} 
-              onClose={() => setEditingEntityId(null)}
-              onSave={(id, updates) => store.updateEntity(id, updates)}
-          />
-      )}
+          {activeTab === 'Financials' && (
+              <div className="space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {entity.role === EntityRole.HOLDING_TRUST && (
+                          <TrustTaxForm 
+                            entityId={entity.id} 
+                            modules={store.modules} 
+                            onSubmit={handleTaxPayment} 
+                          />
+                      )}
+                      {entity.role === EntityRole.OPERATING_LLC && (
+                          <div className="space-y-6">
+                              <LLCContractorForm 
+                                entityId={entity.id} 
+                                contractors={store.contractors} 
+                                modules={store.modules} 
+                                onSubmit={handleContractorInvoice} 
+                              />
+                              <LLCMaterialsForm onSubmit={handleMaterialsPurchase} />
+                          </div>
+                      )}
+                  </div>
+                  <JournalRegister journals={store.journals} entityId={entity.id} />
+                  <CanalDepository entity={entity} />
+                  <FedGateway 
+                      entity={entity} 
+                      fedWires={store.fedWires} 
+                      crmPeople={store.crmPeople} 
+                      onOriginate={store.onOriginate} 
+                      onPostJournal={store.postJournal} 
+                  />
+              </div>
+          )}
+
+          {activeTab === 'Governance' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+                  <FiduciaryGovernanceWidget 
+                      entity={entity} 
+                      currentUser={store.currentUser} 
+                      actions={store.fiduciaryActions} 
+                      onProposeAction={store.proposeFiduciaryAction} 
+                      onVote={store.voteFiduciaryAction} 
+                      onExecute={store.executeFiduciaryAction} 
+                  />
+                  <div className="space-y-6">
+                      <EscrowManager 
+                          entity={entity} 
+                          escrows={store.escrows} 
+                          crmPeople={store.crmPeople} 
+                          onAddEscrow={store.addEscrow} 
+                          onUpdateEscrow={store.updateEscrow} 
+                          onPostJournal={store.postJournal} 
+                      />
+                      <button onClick={() => openWizard('PRIVATE')} className="w-full p-4 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-slate-800 shadow-xl">
+                          Launch Private Admin Wizard
+                      </button>
+                  </div>
+              </div>
+          )}
+
+          {activeTab === 'Operations' && (
+              <div className="space-y-8">
+                  {entity.role === EntityRole.OPERATING_LLC ? (
+                      <>
+                          <HRHeadcountViewer 
+                              entity={entity} 
+                              employees={store.employees} 
+                              payrollRuns={store.payrollRuns} 
+                              onAddEmployee={() => openWizard('EMPLOYEE')}
+                          />
+                          <RunPayrollForm entityId={entity.id} employees={store.employees} modules={store.modules} onRunPayroll={store.runPayroll} />
+                      </>
+                  ) : (
+                      <div className="text-center py-20 text-slate-400 italic">
+                          Operational modules are primarily for LLC entities.
+                      </div>
+                  )}
+                  
+                  <CRMManager 
+                      entity={entity} 
+                      people={store.crmPeople} 
+                      onAdd={store.addCRMPerson} 
+                      onUpdate={store.updateCRMPerson} 
+                      onDelete={store.deleteCRMPerson} 
+                      onAddInteraction={store.addInteraction} 
+                      currentUser={store.currentUser} 
+                  />
+              </div>
+          )}
+
+          {activeTab === 'Intelligence' && (
+              <AIStrategist entity={entity} />
+          )}
+
+      </div>
     </div>
   );
 };
-
-const StatCard = ({ label, value, icon: Icon, color }: any) => (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-5 group hover:border-indigo-200 transition-all">
-        <div className={`p-3 rounded-xl bg-slate-50 group-hover:bg-indigo-50 transition-colors ${color}`}>
-            <Icon size={24} />
-        </div>
-        <div>
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</div>
-            <div className="text-2xl font-bold text-slate-800 tracking-tight">{value}</div>
-        </div>
-    </div>
-);
-
-const QuickAction = ({ icon: Icon, label, onClick }: any) => (
-    <button 
-        onClick={onClick}
-        className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-all border border-slate-700/50 hover:border-indigo-500/50 group"
-    >
-        <div className="flex items-center gap-3">
-            <Icon size={14} className="text-slate-500 group-hover:text-indigo-400" />
-            <span className="text-xs font-bold text-slate-300 group-hover:text-white">{label}</span>
-        </div>
-        <ArrowRightLeft size={12} className="text-slate-600 opacity-0 group-hover:opacity-100 transition-all" />
-    </button>
-);
-
-const BadgeDollarSign = (props: any) => <DollarSign {...props} />;
-const DollarSign = (props: any) => (
-  <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="1" x2="12" y2="23" />
-    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-  </svg>
-);

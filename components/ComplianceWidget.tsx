@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ComplianceFiling, Entity, IRSFormType, BSORole, IRSAPICredential, EntityRole, TaxModule } from '../types';
-import { FileSignature, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
+import { FileSignature, AlertCircle, CheckCircle, Calendar, Plus, Send, RefreshCw, Lock } from 'lucide-react';
+import { AddTaxModuleModal } from './modals/AddTaxModuleModal';
+import { useLedgerStore } from '../services/ledgerService';
 
 interface Props {
   entity: Entity;
@@ -13,6 +15,7 @@ interface Props {
   onCreateFiling: (entityId: string, type: IRSFormType) => void;
   onUpdateStatus: (id: string, status: ComplianceFiling['status'], date?: string) => void;
   onSubmitToApi?: (filingId: string) => Promise<void>;
+  onAddModule?: (module: TaxModule) => void;
 }
 
 export const ComplianceWidget: React.FC<Props> = ({ 
@@ -24,8 +27,11 @@ export const ComplianceWidget: React.FC<Props> = ({
   irsCreds,
   onCreateFiling, 
   onUpdateStatus,
-  onSubmitToApi
+  onSubmitToApi,
+  onAddModule
 }) => {
+  const { requestAuthorization } = useLedgerStore();
+  const [showAddModule, setShowAddModule] = useState(false);
   
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -33,6 +39,7 @@ export const ComplianceWidget: React.FC<Props> = ({
       case 'Filed': return 'text-emerald-600 bg-emerald-50 border-emerald-100';
       case 'Drafted': return 'text-amber-600 bg-amber-50 border-amber-100';
       case 'Rejected': return 'text-red-600 bg-red-50 border-red-100';
+      case 'Transmitting': return 'text-blue-600 bg-blue-50 border-blue-100 animate-pulse';
       default: return 'text-slate-400 bg-slate-50 border-slate-100';
     }
   };
@@ -48,6 +55,12 @@ export const ComplianceWidget: React.FC<Props> = ({
     // Find the next open module
     const module = modules.find(m => m.entityId === entity.id && m.type === type && m.status === 'Open');
     return module;
+  };
+
+  const handleSecureSubmit = (filingId: string) => {
+      if (!onSubmitToApi) return;
+      // Request 2FA before submitting to IRS API
+      requestAuthorization(() => onSubmitToApi(filingId));
   };
 
   const renderFormRow = (type: IRSFormType, title: string, desc: string) => {
@@ -87,6 +100,7 @@ export const ComplianceWidget: React.FC<Props> = ({
           <span className={`text-xs font-medium px-2 py-1 rounded-full ${colorClass}`}>
             {status}
           </span>
+          
           {status === 'Not Started' ? (
             <button 
               onClick={() => onCreateFiling(entity.id, type)}
@@ -95,12 +109,30 @@ export const ComplianceWidget: React.FC<Props> = ({
               Start Draft
             </button>
           ) : status === 'Drafted' ? (
-             <button 
-              onClick={() => onSubmitToApi ? onSubmitToApi(filing!.id) : onUpdateStatus(filing!.id, 'Filed', new Date().toISOString().split('T')[0])}
-              className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 transition-colors"
-            >
-               Mark Filed
-            </button>
+             <div className="flex items-center gap-2">
+                 <button 
+                  onClick={() => onUpdateStatus(filing!.id, 'Filed', new Date().toISOString().split('T')[0])}
+                  className="text-[10px] text-slate-400 hover:text-slate-600 underline decoration-dotted"
+                  title="Mark as filed without API submission"
+                >
+                   Manual
+                </button>
+                {onSubmitToApi && (
+                    <button 
+                      onClick={() => handleSecureSubmit(filing!.id)}
+                      className="flex items-center gap-1 text-xs text-white font-bold bg-indigo-600 px-3 py-1.5 rounded hover:bg-indigo-700 transition-colors shadow-sm"
+                    >
+                       <Lock size={10} /> Submit to IRS
+                    </button>
+                )}
+            </div>
+          ) : status === 'Rejected' && onSubmitToApi ? (
+              <button 
+                onClick={() => handleSecureSubmit(filing!.id)}
+                className="flex items-center gap-1 text-xs text-red-600 hover:bg-red-50 font-medium border border-red-200 px-2 py-1 rounded transition-colors"
+              >
+                 <RefreshCw size={12} /> Retry API
+              </button>
           ) : null}
         </div>
       </div>
@@ -114,7 +146,15 @@ export const ComplianceWidget: React.FC<Props> = ({
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Authorized Representation</h3>
+        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Compliance & Tax Periods</h3>
+        {onAddModule && (
+          <button 
+            onClick={() => setShowAddModule(true)}
+            className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100 transition-colors flex items-center gap-1"
+          >
+            <Plus size={12} /> Add Period
+          </button>
+        )}
       </div>
 
       {isChild && (
@@ -149,6 +189,14 @@ export const ComplianceWidget: React.FC<Props> = ({
           </>
         )}
       </div>
+
+      {showAddModule && onAddModule && (
+        <AddTaxModuleModal
+          entityId={entity.id}
+          onSave={onAddModule}
+          onClose={() => setShowAddModule(false)}
+        />
+      )}
     </div>
   );
 };
