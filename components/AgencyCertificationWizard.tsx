@@ -1,11 +1,12 @@
 
+
 import React, { useState } from 'react';
-import { Entity } from '../types';
+import { Entity, AgencyCertification } from '../types';
 import { ShieldCheck, FileCheck, AlertTriangle, ArrowRight, ArrowLeft, CheckCircle2, Building, UserCheck } from 'lucide-react';
 
 interface Props {
   entity: Entity;
-  onComplete: (certId: string) => void;
+  onComplete: (cert: AgencyCertification) => void;
   onClose: () => void;
 }
 
@@ -30,7 +31,15 @@ export const AgencyCertificationWizard: React.FC<Props> = ({ entity, onComplete,
   const handleFinish = () => {
       setIsSubmitting(true);
       setTimeout(() => {
-          onComplete(`CERT-${Date.now()}`);
+          const cert: AgencyCertification = {
+              id: `CERT-${Date.now()}`,
+              entityId: entity.id,
+              fiscalYear: new Date().getFullYear(),
+              status: 'Certified',
+              responses,
+              completedDate: new Date().toISOString().split('T')[0]
+          };
+          onComplete(cert);
           setIsSubmitting(false);
           onClose();
       }, 1500);

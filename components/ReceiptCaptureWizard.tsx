@@ -90,13 +90,22 @@ export const ReceiptCaptureWizard: React.FC<Props> = ({ entityId, accounts, onPo
     reader.onloadend = async () => {
         const base64Data = reader.result as string;
         const base64Content = base64Data.split(',')[1];
-        const mimeType = file.type;
+        
+        // Ensure a valid mime type is present, fallback to jpeg if empty
+        let mimeType = file.type;
+        if (!mimeType) {
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            if (ext === 'png') mimeType = 'image/png';
+            else if (ext === 'webp') mimeType = 'image/webp';
+            else if (ext === 'heic') mimeType = 'image/heic';
+            else mimeType = 'image/jpeg';
+        }
 
         try {
             const availableAccounts = entityAccounts.map(a => `${a.name} (${a.code})`).join(', ');
 
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-image',
+                model: 'gemini-3-flash-preview',
                 contents: {
                     parts: [
                         {
@@ -211,7 +220,7 @@ export const ReceiptCaptureWizard: React.FC<Props> = ({ entityId, accounts, onPo
                     
                     <label className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-bold cursor-pointer transition-colors flex items-center gap-2">
                         <Upload size={18} /> Browse Files
-                        <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                        <input type="file" accept="*" onChange={handleFileChange} className="hidden" />
                     </label>
                 </div>
             )}

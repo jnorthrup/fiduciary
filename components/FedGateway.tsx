@@ -7,6 +7,7 @@ import {
   Send, DollarSign, Fingerprint, Building, RefreshCw, AlertTriangle, FileUp, Database, Code2
 } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
+import { useLedgerStore } from '../services/ledgerService';
 
 interface Props {
   entity: Entity;
@@ -19,6 +20,7 @@ interface Props {
 export const FedGateway: React.FC<Props> = ({ 
   entity, fedWires, crmPeople, onOriginate, onPostJournal 
 }) => {
+  const { requestAuthorization } = useLedgerStore();
   const [activeTab, setActiveTab] = useState<'Realtime' | 'WireRoom' | 'Settlement' | 'Import'>('WireRoom');
   const [loading, setLoading] = useState(false);
   const [wireType, setWireType] = useState<'Wire' | 'FedNow'>('Wire');
@@ -88,6 +90,14 @@ export const FedGateway: React.FC<Props> = ({
         console.error("FRB origination failed", err);
         setLoading(false);
     }
+  };
+
+  const handleSecureOriginate = () => {
+      // Trigger global 2FA before executing wire
+      requestAuthorization(() => {
+          setWireType(activeTab === 'Realtime' ? 'FedNow' : 'Wire');
+          handleOriginateWire();
+      });
   };
 
   const handleParseXML = async () => {
@@ -257,7 +267,7 @@ export const FedGateway: React.FC<Props> = ({
                               </div>
 
                               <button 
-                                onClick={() => { setWireType(activeTab === 'Realtime' ? 'FedNow' : 'Wire'); handleOriginateWire(); }}
+                                onClick={handleSecureOriginate}
                                 disabled={loading || !beneficiaryName || amount <= 0}
                                 className={`w-full py-4 rounded-xl font-bold text-lg shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 ${activeTab === 'Realtime' ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
                               >

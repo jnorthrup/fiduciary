@@ -4,11 +4,9 @@ import { Entity, EntityRole, EntityType, Account, AccountType, DCFlag, TaxModule
 
 const GENESIS_HASH = "0000000000000000";
 
-/**
- * GENERATIONAL JIM HIERARCHY
- * Portrait-ready EIN masks implemented as last-4 identifiers.
- */
-export const SEED_ENTITIES: Entity[] = [
+// --- 1. JIM PROFILE DATA (JRN,  ) ---
+
+export const JIM_ENTITIES: Entity[] = [
   // FIDUCIARY ROOT
   {
     id: "ENT-ROOT",
@@ -42,7 +40,7 @@ export const SEED_ENTITIES: Entity[] = [
         programStatus: 'On Track'
     }
   },
-  // ESTATE LAYER - With Arrears Scenario for Demo
+  // ESTATE LAYER
   {
     id: "ENT-EST-JRN",
     name: "Estate of James R. Northrup Jr.",
@@ -57,8 +55,8 @@ export const SEED_ENTITIES: Entity[] = [
         financingAssurances: false,
         programStatus: 'Review Pending'
     }
-  },
-  // TRUST ARMS (Stem from Estate)
+  },  
+  // TRUST ARMS
   {
     id: "ENT-AAA-TRUST",
     name: "AAA Angel Inv. Express Trust",
@@ -76,15 +74,6 @@ export const SEED_ENTITIES: Entity[] = [
     }
   },
   {
-    id: "ENT-AAA-WTH",
-    name: "AAA Angel Withholding",
-    type: EntityType.VENDOR,
-    role: EntityRole.OTHER,
-    einLast4: "0005", // 93-00-0005
-    parentEntityId: "ENT-AAA-TRUST",
-    _version: GENESIS_HASH
-  },
-  {
     id: "ENT-VERSA-LLC",
     name: "Versatile Consulting LLC",
     type: EntityType.LLC,
@@ -100,24 +89,6 @@ export const SEED_ENTITIES: Entity[] = [
     }
   },
   {
-    id: "ENT-BAO-PVT",
-    name: "BAO Entourage Private UNLTD",
-    type: EntityType.TRUST,
-    role: EntityRole.HOLDING_TRUST,
-    einLast4: "0095", // 33-00-0095
-    parentEntityId: "ENT-AAA-TRUST",
-    _version: GENESIS_HASH
-  },
-  {
-    id: "ENT-JRN-WTH",
-    name: "JR Northrup Withholding",
-    type: EntityType.VENDOR,
-    role: EntityRole.OTHER,
-    einLast4: "0038", // 93-00-0038
-    parentEntityId: "ENT-BAO-PVT",
-    _version: GENESIS_HASH
-  },
-  {
     id: "ENT-FARMS-LAND",
     name: "Macaroon Farms Land Trust",
     type: EntityType.TRUST,
@@ -125,41 +96,17 @@ export const SEED_ENTITIES: Entity[] = [
     role: EntityRole.HOLDING_TRUST,
     einLast4: "0008", // 33-00-0008
     parentEntityId: "ENT-EST-JRN",
-    _version: GENESIS_HASH,
-    imfProfile: {
-        dsaStatus: 'Exceptional Uncertainty',
-        arrearsPolicy: 'LIOA-4',
-        financingAssurances: false,
-        programStatus: 'Off Track'
-    }
+    _version: GENESIS_HASH
   },
-  // FOREIGN GRANTOR TRUSTS
   {
     id: "ENT-GINGER-TRUST",
     name: "Ginger Waffle Trust",
     type: EntityType.TRUST,
     role: EntityRole.HOLDING_TRUST,
-    einLast4: "0058", // 98-00-0058 (Rahmayani - Grantor)
+    einLast4: "0058",
     parentEntityId: "ENT-EST-JRN",
     _version: GENESIS_HASH
   },
-  {
-    id: "ENT-NAURA-SCH",
-    name: "Naura School Trust",
-    type: EntityType.TRUST,
-    role: EntityRole.BENEFICIARY, // Rahmayani - Trustee
-    parentEntityId: "ENT-GINGER-TRUST",
-    _version: GENESIS_HASH
-  },
-  {
-    id: "ENT-YPSI-90125",
-    name: "90125 Ypsilanti JRN Trust",
-    type: EntityType.TRUST,
-    role: EntityRole.HOLDING_TRUST,
-    parentEntityId: "ENT-EST-JRN", // Embedded in Will
-    _version: GENESIS_HASH
-  },
-  // NEW LIVING TRUST
   {
     id: "ENT-LIVING-TRUST",
     name: "Northrup Living Trust",
@@ -172,8 +119,7 @@ export const SEED_ENTITIES: Entity[] = [
   }
 ];
 
-export const SEED_ACCOUNTS: Account[] = [
-  // Balances calculated based on 5-year history generation below
+export const JIM_ACCOUNTS: Account[] = [
   { id: "AC-101", entityId: "ENT-ROOT", code: "101000", name: "Master Treasury Account", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 1250000.00, _version: GENESIS_HASH },
   { id: "AC-102", entityId: "ENT-AAA-TRUST", code: "101000", name: "Operating Cash", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 500000.00, _version: GENESIS_HASH },
   { id: "AC-103", entityId: "ENT-VERSA-LLC", code: "101000", name: "Business Checking", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 285400.00, _version: GENESIS_HASH },
@@ -186,30 +132,15 @@ export const SEED_ACCOUNTS: Account[] = [
   // Trust Accounts
   { id: "AC-T-INC", entityId: "ENT-AAA-TRUST", code: "410000", name: "Distribution Income", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0, _version: GENESIS_HASH },
   { id: "AC-T-EXP", entityId: "ENT-AAA-TRUST", code: "520000", name: "Trustee Fees", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, _version: GENESIS_HASH },
-  // Universal Backfill Account
   { id: "AC-UNCAT", entityId: "ENT-VERSA-LLC", code: "599000", name: "Uncategorized Expense", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, _version: GENESIS_HASH },
-];
+ ];
 
-export const SEED_MODULES: TaxModule[] = [
-  { id: "TM-AAA-Q1", entityId: "ENT-AAA-TRUST", period: "Q1", year: 2025, type: "INCOME", status: "Open", dueDate: "2025-04-15" },
-  { id: "TM-VERSA-Q1", entityId: "ENT-VERSA-LLC", period: "Q1", year: 2025, type: "PAYROLL", status: "Open", dueDate: "2025-04-30" },
-  { id: "TM-VERSA-Q2", entityId: "ENT-VERSA-LLC", period: "Q2", year: 2025, type: "PAYROLL", status: "Open", dueDate: "2025-07-31" },
-];
-
-export const SEED_FILINGS: ComplianceFiling[] = [
-  { id: "FIL-56-ROOT", entityId: "ENT-ROOT", formType: "56", status: "Accepted", filingDate: "2024-01-01", notes: "Fiduciary Capacity Established", _version: GENESIS_HASH },
-];
-
-// --- 5 YEAR HISTORICAL DATA GENERATOR ---
 const generateHistory = (): JournalEntry[] => {
     const journals: JournalEntry[] = [];
     const startDate = new Date();
     startDate.setFullYear(startDate.getFullYear() - 5);
-    
-    // Operating Entity: Versatile Consulting LLC
     const llcId = "ENT-VERSA-LLC";
     const trustId = "ENT-AAA-TRUST";
-
     let currentDate = new Date(startDate);
     const endDate = new Date();
 
@@ -217,10 +148,7 @@ const generateHistory = (): JournalEntry[] => {
         const dateStr = currentDate.toISOString().split('T')[0];
         const month = currentDate.toLocaleString('default', { month: 'short' });
         const year = currentDate.getFullYear();
-
-        // 1. Monthly Revenue (LLC)
-        // High variation to look realistic
-        const revenue = 15000 + Math.floor(Math.random() * 8000); // $15k - $23k
+        const revenue = 15000 + Math.floor(Math.random() * 8000); 
         journals.push({
             id: uuidv4(),
             entityId: llcId,
@@ -234,73 +162,56 @@ const generateHistory = (): JournalEntry[] => {
             locked: true,
             _version: GENESIS_HASH
         });
-
-        // 2. Monthly Expense (LLC)
-        const expense = 2200 + Math.floor(Math.random() * 500);
-        const expenseDate = new Date(currentDate);
-        expenseDate.setDate(15);
-        journals.push({
-            id: uuidv4(),
-            entityId: llcId,
-            date: expenseDate.toISOString().split('T')[0],
-            memo: `SaaS & Utility - ${month} ${year}`,
-            type: 'EXPENSE',
-            lines: [
-                { id: uuidv4(), accountId: 'AC-V-EXP', accountCode: '500000', accountName: 'Software Expense', dc: DCFlag.Debit, amount: expense },
-                { id: uuidv4(), accountId: 'AC-103', accountCode: '101000', accountName: 'Business Checking', dc: DCFlag.Credit, amount: expense }
-            ],
-            locked: true,
-            _version: GENESIS_HASH
-        });
-
-        // 3. Quarterly Distribution (LLC -> Trust)
-        // Approx $25k every quarter
-        if ((currentDate.getMonth() + 1) % 3 === 0) {
-            const distDate = new Date(currentDate);
-            distDate.setDate(28);
-            const distAmount = 25000;
-            
-            // LLC Side (Capital Out)
-            journals.push({
-                id: uuidv4(),
-                entityId: llcId,
-                date: distDate.toISOString().split('T')[0],
-                memo: `Quarterly Dist. to Member - Q${Math.ceil((currentDate.getMonth()+1)/3)} ${year}`,
-                type: 'DISTRIBUTION',
-                lines: [
-                    { id: uuidv4(), accountId: 'AC-V-EQ', accountCode: '300000', accountName: 'Member Capital', dc: DCFlag.Debit, amount: distAmount },
-                    { id: uuidv4(), accountId: 'AC-103', accountCode: '101000', accountName: 'Business Checking', dc: DCFlag.Credit, amount: distAmount }
-                ],
-                locked: true,
-                _version: GENESIS_HASH
-            });
-
-            // Trust Side (Income In)
-            journals.push({
-                id: uuidv4(),
-                entityId: trustId,
-                date: distDate.toISOString().split('T')[0],
-                memo: `Distribution Received - Q${Math.ceil((currentDate.getMonth()+1)/3)} ${year}`,
-                type: 'RECEIPT',
-                lines: [
-                    { id: uuidv4(), accountId: 'AC-102', accountCode: '101000', accountName: 'Operating Cash', dc: DCFlag.Debit, amount: distAmount },
-                    { id: uuidv4(), accountId: 'AC-T-INC', accountCode: '410000', accountName: 'Distribution Income', dc: DCFlag.Credit, amount: distAmount }
-                ],
-                locked: true,
-                _version: GENESIS_HASH
-            });
-        }
-
-        // Move to next month
         currentDate.setMonth(currentDate.getMonth() + 1);
         currentDate.setDate(1);
     }
-
     return journals;
 };
 
-export const SEED_JOURNALS: JournalEntry[] = generateHistory();
+export const JIM_JOURNALS: JournalEntry[] = generateHistory();
 
+export const JIM_MODULES: TaxModule[] = [
+  { id: "TM-AAA-Q1", entityId: "ENT-AAA-TRUST", period: "Q1", year: 2025, type: "INCOME", status: "Open", dueDate: "2025-04-15" },
+  { id: "TM-VERSA-Q1", entityId: "ENT-VERSA-LLC", period: "Q1", year: 2025, type: "PAYROLL", status: "Open", dueDate: "2025-04-30" },
+  { id: "TM-LAS-Q1", entityId: "ENT-LAS-TRUST", period: "Annual", year: 2025, type: "INFO_RETURN", status: "Open", dueDate: "2025-04-15" },
+];
+
+export const JIM_FILINGS: ComplianceFiling[] = [
+  { id: "FIL-56-ROOT", entityId: "ENT-ROOT", formType: "56", status: "Accepted", filingDate: "2024-01-01", notes: "Fiduciary Capacity Established", _version: GENESIS_HASH },
+];
+
+// --- 2. FUZZ / SYNTHETIC DATA (Disjoint) ---
+
+export const FUZZ_ENTITIES: Entity[] = [
+    { id: "FZ-ROOT", name: "Synthetic Operator", type: EntityType.INDIVIDUAL, role: EntityRole.TRUSTEE, parentEntityId: null, _version: GENESIS_HASH },
+    { id: "FZ-CORP", name: "Chaos Corp LLC", type: EntityType.LLC, role: EntityRole.OPERATING_LLC, parentEntityId: "FZ-ROOT", _version: GENESIS_HASH },
+    { id: "FZ-TRUST", name: "Entropy Trust", type: EntityType.TRUST, role: EntityRole.HOLDING_TRUST, parentEntityId: "FZ-ROOT", _version: GENESIS_HASH },
+    { id: "FZ-VESSEL", name: "SS Random Seed", type: EntityType.VESSEL, role: EntityRole.VESSEL, parentEntityId: "FZ-TRUST", _version: GENESIS_HASH }
+];
+
+export const FUZZ_ACCOUNTS: Account[] = [
+    { id: "FA-01", entityId: "FZ-CORP", code: "101000", name: "Fuzz Cash", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 99999, _version: GENESIS_HASH },
+    { id: "FA-02", entityId: "FZ-CORP", code: "400000", name: "Noise Revenue", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0, _version: GENESIS_HASH },
+    { id: "FA-03", entityId: "FZ-TRUST", code: "300000", name: "Static Corpus", type: AccountType.EQUITY, normalBalance: DCFlag.Credit, balance: 5000, _version: GENESIS_HASH }
+];
+
+export const FUZZ_JOURNALS: JournalEntry[] = [
+    {
+        id: "FJ-01",
+        entityId: "FZ-CORP",
+        date: new Date().toISOString().split('T')[0],
+        memo: "Initial Fuzz Injection",
+        type: "INIT",
+        lines: [
+            { id: "FL-01", accountId: "FA-01", accountCode: "101000", accountName: "Fuzz Cash", dc: DCFlag.Debit, amount: 99999 },
+            { id: "FL-02", accountId: "FA-02", accountCode: "400000", accountName: "Noise Revenue", dc: DCFlag.Credit, amount: 99999 }
+        ],
+        locked: true,
+        _version: "1"
+    }
+];
+
+// --- SHARED SEED DATA (Can be used by both or cleared) ---
 export const SEED_CREDIT_DEFENSE: CreditDefenseRecord[] = [
     {
         id: "DEF-EXP-001",
@@ -316,37 +227,6 @@ export const SEED_CREDIT_DEFENSE: CreditDefenseRecord[] = [
     }
 ];
 
-// --- EVIL NODES / INTRUSIONS ---
-export const SEED_INTRUSIONS: IntrusionRecord[] = [
-    {
-        id: "INT-IRS-001",
-        targetEntityId: "ENT-VERSA-LLC",
-        name: "IRS SB/SE Division",
-        type: "Audit",
-        jurisdiction: "Federal (IRS)",
-        severity: "Critical",
-        status: "Active"
-    },
-    {
-        id: "INT-STATE-001",
-        targetEntityId: "ENT-VERSA-LLC",
-        name: "State Franchise Board",
-        type: "Inquiry",
-        jurisdiction: "Local/State",
-        severity: "Medium",
-        status: "Active"
-    },
-    {
-        id: "INT-CREDITOR-001",
-        targetEntityId: "ENT-EST-JRN",
-        name: "Collections Bureau",
-        type: "Lawsuit",
-        jurisdiction: "Article 1 (Statutory)",
-        severity: "Low",
-        status: "Active"
-    }
-];
-
 export const SEED_CONTRACTORS: Contractor[] = [];
 export const SEED_WALLETS: WalletCredential[] = [];
 export const SEED_BSO_ROLES: BSORole[] = [];
@@ -357,3 +237,8 @@ export const SEED_PAYROLL_RUNS: PayrollRun[] = [];
 export const SEED_SSA_STATEMENTS: SSAStatement[] = [];
 export const SEED_DOCUMENTS: IRMDocument[] = [];
 export const SEED_RESOLUTIONS: ResolutionRecord[] = [];
+export const SEED_REAL_ESTATE_ASSETS: any[] = [];
+export const SEED_PURCHASE_CONTRACTS: any[] = [];
+export const SEED_CREDIT_RESOLUTIONS: any[] = [];
+export const SEED_CREDIT_INSTRUMENTS: any[] = [];
+export const SEED_CLOSING_RECORDS: any[] = [];

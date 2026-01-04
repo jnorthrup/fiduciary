@@ -5,8 +5,9 @@ import { EntityBuilder } from './EntityBuilder';
 import { FractalViewer } from './FractalViewer';
 import { EntityCRUDModal } from './modals/EntityCRUDModal';
 import { StreamWave } from './StreamWave';
+import { UseCaseLogViewer } from './UseCaseLogViewer'; // Import
 import { useLedgerStore } from '../services/ledgerService';
-import { Activity, Network, LayoutGrid, Plus, Globe, Undo2, Redo2, Database, SidebarClose, SidebarOpen, Rocket, ShieldCheck, Cpu, History, Sparkles, Shield } from 'lucide-react';
+import { Activity, Network, LayoutGrid, Plus, Globe, Undo2, Redo2, Database, SidebarClose, SidebarOpen, Rocket, ShieldCheck, Cpu, History, Sparkles, Shield, Terminal } from 'lucide-react';
 
 interface Props {
   entities: Entity[];
@@ -31,6 +32,7 @@ export const SystemOverview: React.FC<Props> = ({
   const [viewMode, setViewMode] = useState<'structure' | 'fractal'>('fractal');
   const [editingEntityId, setEditingEntityId] = useState<string | null>(null);
   const [showStream, setShowStream] = useState(false);
+  const [showLogs, setShowLogs] = useState(false); // Log state
 
   const totalAssets = accounts.filter(a => a.type === 'Asset').reduce((sum, a) => sum + a.balance, 0);
   const totalEntities = entities.length;
@@ -39,7 +41,7 @@ export const SystemOverview: React.FC<Props> = ({
 
   return (
     <div className="flex flex-col h-full bg-[#f8fafc] relative overflow-hidden">
-      {/* System Header - Updated to match screenshot */}
+      {/* System Header */}
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shrink-0 shadow-sm z-20">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -69,6 +71,16 @@ export const SystemOverview: React.FC<Props> = ({
                     </button>
                 </div>
             )}
+
+            <div className="h-6 w-px bg-slate-200 mx-2"></div>
+
+            <button 
+                onClick={() => setShowLogs(!showLogs)}
+                className={`p-2 rounded-lg border transition-colors ${showLogs ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
+                title="Toggle UseCase Logs"
+            >
+                <Terminal size={18} />
+            </button>
 
             <button 
                 onClick={() => setShowStream(!showStream)}
@@ -175,6 +187,8 @@ export const SystemOverview: React.FC<Props> = ({
             <StreamWave changes={changeGraph} />
         )}
       </div>
+
+      {showLogs && <UseCaseLogViewer onClose={() => setShowLogs(false)} />}
 
       {editingEntity && (
           <EntityCRUDModal 
