@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Account, DCFlag, JournalLine } from '../../types';
 // Fixed missing CheckCircle2 import from lucide-react
@@ -7,6 +8,7 @@ interface Props {
   entityId: string;
   accounts: Account[];
   onSave: (date: string, memo: string, type: string, lines: any[]) => void;
+  onCreateAccount?: (account: Account) => void;
   onClose: () => void;
 }
 
@@ -18,7 +20,7 @@ interface LineItem {
   description: string;
 }
 
-export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, onSave, onClose }) => {
+export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, onSave, onCreateAccount, onClose }) => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [memo, setMemo] = useState('');
   const [type, setType] = useState('GENERAL');
@@ -27,10 +29,22 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
     { id: '2', accountId: '', debit: '', credit: '', description: '' }
   ]);
 
+  // Account Creation State
+  const [showAccountCreator, setShowAccountCreator] = useState(false);
+  const [creatingForLineId, setCreatingForLineId] = useState<string | null>(null);
+  const [newAccount, setNewAccount] = useState({ code: '', name: '', type: 'Expense' });
+
   // Filter accounts for this entity
   const entityAccounts = accounts.filter(a => a.entityId === entityId);
 
   const handleLineChange = (id: string, field: keyof LineItem, value: string) => {
+    // Intercept Account Selection for "NEW"
+    if (field === 'accountId' && value === 'NEW_ACCOUNT') {
+        setCreatingForLineId(id);
+        setShowAccountCreator(true);
+        return;
+    }
+
     setLines(prev => prev.map(line => {
       if (line.id !== id) return line;
       
@@ -40,6 +54,32 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
       
       return { ...line, [field]: value };
     }));
+  };
+
+  const handleCreateAccount = () => {
+      if (!newAccount.code || !newAccount.name || !onCreateAccount) return;
+      
+      const account: Account = {
+          id: `ACC-${Date.now()}`,
+          entityId,
+          code: newAccount.code,
+          name: newAccount.name,
+          type: newAccount.type as any,
+          normalBalance: ['Asset','Expense'].includes(newAccount.type) ? DCFlag.Debit : DCFlag.Credit,
+          balance: 0,
+          _version: '1'
+      };
+      
+      onCreateAccount(account);
+      
+      // Auto-select the new account for the triggering line
+      if (creatingForLineId) {
+          setLines(prev => prev.map(l => l.id === creatingForLineId ? { ...l, accountId: account.id } : l));
+      }
+      
+      setShowAccountCreator(false);
+      setNewAccount({ code: '', name: '', type: 'Expense' });
+      setCreatingForLineId(null);
   };
 
   const addLine = () => {
@@ -90,8 +130,58 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
 
   return (
     <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] relative">
         
+        {/* Account Creator Overlay */}
+        {showAccountCreator && (
+            <div className="absolute inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-8 animate-in fade-in duration-200">
+                <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md border border-slate-200">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-slate-800 text-lg">Create New Ledger Account</h3>
+                        <button onClick={() => setShowAccountCreator(false)}><X className="text-slate-400 hover:text-slate-600" size={20}/></button>
+                    </div>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Account Code</label>
+                            <input 
+                                value={newAccount.code}
+                                onChange={e => setNewAccount({...newAccount, code: e.target.value})}
+                                className="w-full border rounded p-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none"
+                                placeholder="e.g. 500100"
+                                autoFocus
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Account Name</label>
+                            <input 
+                                value={newAccount.name}
+                                onChange={e => setNewAccount({...newAccount, name: e.target.value})}
+                                className="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                placeholder="e.g. Travel Expenses"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Type</label>
+                            <select 
+                                value={newAccount.type}
+                                onChange={e => setNewAccount({...newAccount, type: e.target.value})}
+                                className="w-full border rounded p-2 text-sm bg-white"
+                            >
+                                {['Asset', 'Liability', 'Equity', 'Income', 'Expense'].map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
+                        <button 
+                            onClick={handleCreateAccount}
+                            disabled={!newAccount.code || !newAccount.name}
+                            className="w-full bg-indigo-600 text-white py-2 rounded font-bold hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                            Save & Select
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         {/* Header */}
         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
@@ -166,11 +256,14 @@ export const ManualJournalEntryModal: React.FC<Props> = ({ entityId, accounts, o
                       className="w-full border border-slate-200 rounded-lg p-2 text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-900"
                     >
                       <option value="">Select Account...</option>
-                      {entityAccounts.map(acc => (
-                        <option key={acc.id} value={acc.id}>
-                          {acc.code} - {acc.name} ({acc.type})
-                        </option>
-                      ))}
+                      {onCreateAccount && <option value="NEW_ACCOUNT" className="text-indigo-600 font-bold">+ Create New Account</option>}
+                      <optgroup label="Existing Accounts">
+                        {entityAccounts.map(acc => (
+                            <option key={acc.id} value={acc.id}>
+                            {acc.code} - {acc.name} ({acc.type})
+                            </option>
+                        ))}
+                      </optgroup>
                     </select>
                   </td>
                   <td className="p-2">

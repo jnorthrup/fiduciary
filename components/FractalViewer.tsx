@@ -5,7 +5,8 @@ import { Entity, Account, JournalEntry, WalletCredential, EntityRole, EntityType
 import { 
   ZoomIn, ZoomOut, Move, Edit, Layers, Fingerprint, Skull, AlertOctagon, Filter, 
   Grid, LayoutTemplate, Share2, Hexagon, Circle, Square, Triangle, Ship, Globe,
-  BookOpen, ChevronDown, ChevronUp, Receipt, ArrowRightLeft
+  BookOpen, ChevronDown, ChevronUp, Receipt, ArrowRightLeft, Pin, PinOff,
+  Landmark
 } from 'lucide-react';
 
 interface Props {
@@ -17,14 +18,17 @@ interface Props {
   onEditEntity?: (id: string) => void;
 }
 
-// Lattice Configuration
-const COL_WIDTH = 400;
-const ROW_HEIGHT = 200;
+// Configuration
+const BASE_COL_WIDTH = 400;
+const BASE_ROW_HEIGHT = 200;
+const ZOOM_THRESHOLD = 0.8; // 80% screen-full percentage for layout shift
+
 const SWIMLANES = {
   [EntityType.INDIVIDUAL]: { index: 0, label: 'Grantor / Source' },
   [EntityType.ESTATE]: { index: 0, label: 'Grantor / Source' },
   [EntityType.TRUST]: { index: 1, label: 'Governance (Trusts)' },
   [EntityType.LLC]: { index: 2, label: 'Operations (LLC)' },
+  [EntityType.CREDIT_UNION]: { index: 2, label: 'Operations (Financial)' },
   [EntityType.VESSEL]: { index: 3, label: 'Maritime Assets' },
   [EntityType.VENDOR]: { index: 4, label: 'External / Vendor' },
   [EntityType.CONTRACTOR]: { index: 4, label: 'External / Vendor' },
@@ -36,16 +40,33 @@ const DEFAULT_LANE = { index: 4, label: 'Uncategorized' };
 
 export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, accounts, journals, wallets, intrusions = [], onEditEntity }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [transform, setTransform] = useState({ x: 0, y: 0, k: 0.7 });
+  
+  // Viewport State
+  const [transform, setTransform] = useState({ x: 0, y: 0, k: 0.6 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [layoutReady, setLayoutReady] = useState(false);
+  
+  // Friction / Coasting State
+  const velocity = useRef({ x: 0, y: 0 });
+  const lastMouse = useRef({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
+
+  // Node State
   const [expandedNodeId, setExpandedNodeId] = useState<string | null>(null);
+  const [pinnedNodes, setPinnedNodes] = useState<Set<string>>(new Set());
   
   // Jurisdictional State
   const [showOverlay, setShowOverlay] = useState(true);
   const [imfOverlayMode, setImfOverlayMode] = useState(false);
   const [activeTouchTest, setActiveTouchTest] = useState<JurisdictionType | null>(null);
+
+  // Derived State for Layout Logic
+  const isHighFidelity = transform.k >= ZOOM_THRESHOLD;
+
+  // Dynamic Layout Constants
+  const COL_WIDTH = isHighFidelity ? 650 : BASE_COL_WIDTH;
+  const ROW_HEIGHT = isHighFidelity ? 500 : BASE_ROW_HEIGHT;
 
   const getJurisdiction = (entity: Entity): JurisdictionType => {
       if (!entity) return 'Local/State'; 
@@ -54,6 +75,7 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
       if (entity.type === EntityType.TRUST || entity.type === EntityType.ESTATE) return 'Article 3 (Private)';
       if (entity.role === EntityRole.TRUSTEE && entity.type === EntityType.INDIVIDUAL) return 'Article 3 (Private)';
       if (entity.role === EntityRole.OPERATING_LLC || entity.type === EntityType.LLC) return 'Article 1 (Statutory)';
+      if (entity.type === EntityType.CREDIT_UNION) return 'Federal (IRS)';
       return 'Local/State';
   };
 
@@ -85,7 +107,8 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
         const baseX = laneConfig.index * COL_WIDTH;
         const baseY = depth * ROW_HEIGHT;
         
-        const isExpanded = entity.id === expandedNodeId;
+        // Check visibility state to determine physical size in graph
+        const isRevealed = isHighFidelity || pinnedNodes.has(entity.id) || expandedNodeId === entity.id;
 
         return {
             ...entity,
@@ -93,23 +116,22 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
             y: baseY,
             lane: laneConfig.index,
             depth: depth,
-            // Dynamic collision radius based on expansion state
-            // Normal width ~280px -> radius ~160
-            // Expanded width ~600px -> radius ~350
-            radius: isExpanded ? 350 : 160 
+            // Dynamic collision radius
+            // High Fidelity / Revealed: 350px radius (700px diameter space)
+            // Low Fidelity / Compact: 160px radius (320px diameter space)
+            radius: isRevealed ? 350 : 160 
         };
     });
 
     // 3. Force Simulation for Local Adjustments (Collision Avoidance within Lanes)
-    // We re-run this when expandedNodeId changes to "bump" neighbors out of the way
     const simulation = (d3 as any).forceSimulation(layoutNodes as any)
-        .force("x", (d3 as any).forceX((d: any) => d.lane * COL_WIDTH).strength(1)) // Snap to column
-        .force("y", (d3 as any).forceY((d: any) => d.depth * ROW_HEIGHT).strength(0.5)) // Snap to row
-        .force("collide", (d3 as any).forceCollide((d: any) => d.radius).strength(0.8).iterations(4)) // Reactive collision
+        .force("x", (d3 as any).forceX((d: any) => d.lane * COL_WIDTH).strength(isHighFidelity ? 0.8 : 1)) // Looser X in high fid
+        .force("y", (d3 as any).forceY((d: any) => d.depth * ROW_HEIGHT).strength(isHighFidelity ? 0.8 : 0.5)) 
+        .force("collide", (d3 as any).forceCollide((d: any) => d.radius).strength(0.8).iterations(3))
         .stop();
 
     // Run simulation tick to resolve collisions
-    for (let i = 0; i < 150; ++i) simulation.tick();
+    for (let i = 0; i < 120; ++i) simulation.tick();
 
     // 4. Build Links
     const layoutLinks: any[] = [];
@@ -128,8 +150,9 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
     intrusions.forEach((intrusion, idx) => {
         const targetNode = layoutNodes.find(n => n.id === intrusion.targetEntityId);
         if (targetNode) {
-            // Push intrusions further out if expanded
-            const offset = targetNode.id === expandedNodeId ? 350 : 200;
+            // Push intrusions further out if revealed
+            const isRevealed = isHighFidelity || pinnedNodes.has(targetNode.id) || expandedNodeId === targetNode.id;
+            const offset = isRevealed ? 350 : 200;
             const x = targetNode.x + offset;
             const y = targetNode.y - 50 + (idx * 60);
             iNodes.push({
@@ -151,7 +174,7 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
     uniqueLanes.sort((a,b) => a.index - b.index);
 
     return { nodes: layoutNodes, links: layoutLinks, intrusionNodes: iNodes, intrusionLinks: iLinks, lanes: uniqueLanes };
-  }, [initialEntities, intrusions, expandedNodeId]);
+  }, [initialEntities, intrusions, expandedNodeId, isHighFidelity, pinnedNodes]);
 
   const jurisdictionCounts = useMemo(() => {
       const counts: Record<string, number> = {};
@@ -175,7 +198,7 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
       if (nodes.length > 0 && !layoutReady && containerRef.current) {
           const rect = containerRef.current.getBoundingClientRect();
           // Center the view roughly
-          setTransform({ x: rect.width / 2 - COL_WIDTH, y: 100, k: 0.7 });
+          setTransform({ x: rect.width / 2 - BASE_COL_WIDTH, y: 100, k: 0.6 });
           setLayoutReady(true);
       }
   }, [nodes, layoutReady]);
@@ -184,38 +207,96 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    const scaleFactor = 1.15; 
+    if(rafRef.current) cancelAnimationFrame(rafRef.current);
+    
+    const scaleFactor = 1.02; // Smoother zoom steps
     const delta = -e.deltaY;
     if (!containerRef.current) return;
+    
     const rect = containerRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
+    
+    // Convert screen coordinates to world coordinates
     const worldX = (mouseX - transform.x) / transform.k;
     const worldY = (mouseY - transform.y) / transform.k;
-    let newScale = delta > 0 ? transform.k * scaleFactor : transform.k / scaleFactor;
+    
+    // Calculate new scale with limits
+    let newScale = delta > 0 ? transform.k * (1 + (scaleFactor - 1) * 3) : transform.k / (1 + (scaleFactor - 1) * 3);
     newScale = Math.max(0.1, Math.min(newScale, 4));
+    
+    // Calculate new position to zoom towards mouse
     const newX = mouseX - worldX * newScale;
     const newY = mouseY - worldY * newScale;
+    
     setTransform({ x: newX, y: newY, k: newScale });
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Only drag if clicking background
     if ((e.target as HTMLElement).closest('.ledger-node, button, .interactive')) return;
+    
+    if (rafRef.current) cancelAnimationFrame(rafRef.current); // Stop coasting
+    
     setIsDragging(true);
     setDragStart({ x: e.clientX - transform.x, y: e.clientY - transform.y });
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+    velocity.current = { x: 0, y: 0 };
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     e.preventDefault();
-    setTransform(prev => ({ ...prev, x: e.clientX - dragStart.x, y: e.clientY - dragStart.y }));
+    
+    // Calculate instantaneous velocity
+    const vx = e.clientX - lastMouse.current.x;
+    const vy = e.clientY - lastMouse.current.y;
+    velocity.current = { x: vx, y: vy };
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+
+    setTransform(prev => ({ 
+        ...prev, 
+        x: e.clientX - dragStart.x, 
+        y: e.clientY - dragStart.y 
+    }));
   };
 
-  const handleMouseUp = () => setIsDragging(false);
+  const coast = () => {
+    const friction = 0.92; // Adjust for feel
+    if (Math.abs(velocity.current.x) < 0.1 && Math.abs(velocity.current.y) < 0.1) return;
+
+    velocity.current.x *= friction;
+    velocity.current.y *= friction;
+
+    setTransform(prev => ({
+        ...prev,
+        x: prev.x + velocity.current.x,
+        y: prev.y + velocity.current.y
+    }));
+
+    rafRef.current = requestAnimationFrame(coast);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    if (Math.abs(velocity.current.x) > 0.5 || Math.abs(velocity.current.y) > 0.5) {
+        coast();
+    }
+  };
 
   const toggleNodeExpansion = (id: string, e: React.MouseEvent) => {
       e.stopPropagation();
       setExpandedNodeId(prev => prev === id ? null : id);
+  };
+
+  const togglePin = (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setPinnedNodes(prev => {
+          const next = new Set(prev);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return next;
+      });
   };
 
   // Bezier Curves for "Chalkboard" look
@@ -225,8 +306,9 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
       const tx = target.x;
       const ty = target.y;
       
-      // Curvy connector
-      return `M ${sx} ${sy} C ${sx} ${sy + 100}, ${tx} ${ty - 100}, ${tx} ${ty}`;
+      // Curvier connector when expanded
+      const curvature = isHighFidelity ? 250 : 100;
+      return `M ${sx} ${sy} C ${sx} ${sy + curvature}, ${tx} ${ty - curvature}, ${tx} ${ty}`;
   };
 
   const JURISDICTION_OPTIONS: JurisdictionType[] = [
@@ -241,7 +323,7 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full overflow-hidden bg-[#0f172a] select-none cursor-grab active:cursor-grabbing font-mono"
+      className={`relative w-full h-full overflow-hidden bg-[#0f172a] select-none font-mono ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -258,7 +340,8 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                backgroundSize: '40px 40px',
                backgroundPosition: `${transform.x}px ${transform.y}px`,
                transform: `scale(${transform.k})`,
-               transformOrigin: '0 0'
+               transformOrigin: '0 0',
+               transition: isDragging ? 'none' : 'transform 0.1s ease-out'
            }} 
       />
 
@@ -331,14 +414,15 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
       </div>
 
       <div 
-        className="absolute inset-0 transition-transform duration-75 ease-out"
+        className="absolute inset-0"
         style={{ 
           transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})`,
-          transformOrigin: '0 0'
+          transformOrigin: '0 0',
+          transition: isDragging ? 'none' : 'transform 0.1s ease-out'
         }}
       >
         {/* Render Swimlane Headers/Backgrounds in World Space */}
-        <div className="absolute top-[-1000px] bottom-[-1000px] pointer-events-none flex">
+        <div className="absolute top-[-5000px] bottom-[-5000px] pointer-events-none flex">
             {lanes.map(lane => (
                 <div 
                     key={lane.index} 
@@ -347,8 +431,9 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                         position: 'absolute', 
                         left: lane.index * COL_WIDTH - (COL_WIDTH/2), 
                         width: COL_WIDTH,
-                        height: '10000px',
-                        top: -5000
+                        height: '20000px',
+                        top: -10000,
+                        transition: 'all 0.5s ease-in-out' // Smooth transitions for lane resizing
                     }}
                 >
                     <div className="text-white/10 text-[80px] font-black uppercase tracking-widest opacity-20 rotate-90 mt-96 whitespace-nowrap transform translate-x-10">
@@ -366,7 +451,7 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
           </defs>
 
           {/* Connectors */}
-          <g>
+          <g className="transition-all duration-500">
             {links.map((link: any, i: number) => {
                 const source = link.source as Entity;
                 const target = link.target as Entity;
@@ -386,9 +471,9 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                       d={renderLink(source, target)}
                       fill="none"
                       stroke={strokeColor}
-                      strokeWidth={2 / transform.k}
+                      strokeWidth={isHighFidelity ? 3 : 2 / transform.k}
                       strokeDasharray={strokeDash}
-                      className="opacity-50"
+                      className="opacity-50 transition-all duration-500"
                     />
                 );
             })}
@@ -421,13 +506,17 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
             const entityAccounts = accounts.filter(a => a.entityId === entity.id);
             const totalAsset = entityAccounts.filter(a => a.type === 'Asset').reduce((s,a) => s + a.balance, 0);
             
-            const isExpanded = expandedNodeId === entity.id;
+            // Show ledger if: High Zoom (Auto-Detail), Manually Pinned, or Manually Expanded
+            const isPinned = pinnedNodes.has(entity.id);
+            const isExpanded = expandedNodeId === entity.id || isPinned || isHighFidelity;
+            
             const entityJournals = journals.filter(j => j.entityId === entity.id).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
 
             // Shape based on Type
             const Icon = entity.type === EntityType.INDIVIDUAL ? Circle : 
                          entity.type === EntityType.LLC ? Square : 
                          entity.type === EntityType.TRUST ? Hexagon : 
+                         entity.type === EntityType.CREDIT_UNION ? Landmark : 
                          entity.type === EntityType.VESSEL ? Ship : Triangle;
 
             // IMF Overlay Logic
@@ -461,7 +550,12 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                 if (entity.role === EntityRole.HOLDING_TRUST) { borderClass = 'border-amber-500/50 bg-amber-50/5'; shadowClass = 'shadow-amber-900/20'; }
                 else if (entity.role === EntityRole.OPERATING_LLC) { borderClass = 'border-emerald-500/50 bg-emerald-50/5'; shadowClass = 'shadow-emerald-900/20'; }
                 else if (entity.type === EntityType.VESSEL) { borderClass = 'border-cyan-500/50 bg-cyan-50/5'; shadowClass = 'shadow-cyan-900/20'; }
+                else if (entity.type === EntityType.CREDIT_UNION) { borderClass = 'border-indigo-500/50 bg-indigo-50/5'; shadowClass = 'shadow-indigo-900/20'; }
             }
+
+            // High Fidelity View styling augmentations
+            const cardWidth = isExpanded ? 500 : 280;
+            const cardHeight = isExpanded ? 400 : 180;
 
             return (
               <div
@@ -471,12 +565,12 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                   left: node.x,
                   top: node.y,
                   transform: 'translate(-50%, -50%)',
-                  width: isExpanded ? 500 : 280,
-                  height: isExpanded ? 'auto' : 180,
-                  minHeight: 180,
+                  width: cardWidth,
+                  height: 'auto',
+                  minHeight: cardHeight,
                   zIndex: isExpanded ? 100 : 10,
                 }}
-                className={`ledger-node bg-slate-900 border-2 rounded-xl p-4 transition-all duration-300 shadow-2xl flex flex-col
+                className={`ledger-node bg-slate-900 border-2 rounded-xl p-4 transition-all duration-500 ease-out shadow-2xl flex flex-col
                   ${borderClass} ${shadowClass}
                   ${isFaded ? 'opacity-20 blur-[1px]' : 'opacity-100'}
                 `}
@@ -491,12 +585,22 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                     </div>
                     <div className="flex gap-2">
                         <button 
-                            onClick={(e) => toggleNodeExpansion(entity.id, e)} 
-                            className="text-slate-500 hover:text-white transition-colors bg-slate-800/50 p-1 rounded interactive"
-                            title={isExpanded ? "Collapse Ledger" : "Expand Ledger"}
+                            onClick={(e) => togglePin(entity.id, e)} 
+                            className={`transition-colors p-1 rounded interactive ${isPinned ? 'text-indigo-400 bg-indigo-900/50' : 'text-slate-600 hover:text-white bg-slate-800/50'}`}
+                            title={isPinned ? "Unpin (Hide Details)" : "Pin (Reveal Details)"}
                         >
-                            {isExpanded ? <ChevronUp size={14} /> : <BookOpen size={14} />}
+                            {isPinned ? <Pin size={14} fill="currentColor" /> : <PinOff size={14} />}
                         </button>
+                        
+                        {!isHighFidelity && (
+                            <button 
+                                onClick={(e) => toggleNodeExpansion(entity.id, e)} 
+                                className="text-slate-500 hover:text-white transition-colors bg-slate-800/50 p-1 rounded interactive"
+                                title={isExpanded ? "Collapse Ledger" : "Expand Ledger"}
+                            >
+                                {isExpanded ? <ChevronUp size={14} /> : <BookOpen size={14} />}
+                            </button>
+                        )}
                         <button onClick={() => onEditEntity?.(entity.id)} className="text-slate-500 hover:text-white transition-colors bg-slate-800/50 p-1 rounded interactive">
                             <Edit size={14} />
                         </button>
@@ -518,72 +622,70 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                     </div>
                 )}
 
-                {/* EXPANDED LEDGER VIEW */}
-                {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-white/10 animate-in slide-in-from-top-4 fade-in duration-300 flex-1 flex flex-col gap-4">
-                        
-                        {/* 1. Account Summary Table */}
-                        <div>
-                            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                <Grid size={10} /> Chart of Accounts
-                            </div>
-                            <div className="bg-slate-950/50 rounded border border-white/5 max-h-32 overflow-y-auto custom-scrollbar">
-                                <table className="w-full text-left text-[10px]">
-                                    <thead className="bg-white/5 text-slate-400">
-                                        <tr>
-                                            <th className="p-2 font-medium">Code</th>
-                                            <th className="p-2 font-medium">Name</th>
-                                            <th className="p-2 text-right font-medium">Balance</th>
+                {/* EXPANDED LEDGER VIEW (Visible in Detail Mode, Pinned, or Expanded) */}
+                <div className={`mt-4 pt-4 border-t border-white/10 flex-1 flex flex-col gap-4 overflow-hidden transition-all duration-500 ${isExpanded ? 'opacity-100 max-h-[800px]' : 'opacity-0 max-h-0 hidden'}`}>
+                    
+                    {/* 1. Account Summary Table */}
+                    <div>
+                        <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <Grid size={10} /> Chart of Accounts
+                        </div>
+                        <div className="bg-slate-950/50 rounded border border-white/5 max-h-32 overflow-y-auto custom-scrollbar">
+                            <table className="w-full text-left text-[10px]">
+                                <thead className="bg-white/5 text-slate-400 sticky top-0">
+                                    <tr>
+                                        <th className="p-2 font-medium">Code</th>
+                                        <th className="p-2 font-medium">Name</th>
+                                        <th className="p-2 text-right font-medium">Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5 text-slate-300 font-mono">
+                                    {entityAccounts.map(acc => (
+                                        <tr key={acc.id} className="hover:bg-white/5">
+                                            <td className="p-2 text-slate-500">{acc.code}</td>
+                                            <td className="p-2 truncate max-w-[150px]">{acc.name}</td>
+                                            <td className="p-2 text-right font-bold">${acc.balance.toLocaleString()}</td>
                                         </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5 text-slate-300 font-mono">
-                                        {entityAccounts.map(acc => (
-                                            <tr key={acc.id} className="hover:bg-white/5">
-                                                <td className="p-2 text-slate-500">{acc.code}</td>
-                                                <td className="p-2 truncate max-w-[150px]">{acc.name}</td>
-                                                <td className="p-2 text-right font-bold">${acc.balance.toLocaleString()}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* 2. Recent Journals */}
-                        <div>
-                            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                <Receipt size={10} /> Recent Journal Entries
-                            </div>
-                            <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
-                                {entityJournals.length === 0 && <div className="text-slate-600 text-[10px] italic p-2">No recent activity.</div>}
-                                {entityJournals.map(j => (
-                                    <div key={j.id} className="bg-slate-800/50 p-2 rounded border border-white/5 flex flex-col gap-1 hover:bg-slate-800 transition-colors">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[9px] text-indigo-400 font-bold">{j.date}</span>
-                                            <span className="text-[8px] text-slate-500 bg-slate-900 px-1 rounded">{j.type}</span>
-                                        </div>
-                                        <div className="text-[10px] text-white truncate">{j.memo}</div>
-                                        <div className="flex justify-between items-center border-t border-white/5 pt-1 mt-1">
-                                            <div className="text-[9px] text-slate-500 font-mono">{j.id.slice(0,8)}</div>
-                                            <div className="text-[9px] text-emerald-500 font-mono font-bold">
-                                                ${j.lines.filter(l => l.dc === DCFlag.Debit).reduce((s,l) => s + l.amount, 0).toLocaleString()}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="mt-auto pt-2 text-center">
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); onEditEntity?.(entity.id); }}
-                                className="text-[10px] text-indigo-400 hover:text-white flex items-center justify-center gap-1 mx-auto interactive"
-                            >
-                                Open Full Dashboard <ArrowRightLeft size={10} />
-                            </button>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                )}
+
+                    {/* 2. Recent Journals */}
+                    <div>
+                        <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <Receipt size={10} /> Recent Journal Entries
+                        </div>
+                        <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
+                            {entityJournals.length === 0 && <div className="text-slate-600 text-[10px] italic p-2">No recent activity.</div>}
+                            {entityJournals.map(j => (
+                                <div key={j.id} className="bg-slate-800/50 p-2 rounded border border-white/5 flex flex-col gap-1 hover:bg-slate-800 transition-colors">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[9px] text-indigo-400 font-bold">{j.date}</span>
+                                        <span className="text-[8px] text-slate-500 bg-slate-900 px-1 rounded">{j.type}</span>
+                                    </div>
+                                    <div className="text-[10px] text-white truncate">{j.memo}</div>
+                                    <div className="flex justify-between items-center border-t border-white/5 pt-1 mt-1">
+                                        <div className="text-[9px] text-slate-500 font-mono">{j.id.slice(0,8)}</div>
+                                        <div className="text-[9px] text-emerald-500 font-mono font-bold">
+                                            ${j.lines.filter(l => l.dc === DCFlag.Debit).reduce((s,l) => s + l.amount, 0).toLocaleString()}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="mt-auto pt-2 text-center">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onEditEntity?.(entity.id); }}
+                            className="text-[10px] text-indigo-400 hover:text-white flex items-center justify-center gap-1 mx-auto interactive"
+                        >
+                            Open Full Dashboard <ArrowRightLeft size={10} />
+                        </button>
+                    </div>
+                </div>
               </div>
             );
         })}
@@ -598,7 +700,8 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                     top: node.y,
                     transform: 'translate(-50%, -50%)',
                     width: 200,
-                    zIndex: 50
+                    zIndex: 50,
+                    transition: 'all 0.5s ease-out'
                 }}
                 className="bg-red-950/80 text-red-200 border-2 border-red-500/50 border-dashed p-3 font-mono text-xs shadow-[0_0_20px_rgba(220,38,38,0.2)] rotate-2"
             >
@@ -639,7 +742,7 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                 onClick={() => {
                     if (containerRef.current) {
                         const rect = containerRef.current.getBoundingClientRect();
-                        setTransform({ x: rect.width / 2 - COL_WIDTH, y: 100, k: 0.7 });
+                        setTransform({ x: rect.width / 2 - COL_WIDTH, y: 100, k: 0.6 });
                     }
                 }} 
                 className="p-3 hover:bg-white/10 rounded-lg transition-all group"
@@ -647,8 +750,8 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                 <LayoutTemplate size={20} className="text-slate-400 group-hover:text-white" />
               </button>
 
-              <div className="px-4 text-[10px] font-mono font-bold text-indigo-400 tracking-widest">
-                  {(transform.k * 100).toFixed(0)}%
+              <div className={`px-4 text-[10px] font-mono font-bold tracking-widest transition-colors ${isHighFidelity ? 'text-emerald-400' : 'text-indigo-400'}`}>
+                  {(transform.k * 100).toFixed(0)}% {isHighFidelity && '[DETAIL]'}
               </div>
           </div>
       </div>

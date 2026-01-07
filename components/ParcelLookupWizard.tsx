@@ -122,7 +122,7 @@ export const ParcelLookupWizard: React.FC<Props> = ({ entity, onRecordAsset }) =
         setNationalRecord({
             id: `PRC-${Date.now()}`,
             entityId: entity.id,
-            address: loc.display_name,
+            address: loc.display_name || "Unknown Address",
             lat: parseFloat(loc.lat),
             lon: parseFloat(loc.lon),
             ...gisData,
@@ -245,8 +245,8 @@ export const ParcelLookupWizard: React.FC<Props> = ({ entity, onRecordAsset }) =
                             <span className="bg-teal-100 text-teal-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mb-2 inline-block">
                                 Verified Municipal Record
                             </span>
-                            <h3 className="text-xl font-bold text-slate-900">{nationalRecord.address.split(',')[0]}</h3>
-                            <p className="text-sm text-slate-500 leading-relaxed">{nationalRecord.address.split(',').slice(1).join(',')}</p>
+                            <h3 className="text-xl font-bold text-slate-900">{nationalRecord.address?.split(',')[0] || 'Unknown Street'}</h3>
+                            <p className="text-sm text-slate-500 leading-relaxed">{nationalRecord.address?.split(',').slice(1).join(',') || ''}</p>
                         </div>
                         <div className="p-3 bg-teal-50 text-teal-600 rounded-full border border-teal-100">
                             <Building size={24} />

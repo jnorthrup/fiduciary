@@ -35,6 +35,10 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 0.65 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  
+  // Coasting State
+  const velocity = useRef({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (entities.length > 0 && !entities[0].uiPosition) {
@@ -64,6 +68,8 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
   const handleWheel = (e: React.WheelEvent) => {
     if ((e.target as HTMLElement).closest('.custom-scrollbar')) return;
     e.preventDefault();
+    if(rafRef.current) cancelAnimationFrame(rafRef.current);
+
     if (!containerRef.current) return;
     const scaleFactor = 1.1; 
     const delta = -e.deltaY;
@@ -81,14 +87,20 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
 
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
       if ((e.target as HTMLElement).closest('.entity-node-card')) return;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      
       setIsPanning(true);
       setPanStart({ x: e.clientX, y: e.clientY });
+      velocity.current = { x: 0, y: 0 };
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent) => {
       if (isPanning) {
           const dx = e.clientX - panStart.x;
           const dy = e.clientY - panStart.y;
+          
+          velocity.current = { x: dx, y: dy };
+
           setTransform(prev => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
           setPanStart({ x: e.clientX, y: e.clientY });
           return;
@@ -119,7 +131,22 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
       }
   };
 
+  const coast = () => {
+      const friction = 0.92;
+      if (Math.abs(velocity.current.x) < 0.1 && Math.abs(velocity.current.y) < 0.1) return;
+
+      velocity.current.x *= friction;
+      velocity.current.y *= friction;
+
+      setTransform(prev => ({ ...prev, x: prev.x + velocity.current.x, y: prev.y + velocity.current.y }));
+      rafRef.current = requestAnimationFrame(coast);
+  };
+
   const handleCanvasMouseUp = () => {
+      if (isPanning) {
+          coast();
+      }
+
       if (draggingId) {
           if (hoveredEntityId) {
               // Execute Re-parenting command

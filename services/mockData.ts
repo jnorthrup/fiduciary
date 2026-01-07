@@ -1,6 +1,12 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { Entity, EntityRole, EntityType, Account, AccountType, DCFlag, TaxModule, Contractor, ComplianceFiling, WalletCredential, BSORole, BSOSubmission, IRSAPICredential, Employee, PayrollRun, IRMDocument, SSAStatement, ResolutionRecord, TrustSubType, JournalEntry, CreditDefenseRecord, IntrusionRecord } from '../types';
+import { 
+  Entity, EntityRole, EntityType, Account, AccountType, DCFlag, TaxModule, 
+  Contractor, ComplianceFiling, WalletCredential, BSORole, BSOSubmission, 
+  IRSAPICredential, Employee, PayrollRun, IRMDocument, SSAStatement, 
+  ResolutionRecord, TrustSubType, JournalEntry, CreditDefenseRecord, IntrusionRecord,
+  CreditResolution, CreditInstrument, PurchaseContract, RealEstateAsset, LegalInstrument, CollateralPool
+} from '../types';
 
 const GENESIS_HASH = "0000000000000000";
 
@@ -121,6 +127,9 @@ export const JIM_ENTITIES: Entity[] = [
 
 export const JIM_ACCOUNTS: Account[] = [
   { id: "AC-101", entityId: "ENT-ROOT", code: "101000", name: "Master Treasury Account", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 1250000.00, _version: GENESIS_HASH },
+  { id: "AC-RE-001", entityId: "ENT-ROOT", code: "150000", name: "Real Estate Assets", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 400000.00, _version: GENESIS_HASH },
+  { id: "AC-LIAB-001", entityId: "ENT-ROOT", code: "250000", name: "Credit Instruments Payable", type: AccountType.LIABILITY, normalBalance: DCFlag.Credit, balance: 400000.00, _version: GENESIS_HASH },
+  
   { id: "AC-102", entityId: "ENT-AAA-TRUST", code: "101000", name: "Operating Cash", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 500000.00, _version: GENESIS_HASH },
   { id: "AC-103", entityId: "ENT-VERSA-LLC", code: "101000", name: "Business Checking", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 285400.00, _version: GENESIS_HASH },
   { id: "AC-104", entityId: "ENT-FARMS-LAND", code: "101000", name: "Land Trust Reserves", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 45000.00, _version: GENESIS_HASH },
@@ -140,7 +149,6 @@ const generateHistory = (): JournalEntry[] => {
     const startDate = new Date();
     startDate.setFullYear(startDate.getFullYear() - 5);
     const llcId = "ENT-VERSA-LLC";
-    const trustId = "ENT-AAA-TRUST";
     let currentDate = new Date(startDate);
     const endDate = new Date();
 
@@ -169,6 +177,21 @@ const generateHistory = (): JournalEntry[] => {
 };
 
 export const JIM_JOURNALS: JournalEntry[] = generateHistory();
+
+// Inject specific Journal for the new Credit Instrument
+JIM_JOURNALS.push({
+    id: "JNL-INST-002",
+    entityId: "ENT-ROOT",
+    date: new Date().toISOString().split('T')[0],
+    memo: "Credit Instrument Acceptance: Secured Promissory Note",
+    type: "ASSET_ACQ_CREDIT",
+    lines: [
+        { id: "L1", accountId: "AC-RE-001", accountCode: "150000", accountName: "Real Estate Assets", dc: DCFlag.Debit, amount: 400000 },
+        { id: "L2", accountId: "AC-LIAB-001", accountCode: "250000", accountName: "Credit Instruments Payable", dc: DCFlag.Credit, amount: 400000 }
+    ],
+    locked: true,
+    _version: GENESIS_HASH
+});
 
 export const JIM_MODULES: TaxModule[] = [
   { id: "TM-AAA-Q1", entityId: "ENT-AAA-TRUST", period: "Q1", year: 2025, type: "INCOME", status: "Open", dueDate: "2025-04-15" },
@@ -237,8 +260,91 @@ export const SEED_PAYROLL_RUNS: PayrollRun[] = [];
 export const SEED_SSA_STATEMENTS: SSAStatement[] = [];
 export const SEED_DOCUMENTS: IRMDocument[] = [];
 export const SEED_RESOLUTIONS: ResolutionRecord[] = [];
-export const SEED_REAL_ESTATE_ASSETS: any[] = [];
-export const SEED_PURCHASE_CONTRACTS: any[] = [];
-export const SEED_CREDIT_RESOLUTIONS: any[] = [];
-export const SEED_CREDIT_INSTRUMENTS: any[] = [];
+
+// New Real Estate & Credit Instrument Seeds
+export const SEED_REAL_ESTATE_ASSETS: RealEstateAsset[] = [
+    {
+        id: "PROP-REQ-001",
+        entityId: "ENT-ROOT",
+        address: "1234 Heritage Lane",
+        parcelId: "APN-998877",
+        county: "Davidson",
+        state: "TN",
+        status: 'Prospect',
+        _version: '1'
+    }
+];
+
+export const SEED_PURCHASE_CONTRACTS: PurchaseContract[] = [
+    {
+        id: "CON-REQ-001",
+        entityId: "ENT-ROOT",
+        propertyId: "PROP-REQ-001",
+        sellerName: "Heritage Properties LLC",
+        purchasePrice: 400000,
+        effectiveDate: new Date().toISOString().split('T')[0],
+        settlementTerms: "Instrument Exchange",
+        status: 'Executed'
+    }
+];
+
+export const SEED_CREDIT_RESOLUTIONS: CreditResolution[] = [
+    {
+        id: "RES-REQ-001",
+        entityId: "ENT-ROOT",
+        title: "RE Purchase Consideration Resolution",
+        maxFaceAmount: 400000,
+        signers: ["Trustee"],
+        scope: "Acquisition of Real Property",
+        status: 'Approved',
+        approvedDate: new Date().toISOString().split('T')[0]
+    }
+];
+
+export const SEED_CREDIT_INSTRUMENTS: CreditInstrument[] = [
+    {
+        id: "INST-REQ-001",
+        entityId: "ENT-ROOT",
+        resolutionId: "RES-REQ-001",
+        contractId: "CON-REQ-001",
+        faceAmount: 400000,
+        termMonths: 180,
+        issueDate: new Date().toISOString().split('T')[0],
+        type: "Secured Promissory Note",
+        status: 'Accepted',
+        dischargeCondition: "Full payment via escrow"
+    },
+    {
+        id: "INST-REQ-002",
+        entityId: "ENT-ROOT",
+        resolutionId: "RES-REQ-001",
+        contractId: "CON-REQ-001",
+        faceAmount: 400000,
+        termMonths: 180,
+        issueDate: new Date().toISOString().split('T')[0],
+        type: "Secured Promissory Note",
+        status: 'Accepted',
+        dischargeCondition: "Full payment via escrow"
+    }
+];
+
+export const SEED_LEGAL_INSTRUMENTS: LegalInstrument[] = [
+    {
+        id: "INST-WRIT-001",
+        type: "Writ of Possession"
+    }
+];
+
+export const SEED_COLLATERAL_POOLS: CollateralPool[] = [
+    {
+        id: "POOL-RE-001",
+        entityId: "ENT-ROOT",
+        name: "Real Estate Assets",
+        description: "Collateral backing for secured promissory notes.",
+        valuationPolicy: "LTV 80%, Annual Appraisal",
+        status: 'Active',
+        totalValue: 400000
+    }
+];
+
 export const SEED_CLOSING_RECORDS: any[] = [];
