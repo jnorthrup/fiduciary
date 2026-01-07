@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Rocket, ChevronRight, Lock, Globe, Server, Cpu, Database, Fingerprint, Activity, User, History, Sparkles, Plus, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Rocket, ChevronRight, Lock, Globe, Server, Cpu, Database, Fingerprint, Activity, User, History, Sparkles, Plus } from 'lucide-react';
 
 interface Props {
   onLaunch: (name: string, email: string) => void;
@@ -16,7 +16,6 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
   const [phase, setPhase] = useState<'Init' | 'Naming' | 'Booting'>('Init');
   const [bootProgress, setBootProgress] = useState(0);
   const [activeStrategy, setActiveStrategy] = useState<'Manual' | 'Jim' | 'Fuzz' | 'Resume'>('Manual');
-  const [resumeError, setResumeError] = useState(false);
 
   useEffect(() => {
     if (phase === 'Booting') {
@@ -56,9 +55,6 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
       if (canResume) {
         setActiveStrategy('Resume');
         setPhase('Booting');
-      } else {
-        setResumeError(true);
-        setTimeout(() => setResumeError(false), 2000);
       }
   };
 
@@ -135,16 +131,13 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
                 {/* Option 4: Resume */}
                 <button 
                     onClick={handleResume}
-                    className={`group flex flex-col items-center justify-center gap-3 p-6 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl active:scale-95 border duration-300 ${
-                        resumeError ? 'bg-red-900/80 border-red-500 shadow-red-900/50' :
-                        canResume ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-500 shadow-indigo-900/50' : 
-                        'bg-slate-900/80 text-slate-400 hover:bg-slate-800 border-white/10 hover:border-white/20'
-                    }`}
+                    disabled={!canResume}
+                    className={`group flex flex-col items-center justify-center gap-3 p-6 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl active:scale-95 border ${canResume ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-500 shadow-indigo-900/50' : 'bg-slate-900/40 text-slate-600 border-white/5 cursor-not-allowed'}`}
                 >
-                    <div className={`p-3 rounded-full transition-colors ${resumeError ? 'bg-red-500/20' : canResume ? 'bg-white/10 group-hover:bg-white/20' : 'bg-white/5'}`}>
-                        {resumeError ? <AlertCircle size={24} className="text-red-400" /> : <History size={24} className={`${canResume ? 'text-white' : 'text-slate-400 group-hover:text-white'} transition-colors`} />}
+                    <div className={`p-3 rounded-full transition-colors ${canResume ? 'bg-white/10 group-hover:bg-white/20' : 'bg-white/5'}`}>
+                        <History size={24} className={`${canResume ? 'text-white' : 'text-slate-600'} group-hover:scale-110 transition-transform`} />
                     </div>
-                    {resumeError ? <span className="text-red-300 animate-pulse">NO SAVED GRAPH</span> : '#4 Resume Graph'}
+                    #4 Resume Graph
                 </button>
             </div>
           </div>
@@ -168,7 +161,7 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
                             value={name}
                             onChange={e => setName(e.target.value)}
                             className="w-full bg-[#020617] border border-slate-800 rounded-xl p-5 text-white text-xl focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none transition-all placeholder:text-slate-700"
-                            placeholder="e.g. John Q. Public"
+                            placeholder="e.g. John Doe"
                             autoFocus
                         />
                         <Lock className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-700" size={20} />
@@ -193,7 +186,7 @@ export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSynthe
                 <button 
                     onClick={() => name && email && setPhase('Booting')}
                     disabled={!name || !email}
-                    className="group w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-indigo-900/40 hover:bg-indigo-50 disabled:opacity-20 disabled:grayscale transition-all flex items-center justify-center gap-4 active:scale-95"
+                    className="group w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-indigo-900/40 hover:bg-indigo-500 disabled:opacity-20 disabled:grayscale transition-all flex items-center justify-center gap-4 active:scale-95"
                 >
                     <Rocket size={20} className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" /> 
                     Initialize Architecture

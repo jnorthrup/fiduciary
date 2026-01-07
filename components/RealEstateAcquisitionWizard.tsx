@@ -59,7 +59,14 @@ export const RealEstateAcquisitionWizard: React.FC<Props> = ({ entity, onClose }
           const propId = `PROP-${Date.now()}`;
           const contId = `CON-${Date.now()}`;
           
-          addRealEstateAsset({ ...property, id: propId, entityId: entity.id, _version: '1' } as RealEstateAsset);
+          addRealEstateAsset({ 
+              ...property, 
+              id: propId, 
+              entityId: entity.id, 
+              _version: '1',
+              purchaseContractId: contId
+          } as RealEstateAsset);
+          
           addPurchaseContract({ 
               ...contract, id: contId, entityId: entity.id, propertyId: propId, status: 'Executed' 
           } as PurchaseContract);
@@ -131,7 +138,7 @@ export const RealEstateAcquisitionWizard: React.FC<Props> = ({ entity, onClose }
           </div>
           <div className="p-4 bg-indigo-50 rounded border border-indigo-100 text-indigo-800">
               <strong className="block mb-2 flex items-center gap-2"><Landmark size={12}/> Governance Rule</strong>
-              "No instrument can be issued without a specific resolution. No ledger entry is posted until the deed is recorded, extinguishing the note."
+              "Asset is acquired and liability booked upon Instrument Acceptance. Liability discharged to Corpus upon Deed Recording."
           </div>
       </div>
   );
@@ -253,7 +260,7 @@ export const RealEstateAcquisitionWizard: React.FC<Props> = ({ entity, onClose }
                         </div>
                     </div>
 
-                    <div className="border-2 border-slate-800 rounded-xl p-6 bg-slate-50 flex flex-col items-center text-center">
+                    <div className="border-2 border-slate-800 rounded-xl p-6 bg-slate-50 flex flex-col items-center text-center mb-4">
                         <FileText size={32} className="text-slate-400 mb-2" />
                         <h4 className="font-bold text-lg text-slate-900">Promissory Note #{Date.now().toString().slice(-6)}</h4>
                         <div className="flex gap-2 mt-4">
@@ -263,7 +270,21 @@ export const RealEstateAcquisitionWizard: React.FC<Props> = ({ entity, onClose }
                             <ArrowRight size={14} className="self-center text-slate-300" />
                             <span className="px-3 py-1 bg-indigo-100 border border-indigo-200 rounded text-xs font-bold text-indigo-700">Accepted</span>
                         </div>
-                        <p className="text-xs text-slate-400 mt-4 italic">Waiting for closing to discharge...</p>
+                        <p className="text-xs text-slate-400 mt-4 italic">Acquisition Journal Entry will post automatically upon acceptance.</p>
+                    </div>
+
+                    <div className="bg-slate-100 p-4 rounded-lg border border-slate-200">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><Landmark size={14}/> Ledger Impact (Acquisition)</h4>
+                        <div className="space-y-2 font-mono text-xs">
+                            <div className="flex justify-between p-2 bg-white rounded border border-slate-200">
+                                <span>DR 1500 Real Estate Asset</span>
+                                <span className="font-bold">${contract.purchasePrice?.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between p-2 bg-white rounded border border-slate-200">
+                                <span>CR 2500 Instruments Payable</span>
+                                <span className="font-bold">${contract.purchasePrice?.toLocaleString()}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -274,7 +295,7 @@ export const RealEstateAcquisitionWizard: React.FC<Props> = ({ entity, onClose }
                     <div className="text-center">
                         <Stamp size={48} className="mx-auto text-emerald-600 mb-2" />
                         <h3 className="text-2xl font-bold text-slate-900">Closing & Recording</h3>
-                        <p className="text-slate-500">Finalize the transaction. Recording the deed triggers the journal entry.</p>
+                        <p className="text-slate-500">Finalize the transaction. Recording the deed discharges the instrument.</p>
                     </div>
 
                     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-lg">
@@ -289,10 +310,10 @@ export const RealEstateAcquisitionWizard: React.FC<Props> = ({ entity, onClose }
                     </div>
 
                     <div className="bg-slate-100 p-4 rounded-lg border border-slate-200">
-                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><Landmark size={14}/> Ledger Preview</h4>
+                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><Landmark size={14}/> Discharge Preview</h4>
                         <div className="space-y-2 font-mono text-xs">
                             <div className="flex justify-between p-2 bg-white rounded border border-slate-200">
-                                <span>DR 1500 Real Estate</span>
+                                <span>DR 2500 Instruments Payable</span>
                                 <span className="font-bold">${contract.purchasePrice?.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between p-2 bg-white rounded border border-slate-200">
@@ -301,7 +322,7 @@ export const RealEstateAcquisitionWizard: React.FC<Props> = ({ entity, onClose }
                             </div>
                         </div>
                         <div className="mt-3 text-[10px] text-emerald-600 flex items-center gap-1 font-bold justify-end">
-                            <CheckCircle2 size={10} /> ZERO-LIABILITY POSTING
+                            <CheckCircle2 size={10} /> LIABILITY EXTINGUISHED
                         </div>
                     </div>
                 </div>

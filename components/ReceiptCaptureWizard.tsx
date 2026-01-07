@@ -89,6 +89,11 @@ export const ReceiptCaptureWizard: React.FC<Props> = ({ entityId, accounts, onPo
     reader.readAsDataURL(file);
     reader.onloadend = async () => {
         const base64Data = reader.result as string;
+        if (!base64Data) {
+            setError("Failed to read image data.");
+            setProcessing(false);
+            return;
+        }
         const base64Content = base64Data.split(',')[1];
         
         // Ensure a valid mime type is present, fallback to jpeg if empty
@@ -152,7 +157,14 @@ export const ReceiptCaptureWizard: React.FC<Props> = ({ entityId, accounts, onPo
                 // Pre-fill form
                 setDate(data.date || new Date().toISOString().split('T')[0]);
                 setVendor(data.vendor);
-                setAmount(data.amount);
+                
+                // Sanitize Amount (Handle "$1,000.00" strings if LLM slips up)
+                let amt = data.amount;
+                if (typeof amt === 'string') {
+                   amt = parseFloat(amt.replace(/[^0-9.-]+/g,""));
+                }
+                setAmount(amt || 0);
+                
                 setMemo(data.summary);
                 
                 // Match Account
@@ -169,7 +181,8 @@ export const ReceiptCaptureWizard: React.FC<Props> = ({ entityId, accounts, onPo
   };
 
   const handlePost = () => {
-      if (!amount || !selectedAccountId) return;
+      // Allow posting even if amount is 0 (as memo) or account isn't perfectly matched (default to suspense)
+      // but warn user if vital
       
       const account = entityAccounts.find(a => a.id === selectedAccountId);
       
@@ -181,7 +194,7 @@ export const ReceiptCaptureWizard: React.FC<Props> = ({ entityId, accounts, onPo
           `${vendor} - ${memo}`, 
           'RECEIPT_OCR', 
           [
-              { accountId: selectedAccountId, accountCode: account?.code || '????', accountName: account?.name || 'Unknown', dc: DCFlag.Debit, amount: amount },
+              { accountId: selectedAccountId, accountCode: account?.code || '599000', accountName: account?.name || 'Uncategorized', dc: DCFlag.Debit, amount: amount },
               { accountCode: cashAccountCode, dc: DCFlag.Credit, amount: amount, accountName: 'Operating Cash' }
           ]
       );
@@ -226,7 +239,7 @@ export const ReceiptCaptureWizard: React.FC<Props> = ({ entityId, accounts, onPo
             )}
         </div>
 
-        {/* Right: Analysis & Form */}
+        {/* Right: Analysis Form */}
         <div className="w-full md:w-1/2 flex flex-col bg-white">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -333,7 +346,7 @@ export const ReceiptCaptureWizard: React.FC<Props> = ({ entityId, accounts, onPo
                 </button>
                 <button 
                     onClick={handlePost}
-                    disabled={!imageFile || processing || !amount}
+                    disabled={!imageFile || processing}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-bold shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <CheckCircle2 size={18} /> Post Journal Entry
