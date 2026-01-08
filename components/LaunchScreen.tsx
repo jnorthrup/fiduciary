@@ -1,241 +1,311 @@
 
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Rocket, ChevronRight, Lock, Globe, Server, Cpu, Database, Fingerprint, Activity, User, History, Sparkles, Plus } from 'lucide-react';
+import { 
+  ShieldCheck, Rocket, User, History, Sparkles, 
+  Plus, ArrowRight, Fingerprint, Lock, Activity, 
+  Database, Server, Globe, Cpu, Key, Terminal, 
+  ChevronRight, Command, LayoutGrid, Landmark
+} from 'lucide-react';
 
 interface Props {
   onLaunch: (name: string, email: string) => void;
   onJimProfile: () => void;
   onSyntheticFuzz: () => void;
   onResumePersistent: () => void;
+  onCreditUnionLaunch: () => void;
   canResume: boolean;
 }
 
-export const LaunchScreen: React.FC<Props> = ({ onLaunch, onJimProfile, onSyntheticFuzz, onResumePersistent, canResume }) => {
+export const LaunchScreen: React.FC<Props> = ({ 
+  onLaunch, onJimProfile, onSyntheticFuzz, onResumePersistent, onCreditUnionLaunch, canResume 
+}) => {
+  const [phase, setPhase] = useState<'Strategy' | 'Identity' | 'Booting'>('Strategy');
+  const [activeStrategy, setActiveStrategy] = useState<'Manual' | 'Jim' | 'Fuzz' | 'Resume' | 'CreditUnion' | null>(null);
+  
+  // Identity State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phase, setPhase] = useState<'Init' | 'Naming' | 'Booting'>('Init');
+  
+  // Boot Animation State
   const [bootProgress, setBootProgress] = useState(0);
-  const [activeStrategy, setActiveStrategy] = useState<'Manual' | 'Jim' | 'Fuzz' | 'Resume'>('Manual');
+  const [bootLog, setBootLog] = useState<string[]>([]);
 
+  // Boot Sequence Logic
   useEffect(() => {
     if (phase === 'Booting') {
+      const logs = [
+        "Initializing secure enclave...",
+        "Loading cryptographic primitives...",
+        "Verifying MEF gateway handshake...",
+        "Mounting local storage subsystems...",
+        "Hydrating entity graph...",
+        "Validating ledger integrity...",
+        "Establishing session context...",
+        "System Ready."
+      ];
+      
+      let step = 0;
+      setBootLog(['> SYSTEM_INIT']);
+
       const interval = setInterval(() => {
-        setBootProgress(p => {
-          if (p >= 100) {
+        setBootProgress(prev => {
+          const next = prev + (Math.random() * 5);
+          if (next >= 100) {
             clearInterval(interval);
+            return 100;
+          }
+          return next;
+        });
+
+        // Add random logs based on progress
+        if (Math.random() > 0.7 && step < logs.length) {
+            setBootLog(prev => [...prev, `> ${logs[step]}`]);
+            step++;
+        }
+      }, 50);
+
+      return () => clearInterval(interval);
+    }
+  }, [phase]);
+
+  // Completion Trigger
+  useEffect(() => {
+    if (bootProgress >= 100) {
+        const timer = setTimeout(() => {
             if (activeStrategy === 'Jim') onJimProfile();
             else if (activeStrategy === 'Fuzz') onSyntheticFuzz();
             else if (activeStrategy === 'Resume') onResumePersistent();
+            else if (activeStrategy === 'CreditUnion') onCreditUnionLaunch();
             else onLaunch(name, email);
-            return 100;
-          }
-          return p + 2;
-        });
-      }, 40);
-      return () => clearInterval(interval);
+        }, 500);
+        return () => clearTimeout(timer);
     }
-  }, [phase, onLaunch, onJimProfile, onSyntheticFuzz, onResumePersistent, name, email, activeStrategy]);
+  }, [bootProgress, activeStrategy, onJimProfile, onSyntheticFuzz, onResumePersistent, onCreditUnionLaunch, onLaunch, name, email]);
 
-  const handleFresh = () => {
-    setActiveStrategy('Manual');
-    setPhase('Naming');
-  };
-
-  const handleJim = () => {
-      setActiveStrategy('Jim');
+  const selectStrategy = (strategy: 'Manual' | 'Jim' | 'Fuzz' | 'Resume' | 'CreditUnion') => {
+    setActiveStrategy(strategy);
+    if (strategy === 'Manual') {
+      setPhase('Identity');
+    } else {
       setPhase('Booting');
+    }
   };
 
-  const handleFuzz = () => {
-      setActiveStrategy('Fuzz');
-      setPhase('Booting');
-  };
+  const StrategyCard = ({ 
+    icon: Icon, title, desc, onClick, disabled, colorClass 
+  }: { 
+    icon: any, title: string, desc: string, onClick: () => void, disabled?: boolean, colorClass: string 
+  }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`group relative overflow-hidden text-left p-6 rounded-2xl border transition-all duration-300 w-full h-full flex flex-col justify-between
+        ${disabled 
+          ? 'bg-slate-900/20 border-slate-800 opacity-40 cursor-not-allowed' 
+          : 'bg-slate-900/60 border-slate-800 hover:border-slate-600 hover:bg-slate-800/80 hover:shadow-2xl hover:scale-[1.02]'
+        }`}
+    >
+      <div className={`absolute top-0 right-0 p-24 opacity-[0.03] rounded-bl-full transition-transform group-hover:scale-125 ${colorClass.replace('text-', 'bg-')}`} />
+      
+      <div className="relative z-10">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${colorClass} bg-white/5 border border-white/10 group-hover:bg-white/10`}>
+          <Icon size={24} />
+        </div>
+        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-indigo-200 transition-colors">{title}</h3>
+        <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
+      </div>
 
-  const handleResume = () => {
-      if (canResume) {
-        setActiveStrategy('Resume');
-        setPhase('Booting');
-      }
-  };
+      {!disabled && (
+        <div className="mt-6 flex items-center text-xs font-bold text-slate-500 group-hover:text-white transition-colors">
+          SELECT <ArrowRight size={14} className="ml-2 transform group-hover:translate-x-1 transition-transform" />
+        </div>
+      )}
+    </button>
+  );
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-[#020617] flex items-center justify-center overflow-hidden font-sans text-slate-300">
-      {/* Background Matrix Pattern */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-full flex flex-wrap gap-4 p-4 text-[8px] font-mono leading-none text-indigo-500">
-              {Array.from({length: 200}).map((_, i) => (
-                  <span key={i} className="animate-pulse" style={{ animationDelay: `${i * 0.1}s` }}>
-                      {Math.random() > 0.5 ? '01' : '10'}
-                  </span>
-              ))}
-          </div>
+    <div className="fixed inset-0 bg-[#0B0F19] text-slate-300 font-sans selection:bg-indigo-500/30 flex items-center justify-center overflow-hidden">
+      
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-900/10 blur-[150px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-emerald-900/10 blur-[150px]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
+        <div className="absolute inset-0" style={{ 
+            backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
+            backgroundSize: '40px 40px'
+        }} />
       </div>
-      
-      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #4f46e5 1px, transparent 0)', backgroundSize: '60px 60px' }}></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#020617]/50 to-[#020617]"></div>
-      
-      <div className="max-w-xl w-full p-8 relative z-10">
+
+      <div className="relative z-10 w-full max-w-5xl px-6">
         
-        {phase === 'Init' && (
-          <div className="text-center space-y-10 animate-in fade-in zoom-in-95 duration-1000">
-            <div className="flex justify-center">
-                <div className="p-8 bg-indigo-600 rounded-[2.5rem] shadow-[0_0_50px_rgba(79,70,229,0.4)] animate-pulse ring-[12px] ring-indigo-900/20">
-                    <ShieldCheck className="h-24 w-24 text-white" />
+        {/* Header */}
+        <div className={`text-center mb-10 transition-all duration-700 ${phase !== 'Strategy' ? 'scale-90 opacity-60' : 'scale-100'}`}>
+          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 shadow-2xl mb-6 ring-4 ring-slate-900/50">
+            <ShieldCheck className="w-10 h-10 text-indigo-500" strokeWidth={1.5} />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
+            Trust Ledger <span className="text-indigo-500">System</span>
+          </h1>
+          <div className="flex items-center justify-center gap-3 text-xs font-bold tracking-[0.2em] text-slate-500 uppercase">
+            <span>Institutional Node</span>
+            <span className="w-1 h-1 rounded-full bg-slate-600" />
+            <span>v4.2.0</span>
+          </div>
+        </div>
+
+        {/* PHASE 1: STRATEGY */}
+        {phase === 'Strategy' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
+              <StrategyCard 
+                icon={Plus}
+                title="Fresh Boot"
+                desc="Initialize a blank ledger state. Configure root entity & identity manually."
+                onClick={() => selectStrategy('Manual')}
+                colorClass="text-emerald-400"
+              />
+              <StrategyCard 
+                icon={User}
+                title="Jim Profile"
+                desc="Load 'James R. Northrup Jr.' entity structure with sample historical data."
+                onClick={() => selectStrategy('Jim')}
+                colorClass="text-blue-400"
+              />
+              <StrategyCard 
+                icon={Sparkles}
+                title="Synthetic Fuzz"
+                desc="Generate high-volume stochastic entity graph for stress testing."
+                onClick={() => selectStrategy('Fuzz')}
+                colorClass="text-amber-400"
+              />
+              <StrategyCard 
+                icon={History}
+                title="Resume Session"
+                desc="Decrypt and load persistent state from secure local storage."
+                onClick={() => selectStrategy('Resume')}
+                disabled={!canResume}
+                colorClass="text-purple-400"
+              />
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-slate-800 flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
+                <button 
+                  onClick={() => selectStrategy('CreditUnion')}
+                  className="group relative flex items-center gap-4 bg-gradient-to-r from-slate-900 to-indigo-950 border border-indigo-500/30 px-8 py-4 rounded-xl hover:border-indigo-400 hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4)] transition-all overflow-hidden"
+                >
+                    <div className="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="p-2 bg-indigo-500 rounded-lg text-white group-hover:scale-110 transition-transform">
+                        <Landmark size={24} />
+                    </div>
+                    <div className="text-left">
+                        <div className="text-sm font-bold text-white tracking-wide group-hover:text-indigo-200 transition-colors">NCUA Charter Protocol</div>
+                        <div className="text-[10px] text-indigo-400 font-mono tracking-wider">LAUNCH CREDIT UNION WIZARD</div>
+                    </div>
+                    <ArrowRight className="text-indigo-500 group-hover:translate-x-1 transition-transform" />
+                </button>
+            </div>
+          </>
+        )}
+
+        {/* PHASE 2: IDENTITY */}
+        {phase === 'Identity' && (
+          <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-8 duration-500">
+            <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 p-8 rounded-2xl shadow-2xl">
+              <button 
+                onClick={() => setPhase('Strategy')}
+                className="text-xs font-bold text-slate-500 hover:text-white mb-6 flex items-center gap-2 transition-colors group"
+              >
+                <ArrowRight className="rotate-180 group-hover:-translate-x-1 transition-transform" size={12} /> Back to Options
+              </button>
+              
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400"><Fingerprint size={24} /></div>
+                <div>
+                    <h2 className="text-xl font-bold text-white">Operator Identity</h2>
+                    <p className="text-xs text-slate-400">Establish root access credentials.</p>
                 </div>
-            </div>
-            
-            <div className="space-y-4">
-                <h1 className="text-5xl font-black text-white tracking-tighter uppercase leading-tight">
-                    Trust Ledger<br/>
-                    <span className="text-indigo-500 tracking-[0.3em] text-sm font-black">Genesis Epoc Initialization</span>
-                </h1>
-                <p className="text-slate-500 text-sm max-w-sm mx-auto font-medium leading-relaxed">
-                    Private fiduciary node deployment initialized. A2A Gateway standby. Secure identity required to anchor local ledger.
-                </p>
-            </div>
+              </div>
 
-            <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto w-full">
-                {/* Option 1: Fresh */}
-                <button 
-                    onClick={handleFresh}
-                    className="group flex flex-col items-center justify-center gap-3 p-6 bg-slate-900/80 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 border border-white/5"
-                >
-                    <div className="p-3 bg-white/5 rounded-full group-hover:bg-white/10 transition-colors">
-                        <Plus size={24} className="text-emerald-400 group-hover:scale-110 transition-transform" />
-                    </div>
-                    #1 Fresh Node
-                </button>
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Legal Name</label>
+                  <input 
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-700"
+                    placeholder="Enter full name..."
+                    autoFocus
+                  />
+                </div>
 
-                {/* Option 2: Jim */}
-                <button 
-                    onClick={handleJim}
-                    className="group flex flex-col items-center justify-center gap-3 p-6 bg-slate-900/80 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 border border-white/5"
-                >
-                    <div className="p-3 bg-white/5 rounded-full group-hover:bg-white/10 transition-colors">
-                        <User size={24} className="text-blue-400 group-hover:scale-110 transition-transform" />
-                    </div>
-                    #2 Jim Profile
-                </button>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Secure Email</label>
+                  <input 
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full bg-slate-950/50 border border-slate-700 rounded-lg px-4 py-3 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder:text-slate-700"
+                    placeholder="admin@domain.local"
+                  />
+                </div>
 
-                {/* Option 3: Fuzz */}
                 <button 
-                    onClick={handleFuzz}
-                    className="group flex flex-col items-center justify-center gap-3 p-6 bg-slate-900/80 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl active:scale-95 border border-white/5"
+                  onClick={() => name && email && setPhase('Booting')}
+                  disabled={!name || !email}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-lg shadow-lg shadow-indigo-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-2"
                 >
-                    <div className="p-3 bg-white/5 rounded-full group-hover:bg-white/10 transition-colors">
-                        <Sparkles size={24} className="text-amber-400 group-hover:scale-110 transition-transform" />
-                    </div>
-                    #3 Synthetic Fuzz
+                  <Key size={18} /> Initialize Node
                 </button>
-
-                {/* Option 4: Resume */}
-                <button 
-                    onClick={handleResume}
-                    disabled={!canResume}
-                    className={`group flex flex-col items-center justify-center gap-3 p-6 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl active:scale-95 border ${canResume ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-500 shadow-indigo-900/50' : 'bg-slate-900/40 text-slate-600 border-white/5 cursor-not-allowed'}`}
-                >
-                    <div className={`p-3 rounded-full transition-colors ${canResume ? 'bg-white/10 group-hover:bg-white/20' : 'bg-white/5'}`}>
-                        <History size={24} className={`${canResume ? 'text-white' : 'text-slate-600'} group-hover:scale-110 transition-transform`} />
-                    </div>
-                    #4 Resume Graph
-                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {phase === 'Naming' && (
-          <div className="space-y-10 animate-in slide-in-from-bottom-12 fade-in duration-700">
-            <div className="text-center">
-                <div className="inline-flex p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20 mb-4">
-                    <Fingerprint className="text-indigo-400 h-8 w-8" />
-                </div>
-                <h2 className="text-3xl font-bold text-white mb-2">Identify Node Owner</h2>
-                <p className="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-black">Fiduciary Identity Disclosure Required</p>
-            </div>
-
-            <div className="space-y-6 bg-slate-900/50 backdrop-blur-md p-8 rounded-3xl border border-white/5 shadow-inner">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Full Legal Name</label>
-                    <div className="relative">
-                        <input 
-                            value={name}
-                            onChange={e => setName(e.target.value)}
-                            className="w-full bg-[#020617] border border-slate-800 rounded-xl p-5 text-white text-xl focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none transition-all placeholder:text-slate-700"
-                            placeholder="e.g. James R. Northrup Jr."
-                            autoFocus
-                        />
-                        <Lock className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-700" size={20} />
+        {/* PHASE 3: BOOTING */}
+        {phase === 'Booting' && (
+          <div className="max-w-md mx-auto animate-in fade-in duration-700">
+            <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-slate-800 p-6 shadow-2xl">
+                <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-2 text-emerald-500 text-xs font-bold uppercase tracking-widest">
+                        <Activity size={14} className="animate-pulse" />
+                        System Boot
                     </div>
+                    <span className="text-slate-500 font-mono text-xs">{Math.round(bootProgress)}%</span>
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Institutional Email</label>
-                    <input 
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        className="w-full bg-[#020617] border border-slate-800 rounded-xl p-5 text-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none transition-all placeholder:text-slate-700"
-                        placeholder="admin@private-banker.local"
+                <div className="relative h-1 bg-slate-800 rounded-full mb-6 overflow-hidden">
+                    <div 
+                        className="absolute top-0 left-0 h-full bg-indigo-500 transition-all duration-100 ease-linear shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                        style={{ width: `${bootProgress}%` }}
                     />
                 </div>
 
-                <div className="bg-indigo-900/10 border border-indigo-500/10 p-5 rounded-2xl flex gap-4 text-[10px] text-indigo-400 font-bold leading-relaxed shadow-inner">
-                    <Database size={20} className="shrink-0 text-indigo-500" />
-                    IDENTITY ANCHOR: Upon confirmation, the genesis epoc will be cryptographically linked to this identity. All subsequent ledger events will carry this signature.
-                </div>
-
-                <button 
-                    onClick={() => name && email && setPhase('Booting')}
-                    disabled={!name || !email}
-                    className="group w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-indigo-900/40 hover:bg-indigo-500 disabled:opacity-20 disabled:grayscale transition-all flex items-center justify-center gap-4 active:scale-95"
-                >
-                    <Rocket size={20} className="group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" /> 
-                    Initialize Architecture
-                </button>
-            </div>
-          </div>
-        )}
-
-        {phase === 'Booting' && (
-          <div className="space-y-12 animate-in fade-in duration-500">
-            <div className="text-center">
-                <div className="relative inline-block mb-6">
-                    <div className="absolute inset-0 bg-indigo-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
-                    <Activity className="text-indigo-400 h-16 w-16 relative z-10 mx-auto" />
-                </div>
-                <h3 className="text-4xl font-black text-white italic tracking-tighter uppercase">
-                    {activeStrategy === 'Resume' ? 'Resuming...' : 'Authenticating...'}
-                </h3>
-                <p className="text-[10px] font-mono text-indigo-500 mt-3 tracking-[0.4em] uppercase">
-                    {activeStrategy === 'Resume' ? 'DECRYPTING STORAGE :: AES-256' : 'ENCRYPTING GENESIS PAYLOAD :: SHA-512'}
-                </p>
-            </div>
-
-            <div className="space-y-5 max-w-sm mx-auto">
-                <div className="h-1 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5 shadow-inner">
-                    <div className="h-full bg-indigo-500 transition-all duration-300 shadow-[0_0_20px_rgba(99,102,241,1)]" style={{ width: `${bootProgress}%` }}></div>
-                </div>
-                <div className="flex justify-between text-[9px] font-mono font-black text-slate-600 tracking-widest uppercase">
-                    <span className="animate-pulse">{bootProgress < 30 ? 'LINKING_MEF_GW' : bootProgress < 70 ? 'ANCHORING_CONTEXT' : 'HANDSHAKE_OK'}</span>
-                    <span className="text-indigo-500">{bootProgress}%</span>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-6 opacity-40 max-w-md mx-auto">
-                {[
-                    { icon: Server, label: 'SRV', p: 20 },
-                    { icon: Globe, label: 'NET', p: 45 },
-                    { icon: Cpu, label: 'CPU', p: 75 },
-                    { icon: Database, label: 'DB', p: 95 }
-                ].map((item, i) => (
-                    <div key={i} className="flex flex-col items-center gap-3">
-                        <item.icon className={`transition-all duration-700 ${bootProgress > item.p ? 'text-indigo-400 scale-110 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'text-slate-800'}`} />
-                        <div className={`text-[8px] font-mono font-bold tracking-tighter ${bootProgress > item.p ? 'text-indigo-500' : 'text-slate-800'}`}>{item.label}_RDY</div>
+                <div className="bg-black/50 rounded-lg border border-slate-800/50 p-4 h-48 font-mono text-[10px] text-slate-400 overflow-hidden flex flex-col justify-end">
+                    {bootLog.map((log, i) => (
+                        <div key={i} className="mb-1 truncate animate-in slide-in-from-left-2 fade-in">
+                            {log}
+                        </div>
+                    ))}
+                    <div className="flex items-center gap-1 text-indigo-500 mt-1">
+                        <ChevronRight size={10} />
+                        <span className="animate-pulse">_</span>
                     </div>
-                ))}
+                </div>
             </div>
+            
+            <p className="text-center text-slate-600 text-xs font-medium mt-6 uppercase tracking-widest animate-pulse">
+                Establishing Secure Connection...
+            </p>
           </div>
         )}
 
+      </div>
+
+      {/* Footer Status */}
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-8 text-[10px] font-bold text-slate-700 uppercase tracking-widest pointer-events-none">
+        <span className="flex items-center gap-2"><Lock size={10} /> 256-BIT ENCRYPTION</span>
+        <span className="flex items-center gap-2"><Database size={10} /> LOCAL STORAGE</span>
+        <span className="flex items-center gap-2"><Globe size={10} /> OFFLINE CAPABLE</span>
       </div>
     </div>
   );

@@ -17,6 +17,9 @@ export const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeEntityId, setActiveEntityId] = useState<string | null>(null);
   
+  // State for immediate wizard launch
+  const [autoLaunchWizard, setAutoLaunchWizard] = useState(false);
+
   // Modal states
   const [showSettings, setShowSettings] = useState(false);
   const [showApiConsole, setShowApiConsole] = useState(false);
@@ -33,6 +36,10 @@ export const App = () => {
         onJimProfile={store.loadJimProfile}
         onSyntheticFuzz={store.loadSyntheticFuzz}
         onResumePersistent={store.resumePersistent}
+        onCreditUnionLaunch={() => {
+            store.setInitialOwner("System Administrator", "admin@charter.net");
+            setAutoLaunchWizard(true);
+        }}
         canResume={store.canResume}
       />
     );
@@ -61,6 +68,7 @@ export const App = () => {
           <Dashboard 
             entity={activeEntity} 
             onOpenApiConsole={() => setShowApiConsole(true)}
+            onEditEntity={setActiveEntityId}
           />
         ) : (
           <SystemOverview 
@@ -71,6 +79,7 @@ export const App = () => {
             onUpdateEntity={store.updateEntity}
             onAddEntity={store.addEntity}
             onDeleteEntity={store.deleteEntity}
+            initialWizard={autoLaunchWizard}
           />
         )}
       </div>
