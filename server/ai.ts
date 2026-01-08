@@ -9,16 +9,18 @@ const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY || '' });
 export async function generateStrategy(entity: any, accounts: any[], journals: any[], jurisdictions: string[]) {
     // 1. Fetch Provenance Context from DB
     const jurisdictionsParams = jurisdictions.map(() => '?').join(',');
-    const citations = query(`
+    const citations = await query(`
     SELECT DISTINCT c.* FROM citations c
     JOIN jurisdictions j ON c.id = j.citation_id
     WHERE j.jurisdiction_name IN (${jurisdictionsParams})
   `, jurisdictions);
 
-    const provenanceContext = citations.map((c: any) => {
-        const effects = query('SELECT * FROM rule_effects WHERE citation_id = ?', [c.id]);
-        return `[${c.id}] ${c.code}: ${c.title}\n  Summary: ${c.summary}\n  Effects: ${effects.map((e: any) => `${e.operation}(${e.constraint_type})`).join(', ')}`;
-    }).join('\n\n');
+    const provenanceContextResults = [];
+    for (const c of citations) {
+        const effects = await query('SELECT * FROM rule_effects WHERE citation_id = ?', [c.id]);
+        provenanceContextResults.push(`[${c.id}] ${c.code}: ${c.title}\n  Summary: ${c.summary}\n  Effects: ${effects.map((e: any) => `${e.operation}(${e.constraint_type})`).join(', ')}`);
+    }
+    const provenanceContext = provenanceContextResults.join('\n\n');
 
     // 2. Build Prompt
     const prompt = `You are an elite Fiduciary Tax Strategist for the Trust Ledger System.

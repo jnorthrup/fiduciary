@@ -1,7 +1,7 @@
-import { execute, initDb } from './db';
 import { v4 as uuidv4 } from 'uuid';
+import { execute, initDb, query } from './db';
 
-const INITIAL_CITATIONS = [
+const CITATION_GRAPH = [
     {
         id: 'USC_26_6001',
         code: '26 U.S.C. § 6001',
@@ -147,43 +147,39 @@ const INITIAL_CITATIONS = [
     }
 ];
 
-export async function migrate() {
+async function migrate() {
     await initDb();
+    console.log('Migrating data...');
 
-    console.log('Migrating citations...');
-    for (const citation of INITIAL_CITATIONS) {
-        execute(
-            'INSERT OR REPLACE INTO citations (id, code, title, source, summary) VALUES (?, ?, ?, ?, ?)',
+    for (const citation of CITATION_GRAPH) {
+        await execute(
+            'INSERT INTO citations (id, code, title, source, summary) VALUES (?, ?, ?, ?, ?)',
             [citation.id, citation.code, citation.title, citation.source, citation.summary]
         );
 
-        for (const jur of citation.jurisdictions) {
-            execute(
-                'INSERT OR IGNORE INTO jurisdictions (citation_id, jurisdiction_name) VALUES (?, ?)',
-                [citation.id, jur]
+        for (const jurisdiction of citation.jurisdictions) {
+            await execute(
+                'INSERT INTO jurisdictions (citation_id, jurisdiction_name) VALUES (?, ?)',
+                [citation.id, jurisdiction]
             );
         }
 
         for (const depId of citation.dependencies) {
-            execute(
-                'INSERT OR IGNORE INTO dependencies (citation_id, depends_on_id) VALUES (?, ?)',
+            await execute(
+                'INSERT INTO dependencies (citation_id, dependency_id) VALUES (?, ?)',
                 [citation.id, depId]
             );
         }
 
         for (const effect of citation.effects) {
-            execute(
+            await execute(
                 'INSERT INTO rule_effects (id, citation_id, operation, constraint_type, description) VALUES (?, ?, ?, ?, ?)',
                 [uuidv4(), citation.id, effect.operation, effect.constraint, effect.description]
             );
         }
     }
-    console.log('Migration complete');
+
+    console.log('Migration complete.');
 }
 
-if (require.main === module) {
-    migrate().then(() => process.exit(0)).catch(err => {
-        console.error(err);
-        process.exit(1);
-    });
-}
+migrate().catch(console.error);

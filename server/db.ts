@@ -1,59 +1,66 @@
-import Database from 'better-sqlite3';
+import { DuckDBInstance, DuckDBConnection } from '@duckdb/node-api';
 import path from 'path';
-import dotenv from 'dotenv';
 
-dotenv.config();
+const dbPath = path.resolve(__dirname, '../fiduciary.duckdb');
 
-const dbPath = process.env.DATABASE_URL || path.join(__dirname, '../fiduciary.db');
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
+let instance: DuckDBInstance | null = null;
+let connection: DuckDBConnection | null = null;
 
-export const query = (text: string, params: any[] = []) => {
-    return db.prepare(text).all(params);
-};
+export async function getConnection(): Promise<DuckDBConnection> {
+  if (!connection) {
+    instance = await DuckDBInstance.create(dbPath);
+    connection = await instance.connect();
+  }
+  return connection;
+}
 
-export const execute = (text: string, params: any[] = []) => {
-    return db.prepare(text).run(params);
-};
+export async function query(sql: string, params: any[] = []): Promise<any[]> {
+  const conn = await getConnection();
 
-export const initDb = async () => {
-    const schema = `
-    CREATE TABLE IF NOT EXISTS citations (
-      id TEXT PRIMARY KEY,
-      code TEXT NOT NULL,
-      title TEXT NOT NULL,
-      source TEXT NOT NULL,
-      summary TEXT NOT NULL
-    );
+  // Substitute parameters (basic implementation)
+  let finalSql = sql;
+  for (let i = 0; i < params.length; i++) {
+    finalSql = finalSql.replace('?', `'${String(params[i]).replace(/'/g, "''")}'`);
+  }
 
-    CREATE TABLE IF NOT EXISTS jurisdictions (
-      citation_id TEXT REFERENCES citations(id),
-      jurisdiction_name TEXT NOT NULL,
-      PRIMARY KEY (citation_id, jurisdiction_name)
-    );
+  const reader = await conn.runAndReadAll(finalSql);
+  const rows = reader.getRowObjects();
 
-    CREATE TABLE IF NOT EXISTS dependencies (
-      citation_id TEXT REFERENCES citations(id),
-      depends_on_id TEXT REFERENCES citations(id),
-      PRIMARY KEY (citation_id, depends_on_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS rule_effects (
-      id TEXT PRIMARY KEY,
-      citation_id TEXT REFERENCES citations(id),
-      operation TEXT NOT NULL,
-      constraint_type TEXT NOT NULL, -- REQUIRE, BLOCK, AUDIT
-      description TEXT NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_citations_source ON citations(source);
-    CREATE INDEX IF NOT EXISTS idx_rule_effects_operation ON rule_effects(operation);
-  `;
-
-    try {
-        db.exec(schema);
-        console.log('Database schema initialized');
-    } catch (err) {
-        console.error('Error initializing database schema:', err);
+  // Convert BigInt to Number for JSON serialization
+  return rows.map((row: any) => {
+    const converted: any = {};
+    for (const [key, value] of Object.entries(row)) {
+      converted[key] = typeof value === 'bigint' ? Number(value) : value;
     }
-};
+    return converted;
+  });
+}
+
+
+export async function execute(sql: string): Promise<void> {
+  const conn = await getConnection();
+  await conn.run(sql);
+}
+
+export async function initDb() {
+  await execute(`
+    CREATE TABLE IF NOT EXISTS databases (
+      name VARCHAR PRIMARY KEY,
+      created_at TIMESTAMP DEFAULT current_timestamp
+    );
+  `);
+
+  await execute(`
+    CREATE TABLE IF NOT EXISTS documents (
+      db VARCHAR NOT NULL,
+      id VARCHAR NOT NULL,
+      rev VARCHAR NOT NULL,
+      data JSON,
+      deleted BOOLEAN DEFAULT false,
+      updated_at TIMESTAMP DEFAULT current_timestamp,
+      PRIMARY KEY (db, id)
+    );
+  `);
+
+  console.log('DuckDB schema initialized');
+}
