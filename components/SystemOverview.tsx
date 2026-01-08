@@ -1,13 +1,18 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Entity, Account, JournalEntry, WalletCredential, EntityType, EntityRole } from '../types';
 import { EntityBuilder } from './EntityBuilder';
 import { FractalViewer } from './FractalViewer';
 import { EntityCRUDModal } from './modals/EntityCRUDModal';
 import { StreamWave } from './StreamWave';
-import { UseCaseLogViewer } from './UseCaseLogViewer'; // Import
+import { UseCaseLogViewer } from './UseCaseLogViewer';
+import { CreditUnionWizard } from './CreditUnionWizard';
 import { useLedgerStore } from '../services/ledgerService';
-import { Activity, Network, LayoutGrid, Plus, Globe, Undo2, Redo2, Database, SidebarClose, SidebarOpen, Rocket, ShieldCheck, Cpu, History, Sparkles, Shield, Terminal } from 'lucide-react';
+import { 
+  Activity, Network, LayoutGrid, Globe, SidebarClose, 
+  SidebarOpen, ShieldCheck, Cpu, Terminal, Landmark, 
+  X, Scale, Building2, ChevronRight, PlayCircle
+} from 'lucide-react';
 
 interface Props {
   entities: Entity[];
@@ -17,6 +22,7 @@ interface Props {
   onUpdateEntity: (id: string, updates: Partial<Entity>) => void;
   onAddEntity: (parentId: string, type: EntityType, role: EntityRole) => Promise<Entity>;
   onDeleteEntity: (id: string) => void;
+  initialWizard?: boolean;
 }
 
 export const SystemOverview: React.FC<Props> = ({
@@ -26,31 +32,63 @@ export const SystemOverview: React.FC<Props> = ({
   wallets,
   onUpdateEntity,
   onAddEntity,
-  onDeleteEntity
+  onDeleteEntity,
+  initialWizard = false
 }) => {
   const { generateSyntheticData, changeGraph, generateSampleEnterprise } = useLedgerStore();
   const [viewMode, setViewMode] = useState<'structure' | 'fractal'>('fractal');
   const [editingEntityId, setEditingEntityId] = useState<string | null>(null);
   const [showStream, setShowStream] = useState(false);
-  const [showLogs, setShowLogs] = useState(false); // Log state
+  const [showLogs, setShowLogs] = useState(false);
+  const [showCreditUnionWizard, setShowCreditUnionWizard] = useState(initialWizard);
 
   const totalAssets = accounts.filter(a => a.type === 'Asset').reduce((sum, a) => sum + a.balance, 0);
   const totalEntities = entities.length;
 
   const editingEntity = entities.find(e => e.id === editingEntityId);
 
+  useEffect(() => {
+      if(initialWizard) setShowCreditUnionWizard(true);
+  }, [initialWizard]);
+
   return (
-    <div className="flex flex-col h-full bg-[#f8fafc] relative overflow-hidden">
+    <div className="flex flex-col h-full bg-[#f8fafc] relative overflow-hidden font-sans">
+      
+      {/* Credit Union Wizard Modal Overlay */}
+      {showCreditUnionWizard && (
+        <div className="fixed inset-0 z-[200] bg-[#0f172a]/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-7xl h-[90vh] overflow-hidden relative border border-slate-700 flex flex-col">
+                <div className="bg-[#0f172a] text-white p-4 flex justify-between items-center border-b border-slate-800 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <Landmark className="text-emerald-400" />
+                        <span className="font-bold tracking-widest uppercase text-sm">NCUA Charter Protocol</span>
+                    </div>
+                    <button onClick={() => setShowCreditUnionWizard(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white">
+                        <X size={20} />
+                    </button>
+                </div>
+                <div className="flex-1 overflow-hidden relative">
+                    <CreditUnionWizard parentEntity={null} onClose={() => setShowCreditUnionWizard(false)} />
+                </div>
+            </div>
+        </div>
+      )}
+
       {/* System Header */}
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shrink-0 shadow-sm z-20">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <Globe className="text-indigo-600" size={20} />
-            Infrastructure Node
-          </h1>
-          <div className="flex gap-2">
-             <span className="bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Active Entities: {totalEntities}</span>
-             <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-[10px] font-bold text-slate-600 uppercase tracking-wider">System Asset Value: <strong className="text-slate-900">${totalAssets.toLocaleString()}</strong></span>
+          <div className="p-2 bg-indigo-600 rounded-lg text-white">
+            <Globe size={20} />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-slate-800 leading-tight">
+                Sovereign Ledger Node
+            </h1>
+            <div className="flex items-center gap-3 text-[10px] font-mono text-slate-500 uppercase tracking-wider">
+                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> SYSTEM_ONLINE</span>
+                <span>ENTITIES: {totalEntities}</span>
+                <span>AUM: ${totalAssets.toLocaleString()}</span>
+            </div>
           </div>
         </div>
         
@@ -71,132 +109,174 @@ export const SystemOverview: React.FC<Props> = ({
                     </button>
                 </div>
             )}
-
-            <div className="h-6 w-px bg-slate-200 mx-2"></div>
-
+            
             <button 
-                onClick={() => setShowLogs(!showLogs)}
-                className={`p-2 rounded-lg border transition-colors ${showLogs ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
-                title="Toggle UseCase Logs"
+              onClick={() => setShowStream(!showStream)}
+              className={`p-2 rounded-lg border transition-all ${showStream ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-200 text-slate-400 hover:text-slate-600'}`}
+              title="Toggle Ledger Stream"
             >
-                <Terminal size={18} />
+              {showStream ? <SidebarClose size={18} /> : <SidebarOpen size={18} />}
             </button>
 
             <button 
-                onClick={() => setShowStream(!showStream)}
-                className={`p-2 rounded-lg border transition-colors ${showStream ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200'}`}
-                title="Toggle Activity Stream"
+                onClick={() => setShowLogs(!showLogs)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${showLogs ? 'bg-slate-800 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
             >
-                {showStream ? <SidebarClose size={18} /> : <SidebarOpen size={18} />}
+                <Terminal size={14} /> Logs
             </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden relative flex">
+      <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 relative">
             {totalEntities === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#f8fafc] p-6 overflow-y-auto">
-                    <div className="max-w-5xl w-full space-y-12 py-12 animate-in fade-in zoom-in-95 duration-500">
-                        <div className="text-center space-y-4">
-                            <div className="inline-flex p-5 bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-200 mb-2 ring-4 ring-white">
-                                <Rocket className="text-white h-10 w-10" />
+                <div className="h-full w-full bg-[#0f172a] text-slate-300 flex flex-col items-center justify-center p-8 relative overflow-hidden">
+                    {/* Background Grid */}
+                    <div className="absolute inset-0 opacity-20 pointer-events-none" 
+                         style={{ 
+                             backgroundImage: `linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)`, 
+                             backgroundSize: '40px 40px' 
+                         }} 
+                    />
+                    
+                    <div className="max-w-5xl w-full z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        
+                        {/* Intro Text */}
+                        <div className="space-y-6">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold uppercase tracking-widest">
+                                <Activity size={12} className="animate-pulse" /> System Ready for Genesis
                             </div>
-                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Genesis Node Initialized</h2>
-                            <p className="text-slate-500 text-base max-w-lg mx-auto leading-relaxed">
-                                Deploy your Private Holding Trust architecture or initialize with a 5-year historical sample.
+                            <h1 className="text-5xl font-black text-white leading-tight tracking-tight">
+                                Initialize <br/>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">Financial Structure</span>
+                            </h1>
+                            <p className="text-lg text-slate-400 leading-relaxed max-w-md">
+                                Deploy bank-grade legal entities, trusts, and credit unions directly to the immutable ledger.
                             </p>
+                            
+                            <div className="flex gap-4 pt-4">
+                                <button 
+                                    onClick={generateSampleEnterprise}
+                                    className="group flex items-center gap-3 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all text-sm font-bold text-white"
+                                >
+                                    <ShieldCheck size={18} className="text-slate-400 group-hover:text-indigo-400 transition-colors" />
+                                    Load Sample Profile
+                                </button>
+                                <button 
+                                    onClick={generateSyntheticData}
+                                    className="group flex items-center gap-3 px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all text-sm font-bold text-white"
+                                >
+                                    <Cpu size={18} className="text-slate-400 group-hover:text-amber-400 transition-colors" />
+                                    Synthetic Stress Test
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <button 
-                                onClick={() => onAddEntity('', EntityType.TRUST, EntityRole.HOLDING_TRUST)}
-                                className="group p-8 bg-white border border-slate-200 rounded-2xl hover:border-amber-500 hover:shadow-xl transition-all text-left relative overflow-hidden"
-                            >
-                                <div className="p-3 bg-amber-50 text-amber-600 rounded-xl w-fit mb-4">
-                                    <ShieldCheck size={24} />
+                        {/* Credit Union Hero Card */}
+                        <div className="relative group cursor-pointer" onClick={() => setShowCreditUnionWizard(true)}>
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-indigo-600 rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
+                            <div className="relative bg-[#1e293b] border border-slate-700 rounded-3xl p-8 shadow-2xl overflow-hidden group-hover:border-emerald-500/50 transition-colors">
+                                <div className="absolute top-0 right-0 p-8 opacity-5">
+                                    <Landmark size={200} />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">Holding Trust</h3>
-                                <p className="text-xs text-slate-500 leading-relaxed">
-                                    Private fiduciary architecture for asset protection.
-                                </p>
-                                <div className="mt-6 flex items-center gap-2 text-[10px] font-bold text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-wider">
-                                    Launch Builder <Plus size={10} />
+                                
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-400">
+                                        <Scale size={28} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">Credit Union Protocol</h3>
+                                        <p className="text-xs text-slate-400 uppercase tracking-widest font-mono">NCUA / State Charter Wizard</p>
+                                    </div>
                                 </div>
-                            </button>
 
-                            <button 
-                                onClick={() => onAddEntity('', EntityType.LLC, EntityRole.OPERATING_LLC)}
-                                className="group p-8 bg-white border border-slate-200 rounded-2xl hover:border-emerald-500 hover:shadow-xl transition-all text-left relative overflow-hidden"
-                            >
-                                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl w-fit mb-4">
-                                    <Cpu size={24} />
+                                <div className="space-y-4 mb-8">
+                                    <div className="flex items-center gap-3 text-sm text-slate-300">
+                                        <CheckCircle size={16} className="text-emerald-500" />
+                                        <span>Automated Board of Directors Generation</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm text-slate-300">
+                                        <CheckCircle size={16} className="text-emerald-500" />
+                                        <span>Bylaws & Charter Drafting (AI)</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm text-slate-300">
+                                        <CheckCircle size={16} className="text-emerald-500" />
+                                        <span>Capitalization & Collateral Ledgering</span>
+                                    </div>
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">Operating LLC</h3>
-                                <p className="text-xs text-slate-500 leading-relaxed">
-                                    Active business node with full treasury modules.
-                                </p>
-                                <div className="mt-6 flex items-center gap-2 text-[10px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-wider">
-                                    Initialize Node <Plus size={10} />
-                                </div>
-                            </button>
 
-                            <button 
-                                onClick={generateSampleEnterprise}
-                                className="group p-8 bg-indigo-50 border border-indigo-200 rounded-2xl hover:border-indigo-600 hover:shadow-xl transition-all text-left relative overflow-hidden"
-                            >
-                                <div className="p-3 bg-indigo-600 text-white rounded-xl w-fit mb-4 shadow-lg flex items-center justify-center">
-                                    <Sparkles size={24} />
-                                </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">Full Enterprise</h3>
-                                <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                                    5-Year Historical Logic & Resource Accumulation.
-                                </p>
-                                <div className="mt-6 flex items-center gap-2 text-[10px] font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-wider">
-                                    Seed Scenario <History size={10} />
-                                </div>
-                            </button>
+                                <button 
+                                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 transition-all group-active:scale-[0.98]"
+                                >
+                                    <PlayCircle size={20} className="fill-current" /> Launch Wizard
+                                </button>
+                            </div>
                         </div>
+
                     </div>
                 </div>
-            ) : viewMode === 'structure' ? (
-                <div className="absolute inset-0">
-                    <EntityBuilder 
-                        entities={entities}
-                        onUpdateEntity={onUpdateEntity}
-                        onAddEntity={onAddEntity}
-                        onDeleteEntity={onDeleteEntity}
-                        onEditEntity={setEditingEntityId}
-                    />
-                </div>
             ) : (
-                <div className="absolute inset-0 p-4">
-                    <div className="h-full w-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <>
+                    {viewMode === 'structure' ? (
+                        <EntityBuilder 
+                            entities={entities} 
+                            onUpdateEntity={onUpdateEntity}
+                            onAddEntity={onAddEntity}
+                            onDeleteEntity={onDeleteEntity}
+                            onEditEntity={setEditingEntityId}
+                        />
+                    ) : (
                         <FractalViewer 
-                            entities={entities}
+                            entities={entities} 
                             accounts={accounts}
                             journals={journals}
                             wallets={wallets}
                             onEditEntity={setEditingEntityId}
                         />
-                    </div>
-                </div>
+                    )}
+                </>
             )}
         </div>
 
+        {/* Right Sidebar: Stream Wave */}
         {showStream && (
-            <StreamWave changes={changeGraph} />
+            <div className="border-l border-slate-200 bg-white h-full shadow-xl z-30 animate-in slide-in-from-right-10 duration-300">
+                <StreamWave changes={changeGraph} />
+            </div>
         )}
       </div>
 
-      {showLogs && <UseCaseLogViewer onClose={() => setShowLogs(false)} />}
-
-      {editingEntity && (
+      {editingEntityId && editingEntity && (
           <EntityCRUDModal 
               entity={editingEntity} 
-              onClose={() => setEditingEntityId(null)}
-              onSave={(id, updates) => onUpdateEntity(id, updates)}
+              onSave={(id, updates) => {
+                  onUpdateEntity(id, updates);
+                  setEditingEntityId(null);
+              }}
+              onClose={() => setEditingEntityId(null)} 
           />
       )}
+
+      {showLogs && <UseCaseLogViewer onClose={() => setShowLogs(false)} />}
     </div>
   );
 };
+
+function CheckCircle({ size, className }: { size: number, className?: string }) {
+    return (
+        <svg 
+            width={size} 
+            height={size} 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="3" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            className={className}
+        >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+    );
+}

@@ -5,6 +5,7 @@ import { Entity, EntityType, EntityRole, TrustSubType } from '../types';
 import { useLedgerStore } from '../services/ledgerService';
 import { Box, GripVertical, Plus, Shield, Building2, Trash2, Edit2, Link, Save, X, Network, BookOpen, Fingerprint, Workflow, UserPlus, Users, User, ZoomIn, ZoomOut, Move, Layout, ArrowUpRight, Anchor, Landmark, Ship, Globe, Sparkles } from 'lucide-react';
 import { OrgStructureScanner } from './OrgStructureScanner';
+import { CreditUnionWizard } from './CreditUnionWizard';
 
 interface Props {
   entities: Entity[];
@@ -29,6 +30,7 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
   const [hoveredEntityId, setHoveredEntityId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [showAiScanner, setShowAiScanner] = useState(false);
+  const [showCreditUnionWizard, setShowCreditUnionWizard] = useState(false);
   
   const [localDraggedPos, setLocalDraggedPos] = useState<{x: number, y: number} | null>(null);
 
@@ -180,12 +182,17 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
   const performAutoLayout = () => {
       if (entities.length === 0) return;
       const roots = entities.filter(e => !e.parentEntityId || !entities.find(p => p.id === e.parentEntityId));
-      const buildTree = (root: Entity): any => {
+      
+      const buildTree = (root: Entity, visited = new Set<string>()): any => {
+          if (visited.has(root.id)) return { id: root.id, children: [] }; // Break cycle
+          visited.add(root.id);
+          
           const children = entities.filter(e => e.parentEntityId === root.id);
-          return { id: root.id, children: children.map(buildTree) };
+          return { id: root.id, children: children.map(c => buildTree(c, new Set(visited))) };
       };
+
       let hierarchyRoot;
-      if (roots.length > 1) hierarchyRoot = (d3 as any).hierarchy({ id: 'ROOT', children: roots.map(buildTree) } as any);
+      if (roots.length > 1) hierarchyRoot = (d3 as any).hierarchy({ id: 'ROOT', children: roots.map(r => buildTree(r)) } as any);
       else if (roots.length === 1) hierarchyRoot = (d3 as any).hierarchy(buildTree(roots[0]));
       else return;
 
@@ -211,6 +218,27 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
       const jv = await onAddEntity(trust.id, EntityType.LLC, EntityRole.JOINT_VENTURE, 'Rogue Roots Joint Venture');
       
       // Auto-layout after creation
+      setTimeout(performAutoLayout, 500);
+  };
+
+  const handleDeployCreditUnion = async () => {
+      const names = ["Sovereign Community", "Liberty First", "Civic Trust", "Guardian Mutual", "Heritage United", "Peoples Ledger", "Union Square"];
+      const suffixes = ["FCU", "Credit Union", "Financial Cooperative"];
+      const name = `${names[Math.floor(Math.random() * names.length)]} ${suffixes[Math.floor(Math.random() * suffixes.length)]}`;
+      
+      // 1. Create Credit Union (Root)
+      const cu = await onAddEntity('', EntityType.CREDIT_UNION, EntityRole.OPERATING_LLC, name);
+      
+      // 2. Create Board Members
+      const boardRoles = ["Chairman", "Treasurer", "Secretary", "Director"];
+      for (const role of boardRoles) {
+          const personName = `${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]}`;
+          await onAddEntity(cu.id, EntityType.INDIVIDUAL, EntityRole.BOARD_MEMBER, `${personName} (${role})`);
+      }
+      
+      // 3. Member Share Account (Trust)
+      await onAddEntity(cu.id, EntityType.TRUST, EntityRole.BENEFICIARY, "Member Share Account");
+
       setTimeout(performAutoLayout, 500);
   };
 
@@ -265,6 +293,18 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
       
       {showAiScanner && <OrgStructureScanner onClose={() => { setShowAiScanner(false); performAutoLayout(); }} />}
 
+      {/* Credit Union Wizard Modal */}
+      {showCreditUnionWizard && (
+        <div className="fixed inset-0 z-[200] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden relative animate-in zoom-in-95">
+                <button onClick={() => setShowCreditUnionWizard(false)} className="absolute top-4 right-4 z-50 p-2 bg-slate-100 rounded-full hover:bg-slate-200">
+                    <X size={20} />
+                </button>
+                <CreditUnionWizard parentEntity={null} onClose={() => { setShowCreditUnionWizard(false); performAutoLayout(); }} />
+            </div>
+        </div>
+      )}
+
       <div className="w-80 bg-white border-r border-slate-200 flex flex-col p-4 shadow-lg z-10 overflow-hidden">
         <div className="mb-6 shrink-0">
             <h3 className="font-bold text-slate-800 flex items-center gap-2"><Network className="text-indigo-600" /> Structure Builder</h3>
@@ -293,7 +333,7 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
                 <button onClick={handleCreatePerson} className="w-full flex items-center justify-center gap-2 p-2 bg-white border border-indigo-200 rounded hover:bg-indigo-50 transition-colors text-xs font-bold text-indigo-700 shadow-sm"><User size={14} /> New Beneficiary</button>
             </div>
             
-            <div className="mb-6 bg-slate-900 border border-slate-800 rounded-lg p-3 text-center">
+            <div className="mb-4 bg-slate-900 border border-slate-800 rounded-lg p-3 text-center">
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-center gap-2"><Ship size={14} /> MARAD Protocol</div>
                 <button onClick={handleDeployMARAD} className="w-full p-2 bg-indigo-600 text-white rounded font-bold text-xs hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-900/50">
                     Deploy Foreign Trust / Surety
@@ -303,11 +343,25 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
                 </div>
             </div>
 
+            <div className="mb-6 bg-slate-900 border border-slate-800 rounded-lg p-3 text-center">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-center gap-2"><Landmark size={14} /> Credit Union Graph</div>
+                <button onClick={() => setShowCreditUnionWizard(true)} className="w-full p-2 bg-emerald-600 text-white rounded font-bold text-xs hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/50 mb-2 flex items-center justify-center gap-2">
+                    <Sparkles size={12} /> Launch Wizard
+                </button>
+                <button onClick={handleDeployCreditUnion} className="w-full p-2 bg-slate-800 text-slate-400 border border-slate-700 rounded font-bold text-[10px] hover:bg-slate-700 transition-colors">
+                    Quick Deploy (Random)
+                </button>
+                <div className="text-[9px] text-slate-500 mt-2">
+                    FCU (Root) {'>'} Board of Directors {'>'} Member Share Accounts.
+                </div>
+            </div>
+
             <div className="space-y-3 mb-6">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Quick Add</p>
                 <button onClick={() => handleCreate(EntityType.TRUST, EntityRole.HOLDING_TRUST)} className="w-full flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 text-left transition-all active:scale-95"><Shield className="text-amber-600" size={20} /><div><div className="text-sm font-bold text-amber-900">Holding Trust</div><div className="text-[10px] text-amber-700">Passive / Asset Protection</div></div></button>
                 <button onClick={() => handleCreate(EntityType.FOREIGN_BUSINESS_TRUST, EntityRole.HOLDING_TRUST)} className="w-full flex items-center gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 text-left transition-all active:scale-95"><Globe className="text-purple-600" size={20} /><div><div className="text-sm font-bold text-purple-900">Foreign Business Trust</div><div className="text-[10px] text-purple-700">Int'l / Non-Domestic</div></div></button>
                 <button onClick={() => handleCreate(EntityType.LLC, EntityRole.OPERATING_LLC)} className="w-full flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 text-left transition-all active:scale-95"><Building2 className="text-emerald-600" size={20} /><div><div className="text-sm font-bold text-emerald-900">Operating LLC</div><div className="text-[10px] text-emerald-700">Active Trade / Business</div></div></button>
+                <button onClick={() => handleCreate(EntityType.CREDIT_UNION, EntityRole.OPERATING_LLC, 'New Credit Union')} className="w-full flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 text-left transition-all active:scale-95"><Landmark className="text-indigo-600" size={20} /><div><div className="text-sm font-bold text-indigo-900">Credit Union</div><div className="text-[10px] text-indigo-700">Financial Cooperative</div></div></button>
             </div>
             <div className="mb-6">
                 <button onClick={performAutoLayout} className="w-full flex items-center justify-center gap-2 p-2 bg-slate-100 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-200 font-bold text-xs transition-colors"><Workflow size={16} /> Re-Align Graph</button>
@@ -447,6 +501,7 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
                               ent.role === EntityRole.HOLDING_TRUST ? 'border-amber-400 bg-amber-50/30' : 
                               ent.role === EntityRole.OPERATING_LLC ? 'border-emerald-400 bg-emerald-50/30' : 
                               ent.role === EntityRole.JOINT_VENTURE ? 'border-indigo-400 bg-indigo-50/30' :
+                              ent.type === EntityType.CREDIT_UNION ? 'border-indigo-600 bg-indigo-50/30' :
                               'border-slate-300'}`}
                     >
                         <div className="p-6 pb-2">
@@ -456,6 +511,7 @@ export const EntityBuilder: React.FC<Props> = ({ entities, onUpdateEntity, onAdd
                                     ent.role === EntityRole.SURETY ? 'bg-rose-100 text-rose-700' :
                                     ent.role === EntityRole.JOINT_VENTURE ? 'bg-indigo-100 text-indigo-700' :
                                     ent.type === EntityType.FOREIGN_BUSINESS_TRUST ? 'bg-purple-100 text-purple-700' :
+                                    ent.type === EntityType.CREDIT_UNION ? 'bg-indigo-100 text-indigo-700' :
                                     'bg-emerald-100 text-emerald-700'}`}>
                                     {ent.role?.replace('_', ' ') || 'UNKNOWN'}
                                 </span>

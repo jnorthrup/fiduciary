@@ -67,6 +67,7 @@ import {
 interface Props {
   entity: Entity;
   onOpenApiConsole: () => void;
+  onEditEntity: (id: string) => void;
 }
 
 const WizardModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => (
@@ -80,7 +81,7 @@ const WizardModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => v
   </div>
 );
 
-export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole }) => {
+export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEntity }) => {
   const store = useLedgerStore();
   const [activeTab, setActiveTab] = useState('Overview');
   
@@ -90,16 +91,22 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole }) => {
   const entityFilings = store.filings.filter(f => f.entityId === entity.id);
   const childrenEntities = store.entities.filter(e => e.parentEntityId === entity.id);
 
-  // Helper to get subtree for Structure View
+  // Helper to get subtree for Structure View (Prevent Infinite Loop)
   const structureEntities = useMemo(() => {
       const result = new Set<string>([entity.id]);
       const queue = [entity.id];
+      // Keep track of visited nodes to prevent cycles
+      const visited = new Set<string>([entity.id]);
+      
       while(queue.length > 0) {
           const current = queue.shift()!;
           const children = store.entities.filter(e => e.parentEntityId === current);
           children.forEach(c => {
-              result.add(c.id);
-              queue.push(c.id);
+              if (!visited.has(c.id)) {
+                  visited.add(c.id);
+                  result.add(c.id);
+                  queue.push(c.id);
+              }
           });
       }
       return store.entities.filter(e => result.has(e.id));
@@ -251,19 +258,31 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole }) => {
                                           <button onClick={() => openWizard('INDENTURE')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Trust Indenture</button>
                                           <button onClick={() => openWizard('AUDIT')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Fiduciary Audit</button>
                                           <button onClick={() => openWizard('DTCC')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">DTCC Pledge</button>
-                                          <button onClick={() => openWizard('CREDIT_UNION')} className="p-3 text-xs bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-200 text-left font-bold text-indigo-700 col-span-2 flex items-center justify-center gap-2"><Landmark size={14}/> Credit Union Builder</button>
+                                          <button onClick={() => openWizard('PARCEL')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Parcel Lookup</button>
+                                          <button onClick={() => openWizard('GIFT')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Gift Tax (709)</button>
                                       </>
                                   )}
                                   {entity.role === EntityRole.OPERATING_LLC && (
                                       <>
-                                          <button onClick={() => openWizard('BSO')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">BSO Enroll</button>
                                           <button onClick={() => openWizard('CONTRACTOR')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Contractors</button>
                                           <button onClick={() => openWizard('EMPLOYEE')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Employees</button>
-                                          <button onClick={() => openWizard('ACH')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">ACH Originate</button>
+                                          <button onClick={() => openWizard('1099')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">File 1099s</button>
+                                          <button onClick={() => openWizard('BSO')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">BSO Register</button>
+                                          <button onClick={() => openWizard('W2')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">W-2 Report</button>
+                                          <button onClick={() => openWizard('MARAD')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">MARAD</button>
                                       </>
                                   )}
-                                  <button onClick={() => openWizard('PARCEL')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Asset Lookup</button>
-                                  <button onClick={() => openWizard('EDGAR')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">SEC Research</button>
+                                  {entity.type === EntityType.INDIVIDUAL && (
+                                      <>
+                                          <button onClick={() => openWizard('CREDIT')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Credit Defense</button>
+                                          <button onClick={() => openWizard('PRIVATE')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Private Admin</button>
+                                      </>
+                                  )}
+                                  
+                                  {/* Universal Shortcuts */}
+                                  <button onClick={() => openWizard('CREDIT_UNION')} className="p-3 text-xs bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-200 text-left font-bold text-indigo-700 col-span-2 flex items-center justify-center gap-2"><Landmark size={14}/> Launch Credit Union</button>
+                                  <button onClick={() => openWizard('TREASURY')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">TreasuryDirect</button>
+                                  <button onClick={() => openWizard('LEGAL')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Legal Forms</button>
                               </div>
                           </div>
                       </div>
@@ -272,60 +291,58 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole }) => {
           )}
 
           {activeTab === 'Structure' && (
-              <div className="absolute inset-0 p-4">
-                  <div className="h-full w-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                      <FractalViewer 
-                          entities={structureEntities}
-                          accounts={store.accounts}
-                          journals={store.journals}
-                          wallets={store.wallets}
-                          onEditEntity={() => {}} // No-op in self-view to prevent recursive navigation confusion
-                      />
-                  </div>
+              <div className="h-full w-full bg-slate-100">
+                  <FractalViewer 
+                      entities={structureEntities}
+                      accounts={store.accounts}
+                      journals={store.journals}
+                      wallets={store.wallets}
+                      onEditEntity={onEditEntity} // Opens dashboard for clicked child
+                  />
               </div>
           )}
 
           {activeTab === 'Compliance' && (
               <div className="h-full overflow-y-auto p-8 custom-scrollbar">
-                  <div className="grid grid-cols-12 gap-8">
-                      <div className="col-span-12 lg:col-span-4">
-                          <ComplianceWidget 
-                              entity={entity} 
-                              filings={entityFilings}
-                              modules={store.modules}
-                              onCreateFiling={store.createFiling}
-                              onUpdateStatus={store.updateFilingStatus}
-                              onSubmitToApi={store.submitFilingViaAPI}
-                              onAddModule={store.addTaxModule}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      <ComplianceWidget 
+                          entity={entity} 
+                          filings={entityFilings} 
+                          modules={store.modules}
+                          onCreateFiling={store.createFiling} 
+                          onUpdateStatus={store.updateFilingStatus}
+                          onSubmitToApi={store.submitFilingViaAPI}
+                          onAddModule={store.addTaxModule}
+                      />
+                      <div className="space-y-8">
+                          <BSOHierarchyViewer 
+                              entities={childrenEntities.concat(entity)} // Show context
+                              bsoRoles={store.bsoRoles}
+                              submissions={store.bsoSubmissions}
+                              documents={store.documents}
                           />
-                      </div>
-                      <div className="col-span-12 lg:col-span-8 grid grid-cols-1 gap-6">
                           <div className="bg-white p-6 rounded-xl border border-slate-200">
-                              <h3 className="text-sm font-bold text-slate-700 uppercase mb-4">Regulatory Workflows</h3>
-                              <div className="flex flex-wrap gap-4">
-                                  <button onClick={() => openWizard('ACCOUNT_RECON')} className="px-4 py-2 bg-purple-50 text-purple-700 font-bold rounded text-xs border border-purple-100 hover:bg-purple-100">Account Reconciliation (FOIA/4506-T)</button>
-                                  <button onClick={() => openWizard('TREASURY')} className="px-4 py-2 bg-blue-50 text-blue-700 font-bold rounded text-xs border border-blue-100 hover:bg-blue-100">TreasuryDirect (FS 1010)</button>
-                                  <button onClick={() => openWizard('MARAD')} className="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded text-xs border border-indigo-100 hover:bg-indigo-100">MARAD Authority</button>
-                                  <button onClick={() => openWizard('AGENCY_CERT')} className="px-4 py-2 bg-emerald-50 text-emerald-700 font-bold rounded text-xs border border-emerald-100 hover:bg-emerald-100">Agency Certification</button>
-                                  <button onClick={() => openWizard('BANKRUPTCY')} className="px-4 py-2 bg-red-50 text-red-700 font-bold rounded text-xs border border-red-100 hover:bg-red-100">Insolvency / Ch.11</button>
-                                  <button onClick={() => openWizard('RESITUS')} className="px-4 py-2 bg-purple-50 text-purple-700 font-bold rounded text-xs border border-purple-100 hover:bg-purple-100">Domestication / Re-Situs</button>
-                                  <button onClick={() => openWizard('TAXPAYER')} className="px-4 py-2 bg-amber-50 text-amber-700 font-bold rounded text-xs border border-amber-100 hover:bg-amber-100">Taxpayer Resolution</button>
-                              </div>
+                              <h3 className="font-bold text-slate-700 mb-4">SSA Earnings Record</h3>
+                              {store.ssaStatements.length > 0 ? (
+                                  <SSAStatementViewer statement={store.ssaStatements[0]} />
+                              ) : <div className="text-slate-400 text-sm">No SSA data linked.</div>}
                           </div>
                           
+                          {/* Complex Trust Helper */}
                           {entity.role === EntityRole.HOLDING_TRUST && (
-                              <ComplexTrustDescriptionForm entity={entity} />
+                              <ComplexTrustDescriptionForm entity={entity} onSubmit={(n) => console.log(n)} />
                           )}
                           
-                          {/* BSO Widget if needed */}
-                          {entity.role === EntityRole.OPERATING_LLC && (
-                              <BSOHierarchyViewer 
-                                  entities={store.entities} 
-                                  bsoRoles={store.bsoRoles} 
-                                  submissions={store.bsoSubmissions} 
-                                  documents={store.documents} 
-                              />
-                          )}
+                          {/* Bankruptcy Helper */}
+                          <div className="bg-white p-6 rounded-xl border border-slate-200">
+                              <h3 className="font-bold text-slate-700 mb-4">Insolvency Tools</h3>
+                              <button 
+                                onClick={() => openWizard('BANKRUPTCY')}
+                                className="w-full py-2 border border-red-200 bg-red-50 text-red-700 font-bold rounded hover:bg-red-100 transition-colors text-xs"
+                              >
+                                  Launch Bankruptcy Wizard
+                              </button>
+                          </div>
                       </div>
                   </div>
               </div>
@@ -333,102 +350,78 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole }) => {
 
           {activeTab === 'Financials' && (
               <div className="h-full overflow-y-auto p-8 custom-scrollbar space-y-8">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {entity.role === EntityRole.HOLDING_TRUST && (
-                          <TrustTaxForm entityId={entity.id} modules={store.modules} onSubmit={(d, a, m, meth) => { /* logic */ }} />
-                      )}
-                      {entity.role === EntityRole.OPERATING_LLC && (
-                          <div className="space-y-6">
-                              <LLCContractorForm entityId={entity.id} contractors={store.contractors} modules={store.modules} onSubmit={() => {}} />
-                              <LLCMaterialsForm onSubmit={() => {}} />
-                          </div>
-                      )}
-                  </div>
-                  
-                  {/* New 1099 Builder Trigger */}
-                  <div className="bg-white p-6 rounded-xl border border-slate-200 flex items-center justify-between shadow-sm">
-                      <div className="flex items-center gap-4">
-                          <div className="p-3 bg-red-50 rounded-full text-red-600 border border-red-100">
-                              <FileText size={24} />
-                          </div>
-                          <div>
-                              <h3 className="font-bold text-slate-800 text-lg">1099 Filing Wizard</h3>
-                              <p className="text-slate-500 text-sm">Prepare and file Forms 1099-NEC, MISC, INT, and DIV.</p>
-                          </div>
-                      </div>
-                      <button 
-                        onClick={() => openWizard('1099')}
-                        className="bg-slate-900 text-white px-6 py-3 rounded-lg font-bold hover:bg-slate-800 shadow-md transition-colors flex items-center gap-2"
-                      >
-                          Launch Builder <ArrowRight size={16} />
-                      </button>
-                  </div>
-
                   <JournalRegister journals={store.journals} entityId={entity.id} />
-                  <CanalDepository entity={entity} />
-                  <FedGateway 
-                      entity={entity} 
-                      fedWires={store.fedWires} 
-                      crmPeople={store.crmPeople} 
-                      onOriginate={store.onOriginate} 
-                      onPostJournal={store.postJournal} 
-                  />
                   
-                  {/* Collateral & Real Estate Actions */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Real Estate / Capital Acquisition Trigger */}
-                      <div className="bg-slate-900 rounded-xl p-6 text-white flex justify-between items-center shadow-lg">
-                          <div>
-                              <h3 className="font-bold text-lg flex items-center gap-2"><Building2 className="text-emerald-400"/> Capital Asset Acquisition</h3>
-                              <p className="text-xs text-slate-400 mt-1">Execute purchase via Credit Instrument & Resolution.</p>
-                          </div>
-                          <button 
-                            onClick={() => openWizard('REAL_ESTATE')}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-bold text-xs transition-colors flex items-center gap-2"
-                          >
-                              Launch Workflow <Activity size={14}/>
-                          </button>
-                      </div>
-
-                      {/* Collateral Pool Manager Trigger */}
-                      <div className="bg-indigo-900 rounded-xl p-6 text-white flex justify-between items-center shadow-lg">
-                          <div>
-                              <h3 className="font-bold text-lg flex items-center gap-2"><Layers className="text-amber-400"/> Collateral Pools</h3>
-                              <p className="text-xs text-indigo-300 mt-1">Manage asset-backed securities and valuation policies.</p>
-                          </div>
-                          <button 
-                            onClick={() => openWizard('COLLATERAL')}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-xs transition-colors flex items-center gap-2"
-                          >
-                              Manage Pools <Shield size={14}/>
-                          </button>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {entity.role === EntityRole.HOLDING_TRUST && (
+                          <TrustTaxForm entityId={entity.id} modules={store.modules} onSubmit={(d, a, m, meth) => {
+                              store.postJournal(entity.id, d, `Estimated Tax Payment (${meth})`, 'TAX_PMT', [
+                                  { accountCode: '210000', dc: 'Debit', amount: a, accountName: 'Tax Liability' },
+                                  { accountCode: '101000', dc: 'Credit', amount: a, accountName: 'Operating Cash' }
+                              ]);
+                          }} />
+                      )}
+                      
+                      {entity.role === EntityRole.OPERATING_LLC && (
+                          <>
+                              <RunPayrollForm 
+                                entityId={entity.id} 
+                                employees={store.employees} 
+                                modules={store.modules} 
+                                onRunPayroll={store.runPayroll} 
+                              />
+                              <LLCContractorForm 
+                                entityId={entity.id} 
+                                contractors={store.contractors} 
+                                modules={store.modules} 
+                                onSubmit={(d, a, c, m, memo) => {
+                                    store.postJournal(entity.id, d, memo, 'CONTRACTOR_PMT', [
+                                        { accountCode: '500000', dc: 'Debit', amount: a, accountName: 'Contract Labor' },
+                                        { accountCode: '101000', dc: 'Credit', amount: a, accountName: 'Operating Cash' }
+                                    ]);
+                                }}
+                              />
+                              <LLCMaterialsForm onSubmit={(d, m, t, v, memo) => {
+                                  store.postJournal(entity.id, d, memo, 'MATERIALS', [
+                                      { accountCode: '500000', dc: 'Debit', amount: m, accountName: 'Materials Expense' },
+                                      { accountCode: '500000', dc: 'Debit', amount: t, accountName: 'Sales Tax Expense' },
+                                      { accountCode: '101000', dc: 'Credit', amount: m + t, accountName: 'Operating Cash' }
+                                  ]);
+                              }} />
+                          </>
+                      )}
                   </div>
               </div>
           )}
 
           {activeTab === 'Governance' && (
               <div className="h-full overflow-y-auto p-8 custom-scrollbar">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
-                      <FiduciaryGovernanceWidget 
-                          entity={entity} 
-                          currentUser={store.currentUser} 
-                          actions={store.fiduciaryActions} 
-                          onProposeAction={store.proposeFiduciaryAction} 
-                          onVote={store.voteFiduciaryAction} 
-                          onExecute={store.executeFiduciaryAction} 
-                      />
-                      <div className="space-y-6">
-                          <EscrowManager 
-                              entity={entity} 
-                              escrows={store.escrows} 
-                              crmPeople={store.crmPeople} 
-                              onAddEscrow={store.addEscrow} 
-                              onUpdateEscrow={store.updateEscrow} 
-                              onPostJournal={store.postJournal} 
-                          />
-                          <button onClick={() => openWizard('PRIVATE')} className="w-full p-4 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-slate-800 shadow-xl">
-                              Launch Private Admin Wizard
+                  <FiduciaryGovernanceWidget 
+                      entity={entity} 
+                      currentUser={store.currentUser} 
+                      actions={store.fiduciaryActions}
+                      onProposeAction={store.proposeFiduciaryAction}
+                      onVote={store.voteFiduciaryAction}
+                      onExecute={store.executeFiduciaryAction}
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                      <div className="bg-white p-6 rounded-xl border border-slate-200">
+                          <h3 className="font-bold text-slate-700 mb-4">Jurisdictional Migration</h3>
+                          <button 
+                            onClick={() => openWizard('RESITUS')}
+                            className="w-full py-2 bg-slate-900 text-white font-bold rounded hover:bg-slate-800 transition-colors text-xs"
+                          >
+                              Initiate Re-Situs / Domestication
+                          </button>
+                      </div>
+                      <div className="bg-white p-6 rounded-xl border border-slate-200">
+                          <h3 className="font-bold text-slate-700 mb-4">Exchange Protocol</h3>
+                          <button 
+                            onClick={() => openWizard('EXCHANGE')}
+                            className="w-full py-2 bg-indigo-600 text-white font-bold rounded hover:bg-indigo-700 transition-colors text-xs"
+                          >
+                              Instrument Exchange / Reversion
                           </button>
                       </div>
                   </div>
@@ -437,36 +430,77 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole }) => {
 
           {activeTab === 'Operations' && (
               <div className="h-full overflow-y-auto p-8 custom-scrollbar space-y-8">
-                  {entity.role === EntityRole.OPERATING_LLC ? (
-                      <>
-                          <HRHeadcountViewer 
-                              entity={entity} 
-                              employees={store.employees} 
-                              payrollRuns={store.payrollRuns} 
-                              onAddEmployee={() => openWizard('EMPLOYEE')}
-                          />
-                          <RunPayrollForm entityId={entity.id} employees={store.employees} modules={store.modules} onRunPayroll={store.runPayroll} />
-                      </>
-                  ) : (
-                      <div className="text-center py-20 text-slate-400 italic">
-                          Operational modules are primarily for LLC entities.
-                      </div>
-                  )}
-                  
-                  <CRMManager 
+                  <HRHeadcountViewer 
                       entity={entity} 
-                      people={store.crmPeople} 
-                      onAdd={store.addCRMPerson} 
-                      onUpdate={store.updateCRMPerson} 
-                      onDelete={store.deleteCRMPerson} 
-                      onAddInteraction={store.addInteraction} 
-                      currentUser={store.currentUser} 
+                      employees={store.employees} 
+                      payrollRuns={store.payrollRuns}
+                      onAddEmployee={() => openWizard('EMPLOYEE')} 
                   />
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                      <CRMManager 
+                          entity={entity}
+                          people={store.crmPeople}
+                          currentUser={store.currentUser}
+                          onAdd={store.addCRMPerson}
+                          onUpdate={store.updateCRMPerson}
+                          onDelete={store.deleteCRMPerson}
+                          onAddInteraction={store.addInteraction}
+                      />
+                      <div className="space-y-8">
+                          <FedGateway 
+                              entity={entity}
+                              fedWires={store.fedWires}
+                              crmPeople={store.crmPeople}
+                              onOriginate={store.onOriginate}
+                              onPostJournal={store.postJournal}
+                          />
+                          <ACHMovementWizard 
+                              entity={entity}
+                              onOriginate={store.originateACH}
+                          />
+                      </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <CanalDepository entity={entity} />
+                      <EscrowManager 
+                          entity={entity}
+                          escrows={store.escrows}
+                          crmPeople={store.crmPeople}
+                          onAddEscrow={store.addEscrow}
+                          onUpdateEscrow={store.updateEscrow}
+                          onPostJournal={store.postJournal}
+                      />
+                  </div>
               </div>
           )}
 
           {activeTab === 'Intelligence' && (
-              <AIStrategist entity={entity} />
+              <div className="h-full overflow-y-auto custom-scrollbar">
+                  <AIStrategist entity={entity} />
+                  <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="bg-white p-6 rounded-xl border border-slate-200">
+                          <h3 className="font-bold text-slate-700 mb-4">SEC EDGAR Research</h3>
+                          <button 
+                            onClick={() => openWizard('EDGAR')}
+                            className="w-full py-2 bg-slate-900 text-white font-bold rounded hover:bg-slate-800 transition-colors text-xs"
+                          >
+                              Launch Research Terminal
+                          </button>
+                      </div>
+                      <div className="bg-white p-6 rounded-xl border border-slate-200">
+                          <h3 className="font-bold text-slate-700 mb-4">Account Reconciliation</h3>
+                          <button 
+                            onClick={() => openWizard('ACCOUNT_RECON')}
+                            className="w-full py-2 bg-indigo-600 text-white font-bold rounded hover:bg-indigo-700 transition-colors text-xs"
+                          >
+                              Start Reconciliation Project
+                          </button>
+                      </div>
+                      <div className="col-span-2">
+                          <CollateralManagementWidget entity={entity} onClose={() => {}} />
+                      </div>
+                  </div>
+              </div>
           )}
 
       </div>

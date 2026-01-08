@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Entity, ReconciliationTask } from '../types';
+import { Entity, ReconciliationTask, ReconciliationTaskStatus } from '../types';
 import { 
   FileText, Shield, GanttChart, AlertTriangle, ArrowRight, 
   CheckCircle2, Clock, Scale, AlertOctagon, Printer, Copy,
-  ChevronRight, Play, Maximize, X
+  ChevronRight, Play, Maximize, X, Lock
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
@@ -33,6 +33,20 @@ export const AccountReconciliationWizard: React.FC<Props> = ({ entity, onClose }
   const [viewMode, setViewMode] = useState<'Chart' | 'Document'>('Chart');
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
+
+  // Helper to check dependencies
+  const getDependencyStatus = (task: ReconciliationTask) => {
+      if (!task.dependencies || task.dependencies.length === 0) return { locked: false, missing: [] };
+      
+      const missing = task.dependencies
+        .map(id => tasks.find(t => t.id === id))
+        .filter(t => t && t.status !== 'Completed') as ReconciliationTask[];
+      
+      return { 
+          locked: missing.length > 0, 
+          missing
+      };
+  };
 
   // --- Document Generators ---
 
@@ -83,18 +97,32 @@ export const AccountReconciliationWizard: React.FC<Props> = ({ entity, onClose }
   // --- Gantt Chart Logic ---
 
   const handleTaskAction = (task: ReconciliationTask) => {
+      const { locked } = getDependencyStatus(task);
+      if (locked) return;
+
       setSelectedTaskId(task.id);
       if (task.id === '3') generateAdminRequest();
       if (task.id === '2') generate4506TInstructions();
   };
 
-  const updateStatus = (id: string, status: ReconciliationTask['status']) => {
+  const updateStatus = (id: string, status: ReconciliationTaskStatus) => {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+          const { locked } = getDependencyStatus(task);
+          // Prevent moving to active states if locked
+          if (locked && (status === 'In Progress' || status === 'Completed')) {
+              return;
+          }
+      }
       setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
   };
 
   // Simple scale for Gantt
   const DAY_WIDTH = 12;
   const ROW_HEIGHT = 40;
+
+  // Calculate dependency state for selected task
+  const selectedTaskDeps = selectedTask ? getDependencyStatus(selectedTask) : { locked: false, missing: [] };
 
   return (
     <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 h-full flex flex-col font-sans overflow-hidden">
@@ -153,6 +181,8 @@ export const AccountReconciliationWizard: React.FC<Props> = ({ entity, onClose }
 
                         {tasks.map((task) => {
                             const isSelected = selectedTaskId === task.id;
+                            const { locked } = getDependencyStatus(task);
+                            
                             return (
                                 <div 
                                     key={task.id} 
@@ -161,8 +191,12 @@ export const AccountReconciliationWizard: React.FC<Props> = ({ entity, onClose }
                                 >
                                     {/* Task Name Column */}
                                     <div className="w-60 shrink-0 px-4 border-r border-slate-200 flex items-center justify-between bg-white z-10 h-full">
-                                        <div className="truncate text-xs font-bold text-slate-700">{task.name}</div>
-                                        <div className={`w-2 h-2 rounded-full ${task.status === 'Completed' ? 'bg-emerald-500' : task.status === 'Blocked' ? 'bg-red-500' : task.status === 'In Progress' ? 'bg-amber-500' : 'bg-slate-300'}`} />
+                                        <div className={`truncate text-xs font-bold ${locked ? 'text-slate-400' : 'text-slate-700'}`}>{task.name}</div>
+                                        {locked ? (
+                                            <Lock size={12} className="text-slate-300" />
+                                        ) : (
+                                            <div className={`w-2 h-2 rounded-full ${task.status === 'Completed' ? 'bg-emerald-500' : task.status === 'Blocked' ? 'bg-red-500' : task.status === 'In Progress' ? 'bg-amber-500' : 'bg-slate-300'}`} />
+                                        )}
                                     </div>
 
                                     {/* Bar */}
@@ -170,13 +204,12 @@ export const AccountReconciliationWizard: React.FC<Props> = ({ entity, onClose }
                                         <div 
                                             className={`absolute top-2 h-6 rounded flex items-center px-2 text-[9px] text-white font-bold cursor-pointer shadow-sm transition-all
                                                 ${task.track === 'Standard' ? 'bg-blue-500 hover:bg-blue-600' : task.track === 'FOIA' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-rose-500 hover:bg-rose-600'}
-                                                ${task.status === 'Blocked' ? 'opacity-50 grayscale' : ''}
+                                                ${(task.status === 'Blocked' || locked) ? 'opacity-40 grayscale cursor-not-allowed' : ''}
                                             `}
                                             style={{
                                                 left: `${task.startDay * DAY_WIDTH}px`,
                                                 width: `${Math.max(task.duration * DAY_WIDTH, 40)}px`
                                             }}
-                                            onClick={() => handleTaskAction(task)}
                                         >
                                             <span className="truncate">{task.track}</span>
                                         </div>
@@ -190,49 +223,83 @@ export const AccountReconciliationWizard: React.FC<Props> = ({ entity, onClose }
                     <div className="h-48 border-t border-slate-200 bg-slate-50 p-6 flex justify-between items-start shrink-0">
                         {selectedTask ? (
                             <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-2 mb-4">
                                     <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${selectedTask.track === 'Standard' ? 'bg-blue-500' : selectedTask.track === 'FOIA' ? 'bg-emerald-500' : 'bg-rose-500'}`}>
                                         {selectedTask.track} Track
                                     </span>
                                     <h3 className="text-lg font-bold text-slate-800">{selectedTask.name}</h3>
+                                    {selectedTaskDeps.locked && (
+                                        <span className="text-[10px] bg-slate-200 text-slate-500 border border-slate-300 px-2 py-0.5 rounded flex items-center gap-1 font-bold uppercase">
+                                            <Lock size={10} /> Locked
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="grid grid-cols-2 gap-8 text-sm text-slate-600 mb-4">
-                                    <div>
-                                        <span className="block text-[10px] text-slate-400 uppercase font-bold">Timeline</span>
-                                        Day {selectedTask.startDay} - Day {selectedTask.startDay + selectedTask.duration}
+
+                                {selectedTaskDeps.locked ? (
+                                    <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-xs text-amber-800 flex items-start gap-2 max-w-lg mb-4">
+                                        <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                                        <div>
+                                            <strong>Prerequisites Required:</strong>
+                                            <div className="mt-1">
+                                                This task cannot be started until the following are completed:
+                                                <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                                                    {selectedTaskDeps.missing.map(t => (
+                                                        <li key={t.id}>{t.name}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span className="block text-[10px] text-slate-400 uppercase font-bold">Status</span>
-                                        <select 
-                                            value={selectedTask.status} 
-                                            onChange={(e) => updateStatus(selectedTask.id, e.target.value as any)}
-                                            className="bg-white border rounded px-2 py-1 text-xs"
-                                        >
-                                            <option>Pending</option>
-                                            <option>In Progress</option>
-                                            <option>Completed</option>
-                                            <option>Blocked</option>
-                                        </select>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-8 text-sm text-slate-600 mb-4 max-w-lg">
+                                        <div>
+                                            <span className="block text-[10px] text-slate-400 uppercase font-bold">Timeline</span>
+                                            Day {selectedTask.startDay} - Day {selectedTask.startDay + selectedTask.duration}
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] text-slate-400 uppercase font-bold">Current Status</span>
+                                            <select 
+                                                value={selectedTask.status} 
+                                                onChange={(e) => updateStatus(selectedTask.id, e.target.value as any)}
+                                                className="bg-white border border-slate-300 rounded px-2 py-1 text-xs w-full mt-1 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                            >
+                                                <option value="Pending">Pending</option>
+                                                <option value="In Progress">In Progress</option>
+                                                <option value="Completed">Completed</option>
+                                                <option value="Blocked">Blocked</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
+
                                 {selectedTask.actionLabel && (
                                     <button 
                                         onClick={() => handleTaskAction(selectedTask)}
-                                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 flex items-center gap-2 shadow-sm"
+                                        disabled={selectedTaskDeps.locked}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm transition-all ${
+                                            selectedTaskDeps.locked 
+                                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                                            : 'bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95'
+                                        }`}
                                     >
-                                        <Play size={12} /> {selectedTask.actionLabel}
+                                        {selectedTaskDeps.locked ? <Lock size={12} /> : <Play size={12} />} 
+                                        {selectedTask.actionLabel}
                                     </button>
                                 )}
                             </div>
                         ) : (
-                            <div className="text-center w-full text-slate-400 italic mt-4">Select a task from the timeline to view details.</div>
+                            <div className="text-center w-full text-slate-400 italic mt-4 flex flex-col items-center justify-center h-full">
+                                <GanttChart size={32} className="opacity-20 mb-2" />
+                                Select a task from the timeline to view details and execute actions.
+                            </div>
                         )}
                         
-                        <div className="w-64 bg-white p-4 rounded-lg border border-slate-200 text-xs space-y-2">
-                            <h4 className="font-bold text-slate-700 border-b pb-1">Legend</h4>
+                        <div className="w-64 bg-white p-4 rounded-lg border border-slate-200 text-xs space-y-2 shrink-0">
+                            <h4 className="font-bold text-slate-700 border-b pb-1 mb-2">Legend</h4>
                             <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded"></div> Standard (4506-T)</div>
                             <div className="flex items-center gap-2"><div className="w-3 h-3 bg-emerald-500 rounded"></div> Enhanced (FOIA/6103)</div>
                             <div className="flex items-center gap-2"><div className="w-3 h-3 bg-rose-500 rounded"></div> Escalation</div>
+                            <div className="flex items-center gap-2 text-slate-400"><Lock size={12} /> Dependency Locked</div>
                         </div>
                     </div>
                 </div>
