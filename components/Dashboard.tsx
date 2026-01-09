@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Entity, EntityRole, EntityType } from '../types';
+import { Entity, EntityRole, EntityType, Account, DCFlag } from '../types';
 import { useLedgerStore } from '../services/ledgerService';
 import { UseCaseLogger } from '../services/useCaseLogger'; // Import
 import { ComplianceWidget } from './ComplianceWidget';
@@ -16,7 +16,7 @@ import { BSOHierarchyViewer } from './BSOHierarchyViewer';
 import { SimulatedTimelineViewer } from './SimulatedTimelineViewer';
 import { ConsolidatedTracker } from './ConsolidatedTracker';
 import { JournalRegister } from './JournalRegister';
-import { FractalViewer } from './FractalViewer'; // NEW IMPORT
+import { FractalViewer } from './FractalViewer'; 
 // Wizards
 import { BSOWizard } from './BSOWizard';
 import { W2ReportingWizard } from './W2ReportingWizard';
@@ -58,10 +58,11 @@ import { AccountReconciliationWizard } from './AccountReconciliationWizard';
 import { CollateralManagementWidget } from './CollateralManagementWidget'; 
 import { TenNinetyNineWizard } from './TenNinetyNineWizard'; 
 import { CreditUnionWizard } from './CreditUnionWizard';
+import { InterCompanyLoanModal } from './modals/InterCompanyLoanModal';
 
 import { 
   Building2, Shield, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock, UserCog,
-  Briefcase, Activity, FileText, Upload, Plus, Layers, ArrowRight, Landmark
+  Briefcase, Activity, FileText, Upload, Plus, Layers, ArrowRight, Landmark, DollarSign, Wallet, TrendingUp
 } from 'lucide-react';
 
 interface Props {
@@ -90,12 +91,18 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
 
   const entityFilings = store.filings.filter(f => f.entityId === entity.id);
   const childrenEntities = store.entities.filter(e => e.parentEntityId === entity.id);
+  const entityAccounts = store.accounts.filter(a => a.entityId === entity.id);
 
-  // Helper to get subtree for Structure View (Prevent Infinite Loop)
+  // Financial HUD Logic
+  const totalCash = entityAccounts.filter(a => a.type === 'Asset' && (a.name.includes('Cash') || a.code.startsWith('10'))).reduce((s, a) => s + a.balance, 0);
+  const totalReceivables = entityAccounts.filter(a => a.type === 'Asset' && (a.name.includes('Receivable') || a.code.startsWith('11'))).reduce((s, a) => s + a.balance, 0);
+  const totalPayables = entityAccounts.filter(a => a.type === 'Liability' && (a.name.includes('Payable') || a.code.startsWith('20'))).reduce((s, a) => s + a.balance, 0);
+  const totalEquity = entityAccounts.filter(a => a.type === 'Equity').reduce((s, a) => s + (a.normalBalance === DCFlag.Credit ? a.balance : -a.balance), 0);
+
+  // Structure View
   const structureEntities = useMemo(() => {
       const result = new Set<string>([entity.id]);
       const queue = [entity.id];
-      // Keep track of visited nodes to prevent cycles
       const visited = new Set<string>([entity.id]);
       
       while(queue.length > 0) {
@@ -112,7 +119,6 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
       return store.entities.filter(e => result.has(e.id));
   }, [entity.id, store.entities]);
 
-  // Helper Wrapper for logging
   const openWizard = (id: string) => {
       UseCaseLogger.log('UI', 'Opened Wizard', { wizard: id, entity: entity.name });
       setShowWizard(id);
@@ -128,15 +134,27 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
       setActiveTab(tab);
   };
 
-  // Helper to render wizard modal
   const renderWizardModal = () => {
       if (!showWizard) return null;
       
       switch(showWizard) {
+          // New Loan Modal
+          case 'LOAN_FROM_TRUST': 
+            return (
+                <InterCompanyLoanModal 
+                    borrowerEntity={entity}
+                    entities={store.entities}
+                    accounts={store.accounts}
+                    onPostJournal={store.postJournal}
+                    onClose={closeWizard}
+                />
+            );
+          
+          // Existing Wizards
           case 'BSO': return <WizardModalWrapper onClose={closeWizard}><BSOWizard entity={entity} onComplete={closeWizard} /></WizardModalWrapper>;
           case 'W2': return <WizardModalWrapper onClose={closeWizard}><W2ReportingWizard entity={entity} onComplete={closeWizard} /></WizardModalWrapper>;
           case 'TREASURY': return <WizardModalWrapper onClose={closeWizard}><TreasuryDirectWizard entity={entity} onComplete={store.completeFSForm1010} onClose={closeWizard} /></WizardModalWrapper>;
-          case 'MARAD': return <WizardModalWrapper onClose={closeWizard}><MARADAuthorityWizard entity={entity} onComplete={() => {}} onPostJournal={store.postJournal} onClose={closeWizard} /></WizardModalWrapper>;
+          case 'MARAD': return <WizardModalWrapper onClose={closeWizard}><MARADAuthorityWizard entity={entity} onComplete={store.addMaradRecord} onPostJournal={store.postJournal} onClose={closeWizard} /></WizardModalWrapper>;
           case 'FORENSIC': return <WizardModalWrapper onClose={closeWizard}><ForensicBondWizard entity={entity} /></WizardModalWrapper>;
           case 'BANKRUPTCY': return <WizardModalWrapper onClose={closeWizard}><BankruptcyWizard entity={entity} onComplete={closeWizard} /></WizardModalWrapper>;
           case 'RESITUS': return <WizardModalWrapper onClose={closeWizard}><ResitusWizard entity={entity} onComplete={store.completeReSitus} /></WizardModalWrapper>;
@@ -165,11 +183,23 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
           case 'AGENCY_CERT': return <WizardModalWrapper onClose={closeWizard}><AgencyCertificationWizard entity={entity} onComplete={store.completeCertification} onClose={closeWizard} /></WizardModalWrapper>;
           case 'ACCOUNT_RECON': return <WizardModalWrapper onClose={closeWizard}><AccountReconciliationWizard entity={entity} onClose={closeWizard} /></WizardModalWrapper>;
           case 'COLLATERAL': return <CollateralManagementWidget entity={entity} onClose={closeWizard} />;
-          case '1099': return <WizardModalWrapper onClose={closeWizard}><TenNinetyNineWizard entity={entity} contractors={store.contractors} onComplete={() => {}} onClose={closeWizard} /></WizardModalWrapper>;
+          case '1099': return <WizardModalWrapper onClose={closeWizard}><TenNinetyNineWizard entity={entity} contractors={store.contractors} onComplete={store.addFiling} onClose={closeWizard} /></WizardModalWrapper>;
           case 'CREDIT_UNION': return <WizardModalWrapper onClose={closeWizard}><CreditUnionWizard parentEntity={entity} onClose={closeWizard} /></WizardModalWrapper>;
           default: return null;
       }
   };
+
+  const StatCard = ({ title, value, color }: { title: string, value: number, color: string }) => (
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-28">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{title}</span>
+          <div className={`text-3xl font-mono font-bold tracking-tight ${color}`}>
+              ${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </div>
+          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
+              <div className={`h-full opacity-50 ${color.replace('text-', 'bg-')} w-2/3`}></div>
+          </div>
+      </div>
+  );
 
   return (
     <div className="h-full flex flex-col bg-slate-50 overflow-hidden relative">
@@ -230,17 +260,47 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
           
           {activeTab === 'Overview' && (
               <div className="h-full overflow-y-auto p-8 custom-scrollbar">
+                  
+                  {/* Financial HUD - Banking Style */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                      <StatCard title="Operating Cash" value={totalCash} color="text-emerald-600" />
+                      <StatCard title="Total Receivables" value={totalReceivables} color="text-blue-600" />
+                      <StatCard title="Total Payables" value={totalPayables} color="text-rose-500" />
+                      <StatCard title="Net Equity" value={totalEquity} color="text-indigo-600" />
+                  </div>
+
                   <div className="grid grid-cols-12 gap-8">
                       <div className="col-span-12 lg:col-span-8 space-y-8">
+                          {/* Main Ledger Graph */}
+                          <SimulatedTimelineViewer entity={entity} />
                           <ConsolidatedTracker 
                               parent={entity} 
                               childrenEntities={childrenEntities}
                               allFilings={store.filings}
                               allModules={store.modules}
                           />
-                          <SimulatedTimelineViewer entity={entity} />
                       </div>
                       <div className="col-span-12 lg:col-span-4 space-y-8">
+                          {/* Quick Banking Actions */}
+                          <div className="bg-slate-900 p-6 rounded-xl border border-slate-800 text-white shadow-xl">
+                              <h3 className="text-sm font-bold text-slate-400 uppercase mb-4 flex items-center gap-2"><Landmark size={14}/> Capital Injection</h3>
+                              <button 
+                                onClick={() => openWizard('LOAN_FROM_TRUST')}
+                                className="w-full p-4 bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center justify-between group transition-all"
+                              >
+                                  <div className="text-left">
+                                      <div className="font-bold text-sm">Fund this Entity</div>
+                                      <div className="text-[10px] opacity-80">Loan from Parent Trust</div>
+                                  </div>
+                                  <div className="p-2 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors">
+                                      <DollarSign size={18} />
+                                  </div>
+                              </button>
+                              <div className="mt-4 text-[10px] text-slate-500 text-center">
+                                  Use this to open books with a ledgered loan between entities.
+                              </div>
+                          </div>
+
                           <TicklerManager 
                               entity={entity} 
                               ticks={store.ticks} 
@@ -248,41 +308,18 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
                               onUpdateTick={store.updateTick} 
                           />
                           
-                          {/* Shortcuts */}
+                          {/* Other Shortcuts */}
                           <div className="bg-white p-6 rounded-xl border border-slate-200">
                               <h3 className="text-sm font-bold text-slate-700 uppercase mb-4">Action Shortcuts</h3>
                               <div className="grid grid-cols-2 gap-3">
-                                  {entity.role === EntityRole.HOLDING_TRUST && (
-                                      <>
-                                          <button onClick={() => openWizard('CERT')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Issue Certs</button>
-                                          <button onClick={() => openWizard('INDENTURE')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Trust Indenture</button>
-                                          <button onClick={() => openWizard('AUDIT')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Fiduciary Audit</button>
-                                          <button onClick={() => openWizard('DTCC')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">DTCC Pledge</button>
-                                          <button onClick={() => openWizard('PARCEL')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Parcel Lookup</button>
-                                          <button onClick={() => openWizard('GIFT')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Gift Tax (709)</button>
-                                      </>
-                                  )}
-                                  {entity.role === EntityRole.OPERATING_LLC && (
-                                      <>
-                                          <button onClick={() => openWizard('CONTRACTOR')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Contractors</button>
-                                          <button onClick={() => openWizard('EMPLOYEE')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Employees</button>
-                                          <button onClick={() => openWizard('1099')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">File 1099s</button>
-                                          <button onClick={() => openWizard('BSO')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">BSO Register</button>
-                                          <button onClick={() => openWizard('W2')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">W-2 Report</button>
-                                          <button onClick={() => openWizard('MARAD')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">MARAD</button>
-                                      </>
-                                  )}
-                                  {entity.type === EntityType.INDIVIDUAL && (
-                                      <>
-                                          <button onClick={() => openWizard('CREDIT')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Credit Defense</button>
-                                          <button onClick={() => openWizard('PRIVATE')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Private Admin</button>
-                                      </>
-                                  )}
-                                  
                                   {/* Universal Shortcuts */}
                                   <button onClick={() => openWizard('CREDIT_UNION')} className="p-3 text-xs bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-200 text-left font-bold text-indigo-700 col-span-2 flex items-center justify-center gap-2"><Landmark size={14}/> Launch Credit Union</button>
                                   <button onClick={() => openWizard('TREASURY')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">TreasuryDirect</button>
                                   <button onClick={() => openWizard('LEGAL')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600">Legal Forms</button>
+                                  
+                                  {entity.role === EntityRole.HOLDING_TRUST && (
+                                      <button onClick={() => openWizard('CERT')} className="p-3 text-xs bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 text-left font-bold text-slate-600 col-span-2">Issue Trust Certificates</button>
+                                  )}
                               </div>
                           </div>
                       </div>

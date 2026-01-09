@@ -304,6 +304,14 @@ export interface FuzzConfig {
 export interface SystemSettings {
   fuzzing: FuzzConfig;
   network: string;
+  firebaseConfig?: {
+    apiKey: string;
+    authDomain: string;
+    projectId: string;
+    storageBucket: string;
+    messagingSenderId: string;
+    appId: string;
+  };
 }
 
 export type TransmissionStatus = 'Accepted' | 'Rejected' | 'Pending';
@@ -683,7 +691,7 @@ export interface ClosingRecord {
   status: 'Recorded';
 }
 
-export type LegalInstrumentType = 'Appearance Bond' | 'Writ of Possession' | 'Capias Warrant';
+export type LegalInstrumentType = 'Appearance Bond' | 'Writ of Possession' | 'Capias Warrant' | 'Power of Attorney' | 'Fiduciary Notice';
 
 export interface LegalInstrument {
   id: string;

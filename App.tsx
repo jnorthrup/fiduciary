@@ -11,6 +11,22 @@ import { IRMTreeWidget } from './components/IRMTreeWidget';
 import { UserProfileModal } from './components/modals/UserProfileModal';
 import { TwoFactorAuthModal } from './components/modals/TwoFactorAuthModal';
 import { User } from './types';
+import { ReceiptCaptureWizard } from './components/ReceiptCaptureWizard';
+import { FedGateway } from './components/FedGateway'; // Reusing FedGateway logic via context if needed, or opening Dashboard tab
+import { ACHMovementWizard } from './components/ACHMovementWizard';
+import { LLCContractorForm } from './components/forms/LLCContractorForm';
+import { X } from 'lucide-react';
+
+const WizardModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => (
+  <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden relative">
+      <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 bg-slate-100 rounded-full hover:bg-slate-200">
+        <X />
+      </button>
+      {children}
+    </div>
+  </div>
+);
 
 export const App = () => {
   const store = useLedgerStore();
@@ -25,6 +41,9 @@ export const App = () => {
   const [showApiConsole, setShowApiConsole] = useState(false);
   const [showIRM, setShowIRM] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  // Quick Action Modal States
+  const [quickAction, setQuickAction] = useState<'Invoice' | 'Receipt' | 'Payment' | 'Wire' | null>(null);
 
   // Derived state
   const activeEntity = activeEntityId ? store.entities.find((e: any) => e.id === activeEntityId) : null;
@@ -45,6 +64,9 @@ export const App = () => {
     );
   }
 
+  // Quick Action Handlers
+  const closeQuickAction = () => setQuickAction(null);
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
       <Sidebar 
@@ -61,6 +83,11 @@ export const App = () => {
         onUpdateUser={store.updateUser}
         onDeleteUser={store.deleteUser}
         onEditUser={setEditingUser}
+        // Quick Actions
+        onQuickInvoice={() => setQuickAction('Invoice')}
+        onQuickReceipt={() => setQuickAction('Receipt')}
+        onQuickPayment={() => setQuickAction('Payment')}
+        onQuickWire={() => setQuickAction('Wire')}
       />
 
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
@@ -83,6 +110,63 @@ export const App = () => {
           />
         )}
       </div>
+
+      {/* QUICK ACTION MODALS (Global Context) */}
+      {activeEntity && quickAction === 'Receipt' && (
+          <ReceiptCaptureWizard 
+              entityId={activeEntity.id} 
+              accounts={store.accounts}
+              onPost={(d, m, t, l) => store.postJournal(activeEntity.id, d, m, t, l)}
+              onClose={closeQuickAction}
+          />
+      )}
+
+      {activeEntity && quickAction === 'Wire' && (
+          <WizardModalWrapper onClose={closeQuickAction}>
+              <FedGateway 
+                  entity={activeEntity}
+                  fedWires={store.fedWires}
+                  crmPeople={store.crmPeople}
+                  onOriginate={store.onOriginate}
+                  onPostJournal={store.postJournal}
+              />
+          </WizardModalWrapper>
+      )}
+
+      {activeEntity && quickAction === 'Payment' && (
+          <WizardModalWrapper onClose={closeQuickAction}>
+              <ACHMovementWizard 
+                  entity={activeEntity}
+                  onOriginate={store.originateACH}
+              />
+          </WizardModalWrapper>
+      )}
+
+      {activeEntity && quickAction === 'Invoice' && (
+          <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden relative">
+                  <button onClick={closeQuickAction} className="absolute top-4 right-4 z-50 p-2 bg-slate-100 rounded-full hover:bg-slate-200"><X/></button>
+                  <LLCContractorForm 
+                      entityId={activeEntity.id}
+                      contractors={store.contractors}
+                      modules={store.modules}
+                      onSubmit={(d, a, c, m, memo) => {
+                          // Inverted logic for AR (Invoice Creation) vs AP (Contractor Pay)
+                          // Ideally we'd have a separate AR form, reusing this for simplicity as a "Bill"
+                          store.postJournal(activeEntity.id, d, memo, 'INVOICE_GEN', [
+                              { accountCode: '110000', dc: 'Debit', amount: a, accountName: 'Accounts Receivable' },
+                              { accountCode: '400000', dc: 'Credit', amount: a, accountName: 'Sales Revenue' }
+                          ]);
+                          closeQuickAction();
+                      }}
+                  />
+                  <div className="bg-indigo-50 p-4 text-center text-xs font-bold text-indigo-700">
+                      Generating Revenue Invoice (Accounts Receivable)
+                  </div>
+              </div>
+          </div>
+      )}
+
 
       {/* Modals & Overlays */}
       {store.is2FAOpen && (
