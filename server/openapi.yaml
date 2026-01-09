@@ -1,0 +1,380 @@
+openapi: 3.1.0
+info:
+  title: CouchDB-Compatible API
+  version: 1.0.0
+  description: |
+    A CouchDB-compatible document database API backed by DuckDB.
+    Implements core CouchDB endpoints for document storage, retrieval, and querying.
+
+servers:
+  - url: http://localhost:3001
+    description: Local development server
+
+paths:
+  /{db}:
+    put:
+      operationId: createDatabase
+      summary: Create a database
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+      responses:
+        '201':
+          description: Database created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+        '412':
+          description: Database already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      operationId: getDatabaseInfo
+      summary: Get database information
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+      responses:
+        '200':
+          description: Database info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseInfo'
+        '404':
+          description: Database not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      operationId: deleteDatabase
+      summary: Delete a database
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+      responses:
+        '200':
+          description: Database deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+
+  /{db}/{docid}:
+    get:
+      operationId: getDocument
+      summary: Get a document
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Document found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      operationId: putDocument
+      summary: Create or update a document
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentInput'
+      responses:
+        '201':
+          description: Document created/updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '409':
+          description: Revision conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      operationId: deleteDocument
+      summary: Delete a document
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/DocumentId'
+        - name: rev
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Current revision ID
+      responses:
+        '200':
+          description: Document deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '409':
+          description: Revision conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{db}/_all_docs:
+    get:
+      operationId: getAllDocs
+      summary: List all documents
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - name: include_docs
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Document list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllDocsResponse'
+
+    post:
+      operationId: postAllDocs
+      summary: List documents with keys
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keys:
+                  type: array
+                  items:
+                    type: string
+                include_docs:
+                  type: boolean
+      responses:
+        '200':
+          description: Document list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllDocsResponse'
+
+  /{db}/_find:
+    post:
+      operationId: findDocuments
+      summary: Query documents using Mango selector
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FindRequest'
+      responses:
+        '200':
+          description: Query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindResponse'
+
+  /{db}/_bulk_docs:
+    post:
+      operationId: bulkDocs
+      summary: Bulk document operations
+      parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkDocsRequest'
+      responses:
+        '201':
+          description: Bulk operation results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BulkDocResult'
+
+components:
+  parameters:
+    DatabaseName:
+      name: db
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Database name
+
+    DocumentId:
+      name: docid
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Document ID
+
+  schemas:
+    OkResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          const: true
+      required: [ok]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        reason:
+          type: string
+      required: [error, reason]
+
+    DatabaseInfo:
+      type: object
+      properties:
+        db_name:
+          type: string
+        doc_count:
+          type: integer
+        update_seq:
+          type: integer
+
+    Document:
+      type: object
+      properties:
+        _id:
+          type: string
+        _rev:
+          type: string
+      additionalProperties: true
+
+    DocumentInput:
+      type: object
+      properties:
+        _rev:
+          type: string
+          description: Required for updates
+      additionalProperties: true
+
+    DocumentResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        id:
+          type: string
+        rev:
+          type: string
+      required: [ok, id, rev]
+
+    AllDocsResponse:
+      type: object
+      properties:
+        total_rows:
+          type: integer
+        offset:
+          type: integer
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              key:
+                type: string
+              value:
+                type: object
+                properties:
+                  rev:
+                    type: string
+              doc:
+                $ref: '#/components/schemas/Document'
+
+    FindRequest:
+      type: object
+      properties:
+        selector:
+          type: object
+          description: Mango selector
+        fields:
+          type: array
+          items:
+            type: string
+        limit:
+          type: integer
+          default: 25
+        skip:
+          type: integer
+          default: 0
+      required: [selector]
+
+    FindResponse:
+      type: object
+      properties:
+        docs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+
+    BulkDocsRequest:
+      type: object
+      properties:
+        docs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentInput'
+      required: [docs]
+
+    BulkDocResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        id:
+          type: string
+        rev:
+          type: string
+        error:
+          type: string
+        reason:
+          type: string
