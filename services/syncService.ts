@@ -109,7 +109,7 @@ export async function startSync(): Promise<void> {
         })
         .on('paused', (err) => {
             if (err) {
-                updateState({ status: 'error', error: err.message });
+                updateState({ status: 'error', error: (err as any).message });
             } else {
                 updateState({ status: 'idle' });
             }
@@ -118,10 +118,10 @@ export async function startSync(): Promise<void> {
             updateState({ status: 'syncing', error: null });
         })
         .on('denied', (err) => {
-            updateState({ status: 'error', error: `Access denied: ${err?.message}` });
+            updateState({ status: 'error', error: `Access denied: ${(err as any)?.message}` });
         })
         .on('error', (err) => {
-            updateState({ status: 'error', error: err.message });
+            updateState({ status: 'error', error: (err as any).message });
         });
 
     // Handle offline/online transitions

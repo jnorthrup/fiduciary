@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Building2, ShieldCheck, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock, UserCog } from 'lucide-react';
+import { Building2, ShieldCheck, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock, UserCog, PlusCircle, Receipt, CreditCard, ArrowRightLeft, Landmark } from 'lucide-react';
 import { Entity, EntityRole, User } from '../types';
 import { TeamManagementModal } from './modals/TeamManagementModal';
 import { UseCaseLogger } from '../services/useCaseLogger'; // Import
@@ -19,11 +19,17 @@ interface SidebarProps {
   onUpdateUser: (user: User) => void;
   onDeleteUser: (id: string) => void;
   onEditUser: (user: User) => void;
+  // New Quick Actions
+  onQuickInvoice: () => void;
+  onQuickReceipt: () => void;
+  onQuickPayment: () => void;
+  onQuickWire: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
     activeEntityId, onSelectEntity, onOpenIRM, onOpenSettings, entities, isOpen, onClose,
-    currentUser, users, onAddUser, onUpdateUser, onDeleteUser, onEditUser
+    currentUser, users, onAddUser, onUpdateUser, onDeleteUser, onEditUser,
+    onQuickInvoice, onQuickReceipt, onQuickPayment, onQuickWire
 }) => {
   const [showTeamModal, setShowTeamModal] = useState(false);
 
@@ -36,12 +42,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       onClose();
   };
 
-  const NavItem = ({ icon: Icon, label, active, onClick, color = "text-slate-400" }: any) => (
+  const NavItem = ({ icon: Icon, label, active, onClick, color = "text-slate-400", bgActive = "bg-indigo-600" }: any) => (
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
         active 
-          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40' 
+          ? `${bgActive} text-white shadow-lg` 
           : 'text-slate-400 hover:bg-slate-800 hover:text-white'
       }`}
     >
@@ -65,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex justify-between items-center mb-1">
              <div className="flex items-center gap-3">
                 <div className="p-2 bg-indigo-600 rounded-lg shadow-inner">
-                    <ShieldCheck className="h-6 w-6 text-white" />
+                    <Landmark className="h-6 w-6 text-white" />
                 </div>
                 <h1 className="text-white font-bold text-lg tracking-tighter leading-tight">
                   Trust Ledger<br/><span className="text-[10px] text-slate-500 uppercase tracking-[0.3em]">Institutional</span>
@@ -76,20 +82,51 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto no-scrollbar">
-          {/* Global Actions */}
-          <div className="space-y-1">
-            <NavItem 
-                label="Infrastructure" 
-                icon={Globe} 
-                active={activeEntityId === null} 
-                onClick={() => handleSelect(null, 'Infrastructure')} 
-            />
-          </div>
+          
+          {/* BANKING OPS - Prioritized */}
+          {activeEntityId && (
+            <div className="space-y-2">
+              <p className="px-4 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                 Banking Operations
+              </p>
+              <NavItem 
+                  label="Create Invoice" 
+                  icon={PlusCircle} 
+                  color="text-emerald-400"
+                  onClick={onQuickInvoice} 
+              />
+              <NavItem 
+                  label="Snap Receipt" 
+                  icon={Receipt} 
+                  color="text-blue-400"
+                  onClick={onQuickReceipt} 
+              />
+              <NavItem 
+                  label="Make Payment" 
+                  icon={CreditCard} 
+                  color="text-rose-400"
+                  onClick={onQuickPayment} 
+              />
+              <NavItem 
+                  label="Send Wire" 
+                  icon={ArrowRightLeft} 
+                  color="text-amber-400"
+                  onClick={onQuickWire} 
+              />
+            </div>
+          )}
 
           {/* Organizational Hierarchy */}
           <div className="space-y-4">
              <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">Management Stack</p>
              <div className="space-y-1">
+                <NavItem 
+                    label="Global Overview" 
+                    icon={Globe} 
+                    active={activeEntityId === null} 
+                    onClick={() => handleSelect(null, 'Infrastructure')} 
+                />
+                <div className="my-2 border-t border-slate-800 mx-4"></div>
                 {roots.map(root => (
                     <div key={root.id}>
                         <NavItem 
@@ -125,7 +162,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </nav>
 
-        {/* User Profile Hook - Modified for nameless OWNER state */}
+        {/* User Profile Hook */}
         <div className="p-4 border-t border-slate-900 bg-slate-950/80">
           <button 
             onClick={() => currentUser.name && onEditUser(currentUser)}

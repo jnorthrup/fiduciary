@@ -37,9 +37,16 @@ export async function query(sql: string, params: any[] = []): Promise<any[]> {
 }
 
 
-export async function execute(sql: string): Promise<void> {
+export async function execute(sql: string, params: any[] = []): Promise<void> {
   const conn = await getConnection();
-  await conn.run(sql);
+
+  // Substitute parameters (basic implementation)
+  let finalSql = sql;
+  for (let i = 0; i < params.length; i++) {
+    finalSql = finalSql.replace('?', `'${String(params[i]).replace(/'/g, "''")}'`);
+  }
+
+  await conn.run(finalSql);
 }
 
 export async function initDb() {

@@ -9,8 +9,8 @@ import { UseCaseLogViewer } from './UseCaseLogViewer';
 import { CreditUnionWizard } from './CreditUnionWizard';
 import { useLedgerStore } from '../services/ledgerService';
 import { 
-  Activity, Network, LayoutGrid, Globe, SidebarClose, 
-  SidebarOpen, ShieldCheck, Cpu, Terminal, Landmark, 
+  Activity, Network, LayoutGrid, Globe, PanelLeftClose, 
+  PanelLeftOpen, ShieldCheck, Cpu, Terminal, Landmark, 
   X, Scale, Building2, ChevronRight, PlayCircle
 } from 'lucide-react';
 
@@ -115,7 +115,7 @@ export const SystemOverview: React.FC<Props> = ({
               className={`p-2 rounded-lg border transition-all ${showStream ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-200 text-slate-400 hover:text-slate-600'}`}
               title="Toggle Ledger Stream"
             >
-              {showStream ? <SidebarClose size={18} /> : <SidebarOpen size={18} />}
+              {showStream ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
             </button>
 
             <button 
