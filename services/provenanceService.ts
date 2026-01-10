@@ -102,11 +102,11 @@ export async function getProvenanceChain(citationId: string): Promise<Provenance
 /**
  * Get all rules that apply to an operation, with their constraint type
  */
-export function getOperationConstraints(operation: string): Array<{
+export async function getOperationConstraints(operation: string): Promise<Array<{
     citation: LegalCitation;
     effect: RuleEffect;
     provenanceChain: ProvenanceChain;
-}> {
+}>> {
     const results: Array<{
         citation: LegalCitation;
         effect: RuleEffect;
@@ -119,7 +119,7 @@ export function getOperationConstraints(operation: string): Array<{
                 results.push({
                     citation,
                     effect,
-                    provenanceChain: getProvenanceChain(citation.id)
+                    provenanceChain: await getProvenanceChain(citation.id)
                 });
             }
         }
