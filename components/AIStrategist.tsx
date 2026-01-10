@@ -28,7 +28,7 @@ export const AIStrategist: React.FC<{ entity: Entity }> = ({ entity }) => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
+            model: 'gemini-3-flash-preview',
             contents: `You are an elite Fiduciary Tax Strategist for the Trust Ledger System. 
             Analyze the following ledger data for a ${entity.role}:
             Entity: ${entity.name} (${entity.type})
@@ -41,7 +41,6 @@ export const AIStrategist: React.FC<{ entity: Entity }> = ({ entity }) => {
             Return ONLY a JSON array of objects with the following keys:
             title, impact, actionStep, reasoning, priority ('High'|'Medium'|'Low').`,
             config: {
-                thinkingConfig: { thinkingBudget: 32768 },
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.ARRAY,

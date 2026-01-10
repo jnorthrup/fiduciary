@@ -92,7 +92,7 @@ export const ParcelLookupWizard: React.FC<Props> = ({ entity, onRecordAsset }) =
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
+            model: 'gemini-3-flash-preview',
             contents: `Retrieve official municipal GIS data for: "${loc.display_name}". 
             Context: Coordinates are ${loc.lat}, ${loc.lon}.
             Provide: 

@@ -5,7 +5,7 @@ import * as types from '../types';
 import * as mockData from './mockData';
 import { simulateTransmission, searchIRSManual } from './irsApiService';
 import { UseCaseLogger } from './useCaseLogger';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { initFirebase, getDb, batchUpload } from './firebase';
 import { collection, onSnapshot, setDoc, doc } from 'firebase/firestore';
 
@@ -240,6 +240,60 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Persistence Key
   const STORAGE_KEY = 'trust_ledger_state';
+
+  // --- REAL-TIME STATUS FETCH ---
+  const initRealTimeStatus = async () => {
+    // Uses Gemini Grounding to get actual IRS system status
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: `Search for the current operational status of the following IRS systems:
+            1. Modernized e-File (MeF)
+            2. Affordable Care Act Information Returns (AIR)
+            3. Information Returns Intake System (IRIS)
+            
+            Return a JSON array of objects with keys: channel ('MeF', 'AIR', 'IRIS'), status ('Operational' | 'Degraded' | 'Maintenance'), latency (estimate 'Low' or 'High'), and uptime (e.g. '99%').
+            Based your answers on the most recent search results from irs.gov status pages.`,
+            config: {
+                tools: [{ googleSearch: {} }],
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            channel: { type: Type.STRING },
+                            status: { type: Type.STRING },
+                            latency: { type: Type.STRING },
+                            uptime: { type: Type.STRING }
+                        }
+                    }
+                }
+            }
+        });
+        
+        if (response.text) {
+            const realStatus = JSON.parse(response.text);
+            // Merge with existing static ones like FEDWIRE
+            setApiSystemStatus(prev => {
+                const combined = [...prev];
+                realStatus.forEach((s: any) => {
+                    const idx = combined.findIndex(p => p.channel === s.channel);
+                    if (idx >= 0) combined[idx] = s;
+                });
+                return combined;
+            });
+        }
+    } catch (e) {
+        // Silently fail on 429/Quota limit to avoid crashing app or showing error toasts
+        console.debug("Real-time status fetch skipped (Quota/Network). Using cached status.");
+    }
+  };
+
+  useEffect(() => {
+    initRealTimeStatus();
+  }, []);
 
   // --- FIREBASE SYNC HELPERS ---
   const connectToFirebase = async (config: any): Promise<boolean> => {

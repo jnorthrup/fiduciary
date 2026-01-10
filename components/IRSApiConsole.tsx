@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TransmissionLog, SystemStatus, SearchResult, CIRExtractType, DigitalWalletFilter, CIR_CANS } from '../types';
-import { Terminal, Activity, Search, Server, FileCode, CheckCircle2, AlertOctagon, X, Globe, Lock, ArrowLeft, Settings, ShieldAlert, Cpu, Zap, Wallet, Download, BarChart3, Hash } from 'lucide-react';
+import { Terminal, Activity, Search, Server, FileCode, CheckCircle2, AlertOctagon, X, Globe, Lock, ArrowLeft, Settings, ShieldAlert, Cpu, Zap, Wallet, Download, BarChart3, Hash, KeyRound, Shield, LogOut, Building, RefreshCw } from 'lucide-react';
 import { useLedgerStore } from '../services/ledgerService';
 import { generateCIRExtract } from '../services/irsApiService';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -15,6 +15,8 @@ interface Props {
   onClose: () => void;
 }
 
+type PortalType = 'MeF' | 'IRIS' | 'CAFR';
+
 export const IRSApiConsole: React.FC<Props> = ({ 
   transmissions, 
   systemStatus, 
@@ -24,6 +26,18 @@ export const IRSApiConsole: React.FC<Props> = ({
   onClose 
 }) => {
   const { secrets, settings, updateSecrets, updateSettings } = useLedgerStore();
+  
+  // Auth State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [selectedPortal, setSelectedPortal] = useState<PortalType>('MeF');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  
+  // Login Form State
+  const [loginId, setLoginId] = useState(''); // ETIN, TCC, or UserID
+  const [loginSecret, setLoginSecret] = useState(''); // AppID, API Key, or Password
+
+  // Console State
   const [activeTab, setActiveTab] = useState<'Logs' | 'Search' | 'System' | 'Config' | 'Sim' | 'CIR' | 'Series7'>('System');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTx, setSelectedTx] = useState<TransmissionLog | null>(null);
@@ -37,6 +51,85 @@ export const IRSApiConsole: React.FC<Props> = ({
   const [cusipQuery, setCusipQuery] = useState('');
   const [securityData, setSecurityData] = useState<any>(null);
   const [s7Loading, setS7Loading] = useState(false);
+
+  // Auto-fill form based on saved secrets when portal changes
+  useEffect(() => {
+      if (selectedPortal === 'MeF') {
+          setLoginId(secrets.irsEtin || '');
+          setLoginSecret(secrets.irsAppId || '');
+      } else if (selectedPortal === 'IRIS') {
+          setLoginId(secrets.bsoUserId || ''); // Reusing BSO ID field for IRIS TCC for demo
+          setLoginSecret(secrets.hmacKey || '');
+      } else {
+          setLoginId('');
+          setLoginSecret('');
+      }
+      setLoginError(null);
+  }, [selectedPortal, secrets]);
+
+  const handleLogin = async () => {
+      setLoginError(null);
+      if (!loginId || !loginSecret) {
+          setLoginError("Credentials required.");
+          return;
+      }
+
+      setAuthLoading(true);
+      
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+      try {
+          // Use Gemini to strictly validate format compliance
+          const response = await ai.models.generateContent({
+              model: 'gemini-3-flash-preview',
+              contents: `You are the ${selectedPortal} Gateway Protocol Validator.
+              Validate the syntax and checksum of these credentials against the official specifications. 
+              Strictly enforce IRS Publication 4164 (MeF), Pub 5717 (IRIS), or standard State API formats.
+              
+              Input ID: "${loginId}"
+              Input Secret: "${loginSecret}"
+              
+              Rules:
+              - MeF ETIN: Must be 5 digits.
+              - MeF AppID: Complex alphanumeric string.
+              - IRIS TCC: 5 alphanumeric characters.
+              - CAFR: Standard User ID format.
+              
+              Return a JSON object with:
+              - success: boolean (true only if formats are strictly correct)
+              - message: string (Technical reason for pass/fail, e.g. "E001: Invalid ETIN Length")
+              - token: string (A simulated SHA-256 session token if valid, null otherwise)
+              
+              Do not simulate random failures. Evaluate the input string strictly.`,
+              config: {
+                  responseMimeType: "application/json",
+                  responseSchema: {
+                      type: Type.OBJECT,
+                      properties: {
+                          success: { type: Type.BOOLEAN },
+                          message: { type: Type.STRING },
+                          token: { type: Type.STRING }
+                      },
+                      required: ["success", "message"]
+                  }
+              }
+          });
+
+          const result = JSON.parse(response.text);
+
+          if (result.success) {
+              setIsAuthenticated(true);
+          } else {
+              setLoginError(result.message || "Authentication Failed: Invalid Format");
+          }
+
+      } catch (err) {
+          console.error("Auth validation failed", err);
+          setLoginError("Gateway Error: Validation Service Unreachable.");
+      } finally {
+          setAuthLoading(false);
+      }
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +181,100 @@ export const IRSApiConsole: React.FC<Props> = ({
     }
   };
 
+  // --- LOGIN SCREEN RENDER ---
+  if (!isAuthenticated) {
+      return (
+        <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur flex justify-center items-center px-4">
+            <div className="w-full max-w-md bg-slate-950 border border-slate-800 rounded-xl shadow-2xl p-8 relative overflow-hidden">
+                <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white"><X size={20}/></button>
+                
+                <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500/20">
+                        <Shield className="text-indigo-500 h-8 w-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white tracking-tight">Secure Gateway Access</h2>
+                    <p className="text-slate-500 text-xs mt-2 uppercase tracking-widest">Authorized Personnel Only</p>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="grid grid-cols-3 gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                        {['MeF', 'IRIS', 'CAFR'].map(p => (
+                            <button
+                                key={p}
+                                onClick={() => setSelectedPortal(p as PortalType)}
+                                className={`py-2 text-[10px] font-bold uppercase rounded-md transition-all ${selectedPortal === p ? 'bg-indigo-600 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                                {p} Portal
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                {selectedPortal === 'MeF' ? 'ETIN / Transmitter ID' : selectedPortal === 'IRIS' ? 'Transmitter Control Code (TCC)' : 'Municipality ID'}
+                            </label>
+                            <div className="relative">
+                                <Activity className="absolute left-3 top-2.5 text-slate-600" size={16} />
+                                <input 
+                                    value={loginId}
+                                    onChange={e => setLoginId(e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-10 text-white font-mono text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                    placeholder={selectedPortal === 'MeF' ? '00000' : 'XXXXX'}
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                {selectedPortal === 'MeF' ? 'Application SysID' : 'API Secret Key'}
+                            </label>
+                            <div className="relative">
+                                <KeyRound className="absolute left-3 top-2.5 text-slate-600" size={16} />
+                                <input 
+                                    type="password"
+                                    value={loginSecret}
+                                    onChange={e => setLoginSecret(e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-10 text-white font-mono text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                    placeholder="••••••••••••••"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {loginError && (
+                        <div className="text-xs text-red-400 bg-red-900/20 p-3 rounded border border-red-900/50 flex items-center gap-2">
+                            <AlertOctagon size={14} /> {loginError}
+                        </div>
+                    )}
+
+                    <div className="flex gap-4">
+                        <button 
+                            onClick={() => { setLoginId('00000'); setLoginSecret('sys-app-001-test'); }}
+                            className="flex-1 py-3 border border-slate-700 text-slate-400 rounded-lg text-xs font-bold hover:bg-slate-900 hover:text-white transition-colors"
+                        >
+                            Auto-Fill Valid
+                        </button>
+                        <button 
+                            onClick={handleLogin}
+                            disabled={authLoading}
+                            className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-bold text-sm shadow-lg shadow-indigo-900/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                        >
+                            {authLoading ? 'Validating...' : 'Establish Session'}
+                        </button>
+                    </div>
+                </div>
+                
+                <div className="mt-8 pt-6 border-t border-slate-800 text-center">
+                    <p className="text-[10px] text-slate-600">
+                        {selectedPortal === 'MeF' ? 'Modernized e-File Gateway (A2A)' : selectedPortal === 'IRIS' ? 'Information Returns Intake System' : 'Comprehensive Annual Financial Report System'}
+                    </p>
+                </div>
+            </div>
+        </div>
+      );
+  }
+
+  // --- MAIN CONSOLE RENDER ---
   return (
     <div className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur flex justify-center items-start pt-4 md:pt-16 px-4 overflow-y-auto">
       <div className="w-full md:w-[95vw] max-w-6xl min-h-[600px] bg-slate-950 border border-slate-800 rounded-xl shadow-2xl flex flex-col overflow-hidden font-mono text-slate-300 relative mb-10 max-h-[90vh]">
@@ -96,12 +283,17 @@ export const IRSApiConsole: React.FC<Props> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-slate-800 bg-slate-900 gap-4 shrink-0">
           <div className="flex items-center justify-between md:justify-start gap-3">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-                <Terminal className="h-5 w-5 text-indigo-400" />
+              <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                <Terminal className="h-5 w-5 text-emerald-400" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-white uppercase tracking-wider">IRS Gateway / MeF</h2>
-                <p className="text-[10px] text-slate-500">Secure A2A Interface</p>
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                    {selectedPortal} Gateway
+                </h2>
+                <p className="text-[10px] text-emerald-500 flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> 
+                    SESSION_ACTIVE
+                </p>
               </div>
             </div>
             <button onClick={onClose} className="md:hidden text-slate-500 hover:text-white p-2">
@@ -120,7 +312,10 @@ export const IRSApiConsole: React.FC<Props> = ({
                 </button>
             ))}
             <div className="hidden md:block w-px bg-slate-800 h-6 mx-2"></div>
-            <button onClick={onClose} className="hidden md:block text-slate-500 hover:text-white">
+            <button onClick={() => setIsAuthenticated(false)} className="hidden md:block text-slate-500 hover:text-red-400" title="Disconnect">
+              <LogOut className="h-4 w-4" />
+            </button>
+            <button onClick={onClose} className="hidden md:block text-slate-500 hover:text-white ml-2">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -162,7 +357,7 @@ export const IRSApiConsole: React.FC<Props> = ({
                   <Lock className="h-4 w-4" /> Security Context
                 </h3>
                 <p className="text-xs text-slate-400 mb-4">
-                  Authenticated via ETIN-{secrets.irsEtin || 'XXXXX'} using 2048-bit RSA Certificate. 
+                  Authenticated via {selectedPortal} Gateway using 2048-bit RSA Certificate. 
                   All transmissions are encrypted via TLS 1.3.
                 </p>
                 <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">

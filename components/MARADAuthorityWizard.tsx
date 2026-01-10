@@ -53,7 +53,7 @@ export const MARADAuthorityWizard: React.FC<Props> = ({ entity, onComplete, onPo
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
+            model: 'gemini-3-flash-preview',
             contents: `Act as a Maritime Administration (MARAD) valuation expert under 46 U.S.C. Chapter 563 and Prize Law.
             Vessel: ${vesselName} (${vesselType}).
             Context: ${context}
@@ -72,7 +72,6 @@ export const MARADAuthorityWizard: React.FC<Props> = ({ entity, onComplete, onPo
             - reasoning: String (Brief logic)
             - subsidyDeduction: Number (Estimated)`,
             config: {
-                thinkingConfig: { thinkingBudget: 32768 },
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
