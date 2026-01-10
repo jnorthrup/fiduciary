@@ -13,7 +13,7 @@ interface Props {
 
 export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, onReset }) => {
   const { irsCreds, entities, updateIrsCredential, addIrsCredential, deleteIrsCredential, isCloudEnabled, connectToFirebase, pushLocalToCloud, settings } = useLedgerStore();
-  const [activeTab, setActiveTab] = useState<'Storage' | 'Backup' | 'Cloud' | 'Credentials' | 'Reset'>('Storage');
+  const [activeTab, setActiveTab] = useState<'Storage' | 'Backup' | 'Cloud' | 'Credentials' | 'Reset'>('Cloud'); // Default to Cloud tab for setup
   const [importStatus, setImportStatus] = useState<string>('');
   const [confirmReset, setConfirmReset] = useState(false);
   const [isWiping, setIsWiping] = useState(false);
@@ -34,8 +34,9 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
 
   // Initialize config from saved settings or environment
   useEffect(() => {
-      if (settings.firebaseConfig) {
+      if (settings.firebaseConfig && settings.firebaseConfig.apiKey) {
           setFbConfig(settings.firebaseConfig);
+          setShowJsonPaste(false);
       } else {
           // Attempt inference from environment variables
           const envConfig = {
@@ -49,6 +50,10 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
           
           if (envConfig.apiKey) {
               setFbConfig(envConfig);
+              setShowJsonPaste(false);
+          } else {
+              // If no config found, default to JSON paste mode for immediate manual entry
+              setShowJsonPaste(true);
           }
       }
   }, [settings.firebaseConfig]);
@@ -137,7 +142,10 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
 
   const handleParseJson = () => {
       try {
-          const parsed = JSON.parse(pastedJson);
+          // Allow for loose JSON (e.g. just the object without const firebaseConfig =)
+          const cleanJson = pastedJson.replace(/const firebaseConfig = /g, '').replace(/;/g, '');
+          const parsed = JSON.parse(cleanJson);
+          
           setFbConfig({
               apiKey: parsed.apiKey || '',
               authDomain: parsed.authDomain || '',
@@ -148,8 +156,9 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
           });
           setShowJsonPaste(false);
           setPastedJson('');
+          setCloudError(null);
       } catch (e) {
-          setCloudError("Invalid JSON format. Please paste the full configuration object.");
+          setCloudError("Invalid JSON format. Please paste the full configuration object (e.g., {'apiKey': '...', ...}).");
       }
   };
 
@@ -173,7 +182,7 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
         </div>
 
         <div className="flex border-b border-slate-200 shrink-0 overflow-x-auto">
-            {['Storage', 'Backup', 'Cloud', 'Credentials', 'Reset'].map(tab => (
+            {['Cloud', 'Storage', 'Backup', 'Credentials', 'Reset'].map(tab => (
                 <button
                     key={tab}
                     onClick={() => { setActiveTab(tab as any); setConfirmReset(false); }}
@@ -328,22 +337,26 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
                                     </div>
                                 </>
                             ) : (
-                                <div className="space-y-2">
+                                <div className="space-y-4">
                                     <div className="flex justify-between items-center">
-                                        <label className="block text-xs font-bold text-slate-500 uppercase">Paste JSON Config Object</label>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase">Paste Firebase Config Object</label>
                                         <button onClick={() => setShowJsonPaste(false)} className="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
                                     </div>
                                     <textarea 
                                         value={pastedJson}
                                         onChange={e => setPastedJson(e.target.value)}
-                                        className="w-full h-40 border rounded p-2 text-xs font-mono"
-                                        placeholder='{"apiKey": "...", "authDomain": "...", ...}'
+                                        className="w-full h-40 border rounded p-4 text-xs font-mono bg-slate-50"
+                                        placeholder='{
+  "apiKey": "...",
+  "authDomain": "...",
+  "projectId": "..."
+}'
                                     />
                                     <button 
                                         onClick={handleParseJson}
-                                        className="w-full py-2 bg-slate-100 border border-slate-200 text-slate-600 rounded font-bold text-xs hover:bg-slate-200"
+                                        className="w-full py-3 bg-slate-800 border border-slate-700 text-white rounded-lg font-bold text-xs hover:bg-slate-700 flex items-center justify-center gap-2"
                                     >
-                                        Parse & Fill
+                                        <Code size={14} /> Parse & Apply Configuration
                                     </button>
                                 </div>
                             )}
@@ -354,13 +367,15 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
                                 </div>
                             )}
 
-                            <button 
-                                onClick={handleConnectCloud}
-                                disabled={cloudConnecting}
-                                className="w-full py-3 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                                {cloudConnecting ? 'Connecting...' : <><Server size={16} /> Initialize Connection</>}
-                            </button>
+                            {!showJsonPaste && (
+                                <button 
+                                    onClick={handleConnectCloud}
+                                    disabled={cloudConnecting}
+                                    className="w-full py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg mt-4"
+                                >
+                                    {cloudConnecting ? 'Connecting...' : <><Server size={16} /> Initialize Connection</>}
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>

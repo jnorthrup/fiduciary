@@ -23,7 +23,7 @@ export const EdgarResearchWizard: React.FC<Props> = ({ entity, onRecordResearch 
     
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
+            model: 'gemini-3-flash-preview',
             contents: `Search SEC EDGAR database for recent filings related to: "${query}". 
             Focus on 8-K, 10-K, or 424B2 filings.
             Return a JSON array of found items with: companyName, cik, filingType, filingDate, description, accessionNumber.
