@@ -44,16 +44,16 @@
 ## Phase 2: Frontend 1099 Wizard Enhancement
 
 ### 2.1 Wizard Component Testing
-- [~] Task: Write tests for IRIS1099Wizard authentication step
+- [x] Task: Write tests for IRIS1099Wizard authentication step
   - [x] Sub-task: Write failing tests for TCC input validation
   - [x] Sub-task: Implement TCC format validation (TXXXXXXXXX)
   - [x] Sub-task: Write failing tests for bearer token input
   - [x] Sub-task: Implement bearer token handling
-- [ ] Task: Write tests for wizard step navigation
-  - [ ] Sub-task: Write failing tests for step progression logic
-  - [ ] Sub-task: Implement step navigation with validation
-  - [ ] Sub-task: Write failing tests for step backward navigation
-  - [ ] Sub-task: Implement backward navigation with state preservation
+- [~] Task: Write tests for wizard step navigation
+  - [x] Sub-task: Write failing tests for step progression logic
+  - [x] Sub-task: Implement step navigation with validation
+  - [x] Sub-task: Write failing tests for step backward navigation
+  - [x] Sub-task: Implement backward navigation with state preservation
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.1 Wizard Component Testing' (Protocol in workflow.md)
 
 ### 2.2 Form & Payee Management
