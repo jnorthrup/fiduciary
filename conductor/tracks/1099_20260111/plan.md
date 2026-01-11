@@ -13,7 +13,7 @@
   - [x] Sub-task: Implement CORS middleware
   - [x] Sub-task: Write failing tests for request logging
   - [x] Sub-task: Implement request logging middleware
-- [ ] Task: Conductor - User Manual Verification 'Phase 1.1 Setup Testing Infrastructure' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 1.1 Setup Testing Infrastructure' (Protocol in workflow.md)
 
 ### 1.2 IRS IRIS API Enhancement
 - [ ] Task: Write tests for enhanced submission validation
