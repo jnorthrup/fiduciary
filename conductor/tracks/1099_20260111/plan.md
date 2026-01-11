@@ -21,11 +21,11 @@
   - [x] Sub-task: Implement submission schema validation with detailed error messages
   - [x] Sub-task: Write failing tests for payee record limits (1000 max)
   - [x] Sub-task: Implement payee record limit validation
-- [ ] Task: Write tests for status polling mechanism
-  - [ ] Sub-task: Write failing tests for pollSubmissionStatus with timeout
-  - [ ] Sub-task: Implement exponential backoff for status polling
-  - [ ] Sub-task: Write failing tests for terminal state detection
-  - [ ] Sub-task: Implement terminal state detection logic
+- [x] Task: Write tests for status polling mechanism [b3fd43a]
+  - [x] Sub-task: Write failing tests for pollSubmissionStatus with timeout
+  - [x] Sub-task: Implement exponential backoff for status polling
+  - [x] Sub-task: Write failing tests for terminal state detection
+  - [x] Sub-task: Implement terminal state detection logic
 - [ ] Task: Conductor - User Manual Verification 'Phase 1.2 IRS IRIS API Enhancement' (Protocol in workflow.md)
 
 ### 1.3 Data Persistence Layer
