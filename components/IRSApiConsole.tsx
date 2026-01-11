@@ -218,10 +218,16 @@ export const IRSApiConsole: React.FC<Props> = ({
       setS7Loading(true);
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       try {
+          // Explicitly handle CUSIP format
+          const isCusip = /^[0-9A-Z]{9}$/.test(cusipQuery.toUpperCase());
+          const queryType = isCusip ? "CUSIP" : "Ticker/Symbol";
+
           const response = await ai.models.generateContent({
               model: 'gemini-3-flash-preview',
-              contents: `Lookup Security Information for CUSIP/Ticker: "${cusipQuery}".
-              Use Google Search to find real data.
+              contents: `Lookup Security Information for ${queryType}: "${cusipQuery}".
+              Use Google Search to find real market data, issuer details, and asset classification.
+              If price is unavailable (e.g. private or delisted), return 0.
+              
               Return JSON with: name, assetClass, exchange, price, description.`,
               config: {
                   tools: [{ googleSearch: {} }],
@@ -235,11 +241,12 @@ export const IRSApiConsole: React.FC<Props> = ({
                           price: { type: Type.NUMBER },
                           description: { type: Type.STRING }
                       },
-                      required: ["name", "assetClass", "exchange", "price"]
+                      required: ["name", "assetClass"] // Relaxed requirements for private assets
                   }
               }
           });
-          setSecurityData(JSON.parse(response.text));
+          const data = JSON.parse(response.text || '{}');
+          setSecurityData(data);
       } catch (err) {
           console.error("Series 7 Lookup failed", err);
       } finally {
@@ -555,7 +562,7 @@ export const IRSApiConsole: React.FC<Props> = ({
                                       <div className="text-xs text-indigo-400 font-mono mt-1">{securityData.exchange}</div>
                                   </div>
                                   <div className="text-right">
-                                      <div className="text-2xl font-bold text-emerald-400 font-mono">${securityData.price.toFixed(2)}</div>
+                                      <div className="text-2xl font-bold text-emerald-400 font-mono">${(securityData.price ?? 0).toFixed(2)}</div>
                                       <span className="text-[10px] text-slate-500 uppercase">Last Price</span>
                                   </div>
                               </div>

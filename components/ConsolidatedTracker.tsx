@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Entity, ComplianceFiling, TaxModule, EntityRole } from '../types';
-import { Activity, AlertTriangle, Calendar, CheckCircle2, ChevronRight, Layers, Edit2, Trash2 } from 'lucide-react';
+import { Activity, AlertTriangle, Calendar, CheckCircle2, ChevronRight, Layers, Edit2, Trash2, Shield, AlertCircle } from 'lucide-react';
 
 interface Props {
   parent: Entity;
@@ -14,6 +14,29 @@ interface Props {
 
 export const ConsolidatedTracker: React.FC<Props> = ({ parent, childrenEntities, allFilings, allModules, onEditEntity, onDeleteEntity }) => {
   
+  const stats = useMemo(() => {
+      let overdue = 0;
+      let urgent = 0;
+      let missingFiduciary = 0;
+
+      childrenEntities.forEach(child => {
+          const entModules = allModules.filter(m => m.entityId === child.id && m.status === 'Open');
+          entModules.forEach(m => {
+              const due = new Date(m.dueDate).getTime();
+              const now = Date.now();
+              const days = (due - now) / (1000 * 3600 * 24);
+              if (days < 0) overdue++;
+              else if (days < 30) urgent++;
+          });
+
+          const entFilings = allFilings.filter(f => f.entityId === child.id);
+          const has56 = entFilings.some(f => f.formType === '56' && (f.status === 'Filed' || f.status === 'Accepted'));
+          if (!has56) missingFiduciary++;
+      });
+
+      return { overdue, urgent, missingFiduciary, total: childrenEntities.length };
+  }, [childrenEntities, allModules, allFilings]);
+
   const renderEntityStatus = (ent: Entity, isChild = false) => {
     const entFilings = allFilings.filter(f => f.entityId === ent.id);
     const entModules = allModules.filter(m => m.entityId === ent.id && m.status === 'Open').sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
@@ -121,6 +144,40 @@ export const ConsolidatedTracker: React.FC<Props> = ({ parent, childrenEntities,
             <Layers className="text-slate-400" />
             <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wide">Consolidated Compliance Reporting</h3>
         </div>
+
+        {/* Aggregate Stats Analysis */}
+        {childrenEntities.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 animate-in fade-in slide-in-from-top-2">
+                <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div className="p-2 bg-slate-100 rounded-full text-slate-500"><Layers size={20} /></div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800">{stats.total}</div>
+                        <div className="text-[10px] text-slate-500 uppercase font-bold">Subsidiaries</div>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 rounded-full text-amber-600"><Calendar size={20} /></div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800">{stats.urgent}</div>
+                        <div className="text-[10px] text-slate-500 uppercase font-bold">Upcoming Deadlines</div>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div className="p-2 bg-red-100 rounded-full text-red-600"><AlertTriangle size={20} /></div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800">{stats.overdue}</div>
+                        <div className="text-[10px] text-slate-500 uppercase font-bold">Overdue Items</div>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex items-center gap-3">
+                    <div className="p-2 bg-indigo-100 rounded-full text-indigo-600"><Shield size={20} /></div>
+                    <div>
+                        <div className="text-2xl font-bold text-slate-800">{stats.missingFiduciary}</div>
+                        <div className="text-[10px] text-slate-500 uppercase font-bold">Missing Form 56</div>
+                    </div>
+                </div>
+            </div>
+        )}
         
         <div className="space-y-1">
             {renderEntityStatus(parent)}

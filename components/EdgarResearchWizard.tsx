@@ -18,16 +18,21 @@ export const EdgarResearchWizard: React.FC<Props> = ({ entity, onRecordResearch 
   const handleSearch = async () => {
     if (!query) return;
     setLoading(true);
+    setSearchResults([]);
     
     try {
+        // Detect CUSIP format for better search context
+        const isCusip = /^[0-9A-Z]{9}$/.test(query.toUpperCase().trim());
+        const searchQuery = isCusip ? `CUSIP ${query}` : query;
+
         // CALLING THE "REAL" API via Proxy
         const results = await api.request(
             EDGAR_API_SPEC,
             '/v4/filings/query',
             'get',
             { 
-                q: query,
-                forms: ["10-K", "8-K", "424B2", "S-1", "SC 13D"] 
+                q: searchQuery,
+                forms: ["10-K", "8-K", "424B2", "S-1", "SC 13D", "N-PORT", "N-CEN"] 
             }
         );
 
