@@ -3,11 +3,11 @@
 ## Phase 1: Backend Infrastructure & API Enhancement
 
 ### 1.1 Setup Testing Infrastructure
-- [~] Task: Write tests for IRS API client utilities
-  - [ ] Sub-task: Write failing tests for formatEIN, formatSSN, validateTINFormat
-  - [ ] Sub-task: Implement IRS API client utility functions
-  - [ ] Sub-task: Write failing tests for TIN matching request/response types
-  - [ ] Sub-task: Implement TIN matching type validation
+- [x] Task: Write tests for IRS API client utilities [30713ee]
+  - [x] Sub-task: Write failing tests for formatEIN, formatSSN, validateTINFormat
+  - [x] Sub-task: Implement IRS API client utility functions
+  - [x] Sub-task: Write failing tests for TIN matching request/response types
+  - [x] Sub-task: Implement TIN matching type validation
 - [ ] Task: Write tests for backend server middleware
   - [ ] Sub-task: Write failing tests for CORS headers
   - [ ] Sub-task: Implement CORS middleware
