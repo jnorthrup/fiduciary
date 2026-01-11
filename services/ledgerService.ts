@@ -2,10 +2,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import * as types from '../types';
-import * as mockData from './mockData';
 import { simulateTransmission, searchIRSManual } from './irsApiService';
 import { UseCaseLogger } from './useCaseLogger';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { initFirebase, getDb, batchUpload } from './firebase';
 import { collection, onSnapshot, setDoc, doc } from 'firebase/firestore';
 
@@ -60,21 +59,111 @@ interface LedgerDb {
   settlements: types.SettlementInstruction[];
 }
 
-const INITIAL_DB: LedgerDb = {
+// Empty State for Initialization before Data Load
+const EMPTY_DB: LedgerDb = {
   entities: [], accounts: [], journals: [], wallets: [], users: [], modules: [], filings: [], transmissions: [],
-  documents: mockData.SEED_DOCUMENTS, canalRecords: [], crmPeople: [], escrows: [], ticks: [], fedWires: [],
-  contractors: mockData.SEED_CONTRACTORS, bsoRoles: mockData.SEED_BSO_ROLES, bsoSubmissions: mockData.SEED_BSO_SUBMISSIONS,
-  irsCreds: mockData.SEED_IRS_CREDS, employees: mockData.SEED_EMPLOYEES, payrollRuns: mockData.SEED_PAYROLL_RUNS,
-  ssaStatements: mockData.SEED_SSA_STATEMENTS, resolutions: mockData.SEED_RESOLUTIONS, purchaseContracts: mockData.SEED_PURCHASE_CONTRACTS,
-  creditResolutions: mockData.SEED_CREDIT_RESOLUTIONS, creditInstruments: mockData.SEED_CREDIT_INSTRUMENTS, closingRecords: mockData.SEED_CLOSING_RECORDS,
-  realEstateAssets: mockData.SEED_REAL_ESTATE_ASSETS, collateralPools: mockData.SEED_COLLATERAL_POOLS, collateralItems: [],
+  documents: [], canalRecords: [], crmPeople: [], escrows: [], ticks: [], fedWires: [],
+  contractors: [], bsoRoles: [], bsoSubmissions: [],
+  irsCreds: [], employees: [], payrollRuns: [],
+  ssaStatements: [], resolutions: [], purchaseContracts: [],
+  creditResolutions: [], creditInstruments: [], closingRecords: [],
+  realEstateAssets: [], collateralPools: [], collateralItems: [],
   fiduciaryActions: [], resitusRecords: [], trustCertificates: [], giftTaxRecords: [], parcelRecords: [], edgarResearchRecords: [],
   achRecords: [], instrumentExchangeRecords: [], dtccPledgeRecords: [], fiduciaryReviews: [], agencyCertifications: [],
-  fsForm1010s: [], legalInstruments: mockData.SEED_LEGAL_INSTRUMENTS, creditDefenseRecords: mockData.SEED_CREDIT_DEFENSE,
+  fsForm1010s: [], legalInstruments: [], creditDefenseRecords: [],
   chanceryFilings: [], perfectionInstructions: [], maradRecords: [], settlements: []
 };
 
-// Explicit Context Type Definition (Mapped from LedgerDb + System State)
+// --- SUSPENSE UTILITIES ---
+
+// Resource wrapper for Suspense
+function createResource<T>(promise: Promise<T>) {
+  let status = "pending";
+  let result: T;
+  let suspender = promise.then(
+    (r) => {
+      status = "success";
+      result = r;
+    },
+    (e) => {
+      status = "error";
+      result = e;
+    }
+  );
+  return {
+    read() {
+      if (status === "pending") {
+        throw suspender;
+      } else if (status === "error") {
+        throw result;
+      } else if (status === "success") {
+        return result;
+      }
+      return result; // Should not happen
+    },
+  };
+}
+
+const STORAGE_KEY = 'trust_ledger_state';
+
+// The Async Data Fetcher
+async function fetchLedgerData(): Promise<{ db: LedgerDb, user: types.User, secrets: types.ApiSecrets, settings: types.SystemSettings }> {
+  // 1. Try Local Storage first
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      // Ensure we merge with EMPTY_DB to ensure all keys exist even if local storage is old
+      const db = { ...EMPTY_DB, ...parsed };
+      // Clean up top-level keys that might have been merged into db by mistake if structure changed, 
+      // but simpler to just return the parsed structure if valid.
+      return { 
+        db: db, // Assuming the saved object IS the db + extra fields, we extract what we need
+        user: parsed.currentUser || {} as types.User,
+        secrets: parsed.secrets || { irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' },
+        settings: parsed.settings || { fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' }, network: 'Testnet' }
+      };
+    } catch (e) {
+      console.error("Local storage corruption, falling back to seed", e);
+    }
+  }
+
+  // 2. Fallback to Dynamic Import of Mock Data
+  // This simulates a network request and keeps initial bundle size smaller
+  await new Promise(resolve => setTimeout(resolve, 800)); // Artificial delay to show Suspense
+  const mockData = await import('./mockData');
+  
+  return {
+    db: {
+      ...EMPTY_DB,
+      documents: mockData.SEED_DOCUMENTS,
+      contractors: mockData.SEED_CONTRACTORS,
+      bsoRoles: mockData.SEED_BSO_ROLES,
+      bsoSubmissions: mockData.SEED_BSO_SUBMISSIONS,
+      irsCreds: mockData.SEED_IRS_CREDS,
+      employees: mockData.SEED_EMPLOYEES,
+      payrollRuns: mockData.SEED_PAYROLL_RUNS,
+      ssaStatements: mockData.SEED_SSA_STATEMENTS,
+      resolutions: mockData.SEED_RESOLUTIONS,
+      purchaseContracts: mockData.SEED_PURCHASE_CONTRACTS,
+      creditResolutions: mockData.SEED_CREDIT_RESOLUTIONS,
+      creditInstruments: mockData.SEED_CREDIT_INSTRUMENTS,
+      closingRecords: mockData.SEED_CLOSING_RECORDS,
+      realEstateAssets: mockData.SEED_REAL_ESTATE_ASSETS,
+      collateralPools: mockData.SEED_COLLATERAL_POOLS,
+      legalInstruments: mockData.SEED_LEGAL_INSTRUMENTS,
+      creditDefenseRecords: mockData.SEED_CREDIT_DEFENSE
+    },
+    user: {} as types.User,
+    secrets: { irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' },
+    settings: { fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' }, network: 'Testnet' }
+  };
+}
+
+// Initialize the resource outside the component lifecycle to start fetching immediately
+const initialDataResource = createResource(fetchLedgerData());
+
+// Explicit Context Type Definition
 type LedgerContextType = LedgerDb & {
   currentUser: types.User;
   apiSystemStatus: types.SystemStatus[];
@@ -123,7 +212,7 @@ type LedgerContextType = LedgerDb & {
   generateSampleEnterprise: () => void;
   postJournal: (entityId: string, date: string, memo: string, type: string, lines: any[]) => void;
   
-  // Generic Setters (Mapped)
+  // Generic Setters
   addCanalRecord: (r: types.CanalRecord) => void;
   addEscrow: (e: types.EscrowAccount) => void;
   updateEscrow: (e: Partial<types.EscrowAccount> & { id: string }) => void;
@@ -185,11 +274,17 @@ export const useLedgerStore = () => {
 };
 
 export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Consolidated Ledger Database State
-  const [db, setDb] = useState<LedgerDb>(INITIAL_DB);
+  // SUSPENSE: This will throw if data is not yet ready
+  const initialData = initialDataResource.read();
+
+  // Consolidated Ledger Database State initialized from Suspense resource
+  const [db, setDb] = useState<LedgerDb>(initialData.db);
   
   // System/UI State
-  const [currentUser, setCurrentUser] = useState<types.User>({} as types.User);
+  const [currentUser, setCurrentUser] = useState<types.User>(initialData.user);
+  const [secrets, setSecrets] = useState<types.ApiSecrets>(initialData.secrets);
+  const [settings, setSettings] = useState<types.SystemSettings>(initialData.settings);
+  
   const [apiSystemStatus, setApiSystemStatus] = useState<types.SystemStatus[]>([
       { channel: 'MeF', status: 'Operational', latency: '45ms', uptime: '99.98%' },
       { channel: 'AIR', status: 'Operational', latency: '120ms', uptime: '99.5%' },
@@ -200,15 +295,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   ]);
   const [searchResults, setSearchResults] = useState<types.SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [secrets, setSecrets] = useState<types.ApiSecrets>({ irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' });
-  const [settings, setSettings] = useState<types.SystemSettings>({ fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' }, network: 'Testnet' });
+  
   const [changeGraph, setChangeGraph] = useState<types.ChangeSet[]>([]);
-  const [canResume, setCanResume] = useState(false);
+  const [canResume, setCanResume] = useState(!!initialData.user.name);
   const [isCloudEnabled, setIsCloudEnabled] = useState(false);
   const [is2FAOpen, setIs2FAOpen] = useState(false);
   const [pendingCallback, setPendingCallback] = useState<(() => void) | null>(null);
-
-  const STORAGE_KEY = 'trust_ledger_state';
 
   // --- Persistence & Sync ---
   const syncDoc = (collectionName: keyof LedgerDb | string, data: any) => {
@@ -268,28 +360,21 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [db, currentUser, secrets, settings]);
 
   useEffect(() => {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-          setCanResume(true);
-          try {
-              const data = JSON.parse(saved);
-              if (data.settings?.firebaseConfig) connectToFirebase(data.settings.firebaseConfig);
-          } catch(e) { console.error(e); }
+      // Connect to firebase if config exists in loaded settings
+      if (settings.firebaseConfig) {
+          connectToFirebase(settings.firebaseConfig);
       }
-      // Real-time status fetch logic omitted for brevity, handled by initial load
   }, []);
 
   // --- Context Methods ---
   const importData = (json: string) => {
       try {
           const data = JSON.parse(json);
-          // Merge logic: simpler to replace DB if structure matches
-          const newDb = { ...INITIAL_DB };
-          (Object.keys(INITIAL_DB) as Array<keyof LedgerDb>).forEach(k => {
+          const newDb = { ...EMPTY_DB };
+          (Object.keys(EMPTY_DB) as Array<keyof LedgerDb>).forEach(k => {
               if (data[k]) newDb[k] = data[k];
           });
           setDb(newDb);
-          if (data.users) setDb(p => ({...p, users: data.users})); // Users is in DB but managed separately often? No, unified now.
           if (data.currentUser) setCurrentUser(data.currentUser);
           if (data.secrets) setSecrets(data.secrets);
           if (data.settings) setSettings(data.settings);
@@ -297,8 +382,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       } catch (e) { console.error("Import failed", e); }
   };
 
+  const exportData = () => {
+      return JSON.stringify({ ...db, currentUser, secrets, settings }, null, 2);
+  };
+
   const resetData = () => {
-      setDb(INITIAL_DB);
+      setDb(EMPTY_DB);
       setCurrentUser({} as types.User);
       setIsCloudEnabled(false);
       UseCaseLogger.log('SYSTEM', 'Reset System Data');
@@ -336,13 +425,23 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const u = { id: uuidv4(), name, email, role: 'Owner' as types.UserRole, avatarInitials: name.substring(0,2).toUpperCase(), lastActive: 'Now', _version: '1' }; 
           setCurrentUser(u); addItem('users', u); 
       },
-      loadJimProfile: () => { 
-          setDb({ ...INITIAL_DB, entities: mockData.JIM_ENTITIES, accounts: mockData.JIM_ACCOUNTS, journals: mockData.JIM_JOURNALS, modules: mockData.JIM_MODULES, filings: mockData.JIM_FILINGS });
+      loadJimProfile: async () => { 
+          const mockData = await import('./mockData');
+          setDb({ 
+              ...EMPTY_DB, 
+              entities: mockData.JIM_ENTITIES, 
+              accounts: mockData.JIM_ACCOUNTS, 
+              journals: mockData.JIM_JOURNALS, 
+              modules: mockData.JIM_MODULES, 
+              filings: mockData.JIM_FILINGS,
+              transmissions: mockData.JIM_TRANSMISSIONS
+          });
           const u = { id: uuidv4(), name: "James R. Northrup Jr.", email: "james@sovereign-node.local", role: 'Owner' as types.UserRole, avatarInitials: "JN", lastActive: 'Now', _version: '1' };
           setCurrentUser(u); addItem('users', u);
       },
-      loadSyntheticFuzz: () => {
-          setDb({ ...INITIAL_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS });
+      loadSyntheticFuzz: async () => {
+          const mockData = await import('./mockData');
+          setDb({ ...EMPTY_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS });
           const u = { id: uuidv4(), name: "Synthetic Operator", email: "ai@fuzznet.local", role: 'Owner' as types.UserRole, avatarInitials: "AI", lastActive: 'Now', _version: '1' };
           setCurrentUser(u); addItem('users', u);
       },
@@ -377,10 +476,20 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           } catch(e) { setSearchResults(await searchIRSManual(q)); } finally { setIsSearching(false); }
       },
       updateSecrets: (s) => setSecrets(p => ({...p, ...s})), updateSettings: (s) => setSettings(p => ({...p, ...s})),
-      generateSyntheticData: () => setDb({ ...INITIAL_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS }),
-      generateSampleEnterprise: () => setDb({ ...INITIAL_DB, entities: mockData.JIM_ENTITIES, accounts: mockData.JIM_ACCOUNTS, journals: mockData.JIM_JOURNALS, modules: mockData.JIM_MODULES, filings: mockData.JIM_FILINGS }),
+      generateSyntheticData: async () => { 
+          const mockData = await import('./mockData'); 
+          setDb({ ...EMPTY_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS });
+      },
+      generateSampleEnterprise: async () => {
+          const mockData = await import('./mockData');
+          setDb({ ...EMPTY_DB, entities: mockData.JIM_ENTITIES, accounts: mockData.JIM_ACCOUNTS, journals: mockData.JIM_JOURNALS, modules: mockData.JIM_MODULES, filings: mockData.JIM_FILINGS });
+      },
       postJournal,
       
+      importData,
+      exportData,
+      resetData,
+
       // Mapped Setters
       addCanalRecord: (r) => addItem('canalRecords', r),
       addEscrow: (e) => addItem('escrows', e), updateEscrow: (e) => updateItem('escrows', e),
@@ -422,10 +531,11 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       executeFiduciaryAction: (id) => setDb(p => ({...p, fiduciaryActions: p.fiduciaryActions.map(a => a.id === id ? { ...a, status: 'Executed', dateExecuted: new Date().toISOString() } : a) })),
       completeReSitus: (r) => addItem('resitusRecords', r), completeGiftTax: (did, amt, d, s) => addItem('giftTaxRecords', { id: uuidv4(), entityId: currentUser.id, doneeId: did, amount: amt, description: d, isSplit: s, date: new Date().toISOString().split('T')[0], status: 'Draft' }),
       addCRMPerson: (p) => addItem('crmPeople', p), updateCRMPerson: (p) => updateItem('crmPeople', p), deleteCRMPerson: (id) => deleteItem('crmPeople', id),
-      addInteraction: (pid, i) => setDb(p => ({...p, crmPeople: p.crmPeople.map(person => person.id === pid ? {...person, interactions: [i, ...person.interactions]} : person)})),
+      addInteraction: (pid: string, i: types.Interaction) => setDb(p => ({...p, crmPeople: p.crmPeople.map(person => person.id === pid ? {...person, interactions: [i, ...person.interactions]} : person)})),
       updateIrsCredential: (id, u) => setDb(p => ({...p, irsCreds: p.irsCreds.map(c => c.id === id ? {...c, ...u} : c)})), addIrsCredential: (c) => addItem('irsCreds', c), deleteIrsCredential: (id) => deleteItem('irsCreds', id),
-      addAccount: (a) => addItem('accounts', a), addDocument: (d) => addItem('documents', d), addSettlement: (s) => addItem('settlements', s),
-      importData, exportData: () => JSON.stringify({ ...db, currentUser, secrets, settings }, null, 2), resetData
+      addAccount: (account: types.Account) => addItem('accounts', account),
+      addDocument: (doc: types.IRMDocument) => addItem('documents', doc),
+      addSettlement: (s: types.SettlementInstruction) => addItem('settlements', s),
   };
 
   return React.createElement(LedgerContext.Provider, { value: contextValue }, children);
