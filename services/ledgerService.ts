@@ -60,6 +60,7 @@ interface LedgerContextType {
   chanceryFilings: types.ChanceryFiling[];
   perfectionInstructions: types.PerfectionInstruction[];
   maradRecords: types.MaradRecord[];
+  settlements: types.SettlementInstruction[];
   secrets: types.ApiSecrets;
   settings: types.SystemSettings;
   changeGraph: types.ChangeSet[];
@@ -155,6 +156,7 @@ interface LedgerContextType {
   deleteIrsCredential: (id: string) => void;
   addAccount: (account: types.Account) => void;
   addDocument: (doc: types.IRMDocument) => void;
+  addSettlement: (s: types.SettlementInstruction) => void;
 }
 
 const LedgerContext = createContext<LedgerContextType | undefined>(undefined);
@@ -226,6 +228,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [chanceryFilings, setChanceryFilings] = useState<types.ChanceryFiling[]>([]);
   const [perfectionInstructions, setPerfectionInstructions] = useState<types.PerfectionInstruction[]>([]);
   const [maradRecords, setMaradRecords] = useState<types.MaradRecord[]>([]);
+  const [settlements, setSettlements] = useState<types.SettlementInstruction[]>([]);
   const [secrets, setSecrets] = useState<types.ApiSecrets>({ irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' });
   const [settings, setSettings] = useState<types.SystemSettings>({ fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' }, network: 'Testnet' });
   const [changeGraph, setChangeGraph] = useState<types.ChangeSet[]>([]);
@@ -313,20 +316,20 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!db) return;
 
     // Listen to Entities
-    onSnapshot(collection(db, 'entities'), (snapshot) => {
-      const remoteEntities = snapshot.docs.map(doc => doc.data() as types.Entity);
+    onSnapshot(collection(db, 'entities'), (snapshot: any) => {
+      const remoteEntities = snapshot.docs.map((doc: any) => doc.data() as types.Entity);
       if (remoteEntities.length > 0) setEntities(remoteEntities);
     });
 
     // Listen to Accounts
-    onSnapshot(collection(db, 'accounts'), (snapshot) => {
-      const remoteAccounts = snapshot.docs.map(doc => doc.data() as types.Account);
+    onSnapshot(collection(db, 'accounts'), (snapshot: any) => {
+      const remoteAccounts = snapshot.docs.map((doc: any) => doc.data() as types.Account);
       if (remoteAccounts.length > 0) setAccounts(remoteAccounts);
     });
 
     // Listen to Journals
-    onSnapshot(collection(db, 'journals'), (snapshot) => {
-      const remoteJournals = snapshot.docs.map(doc => doc.data() as types.JournalEntry);
+    onSnapshot(collection(db, 'journals'), (snapshot: any) => {
+      const remoteJournals = snapshot.docs.map((doc: any) => doc.data() as types.JournalEntry);
       if (remoteJournals.length > 0) setJournals(remoteJournals);
     });
   };
@@ -396,7 +399,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 parcelRecords, edgarResearchRecords, achRecords, instrumentExchangeRecords,
                 dtccPledgeRecords, fiduciaryReviews, agencyCertifications, fsForm1010s,
                 legalInstruments, creditDefenseRecords, chanceryFilings, perfectionInstructions,
-                maradRecords, secrets, settings
+                maradRecords, settlements, secrets, settings
             };
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
@@ -418,7 +421,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       parcelRecords, edgarResearchRecords, achRecords, instrumentExchangeRecords,
       dtccPledgeRecords, fiduciaryReviews, agencyCertifications, fsForm1010s,
       legalInstruments, creditDefenseRecords, chanceryFilings, perfectionInstructions,
-      maradRecords, secrets, settings
+      maradRecords, settlements, secrets, settings
   ]);
 
   // Initial Check & Auto-Connect Firebase
@@ -562,6 +565,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if(data.chanceryFilings) setChanceryFilings(data.chanceryFilings);
           if(data.perfectionInstructions) setPerfectionInstructions(data.perfectionInstructions);
           if(data.maradRecords) setMaradRecords(data.maradRecords);
+          if(data.settlements) setSettlements(data.settlements);
           if(data.secrets) setSecrets(data.secrets);
           if(data.settings) {
               setSettings(data.settings);
@@ -591,7 +595,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           parcelRecords, edgarResearchRecords, achRecords, instrumentExchangeRecords,
           dtccPledgeRecords, fiduciaryReviews, agencyCertifications, fsForm1010s,
           legalInstruments, creditDefenseRecords, chanceryFilings, perfectionInstructions,
-          maradRecords, secrets, settings
+          maradRecords, settlements, secrets, settings
       }, null, 2);
   };
 
@@ -670,6 +674,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           case 'fiduciaryReviews': setFiduciaryReviews(p => [...p, item]); break;
           case 'maradRecords': setMaradRecords(p => [...p, item]); break;
           case 'filings': setFilings(p => [...p, item]); break;
+          case 'settlements': setSettlements(p => [...p, item]); break;
       }
   };
 
@@ -756,17 +761,17 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setRealEstateAssets(p => p.map(a => a.id === propId ? { ...a, status: 'Owned' } : a));
       setCreditInstruments(p => p.map(i => i.id === instrId ? { ...i, status: 'Discharged' } : i));
       postJournal(entityId, closing.closingDate, `Closing: ${closing.recordingRef}`, 'DISCHARGE', [
-          { accountCode: '250000', dc: 'Debit', amount, accountName: 'Liability' },
-          { accountCode: '300000', dc: 'Credit', amount, accountName: 'Equity' }
+          { accountCode: '250000', dc: types.DCFlag.Debit, amount, accountName: 'Liability' },
+          { accountCode: '300000', dc: types.DCFlag.Credit, amount, accountName: 'Equity' }
       ]);
   };
   const runPayroll = (entityId: string, start: string, end: string, payDate: string, moduleId: string) => {
       const run: types.PayrollRun = { id: uuidv4(), entityId, periodStart: start, periodEnd: end, payDate, totalGross: 50000, totalEmployerTax: 3800, totalNetPay: 40000, status: 'Posted' };
       setPayrollRuns(p => [...p, run]);
       postJournal(entityId, payDate, `Payroll ${start}`, 'PAYROLL', [
-          { accountCode: '510000', dc: 'Debit', amount: 50000, accountName: 'Labor Exp' },
-          { accountCode: '101000', dc: 'Credit', amount: 40000, accountName: 'Cash' },
-          { accountCode: '210000', dc: 'Credit', amount: 10000, accountName: 'Tax Liab' }
+          { accountCode: '510000', dc: types.DCFlag.Debit, amount: 50000, accountName: 'Labor Exp' },
+          { accountCode: '101000', dc: types.DCFlag.Credit, amount: 40000, accountName: 'Cash' },
+          { accountCode: '210000', dc: types.DCFlag.Credit, amount: 10000, accountName: 'Tax Liab' }
       ]);
   };
   const completeGiftTax = (doneeId: string, amount: number, desc: string, isSplit: boolean) => simpleAdd('giftTaxRecords', { id: uuidv4(), entityId: currentUser.id, doneeId, amount, description: desc, isSplit, date: new Date().toISOString().split('T')[0], status: 'Draft' });
@@ -783,7 +788,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       fiduciaryActions, resitusRecords, trustCertificates, giftTaxRecords, parcelRecords, edgarResearchRecords, achRecords,
       instrumentExchangeRecords, dtccPledgeRecords, fiduciaryReviews, agencyCertifications,
       fsForm1010s, legalInstruments, creditDefenseRecords, chanceryFilings, perfectionInstructions,
-      maradRecords, secrets, settings, changeGraph, canResume,
+      maradRecords, settlements, secrets, settings, changeGraph, canResume,
       isCloudEnabled, connectToFirebase, pushLocalToCloud,
       is2FAOpen, requestAuthorization, verify2FA, cancel2FA,
       setInitialOwner, loadJimProfile, loadSyntheticFuzz, resumePersistent, wipeSession,
@@ -815,7 +820,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       deleteCRMPerson: (id) => setCrmPeople(p => p.filter(pr => pr.id !== id)),
       addInteraction: (pid, i) => setCrmPeople(p => p.map(pr => pr.id === pid ? { ...pr, interactions: [i, ...pr.interactions] } : pr)),
       updateIrsCredential, addIrsCredential, deleteIrsCredential, addAccount, addDocument: (doc) => simpleAdd('documents', doc),
-      addMaradRecord: (r) => simpleAdd('maradRecords', r)
+      addMaradRecord: (r) => simpleAdd('maradRecords', r),
+      addSettlement: (s) => simpleAdd('settlements', s)
   };
 
   return React.createElement(LedgerContext.Provider, { value: contextValue }, children);

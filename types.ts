@@ -91,6 +91,7 @@ export interface Account {
   type: AccountType;
   normalBalance: DCFlag;
   balance: number;
+  internalAlias?: string; // e.g. TRUST-TREASURY-001
   _version: string;
 }
 
@@ -769,4 +770,31 @@ export interface CollateralItem {
   assessedValue: number;
   valuationDate: string;
   status: 'Pledged' | 'Released';
+}
+
+// --- SETTLEMENT ARCHITECTURE ---
+
+export enum ExternalRail {
+  ESCROW_PAYOFF = 'ESCROW_PAYOFF',
+  SPONSORED_ACH = 'SPONSORED_ACH',
+  SPONSORED_WIRE = 'SPONSORED_WIRE',
+  CHECK_VENDOR = 'CHECK_VENDOR',
+  MANUAL_TENDER = 'MANUAL_TENDER_CERTIFIED_FUNDS'
+}
+
+export interface SettlementInstruction {
+  payment_id: string;
+  entityId: string; // The Trust doing the settlement
+  payee: string;
+  amount: number;
+  method: ExternalRail;
+  funding_source: string; // Ledger Account ID (Layer 1)
+  supporting_docs: string[];
+  approval: {
+    required_signers: string[];
+    approved_at?: string;
+  };
+  status: 'Pending' | 'Authorized' | 'Settled' | 'Failed';
+  internal_trace_id: string; // e.g. TRUST-TREASURY-001
+  date_created: string;
 }
