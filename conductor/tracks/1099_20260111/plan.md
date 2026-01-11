@@ -16,11 +16,11 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1.1 Setup Testing Infrastructure' (Protocol in workflow.md) [fc14d5f]
 
 ### 1.2 IRS IRIS API Enhancement
-- [ ] Task: Write tests for enhanced submission validation
-  - [ ] Sub-task: Write failing tests for submission schema validation
-  - [ ] Sub-task: Implement submission schema validation with detailed error messages
-  - [ ] Sub-task: Write failing tests for payee record limits (1000 max)
-  - [ ] Sub-task: Implement payee record limit validation
+- [x] Task: Write tests for enhanced submission validation [fa4ec86]
+  - [x] Sub-task: Write failing tests for submission schema validation
+  - [x] Sub-task: Implement submission schema validation with detailed error messages
+  - [x] Sub-task: Write failing tests for payee record limits (1000 max)
+  - [x] Sub-task: Implement payee record limit validation
 - [ ] Task: Write tests for status polling mechanism
   - [ ] Sub-task: Write failing tests for pollSubmissionStatus with timeout
   - [ ] Sub-task: Implement exponential backoff for status polling
