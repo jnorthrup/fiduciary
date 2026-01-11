@@ -47,9 +47,11 @@ export const DTCCLiquidationWizard: React.FC<Props> = ({
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: `Verify security details and DTCC collateral standards for CUSIP: "${cusip}". 
+            Use Google Search to find real market data.
             Context: Fiduciary entity ${entity.name} is pledging this asset.
             Provide: Asset Name, Current Market Value (Estimate), Haircut (Margin %) per DTC Section 4 rules, and DTCC eligibility status.`,
             config: {
+                tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,

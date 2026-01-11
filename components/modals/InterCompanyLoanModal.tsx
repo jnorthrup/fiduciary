@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Entity, Account, DCFlag } from '../../types';
 import { X, ArrowRightLeft, DollarSign, Building2, CheckCircle2, Shield } from 'lucide-react';
 
@@ -16,11 +16,18 @@ export const InterCompanyLoanModal: React.FC<Props> = ({ borrowerEntity, entitie
   const [amount, setAmount] = useState<number>(0);
   const [interestRate, setInterestRate] = useState<number>(5.0);
   const [termMonths, setTermMonths] = useState<number>(12);
-  const [memo, setMemo] = useState('Initial Capitalization Loan');
+  const [memo, setMemo] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Filter potential lenders (Trusts usually)
   const lenders = entities.filter(e => e.id !== borrowerEntity.id);
+
+  useEffect(() => {
+    const lender = entities.find(e => e.id === lenderId);
+    if (lender) {
+      setMemo(`Strategic Capital Loan: ${lender.name} to ${borrowerEntity.name}`);
+    }
+  }, [lenderId, entities, borrowerEntity.name]);
 
   const handleSubmit = () => {
       if (!lenderId || amount <= 0) return;
@@ -34,7 +41,7 @@ export const InterCompanyLoanModal: React.FC<Props> = ({ borrowerEntity, entitie
           onPostJournal(
               borrowerEntity.id,
               date,
-              `Loan Received from ${lender?.name}: ${memo}`,
+              memo,
               'LOAN_IN',
               [
                   { accountCode: '101000', dc: DCFlag.Debit, amount: amount, accountName: 'Operating Cash' },
@@ -47,7 +54,7 @@ export const InterCompanyLoanModal: React.FC<Props> = ({ borrowerEntity, entitie
           onPostJournal(
               lenderId,
               date,
-              `Loan Issued to ${borrowerEntity.name}: ${memo}`,
+              memo,
               'LOAN_OUT',
               [
                   { accountCode: '110000', dc: DCFlag.Debit, amount: amount, accountName: `Loan Receivable - ${borrowerEntity.name}` },
@@ -139,6 +146,7 @@ export const InterCompanyLoanModal: React.FC<Props> = ({ borrowerEntity, entitie
                         value={memo}
                         onChange={e => setMemo(e.target.value)}
                         className="w-full p-3 border border-slate-200 rounded-lg text-sm"
+                        placeholder="Transaction description..."
                     />
                 </div>
             </div>
