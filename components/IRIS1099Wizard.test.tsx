@@ -418,4 +418,322 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       });
     });
   });
+
+  describe('Wizard Step Navigation', () => {
+    it('should progress from Auth to Filer step on authentication', async () => {
+      render(<IRIS1099Wizard />);
+
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      const authButton = screen.getByText('Authenticate & Continue');
+
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(authButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+        expect(screen.queryByText('Filer Information')).toBeInTheDocument();
+      });
+    });
+
+    it('should show Back button after Auth step', async () => {
+      render(<IRIS1099Wizard />);
+
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      const authButton = screen.getByText('Authenticate & Continue');
+
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(authButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Back')).toBeInTheDocument();
+      });
+    });
+
+    it('should disable Continue button on Filer step when EIN is missing', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Filer step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      const authButton = screen.getByText('Authenticate & Continue');
+
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(authButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      const continueButton = screen.getByText('Continue');
+      expect(continueButton).toBeDisabled();
+    });
+
+    it('should disable Continue button on Filer step when Legal Name is missing', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Filer step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      const authButton = screen.getByText('Authenticate & Continue');
+
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(authButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      // Enter EIN but not name
+      const einInput = screen.getByPlaceholderText('XX-XXXXXXX');
+      fireEvent.change(einInput, { target: { value: '12-3456789' } });
+
+      const continueButton = screen.getByText('Continue');
+      expect(continueButton).toBeDisabled();
+    });
+
+    it('should enable Continue button on Filer step when EIN and Name are filled', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Filer step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      const authButton = screen.getByText('Authenticate & Continue');
+
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(authButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      // Fill required fields
+      const einInput = screen.getByPlaceholderText('XX-XXXXXXX');
+      const nameInput = screen.getByPlaceholderText('ABC Corporation Inc');
+
+      fireEvent.change(einInput, { target: { value: '12-3456789' } });
+      fireEvent.change(nameInput, { target: { value: 'Test Corp' } });
+
+      await waitFor(() => {
+        const continueButton = screen.getByText('Continue');
+        expect(continueButton).toBeEnabled();
+      });
+    });
+
+    it('should progress from Filer to FormType step on Continue', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Filer step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      const authButton = screen.getByText('Authenticate & Continue');
+
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(authButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      // Fill required fields
+      const einInput = screen.getByPlaceholderText('XX-XXXXXXX');
+      const nameInput = screen.getByPlaceholderText('ABC Corporation Inc');
+
+      fireEvent.change(einInput, { target: { value: '12-3456789' } });
+      fireEvent.change(nameInput, { target: { value: 'Test Corp' } });
+
+      // Click Continue
+      const continueButton = screen.getByText('Continue');
+      fireEvent.click(continueButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Tax Year')).toBeInTheDocument();
+        expect(screen.queryByText('Form Type')).toBeInTheDocument();
+      });
+    });
+
+    it('should disable Continue button on Payees step when no payees added', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate through steps to Payees
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      // Fill Filer step
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Tax Year')).toBeInTheDocument();
+      });
+
+      // Click Continue on FormType step
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      const continueButton = screen.getByText('Continue');
+      expect(continueButton).toBeDisabled();
+    });
+
+    it('should enable Continue button on Payees step when payees are added', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate through steps to Payees
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      // Fill Filer step
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Tax Year')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Add a payee - only TIN and Name are required
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '12-3456789' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'John Doe' } });
+
+      const addButton = screen.getByText('Add Payee to Batch');
+      fireEvent.click(addButton);
+
+      await waitFor(() => {
+        const continueButton = screen.getByText('Continue');
+        expect(continueButton).toBeEnabled();
+      });
+    });
+
+    it('should show Validate & Submit button on Review step', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate through to Review step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      // Fill Filer step
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Tax Year')).toBeInTheDocument();
+      });
+
+      // FormType step
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Add a payee
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '12-3456789' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'John Doe' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      // Wait for Continue to be enabled
+      await waitFor(() => {
+        const continueButton = screen.getByText('Continue');
+        expect(continueButton).toBeEnabled();
+      });
+
+      // Click Continue to go to Review
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Validate & Submit')).toBeInTheDocument();
+        expect(screen.queryByText('Submission Summary')).toBeInTheDocument();
+      });
+    });
+
+    it('should navigate back from Filer to Auth step', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Filer step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      // Click Back
+      const backButton = screen.getByText('Back');
+      fireEvent.click(backButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('TCC Authentication')).toBeInTheDocument();
+        expect(screen.queryByText('Bearer Token')).toBeInTheDocument();
+      });
+    });
+
+    it('should preserve filer state when navigating back to Auth and returning to Filer', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Filer step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      // Fill EIN and Name
+      const einInput = screen.getByPlaceholderText('XX-XXXXXXX');
+      const nameInput = screen.getByPlaceholderText('ABC Corporation Inc');
+
+      fireEvent.change(einInput, { target: { value: '12-3456789' } });
+      fireEvent.change(nameInput, { target: { value: 'Test Corp' } });
+
+      // Record the values
+      expect(einInput).toHaveValue('12-3456789');
+      expect(nameInput).toHaveValue('Test Corp');
+
+      // Go back to Auth
+      fireEvent.click(screen.getByText('Back'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('TCC Authentication')).toBeInTheDocument();
+      });
+
+      // Navigate forward again using TCC (simulate fresh auth)
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+        // State should be preserved
+        expect(einInput).toHaveValue('12-3456789');
+        expect(nameInput).toHaveValue('Test Corp');
+      });
+    });
+  });
 });
