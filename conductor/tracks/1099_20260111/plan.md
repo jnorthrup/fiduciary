@@ -8,11 +8,11 @@
   - [x] Sub-task: Implement IRS API client utility functions
   - [x] Sub-task: Write failing tests for TIN matching request/response types
   - [x] Sub-task: Implement TIN matching type validation
-- [~] Task: Write tests for backend server middleware
-  - [ ] Sub-task: Write failing tests for CORS headers
-  - [ ] Sub-task: Implement CORS middleware
-  - [ ] Sub-task: Write failing tests for request logging
-  - [ ] Sub-task: Implement request logging middleware
+- [x] Task: Write tests for backend server middleware [fc56dcd]
+  - [x] Sub-task: Write failing tests for CORS headers
+  - [x] Sub-task: Implement CORS middleware
+  - [x] Sub-task: Write failing tests for request logging
+  - [x] Sub-task: Implement request logging middleware
 - [ ] Task: Conductor - User Manual Verification 'Phase 1.1 Setup Testing Infrastructure' (Protocol in workflow.md)
 
 ### 1.2 IRS IRIS API Enhancement
