@@ -48,6 +48,7 @@ export class ApiProxy {
       3. If the user asks for a specific address or company, find the actual records.
       4. RETURN ONLY JSON matching the 'schema' defined in the 200 response of the API Spec.
       5. Strictly adhere to property names and types.
+      6. CRITICAL: Limit any arrays in the response to a maximum of 5 items. This is to prevent JSON truncation and ensuring a valid response.
     `;
 
     // 3. Convert OpenAPI Schema to Gemini Type Schema (recursive mapping)
@@ -74,7 +75,7 @@ export class ApiProxy {
       
       return JSON.parse(rawText);
 
-    } catch (e) {
+    } catch (e: any) {
       console.error("API Proxy Error:", e);
       throw new Error(`502: Bad Gateway - ${e.message}`);
     }
