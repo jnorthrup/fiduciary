@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { Entity, ParcelRecord } from '../types';
 import { MapPin, Search, Maximize, Building, Layers, Info, CheckCircle2, Loader2, Globe, Database, ArrowRight, ShieldCheck, AlertCircle, Sparkles } from 'lucide-react';
-import { GoogleGenAI, Type } from "@google/genai";
+import { api } from '../services/apiProxy';
+import { PARCEL_API_SPEC } from '../services/openApiDefinitions';
 
 interface Props {
   entity: Entity;
@@ -15,124 +16,66 @@ export const ParcelLookupWizard: React.FC<Props> = ({ entity, onRecordAsset }) =
   const [loading, setLoading] = useState(false);
   const [osmResults, setOsmResults] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [nationalRecord, setNationalRecord] = useState<ParcelRecord | null>(null);
 
+  // This handles the initial "Geocoding" step. 
+  // We still use OSM for the initial list because it's a dedicated geocoder, 
+  // but we could wrap this in an OpenAPI spec too if desired. 
+  // For this request, we focus on the "Deep Data" retrieval being the real API call.
   const handleOsmSearch = async () => {
     if (!query) return;
     setLoading(true);
     setError(null);
     try {
-      // Attempt real OSM Search first for standard addresses
       const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=us&addressdetails=1`, {
           headers: { 'Accept': 'application/json' }
       });
-      
       if (!resp.ok) throw new Error("OSM Service unreachable");
-      
       const data = await resp.json();
-      
-      // Filter for house/street level results if possible to avoid city-center errors
       const highPrecision = data.filter((r: any) => r.type === 'house' || r.type === 'building' || r.type === 'address' || r.importance > 0.6);
-
-      if (highPrecision.length > 0) {
-        setOsmResults(highPrecision);
-      } else if (data.length > 0) {
-        setOsmResults(data);
-      } else {
-        await handleGeminiSearchFallback(query);
-      }
+      setOsmResults(highPrecision.length > 0 ? highPrecision : data);
     } catch (err) {
-      console.warn("OSM Search failed, falling back to GenAI resolution", err);
-      await handleGeminiSearchFallback(query);
+      setError("Geocoding service unavailable.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGeminiSearchFallback = async (q: string) => {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      try {
-          // Instruct Gemini to provide STREET LEVEL precision, specifically warning against city-center fallbacks
-          const response = await ai.models.generateContent({
-              model: 'gemini-3-flash-preview',
-              contents: `Locate the specific street address with sub-meter precision for a parcel mapping system: "${q}". 
-              DANGER: Do not return coordinates for the city center. You MUST find the specific lot or building location.
-              If the exact house number is unknown, use the nearest identifiable parcel boundary.
-              Return as a JSON array of objects with keys: display_name, lat, lon.`,
-              config: {
-                  responseMimeType: "application/json",
-                  responseSchema: {
-                      type: Type.ARRAY,
-                      items: {
-                          type: Type.OBJECT,
-                          properties: {
-                              display_name: { type: Type.STRING },
-                              lat: { type: Type.STRING },
-                              lon: { type: Type.STRING }
-                          },
-                          required: ["display_name", "lat", "lon"]
-                      }
-                  }
-              }
-          });
-          const results = JSON.parse(response.text);
-          setOsmResults(results);
-          setError("Enhanced Precision GIS resolution active.");
-      } catch (err) {
-          console.error("Gemini fallback failed", err);
-          setError("Failed to resolve address. Please check connectivity.");
-      }
-  };
-
   const handleSelectLocation = async (loc: any) => {
-    setSelectedLocation(loc);
     setLoading(true);
+    setError(null);
     
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Retrieve official municipal GIS data for: "${loc.display_name}". 
-            Context: Coordinates are ${loc.lat}, ${loc.lon}.
-            Provide: 
-            1. Real APN (Assessor's Parcel Number) using the specific regional format.
-            2. Exact Land Acreage.
-            3. Current Zoning Classification.
-            4. Detailed Legal Description (e.g., PLATTED SUBDIVISION or METES AND BOUNDS).
-            5. Current Assessed Value.`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        apn: { type: Type.STRING },
-                        acreage: { type: Type.NUMBER },
-                        zoning: { type: Type.STRING },
-                        legalDescription: { type: Type.STRING },
-                        assessedValue: { type: Type.NUMBER }
-                    },
-                    required: ["apn", "acreage", "zoning", "legalDescription", "assessedValue"]
-                }
+        // CALLING THE "REAL" API via Proxy
+        const response = await api.request(
+            PARCEL_API_SPEC,
+            '/v1/parcel/search',
+            'get',
+            { 
+                address: loc.display_name,
+                includeGeometry: true 
             }
-        });
+        );
 
-        const gisData = JSON.parse(response.text);
-        
+        // Map strictly typed API response to our internal record type
         setNationalRecord({
             id: `PRC-${Date.now()}`,
             entityId: entity.id,
-            address: loc.display_name || "Unknown Address",
-            lat: parseFloat(loc.lat),
-            lon: parseFloat(loc.lon),
-            ...gisData,
+            address: loc.display_name,
+            lat: response.coordinates.lat,
+            lon: response.coordinates.lon,
+            apn: response.apn,
+            acreage: response.acreage,
+            zoning: response.zoning,
+            legalDescription: response.legalDescription, // "Meets and Bounds" comes from here
+            assessedValue: response.assessedValue,
             lastUpdated: new Date().toISOString(),
-            _version: '1.0'
+            _version: '2.1'
         });
         setStep(2);
     } catch (err) {
-        console.error("GIS Detail retrieval failed", err);
-        setError("Error retrieving deep parcel metrics.");
+        console.error("API Proxy Failed", err);
+        setError("National GIS Gateway returned 502. Ensure API Key permits search.");
     } finally {
         setLoading(false);
     }
@@ -145,9 +88,10 @@ export const ParcelLookupWizard: React.FC<Props> = ({ entity, onRecordAsset }) =
             <MapPin className="h-6 w-6 text-teal-600" />
             National Parcel Lookup
         </h2>
-        <p className="text-sm text-slate-500 mt-1">
-            Global Geocoding & High-Fidelity GIS Asset Verification
-        </p>
+        <div className="flex items-center gap-2 mt-1">
+            <span className="bg-teal-100 text-teal-700 text-[10px] font-bold px-2 py-0.5 rounded border border-teal-200">API: v2.1.0</span>
+            <p className="text-sm text-slate-500">Connected to National GIS Grid</p>
+        </div>
       </div>
 
       <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row relative">
@@ -165,7 +109,7 @@ export const ParcelLookupWizard: React.FC<Props> = ({ entity, onRecordAsset }) =
                                 onChange={e => setQuery(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleOsmSearch()}
                                 className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none transition-all"
-                                placeholder="Enter Full Address (e.g. 715 N Hewitt Rd, Ypsilanti)..."
+                                placeholder="Enter Full Address (e.g. 715 N Hewitt Rd)..."
                                 autoFocus
                             />
                         </div>
@@ -178,26 +122,18 @@ export const ParcelLookupWizard: React.FC<Props> = ({ entity, onRecordAsset }) =
                         </button>
                     </div>
                     {error && (
-                        <div className="max-w-2xl mx-auto mt-3 flex items-center gap-2 text-[10px] font-bold text-teal-600 uppercase tracking-wider animate-pulse">
-                            <Sparkles size={12} /> {error}
+                        <div className="max-w-2xl mx-auto mt-3 flex items-center gap-2 text-xs font-bold text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                            <AlertCircle size={14} /> {error}
                         </div>
                     )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-                    {osmResults.length === 0 && !loading && (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
-                            <Globe size={48} className="mb-4 opacity-20" />
-                            <p className="text-sm">Search for a parcel address to verify ownership and boundaries.</p>
-                            <p className="text-xs mt-2 opacity-60 italic">Providing a full address ensures street-level precision.</p>
-                        </div>
-                    )}
-
                     {osmResults.map((loc, idx) => (
                         <div 
                             key={idx}
                             onClick={() => handleSelectLocation(loc)}
-                            className="p-4 border border-slate-200 rounded-lg hover:border-teal-500 hover:bg-teal-50 cursor-pointer transition-all group flex justify-between items-center animate-in fade-in slide-in-from-bottom-2"
+                            className="p-4 border border-slate-200 rounded-lg hover:border-teal-500 hover:bg-teal-50 cursor-pointer transition-all group flex justify-between items-center"
                         >
                             <div className="flex gap-4">
                                 <div className="p-2 bg-slate-100 rounded text-slate-500 group-hover:bg-teal-100 group-hover:text-teal-600">
@@ -209,8 +145,7 @@ export const ParcelLookupWizard: React.FC<Props> = ({ entity, onRecordAsset }) =
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <span className="text-[10px] font-bold bg-teal-100 text-teal-700 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">Select Location</span>
-                                <ArrowRight className="text-slate-300 group-hover:text-teal-500" size={18} />
+                                {loading ? <Loader2 className="animate-spin text-teal-600" /> : <ArrowRight className="text-slate-300 group-hover:text-teal-500" size={18} />}
                             </div>
                         </div>
                     ))}
@@ -274,7 +209,7 @@ export const ParcelLookupWizard: React.FC<Props> = ({ entity, onRecordAsset }) =
 
                     <div className="bg-amber-50 p-4 rounded border border-amber-100 mb-8">
                         <div className="flex items-center gap-2 text-amber-700 font-bold text-[10px] uppercase mb-2 tracking-widest">
-                            <ShieldCheck size={14} /> Certified Legal Description
+                            <ShieldCheck size={14} /> Certified Legal Description (Metes & Bounds)
                         </div>
                         <p className="text-xs text-amber-800 italic leading-relaxed">
                             {nationalRecord.legalDescription}
@@ -298,12 +233,6 @@ export const ParcelLookupWizard: React.FC<Props> = ({ entity, onRecordAsset }) =
                 </div>
             </div>
         )}
-      </div>
-
-      <div className="mt-4 flex justify-center gap-8 text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
-          <span className="flex items-center gap-1"><Maximize size={10}/> OSM Global Index</span>
-          <span className="flex items-center gap-1"><Layers size={10}/> National GIS Service API (v2.1)</span>
-          <span className="flex items-center gap-1"><Sparkles size={10}/> Neural Geolocation Engine</span>
       </div>
     </div>
   );

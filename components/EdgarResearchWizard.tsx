@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { Entity, EdgarResearchRecord } from '../types';
-import { Search, FileText, Database, Loader2, CheckCircle2, ExternalLink } from 'lucide-react';
-import { GoogleGenAI, Type } from "@google/genai";
+import { Search, FileText, Database, Loader2, CheckCircle2, ExternalLink, Hash, Tag } from 'lucide-react';
+import { api } from '../services/apiProxy';
+import { EDGAR_API_SPEC } from '../services/openApiDefinitions';
 
 interface Props {
   entity: Entity;
@@ -13,52 +14,26 @@ export const EdgarResearchWizard: React.FC<Props> = ({ entity, onRecordResearch 
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [groundingLinks, setGroundingLinks] = useState<any[]>([]);
 
   const handleSearch = async () => {
     if (!query) return;
     setLoading(true);
     
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Search SEC EDGAR database for recent filings related to: "${query}". 
-            Focus on 8-K, 10-K, or 424B2 filings.
-            Return a JSON array of found items with: companyName, cik, filingType, filingDate, description, accessionNumber.
-            Also include CUSIP if found.`,
-            config: {
-                tools: [{ googleSearch: {} }],
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.ARRAY,
-                    items: {
-                        type: Type.OBJECT,
-                        properties: {
-                            companyName: { type: Type.STRING },
-                            cik: { type: Type.STRING },
-                            filingType: { type: Type.STRING },
-                            filingDate: { type: Type.STRING },
-                            description: { type: Type.STRING },
-                            accessionNumber: { type: Type.STRING },
-                            cusip: { type: Type.STRING }
-                        },
-                        required: ["companyName", "cik", "filingType", "description"]
-                    }
-                }
+        // CALLING THE "REAL" API via Proxy
+        const results = await api.request(
+            EDGAR_API_SPEC,
+            '/v4/filings/query',
+            'get',
+            { 
+                q: query,
+                forms: ["10-K", "8-K", "424B2", "S-1", "SC 13D"] 
             }
-        });
+        );
 
-        const data = JSON.parse(response.text || '[]');
-        setSearchResults(data);
-        
-        // Extract grounding if available
-        if (response.candidates?.[0]?.groundingMetadata?.groundingChunks) {
-            setGroundingLinks(response.candidates[0].groundingMetadata.groundingChunks);
-        }
+        setSearchResults(results);
     } catch (e) {
-        console.error("Search failed", e);
+        console.error("EDGAR API Error", e);
     } finally {
         setLoading(false);
     }
@@ -71,9 +46,9 @@ export const EdgarResearchWizard: React.FC<Props> = ({ entity, onRecordResearch 
           companyName: item.companyName,
           cik: item.cik,
           cusip: item.cusip || 'N/A',
-          filingType: item.filingType as any,
+          filingType: item.formType as any,
           filingDate: item.filingDate || new Date().toISOString().split('T')[0],
-          accessionNumber: item.accessionNumber || `000-${Date.now()}`,
+          accessionNumber: item.accessionNumber,
           extractedDetails: {
               description: item.description
           },
@@ -88,11 +63,12 @@ export const EdgarResearchWizard: React.FC<Props> = ({ entity, onRecordResearch 
         <div className="mb-6 border-b border-slate-200 pb-4">
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <Database className="h-6 w-6 text-indigo-600" />
-                SEC EDGAR Research
+                SEC EDGAR & CUSIP Research
             </h2>
-            <p className="text-sm text-slate-500 mt-1">
-                Public Company & Trust Filing Lookup
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+                <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200">API: v4.0.0</span>
+                <p className="text-sm text-slate-500">Public Company, CUSIP, & Trust Filing Lookup</p>
+            </div>
         </div>
 
         <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm p-6 overflow-y-auto">
@@ -103,8 +79,8 @@ export const EdgarResearchWizard: React.FC<Props> = ({ entity, onRecordResearch 
                         value={query}
                         onChange={e => setQuery(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                        placeholder="Search Company, CIK, or CUSIP..."
+                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+                        placeholder="Search Company, CIK, Ticker, or CUSIP..."
                     />
                 </div>
                 <button 
@@ -119,18 +95,38 @@ export const EdgarResearchWizard: React.FC<Props> = ({ entity, onRecordResearch 
             <div className="space-y-4">
                 {searchResults.map((result, idx) => (
                     <div key={idx} className="p-4 border border-slate-200 rounded-lg hover:border-indigo-300 transition-colors flex justify-between items-start group">
-                        <div>
-                            <h4 className="font-bold text-slate-800">{result.companyName}</h4>
-                            <div className="flex gap-4 text-xs text-slate-500 mt-1">
-                                <span className="font-mono bg-slate-100 px-1 rounded">CIK: {result.cik}</span>
-                                <span className="font-mono bg-slate-100 px-1 rounded">Type: {result.filingType}</span>
-                                <span>Date: {result.filingDate}</span>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-bold text-slate-800">{result.companyName}</h4>
+                                {result.ticker && <span className="text-xs font-bold text-slate-500 flex items-center gap-0.5 bg-slate-100 px-1.5 rounded"><Tag size={10}/> {result.ticker}</span>}
                             </div>
-                            <p className="text-xs text-slate-600 mt-2 max-w-2xl">{result.description}</p>
+                            <div className="flex flex-wrap gap-2 text-xs text-slate-500 mt-1">
+                                <span className="font-mono bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 flex items-center gap-1">
+                                    ACC: {result.accessionNumber}
+                                </span>
+                                <span className="font-mono bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 flex items-center gap-1">
+                                    CIK: {result.cik}
+                                </span>
+                                {result.cusip && (
+                                    <span className="font-mono bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 flex items-center gap-1 font-bold">
+                                        <Hash size={10} /> CUSIP: {result.cusip}
+                                    </span>
+                                )}
+                                <span className="font-bold text-indigo-600 flex items-center gap-1 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
+                                    {result.formType}
+                                </span>
+                                <span>Filed: {result.filingDate}</span>
+                            </div>
+                            <p className="text-xs text-slate-600 mt-2 max-w-2xl leading-relaxed">{result.description}</p>
+                            {result.primaryDocUrl && (
+                                <a href={result.primaryDocUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[10px] text-blue-600 hover:underline mt-2">
+                                    <ExternalLink size={10} /> View Source Document
+                                </a>
+                            )}
                         </div>
                         <button 
                             onClick={() => handleRecord(result)}
-                            className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100"
+                            className="ml-4 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors flex items-center gap-1 opacity-0 group-hover:opacity-100 whitespace-nowrap"
                         >
                             <CheckCircle2 size={12} /> Record
                         </button>
@@ -139,25 +135,11 @@ export const EdgarResearchWizard: React.FC<Props> = ({ entity, onRecordResearch 
                 {searchResults.length === 0 && !loading && (
                     <div className="text-center py-12 text-slate-400">
                         <FileText size={48} className="mx-auto mb-4 opacity-20" />
-                        <p className="text-sm">Enter a query to search official SEC filings.</p>
+                        <p className="text-sm font-medium">Enter a query to access the SEC filing stream.</p>
+                        <p className="text-xs mt-1 opacity-70">Supports full-text search, CIK, and CUSIP lookups.</p>
                     </div>
                 )}
             </div>
-            
-            {groundingLinks.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-slate-100">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Sources</h4>
-                    <div className="flex flex-wrap gap-2">
-                        {groundingLinks.map((link: any, i) => (
-                            link.web?.uri && (
-                                <a key={i} href={link.web.uri} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-50 px-2 py-1 rounded hover:underline">
-                                    <ExternalLink size={10} /> {link.web.title || 'Source'}
-                                </a>
-                            )
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     </div>
   );
