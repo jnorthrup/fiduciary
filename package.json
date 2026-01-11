@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:server": "vitest --config vitest.server.config.ts"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
