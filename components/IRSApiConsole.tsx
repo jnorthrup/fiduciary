@@ -221,8 +221,10 @@ export const IRSApiConsole: React.FC<Props> = ({
           const response = await ai.models.generateContent({
               model: 'gemini-3-flash-preview',
               contents: `Lookup Security Information for CUSIP/Ticker: "${cusipQuery}".
+              Use Google Search to find real data.
               Return JSON with: name, assetClass, exchange, price, description.`,
               config: {
+                  tools: [{ googleSearch: {} }],
                   responseMimeType: "application/json",
                   responseSchema: {
                       type: Type.OBJECT,
@@ -611,4 +613,83 @@ export const IRSApiConsole: React.FC<Props> = ({
                           >
                               <option value="All">All Transactions</option>
                               <option value="PayPal">PayPal (CAN {CIR_CANS.PAYPAL})</option>
-                              <option value="Amazon">Amazon
+                              <option value="Amazon">Amazon (CAN {CIR_CANS.AMAZON})</option>
+                          </select>
+                      </div>
+                      <div className="flex items-end">
+                          <button 
+                            onClick={handleGenerateCIR}
+                            className="w-full bg-emerald-600 text-white font-bold py-3 rounded hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                          >
+                              <Download size={16} /> Generate Extract
+                          </button>
+                      </div>
+                  </div>
+
+                  <div className="flex-1 bg-slate-950 border border-slate-800 rounded p-4 relative overflow-hidden">
+                      <div className="absolute top-2 right-2 text-xs text-slate-500 font-bold uppercase">XML Preview</div>
+                      <textarea 
+                        readOnly 
+                        value={cirXml}
+                        className="w-full h-full bg-transparent text-emerald-400 font-mono text-xs focus:outline-none resize-none custom-scrollbar"
+                        placeholder="<!-- XML Extract will appear here -->"
+                      />
+                  </div>
+              </div>
+          )}
+
+          {/* TAB: SEARCH */}
+          {activeTab === 'Search' && (
+            <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
+                <div className="max-w-2xl mx-auto space-y-6">
+                    <form onSubmit={handleSearchSubmit} className="relative">
+                        <input 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search IRM, Pubs, or Tax Code..."
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-6 py-4 pl-12 text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-lg text-lg"
+                        />
+                        <Search className="absolute left-4 top-5 text-slate-500" size={20} />
+                        {isSearching && (
+                            <div className="absolute right-4 top-5">
+                                <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        )}
+                    </form>
+
+                    <div className="space-y-4">
+                        {searchResults.map(result => (
+                            <div key={result.id} className="bg-slate-900 border border-slate-800 p-4 rounded-lg hover:border-indigo-500/50 transition-colors group cursor-pointer">
+                                <div className="flex justify-between items-start mb-1">
+                                    <h4 className="font-bold text-indigo-400 group-hover:underline">{result.title}</h4>
+                                    <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400 border border-slate-700">{result.source}</span>
+                                </div>
+                                <p className="text-sm text-slate-400 leading-relaxed line-clamp-2">{result.snippet}</p>
+                                <div className="mt-2 text-[10px] text-slate-600 font-mono truncate">{result.url}</div>
+                            </div>
+                        ))}
+                        {searchResults.length === 0 && !isSearching && searchQuery && (
+                            <div className="text-center text-slate-500 py-10">
+                                No results found in Internal Revenue Manual database.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+          )}
+
+          {/* TAB: CONFIG / LOGS / SIM (Placeholder or existing logic) */}
+          {(activeTab === 'Config' || activeTab === 'Sim' || activeTab === 'Logs') && (
+              <div className="flex-1 flex items-center justify-center text-slate-500">
+                  <div className="text-center">
+                      <Settings size={48} className="mx-auto mb-4 opacity-20" />
+                      <p>Module active. Check sidebar for detailed configuration.</p>
+                  </div>
+              </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+};

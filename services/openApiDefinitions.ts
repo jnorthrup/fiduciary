@@ -96,3 +96,141 @@ export const EDGAR_API_SPEC = {
     }
   }
 };
+
+export const MSRB_EMMA_API_SPEC = {
+  "openapi": "3.1.0",
+  "info": {
+    "title": "MSRB EMMA Market Data",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/securities/search": {
+      "get": {
+        "summary": "Search Municipal Securities (EMMA)",
+        "parameters": [
+          { "name": "q", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of matching municipal securities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "cusip": { "type": "string" },
+                      "issuerName": { "type": "string" },
+                      "issueDescription": { "type": "string" },
+                      "datedDate": { "type": "string", "format": "date" },
+                      "maturityDate": { "type": "string", "format": "date" },
+                      "interestRate": { "type": "number" },
+                      "principalAmount": { "type": "number" },
+                      "officialStatementUrl": { "type": "string", "format": "uri" },
+                      "status": { "type": "string" }
+                    },
+                    "required": ["cusip", "issuerName", "issueDescription"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
+
+export const IRIS_API_SPEC = {
+  "openapi": "3.1.0",
+  "info": {
+    "title": "IRS Information Returns Intake System (IRIS)",
+    "version": "1.3.0"
+  },
+  "paths": {
+    "/v1/submissions": {
+      "post": {
+        "summary": "Ingest Information Return Batch",
+        "description": "Submit a batch of 1099 forms for processing.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transmitterId": { "type": "string" },
+                  "softwareId": { "type": "string" },
+                  "formType": { "type": "string" },
+                  "filer": { 
+                    "type": "object",
+                    "properties": {
+                        "ein": { "type": "string" },
+                        "name": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Receipt Acknowledgment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "receiptId": { "type": "string" },
+                    "status": { "type": "string" },
+                    "timestamp": { "type": "string" },
+                    "messages": { "type": "array", "items": { "type": "string" } }
+                  },
+                  "required": ["receiptId", "status", "timestamp"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tin-validation": {
+      "post": {
+        "summary": "Interactive TIN Matching",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tin": { "type": "string" },
+                  "name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Match Result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": { "type": "integer" },
+                    "message": { "type": "string" },
+                    "match": { "type": "boolean" }
+                  },
+                  "required": ["code", "match"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+};
