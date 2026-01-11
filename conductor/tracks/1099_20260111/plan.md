@@ -15,7 +15,7 @@
   - [x] Sub-task: Implement request logging middleware
 - [x] Task: Conductor - User Manual Verification 'Phase 1.1 Setup Testing Infrastructure' (Protocol in workflow.md) [fc14d5f]
 
-### 1.2 IRS IRIS API Enhancement
+### 1.2 IRS IRIS API Enhancement [checkpoint: SKIP_PER_USER_FOCUS]
 - [x] Task: Write tests for enhanced submission validation [fa4ec86]
   - [x] Sub-task: Write failing tests for submission schema validation
   - [x] Sub-task: Implement submission schema validation with detailed error messages
@@ -26,9 +26,9 @@
   - [x] Sub-task: Implement exponential backoff for status polling
   - [x] Sub-task: Write failing tests for terminal state detection
   - [x] Sub-task: Implement terminal state detection logic
-- [ ] Task: Conductor - User Manual Verification 'Phase 1.2 IRS IRIS API Enhancement' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1.2 IRS IRIS API Enhancement' (Protocol in workflow.md) [SKIP_PER_USER_DIRECTIVE]
 
-### 1.3 Data Persistence Layer
+### 1.3 Data Persistence Layer [SKIP_PER_USER_FOCUS]
 - [ ] Task: Write tests for submission storage
   - [ ] Sub-task: Write failing tests for submission record creation
   - [ ] Sub-task: Implement submission storage with metadata
@@ -44,10 +44,10 @@
 ## Phase 2: Frontend 1099 Wizard Enhancement
 
 ### 2.1 Wizard Component Testing
-- [ ] Task: Write tests for IRIS1099Wizard authentication step
-  - [ ] Sub-task: Write failing tests for TCC input validation
+- [~] Task: Write tests for IRIS1099Wizard authentication step
+  - [x] Sub-task: Write failing tests for TCC input validation
   - [ ] Sub-task: Implement TCC format validation (TXXXXXXXXX)
-  - [ ] Sub-task: Write failing tests for bearer token input
+  - [x] Sub-task: Write failing tests for bearer token input
   - [ ] Sub-task: Implement bearer token handling
 - [ ] Task: Write tests for wizard step navigation
   - [ ] Sub-task: Write failing tests for step progression logic
