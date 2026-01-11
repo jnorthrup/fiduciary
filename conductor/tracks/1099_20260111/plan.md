@@ -46,9 +46,9 @@
 ### 2.1 Wizard Component Testing
 - [~] Task: Write tests for IRIS1099Wizard authentication step
   - [x] Sub-task: Write failing tests for TCC input validation
-  - [ ] Sub-task: Implement TCC format validation (TXXXXXXXXX)
+  - [x] Sub-task: Implement TCC format validation (TXXXXXXXXX)
   - [x] Sub-task: Write failing tests for bearer token input
-  - [ ] Sub-task: Implement bearer token handling
+  - [x] Sub-task: Implement bearer token handling
 - [ ] Task: Write tests for wizard step navigation
   - [ ] Sub-task: Write failing tests for step progression logic
   - [ ] Sub-task: Implement step navigation with validation
