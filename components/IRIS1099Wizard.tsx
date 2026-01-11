@@ -8,8 +8,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   FileText, CheckCircle, AlertCircle, ChevronRight, ChevronLeft,
-  Building2, User, Plus, Trash2, Eye, Download, Upload, RefreshCw,
-  Lock, Shield, Zap, Globe, Server, Activity, KeyRound, Fingerprint
+  Building2, User, Plus, Trash2, RefreshCw,
+  Lock, Shield, Zap, Server, Activity, KeyRound, Fingerprint
 } from 'lucide-react';
 import {
   irsApi,
@@ -17,39 +17,32 @@ import {
   type SubmissionRequest,
   type PayeeRecord,
   type FilerInfo,
-  type Address,
   type SubmissionReceipt,
   type BatchStatus,
   type TinMatchResponse,
-  type TinMatchRequest,
   formatEIN,
-  formatSSN,
-  validateTINFormat,
   getFormAmountFields,
   type ValidationError
 } from '../services/irsApiClient';
 import {
   storeTCC,
   getStoredTCCs,
-  autoFillTCC,
   storeBearerToken,
   type StoredCredential
 } from '../services/secureStorage';
 
 interface Props {
-  entityId?: string;
   onClose?: () => void;
 }
 
 type WizardStep = 'Auth' | 'Filer' | 'FormType' | 'Payees' | 'Review' | 'Submit' | 'Result';
 type SubmissionStatus = 'idle' | 'validating' | 'submitting' | 'polling' | 'success' | 'error';
 
-export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
+export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   // Auth State
   const [tcc, setTcc] = useState('');
   const [bearerToken, setBearerToken] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [apiHealth, setApiHealth] = useState<{ status: string; service: string } | null>(null);
+  const [apiHealth, setApiHealth] = useState<{ status: string; service: string; version?: string } | null>(null);
   const [isFetchingTCC, setIsFetchingTCC] = useState(false);
   const [tccLog, setTccLog] = useState<string[]>([]);
   const [storedTCCs, setStoredTCCs] = useState<StoredCredential[]>([]);
@@ -99,7 +92,6 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
   const [receipt, setReceipt] = useState<SubmissionReceipt | null>(null);
   const [batchStatus, setBatchStatus] = useState<BatchStatus | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
-  const [validationWarnings, setValidationWarnings] = useState<ValidationError[]>([]);
 
   // TIN Validation State
   const [tinValidation, setTinValidation] = useState<Record<string, TinMatchResponse>>({});
@@ -164,7 +156,6 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
     } else {
       return;
     }
-    setIsAuthenticated(true);
     setCurrentStep('Filer');
   };
 
@@ -240,7 +231,6 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
       const checkResult = await irsApi.transmissionCheck(submission);
 
       setValidationErrors(checkResult.errors);
-      setValidationWarnings(checkResult.warnings);
 
       if (!checkResult.valid) {
         setSubmissionStatus('error');
@@ -824,7 +814,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
                   </div>
                   {Object.keys(payee.amounts || {}).length > 0 && (
                     <div className="text-xs text-indigo-400 mt-1">
-                      {Object.entries(payee.amounts || {}).map(([k, v]) => v && v > 0 ? `${k}: $${v}` : null).filter(Boolean).join(' | ')}
+                      {Object.entries(payee.amounts || {}).map(([k, v]) => (v && typeof v === 'number' && v > 0 ? `${k}: $${v}` : null)).filter(Boolean).join(' | ')}
                     </div>
                   )}
                 </div>
