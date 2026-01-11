@@ -885,4 +885,596 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       });
     });
   });
+
+  describe('Payee Management', () => {
+    it('should add payee to list when Add Payee to Batch is clicked', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Add payee
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      // Payee should appear in list
+      await waitFor(() => {
+        expect(screen.queryByText('99-8765432')).toBeInTheDocument();
+        expect(screen.queryByText('Jane Smith')).toBeInTheDocument();
+      });
+    });
+
+    it('should allow adding multiple payees', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Add first payee
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Payees in Batch \(1\/1000\)/)).toBeInTheDocument();
+      });
+
+      // Form should clear for next payee
+      expect(payeeTinInput).toHaveValue('');
+      expect(payeeNameInput).toHaveValue('');
+
+      // Add second payee
+      fireEvent.change(payeeTinInput, { target: { value: '98-7654321' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Bob Jones' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Payees in Batch \(2\/1000\)/)).toBeInTheDocument();
+      });
+    });
+
+    it('should require TIN to add payee', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      const addButton = screen.getByText('Add Payee to Batch');
+
+      // Should be disabled initially
+      expect(addButton).toBeDisabled();
+
+      // Enter name but no TIN
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+
+      // Still disabled
+      expect(addButton).toBeDisabled();
+    });
+
+    it('should require name to add payee', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      const addButton = screen.getByText('Add Payee to Batch');
+
+      // Should be disabled initially
+      expect(addButton).toBeDisabled();
+
+      // Enter TIN but no name
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+
+      // Still disabled
+      expect(addButton).toBeDisabled();
+    });
+
+    it('should clear form after adding payee', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Add payee
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      // Form should be cleared
+      await waitFor(() => {
+        expect(payeeTinInput).toHaveValue('');
+        expect(payeeNameInput).toHaveValue('');
+      });
+    });
+
+    it('should show payee count in header', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Add payee
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      // Should show Payees in Batch (1/1000)
+      await waitFor(() => {
+        expect(screen.queryByText(/Payees in Batch \(1\/1000\)/)).toBeInTheDocument();
+      });
+    });
+
+    it('should show remove button for each payee', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Add payee
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      // Should show delete button (Trash2 icon)
+      await waitFor(() => {
+        const deleteButtons = screen.getAllByRole('button').filter(btn =>
+          btn.querySelector('svg.lucide-trash-2') || btn.innerHTML.includes('Trash2')
+        );
+        expect(deleteButtons.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should remove payee when delete button is clicked', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Add payee
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Jane Smith')).toBeInTheDocument();
+      });
+
+      // Find and click delete button
+      const payeeRow = screen.getByText('Jane Smith').closest('div[class*="bg-slate-900"]');
+      const deleteButton = payeeRow?.querySelector('button');
+      expect(deleteButton).toBeTruthy();
+      fireEvent.click(deleteButton!);
+
+      // Payee should be removed
+      await waitFor(() => {
+        expect(screen.queryByText('Jane Smith')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should update payee count after removal', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Add two payees
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Payees in Batch \(1\/1000\)/)).toBeInTheDocument();
+      });
+
+      fireEvent.change(payeeTinInput, { target: { value: '98-7654321' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Bob Jones' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      await waitFor(() => {
+        expect(screen.queryByText(/Payees in Batch \(2\/1000\)/)).toBeInTheDocument();
+      });
+
+      // Remove first payee
+      const janeRow = screen.getByText('Jane Smith').closest('div[class*="bg-slate-900"]');
+      const deleteButton = janeRow?.querySelector('button');
+      fireEvent.click(deleteButton!);
+
+      // Count should be 1
+      await waitFor(() => {
+        expect(screen.queryByText(/Payees in Batch \(1\/1000\)/)).toBeInTheDocument();
+        expect(screen.queryByText('Jane Smith')).not.toBeInTheDocument();
+        expect(screen.queryByText('Bob Jones')).toBeInTheDocument();
+      });
+    });
+
+    it('should disable Continue button after removing all payees', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Add payee
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      // Continue should be enabled
+      await waitFor(() => {
+        const continueButton = screen.getByText('Continue');
+        expect(continueButton).toBeEnabled();
+      });
+
+      // Remove the payee
+      const payeeRow = screen.getByText('Jane Smith').closest('div[class*="bg-slate-900"]');
+      const deleteButton = payeeRow?.querySelector('button');
+      fireEvent.click(deleteButton!);
+
+      // Continue should be disabled
+      await waitFor(() => {
+        const continueButton = screen.getByText('Continue');
+        expect(continueButton).toBeDisabled();
+      });
+    });
+  });
+
+  describe('Payee TIN Validation', () => {
+    it('should accept valid EIN format (XX-XXXXXXX)', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      // Enter valid EIN
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Acme Corp' } });
+
+      // Add button should be enabled
+      const addButton = screen.getByText('Add Payee to Batch');
+      expect(addButton).toBeEnabled();
+    });
+
+    it('should accept valid SSN format (XXX-XX-XXXX)', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      // Enter valid SSN
+      fireEvent.change(payeeTinInput, { target: { value: '123-45-6789' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'John Doe' } });
+
+      // Add button should be enabled
+      const addButton = screen.getByText('Add Payee to Batch');
+      expect(addButton).toBeEnabled();
+    });
+
+    it('should show error for invalid TIN format', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      // Enter invalid TIN (wrong format)
+      fireEvent.change(payeeTinInput, { target: { value: '123456' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'John Doe' } });
+
+      // Blur to trigger validation
+      fireEvent.blur(payeeTinInput);
+
+      // Should show error message
+      await waitFor(() => {
+        expect(screen.queryByText(/Invalid TIN format/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should disable Add button for invalid TIN format', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      // Enter invalid TIN (wrong format)
+      fireEvent.change(payeeTinInput, { target: { value: '123456' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'John Doe' } });
+
+      // Add button should be disabled
+      const addButton = screen.getByText('Add Payee to Batch');
+      expect(addButton).toBeDisabled();
+    });
+
+    it('should warn about duplicate TIN', async () => {
+      render(<IRIS1099Wizard />);
+
+      // Navigate to Payees step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      // Add first payee
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Jane Smith')).toBeInTheDocument();
+      });
+
+      // Try to add payee with same TIN
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'John Smith' } });
+
+      // Blur to trigger validation
+      fireEvent.blur(payeeTinInput);
+
+      // Should show duplicate warning
+      await waitFor(() => {
+        expect(screen.queryByText(/Duplicate TIN/i)).toBeInTheDocument();
+      });
+    });
+  });
 });

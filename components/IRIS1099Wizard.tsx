@@ -97,6 +97,8 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   // TIN Validation State
   const [tinValidation, setTinValidation] = useState<Record<string, TinMatchResponse>>({});
   const [validatingTin, setValidatingTin] = useState<string | null>(null);
+  const [tinFormatError, setTinFormatError] = useState<string | null>(null);
+  const [tinDuplicateWarning, setTinDuplicateWarning] = useState<string | null>(null);
 
   // Check API health on mount
   useEffect(() => {
@@ -126,6 +128,48 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   // Validate bearer token format (non-empty string)
   const isValidBearerToken = (token: string): boolean => {
     return token.length > 0;
+  };
+
+  // Validate TIN format (EIN: XX-XXXXXXX or SSN: XXX-XX-XXXX)
+  const isValidTINFormat = (tin: string): boolean => {
+    const einPattern = /^\d{2}-\d{7}$/;
+    const ssnPattern = /^\d{3}-\d{2}-\d{4}$/;
+    return einPattern.test(tin) || ssnPattern.test(tin);
+  };
+
+  // Check if TIN is duplicate
+  const isDuplicateTIN = (tin: string): boolean => {
+    return payees.some(p => p.tin === tin);
+  };
+
+  // Handle TIN input change with validation
+  const handleTINChange = (tin: string) => {
+    setCurrentPayee({ ...currentPayee, tin });
+
+    // Clear errors on change
+    setTinFormatError(null);
+    setTinDuplicateWarning(null);
+  };
+
+  // Handle TIN blur for validation
+  const handleTINBlur = () => {
+    const tin = currentPayee.tin;
+    if (!tin) {
+      setTinFormatError(null);
+      setTinDuplicateWarning(null);
+      return;
+    }
+
+    // Check format
+    if (!isValidTINFormat(tin)) {
+      setTinFormatError('Invalid TIN format. Use XX-XXXXXXX (EIN) or XXX-XX-XXXX (SSN)');
+      return;
+    }
+
+    // Check for duplicates
+    if (isDuplicateTIN(tin)) {
+      setTinDuplicateWarning('Duplicate TIN - this TIN already exists in the batch');
+    }
   };
 
   // Simulate TCC retrieval from IRS e-Services
@@ -217,6 +261,10 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
       },
       amounts: {}
     });
+
+    // Clear TIN validation state
+    setTinFormatError(null);
+    setTinDuplicateWarning(null);
   };
 
   const handleRemovePayee = (index: number) => {
@@ -645,14 +693,17 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
             <div className="relative">
               <input
                 value={currentPayee.tin}
-                onChange={e => setCurrentPayee({ ...currentPayee, tin: e.target.value })}
+                onChange={e => handleTINChange(e.target.value)}
                 onBlur={async () => {
-                  if (currentPayee.tin && currentPayee.name) {
+                  handleTINBlur();
+                  if (currentPayee.tin && currentPayee.name && isValidTINFormat(currentPayee.tin)) {
                     await validateTIN(currentPayee.tin, currentPayee.name);
                   }
                 }}
                 placeholder="XX-XXXXXXX or XXX-XX-XXXX"
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2.5 px-3 text-white font-mono text-sm focus:border-indigo-500 outline-none"
+                className={`w-full bg-slate-950 border rounded-lg py-2.5 px-3 text-white font-mono text-sm focus:border-indigo-500 outline-none ${
+                  tinFormatError ? 'border-red-500' : 'border-slate-700'
+                }`}
               />
               {validatingTin === currentPayee.tin && (
                 <div className="absolute right-3 top-2.5">
@@ -660,7 +711,17 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
                 </div>
               )}
             </div>
-            {tinValidation[`${currentPayee.tin}-${currentPayee.name}`] && (
+            {tinFormatError && (
+              <div className="text-xs mt-1 flex items-center gap-1 text-red-400">
+                <AlertCircle size={10} /> {tinFormatError}
+              </div>
+            )}
+            {tinDuplicateWarning && !tinFormatError && (
+              <div className="text-xs mt-1 flex items-center gap-1 text-amber-400">
+                <AlertCircle size={10} /> {tinDuplicateWarning}
+              </div>
+            )}
+            {!tinFormatError && !tinDuplicateWarning && tinValidation[`${currentPayee.tin}-${currentPayee.name}`] && (
               <div className={`text-xs mt-1 flex items-center gap-1 ${
                 tinValidation[`${currentPayee.tin}-${currentPayee.name}`].match ? 'text-emerald-400' : 'text-red-400'
               }`}>
@@ -788,7 +849,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
 
         <button
           onClick={handleAddPayee}
-          disabled={!currentPayee.tin || !currentPayee.name}
+          disabled={!currentPayee.tin || !currentPayee.name || !isValidTINFormat(currentPayee.tin) || !!tinFormatError}
           className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2"
         >
           <Plus size={16} />
