@@ -62,11 +62,11 @@
   - [x] Sub-task: Implement EIN format validation with user feedback
   - [x] Sub-task: Write failing tests for address validation
   - [x] Sub-task: Implement address field validation (state, ZIP)
-- [ ] Task: Write tests for payee management
-  - [ ] Sub-task: Write failing tests for payee add/remove operations
-  - [ ] Sub-task: Implement payee list management
-  - [ ] Sub-task: Write failing tests for payee data validation
-  - [ ] Sub-task: Implement payee field validation with error display
+- [x] Task: Write tests for payee management [76fe769]
+  - [x] Sub-task: Write failing tests for payee add/remove operations
+  - [x] Sub-task: Implement payee list management
+  - [x] Sub-task: Write failing tests for payee data validation
+  - [x] Sub-task: Implement payee field validation with error display
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.2 Form & Payee Management' (Protocol in workflow.md)
 
 ### 2.3 Submission & Status Display
