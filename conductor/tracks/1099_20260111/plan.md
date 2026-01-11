@@ -57,7 +57,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2.1 Wizard Component Testing' (Protocol in workflow.md) [SKIP_PER_USER_DIRECTIVE]
 
 ### 2.2 Form & Payee Management
-- [ ] Task: Write tests for filer information form
+- [~] Task: Write tests for filer information form
   - [ ] Sub-task: Write failing tests for EIN format validation
   - [ ] Sub-task: Implement EIN format validation with user feedback
   - [ ] Sub-task: Write failing tests for address validation
