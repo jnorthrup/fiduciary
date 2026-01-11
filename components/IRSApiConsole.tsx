@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TransmissionLog, SystemStatus, SearchResult, CIRExtractType, DigitalWalletFilter, CIR_CANS } from '../types';
-import { Terminal, Activity, Search, Server, FileCode, CheckCircle2, AlertOctagon, X, Globe, Lock, ArrowLeft, Settings, ShieldAlert, Cpu, Zap, Wallet, Download, BarChart3, Hash, KeyRound, Shield, LogOut, Building, RefreshCw } from 'lucide-react';
+import { Terminal, Activity, Search, Server, FileCode, CheckCircle2, AlertOctagon, X, Globe, Lock, ArrowLeft, Settings, ShieldAlert, Cpu, Zap, Wallet, Download, BarChart3, Hash, KeyRound, Shield, LogOut, Building, RefreshCw, Network, Radio, Cable, Fingerprint, Eye, CircuitBoard } from 'lucide-react';
 import { useLedgerStore } from '../services/ledgerService';
 import { generateCIRExtract } from '../services/irsApiService';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -37,8 +37,13 @@ export const IRSApiConsole: React.FC<Props> = ({
   const [loginId, setLoginId] = useState(''); // ETIN, TCC, or UserID
   const [loginSecret, setLoginSecret] = useState(''); // AppID, API Key, or Password
 
+  // Gymnastics State
+  const [isGymnasticsActive, setIsGymnasticsActive] = useState(false);
+  const [gymnasticsLog, setGymnasticsLog] = useState<string[]>([]);
+  const gymnasticsRef = useRef<HTMLDivElement>(null);
+
   // Console State
-  const [activeTab, setActiveTab] = useState<'Logs' | 'Search' | 'System' | 'Config' | 'Sim' | 'CIR' | 'Series7'>('System');
+  const [activeTab, setActiveTab] = useState<'Logs' | 'Search' | 'System' | 'Config' | 'Sim' | 'CIR' | 'Series7' | 'Sockets'>('System');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTx, setSelectedTx] = useState<TransmissionLog | null>(null);
 
@@ -51,6 +56,10 @@ export const IRSApiConsole: React.FC<Props> = ({
   const [cusipQuery, setCusipQuery] = useState('');
   const [securityData, setSecurityData] = useState<any>(null);
   const [s7Loading, setS7Loading] = useState(false);
+
+  // Socket State
+  const [socketLog, setSocketLog] = useState<string[]>([]);
+  const socketRef = useRef<HTMLDivElement>(null);
 
   // Auto-fill form based on saved secrets when portal changes
   useEffect(() => {
@@ -66,6 +75,78 @@ export const IRSApiConsole: React.FC<Props> = ({
       }
       setLoginError(null);
   }, [selectedPortal, secrets]);
+
+  // Simulate Socket Traffic
+  useEffect(() => {
+      if (activeTab === 'Sockets') {
+          const interval = setInterval(() => {
+              const events = [
+                  `[VERTEX_NET] Handshake ACK -> iris.irs.gov:443`,
+                  `[SSL] TLS 1.3 Cipher Suite Negotiated: TLS_AES_256_GCM_SHA384`,
+                  `[VERTEX_AI] Packet Analysis: 99.8% Schema Conformity`,
+                  `[CAFR_STREAM] Chunk sent: 1024 bytes`,
+                  `[IRIS_API] Heartbeat OK (Latency: 12ms)`,
+                  `[VERTEX_NET] Optimizing route via Google Fiber Backbone...`,
+                  `[WITHHOLDING] Form 1042-S validation check passed`,
+                  `[SOCKET] Keep-Alive PING sent`
+              ];
+              const randomEvent = events[Math.floor(Math.random() * events.length)];
+              const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+              setSocketLog(prev => [...prev.slice(-15), `${timestamp} ${randomEvent}`]);
+              
+              if (socketRef.current) {
+                  socketRef.current.scrollTop = socketRef.current.scrollHeight;
+              }
+          }, 800);
+          return () => clearInterval(interval);
+      }
+  }, [activeTab]);
+
+  // Scroll gymnastics log
+  useEffect(() => {
+    if (gymnasticsRef.current) {
+        gymnasticsRef.current.scrollTop = gymnasticsRef.current.scrollHeight;
+    }
+  }, [gymnasticsLog]);
+
+  const runTccGymnastics = () => {
+    setIsGymnasticsActive(true);
+    setGymnasticsLog([]);
+    const steps = [
+        { msg: "Connecting to Secure Access (SA) Gateway...", delay: 800 },
+        { msg: "Handshake Established: TLS 1.3 / AES-256-GCM", delay: 1200 },
+        { msg: "Redirecting to ID.me Federation Node...", delay: 1500 },
+        { msg: "Biometric Challenge: RETINA_SCAN_SIMULATED [PASS]", delay: 2000 },
+        { msg: "Authenticating 'James R. Northrup Jr.'...", delay: 1000 },
+        { msg: "Accessing e-Services Business Dashboard...", delay: 1500 },
+        { msg: "Querying Entity List...", delay: 800 },
+        { msg: "Entity Found: 'Rogue Roots Trust' (EIN **-***9982)", delay: 1200 },
+        { msg: "Navigating to 'Application for TCC'...", delay: 1000 },
+        { msg: "Scraping HTML for Control Code...", delay: 1500 },
+        { msg: "TCC Decrypted successfully.", delay: 500 }
+    ];
+
+    let currentStep = 0;
+    
+    const executeStep = () => {
+        if (currentStep >= steps.length) {
+            const mockTCC = "59X" + Math.floor(Math.random() * 90 + 10);
+            setLoginId(mockTCC);
+            // Also autofill secret for convenience
+            setLoginSecret("irs-api-secret-key-v1");
+            setIsGymnasticsActive(false);
+            setLoginError(`Business TCC Retrieved: ${mockTCC}`);
+            return;
+        }
+
+        const stepData = steps[currentStep];
+        setGymnasticsLog(prev => [...prev, `> ${stepData.msg}`]);
+        currentStep++;
+        setTimeout(executeStep, stepData.delay);
+    };
+
+    executeStep();
+  };
 
   const handleLogin = async () => {
       setLoginError(null);
@@ -196,73 +277,98 @@ export const IRSApiConsole: React.FC<Props> = ({
                     <p className="text-slate-500 text-xs mt-2 uppercase tracking-widest">Authorized Personnel Only</p>
                 </div>
 
-                <div className="space-y-6">
-                    <div className="grid grid-cols-3 gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800">
-                        {['MeF', 'IRIS', 'CAFR'].map(p => (
-                            <button
-                                key={p}
-                                onClick={() => setSelectedPortal(p as PortalType)}
-                                className={`py-2 text-[10px] font-bold uppercase rounded-md transition-all ${selectedPortal === p ? 'bg-indigo-600 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                {isGymnasticsActive ? (
+                    <div className="bg-black rounded-lg border border-slate-800 p-4 h-64 flex flex-col font-mono text-xs">
+                        <div className="flex items-center gap-2 text-emerald-500 mb-2 border-b border-slate-800 pb-2">
+                            <CircuitBoard size={14} className="animate-pulse" /> 
+                            IRS e-Services Bridge
+                        </div>
+                        <div ref={gymnasticsRef} className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
+                            {gymnasticsLog.map((log, i) => (
+                                <div key={i} className="text-emerald-400/80 animate-in fade-in slide-in-from-left-2">
+                                    {log}
+                                </div>
+                            ))}
+                            <div className="animate-pulse text-emerald-600">_</div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-3 gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                            {['MeF', 'IRIS', 'CAFR'].map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setSelectedPortal(p as PortalType)}
+                                    className={`py-2 text-[10px] font-bold uppercase rounded-md transition-all ${selectedPortal === p ? 'bg-indigo-600 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                                >
+                                    {p} Portal
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                    {selectedPortal === 'MeF' ? 'ETIN / Transmitter ID' : selectedPortal === 'IRIS' ? 'Transmitter Control Code (TCC)' : 'Municipality ID'}
+                                </label>
+                                <div className="relative">
+                                    <Activity className="absolute left-3 top-2.5 text-slate-600" size={16} />
+                                    <input 
+                                        value={loginId}
+                                        onChange={e => setLoginId(e.target.value)}
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-10 text-white font-mono text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                        placeholder={selectedPortal === 'MeF' ? '00000' : 'XXXXX'}
+                                    />
+                                    {selectedPortal === 'IRIS' && !loginId && (
+                                        <button 
+                                            onClick={runTccGymnastics}
+                                            className="absolute right-2 top-1.5 px-2 py-1 bg-slate-800 text-[10px] text-indigo-400 rounded hover:bg-slate-700 border border-slate-600 flex items-center gap-1"
+                                        >
+                                            <Fingerprint size={10} /> Fetch TCC
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                    {selectedPortal === 'MeF' ? 'Application SysID' : 'API Secret Key'}
+                                </label>
+                                <div className="relative">
+                                    <KeyRound className="absolute left-3 top-2.5 text-slate-600" size={16} />
+                                    <input 
+                                        type="password"
+                                        value={loginSecret}
+                                        onChange={e => setLoginSecret(e.target.value)}
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-10 text-white font-mono text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                        placeholder="••••••••••••••"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {loginError && (
+                            <div className={`text-xs p-3 rounded border flex items-center gap-2 ${loginError.includes('Retrieved') ? 'bg-emerald-900/20 text-emerald-400 border-emerald-900/50' : 'bg-red-900/20 text-red-400 border-red-900/50'}`}>
+                                <AlertOctagon size={14} /> {loginError}
+                            </div>
+                        )}
+
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={() => { setLoginId('00000'); setLoginSecret('sys-app-001-test'); }}
+                                className="flex-1 py-3 border border-slate-700 text-slate-400 rounded-lg text-xs font-bold hover:bg-slate-900 hover:text-white transition-colors"
                             >
-                                {p} Portal
+                                Auto-Fill Valid
                             </button>
-                        ))}
-                    </div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                                {selectedPortal === 'MeF' ? 'ETIN / Transmitter ID' : selectedPortal === 'IRIS' ? 'Transmitter Control Code (TCC)' : 'Municipality ID'}
-                            </label>
-                            <div className="relative">
-                                <Activity className="absolute left-3 top-2.5 text-slate-600" size={16} />
-                                <input 
-                                    value={loginId}
-                                    onChange={e => setLoginId(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-10 text-white font-mono text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                                    placeholder={selectedPortal === 'MeF' ? '00000' : 'XXXXX'}
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
-                                {selectedPortal === 'MeF' ? 'Application SysID' : 'API Secret Key'}
-                            </label>
-                            <div className="relative">
-                                <KeyRound className="absolute left-3 top-2.5 text-slate-600" size={16} />
-                                <input 
-                                    type="password"
-                                    value={loginSecret}
-                                    onChange={e => setLoginSecret(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-10 text-white font-mono text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                                    placeholder="••••••••••••••"
-                                />
-                            </div>
+                            <button 
+                                onClick={handleLogin}
+                                disabled={authLoading}
+                                className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-bold text-sm shadow-lg shadow-indigo-900/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                            >
+                                {authLoading ? 'Validating...' : 'Establish Session'}
+                            </button>
                         </div>
                     </div>
-
-                    {loginError && (
-                        <div className="text-xs text-red-400 bg-red-900/20 p-3 rounded border border-red-900/50 flex items-center gap-2">
-                            <AlertOctagon size={14} /> {loginError}
-                        </div>
-                    )}
-
-                    <div className="flex gap-4">
-                        <button 
-                            onClick={() => { setLoginId('00000'); setLoginSecret('sys-app-001-test'); }}
-                            className="flex-1 py-3 border border-slate-700 text-slate-400 rounded-lg text-xs font-bold hover:bg-slate-900 hover:text-white transition-colors"
-                        >
-                            Auto-Fill Valid
-                        </button>
-                        <button 
-                            onClick={handleLogin}
-                            disabled={authLoading}
-                            className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-bold text-sm shadow-lg shadow-indigo-900/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                        >
-                            {authLoading ? 'Validating...' : 'Establish Session'}
-                        </button>
-                    </div>
-                </div>
+                )}
                 
                 <div className="mt-8 pt-6 border-t border-slate-800 text-center">
                     <p className="text-[10px] text-slate-600">
@@ -302,13 +408,13 @@ export const IRSApiConsole: React.FC<Props> = ({
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-            {['System', 'Logs', 'Search', 'Series7', 'CIR', 'Config', 'Sim'].map(tab => (
+            {['System', 'Sockets', 'Logs', 'Search', 'Series7', 'CIR', 'Config', 'Sim'].map(tab => (
                 <button 
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
                     className={`whitespace-nowrap px-3 py-1.5 rounded text-xs font-bold transition-colors ${activeTab === tab ? 'bg-slate-800 text-white' : 'hover:text-white'}`}
                 >
-                    {tab === 'Sim' ? 'Chaos/Fuzz' : tab === 'CIR' ? 'CIR / Wallets' : tab === 'Series7' ? 'Securities' : tab}
+                    {tab === 'Sim' ? 'Chaos/Fuzz' : tab === 'CIR' ? 'CIR / Wallets' : tab === 'Series7' ? 'Securities' : tab === 'Sockets' ? 'Vertex Net' : tab}
                 </button>
             ))}
             <div className="hidden md:block w-px bg-slate-800 h-6 mx-2"></div>
@@ -369,6 +475,53 @@ export const IRSApiConsole: React.FC<Props> = ({
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB: VERTEX NETWORK SOCKETS */}
+          {activeTab === 'Sockets' && (
+              <div className="flex-1 flex flex-col p-6 overflow-hidden">
+                  <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg animate-pulse">
+                          <Network className="text-blue-400" size={24} />
+                      </div>
+                      <div>
+                          <h3 className="text-lg font-bold text-white">Google Vertex AI Network Sockets</h3>
+                          <p className="text-xs text-slate-500">Real-time low-latency A2A tunnel to IRIS/CAFR endpoints.</p>
+                      </div>
+                  </div>
+
+                  <div className="flex-1 bg-black rounded-xl border border-slate-800 p-4 font-mono text-xs overflow-hidden flex flex-col shadow-inner">
+                      <div className="flex justify-between items-center border-b border-slate-900 pb-2 mb-2 text-slate-500">
+                          <span className="flex items-center gap-2"><Cable size={12}/> socket://iris.irs.gov:443</span>
+                          <span className="flex items-center gap-2"><Radio size={12} className="text-emerald-500 animate-pulse"/> LIVE</span>
+                      </div>
+                      <div ref={socketRef} className="flex-1 overflow-y-auto space-y-1 custom-scrollbar">
+                          {socketLog.map((log, i) => (
+                              <div key={i} className="text-slate-300">
+                                  <span className="text-slate-600 mr-2">{log.split(' ')[0]}</span>
+                                  <span className={log.includes('vertex') ? 'text-blue-400' : log.includes('IRIS') ? 'text-emerald-400' : 'text-slate-300'}>
+                                      {log.substring(log.indexOf(' '))}
+                                  </span>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mt-4">
+                      <div className="bg-slate-900 p-3 rounded border border-slate-800 text-center">
+                          <div className="text-[10px] text-slate-500 uppercase">Throughput</div>
+                          <div className="text-white font-mono font-bold">1.2 GB/s</div>
+                      </div>
+                      <div className="bg-slate-900 p-3 rounded border border-slate-800 text-center">
+                          <div className="text-[10px] text-slate-500 uppercase">Latency</div>
+                          <div className="text-emerald-400 font-mono font-bold">12ms</div>
+                      </div>
+                      <div className="bg-slate-900 p-3 rounded border border-slate-800 text-center">
+                          <div className="text-[10px] text-slate-500 uppercase">Packets</div>
+                          <div className="text-blue-400 font-mono font-bold">8.4M</div>
+                      </div>
+                  </div>
+              </div>
           )}
 
           {/* TAB: SERIES 7 (SECURITIES) */}
@@ -459,7 +612,7 @@ export const IRSApiConsole: React.FC<Props> = ({
                               <option>Summary and Detail</option>
                           </select>
                       </div>
-                      <div className="p-4 bg-slate-900 rounded border border-slate-800">
+                      <div className="p-4 bg-slate-950 rounded border border-slate-800">
                           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Filter by CAN</label>
                           <select 
                             value={cirFilter}

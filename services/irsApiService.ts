@@ -78,8 +78,47 @@ export const getSystemStatus = (): SystemStatus[] => [
   { channel: 'TIN_MATCH', status: 'Maintenance', latency: '-', uptime: '0%' },
 ];
 
-const generateMockXML = (entity: Entity, formType: IRSFormType) => {
+const generateMockXML = (entity: Entity, formType: IRSFormType | 'CAFR' | '1042') => {
   const timestamp = new Date().toISOString();
+  
+  // Custom Vertex AI Network Socket Header Simulation
+  const socketHeader = `<!-- Vertex Network Socket: v4.2.1 | Latency: 12ms | Compression: GZIP -->`;
+  
+  if (formType === 'CAFR') {
+      return `${socketHeader}
+<CAFR:Report xmlns:CAFR="http://www.gov.uk/cafr/v1">
+    <Header>
+        <EntityID>${entity.id}</EntityID>
+        <ReportPeriod>2024</ReportPeriod>
+        <Standards>GASB</Standards>
+    </Header>
+    <Financials>
+        <TotalAssets>45000000</TotalAssets>
+        <Liabilities>12000000</Liabilities>
+        <NetPosition>33000000</NetPosition>
+    </Financials>
+    <Signatures>
+        <Auditor>Independent Firm LLC</Auditor>
+        <Controller>${entity.name}</Controller>
+    </Signatures>
+</CAFR:Report>`;
+  }
+  
+  if (formType === '1042') {
+      return `${socketHeader}
+<IRIS:Form1042 xmlns:IRIS="http://www.irs.gov/iris/v1">
+    <WithholdingAgent>
+        <EIN>${entity.einLast4 ? 'XX-XXX' + entity.einLast4 : 'PENDING'}</EIN>
+        <Name>${entity.name}</Name>
+        <Chapter3Status>Withholding Foreign Partnership</Chapter3Status>
+    </WithholdingAgent>
+    <Totals>
+        <GrossIncome>150000.00</GrossIncome>
+        <TaxWithheld>45000.00</TaxWithheld>
+    </Totals>
+</IRIS:Form1042>`;
+  }
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <SOAP:Envelope xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/" xmlns:efile="http://www.irs.gov/efile">
   <SOAP:Header>
@@ -121,13 +160,13 @@ const generateAckXML = (submissionId: string, status: 'Accepted' | 'Rejected', e
 // Main Simulation Function
 export const simulateTransmission = async (
   entity: Entity, 
-  formType: IRSFormType,
+  formType: IRSFormType | 'CAFR' | '1042',
   fuzzConfig: FuzzConfig
 ): Promise<TransmissionLog> => {
   const fuzzer = new ProtocolFuzzer(fuzzConfig);
   await fuzzer.injectLatency();
 
-  const channel: ApiChannel = formType === '1041' || formType === '941' ? 'MeF' : 'IRIS';
+  const channel: ApiChannel = formType === 'CAFR' || formType === '1042' ? 'IRIS' : formType === '1041' || formType === '941' ? 'MeF' : 'IRIS';
   
   // Safely generate submission ID
   const idVal = uuidv4() || ''; 
