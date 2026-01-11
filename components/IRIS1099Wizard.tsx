@@ -40,6 +40,7 @@ type SubmissionStatus = 'idle' | 'validating' | 'submitting' | 'polling' | 'succ
 
 export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   // Auth State
+  const [authMode, setAuthMode] = useState<'tcc' | 'bearer'>('tcc');
   const [tcc, setTcc] = useState('');
   const [bearerToken, setBearerToken] = useState('');
   const [apiHealth, setApiHealth] = useState<{ status: string; service: string; version?: string } | null>(null);
@@ -117,6 +118,16 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
     }
   };
 
+  // Validate TCC format (T + exactly 10 digits)
+  const isValidTCC = (tccValue: string): boolean => {
+    return /^T\d{10}$/.test(tccValue);
+  };
+
+  // Validate bearer token format (non-empty string)
+  const isValidBearerToken = (token: string): boolean => {
+    return token.length > 0;
+  };
+
   // Simulate TCC retrieval from IRS e-Services
   const fetchTCCFromIRS = async () => {
     setIsFetchingTCC(true);
@@ -160,6 +171,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   };
 
   const handleUseStoredTCC = async (credential: StoredCredential) => {
+    setAuthMode('tcc');
     setTcc(credential.value);
   };
 
@@ -321,16 +333,16 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
 
       <div className="grid grid-cols-2 gap-4">
         <button
-          onClick={() => { setTcc(''); setBearerToken(''); }}
-          className={`p-4 border rounded-lg ${!tcc && !bearerToken ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700'}`}
+          onClick={() => { setAuthMode('tcc'); setBearerToken(''); }}
+          className={`p-4 border rounded-lg ${authMode === 'tcc' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700'}`}
         >
           <Fingerprint className="mx-auto mb-2" size={24} />
           <div className="font-bold text-sm">TCC Authentication</div>
           <div className="text-xs text-slate-400">Transmitter Control Code</div>
         </button>
         <button
-          onClick={() => { setBearerToken(''); setTcc(''); }}
-          className={`p-4 border rounded-lg ${!tcc && !bearerToken ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700'}`}
+          onClick={() => { setAuthMode('bearer'); setTcc(''); }}
+          className={`p-4 border rounded-lg ${authMode === 'bearer' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700'}`}
         >
           <KeyRound className="mx-auto mb-2" size={24} />
           <div className="font-bold text-sm">Bearer Token</div>
@@ -338,7 +350,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
         </button>
       </div>
 
-      {!tcc && !bearerToken && (
+      {authMode === 'tcc' && (
         <div className="space-y-4">
           <div className="bg-slate-900 rounded-lg p-4 space-y-4">
             <div>
@@ -387,7 +399,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
         </div>
       )}
 
-      {!tcc && !bearerToken && (
+      {authMode === 'bearer' && (
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
@@ -406,7 +418,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
 
       <button
         onClick={handleAuthenticate}
-        disabled={!tcc && !bearerToken}
+        disabled={!(isValidTCC(tcc) || isValidBearerToken(bearerToken))}
         className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
       >
         <Shield size={18} />
