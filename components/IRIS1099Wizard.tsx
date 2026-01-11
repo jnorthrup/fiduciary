@@ -28,6 +28,13 @@ import {
   getFormAmountFields,
   type ValidationError
 } from '../services/irsApiClient';
+import {
+  storeTCC,
+  getStoredTCCs,
+  autoFillTCC,
+  storeBearerToken,
+  type StoredCredential
+} from '../services/secureStorage';
 
 interface Props {
   entityId?: string;
@@ -45,6 +52,8 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
   const [apiHealth, setApiHealth] = useState<{ status: string; service: string } | null>(null);
   const [isFetchingTCC, setIsFetchingTCC] = useState(false);
   const [tccLog, setTccLog] = useState<string[]>([]);
+  const [storedTCCs, setStoredTCCs] = useState<StoredCredential[]>([]);
+  const [saveCredentials, setSaveCredentials] = useState(true);
 
   // Wizard State
   const [currentStep, setCurrentStep] = useState<WizardStep>('Auth');
@@ -99,7 +108,13 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
   // Check API health on mount
   useEffect(() => {
     checkApiHealth();
+    loadStoredCredentials();
   }, []);
+
+  const loadStoredCredentials = async () => {
+    const tccs = await getStoredTCCs();
+    setStoredTCCs(tccs);
+  };
 
   const checkApiHealth = async () => {
     try {
@@ -134,16 +149,27 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
     setIsFetchingTCC(false);
   };
 
-  const handleAuthenticate = () => {
+  const handleAuthenticate = async () => {
     if (tcc) {
       irsApi.setAuth(tcc);
+      if (saveCredentials) {
+        await storeTCC(tcc, `IRS TCC (${tcc.slice(0, 6)}...)`, tcc);
+        await loadStoredCredentials();
+      }
     } else if (bearerToken) {
       irsApi.setAuth(undefined, bearerToken);
+      if (saveCredentials) {
+        await storeBearerToken(bearerToken, 'IRS Bearer Token');
+      }
     } else {
       return;
     }
     setIsAuthenticated(true);
     setCurrentStep('Filer');
+  };
+
+  const handleUseStoredTCC = async (credential: StoredCredential) => {
+    setTcc(credential.value);
   };
 
   const validateTIN = async (tin: string, name: string): Promise<TinMatchResponse> => {
@@ -273,18 +299,48 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
         </div>
       </div>
 
+      {/* Stored TCCs */}
+      {storedTCCs.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-500 uppercase">Saved Credentials</label>
+            <div className="flex items-center gap-2">
+              <Lock size={14} className="text-emerald-400" />
+              <span className="text-xs text-slate-500">PWA Encrypted Storage</span>
+            </div>
+          </div>
+          {storedTCCs.map((cred) => (
+            <button
+              key={cred.id}
+              onClick={() => handleUseStoredTCC(cred)}
+              className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg hover:border-indigo-500 transition-colors text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-white text-sm">{cred.name}</div>
+                  <div className="font-mono text-xs text-slate-500 mt-1">
+                    {cred.value.slice(0, 12)}...{cred.value.slice(-4)}
+                  </div>
+                </div>
+                <CheckCircle size={16} className="text-emerald-400" />
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <button
-          onClick={() => setTcc('')}
-          className={`p-4 border rounded-lg ${tcc === '' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700'}`}
+          onClick={() => { setTcc(''); setBearerToken(''); }}
+          className={`p-4 border rounded-lg ${!tcc && !bearerToken ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700'}`}
         >
           <Fingerprint className="mx-auto mb-2" size={24} />
           <div className="font-bold text-sm">TCC Authentication</div>
           <div className="text-xs text-slate-400">Transmitter Control Code</div>
         </button>
         <button
-          onClick={() => setBearerToken('')}
-          className={`p-4 border rounded-lg ${bearerToken === '' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700'}`}
+          onClick={() => { setBearerToken(''); setTcc(''); }}
+          className={`p-4 border rounded-lg ${!tcc && !bearerToken ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700'}`}
         >
           <KeyRound className="mx-auto mb-2" size={24} />
           <div className="font-bold text-sm">Bearer Token</div>
@@ -292,7 +348,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
         </button>
       </div>
 
-      {tcc === '' && (
+      {!tcc && !bearerToken && (
         <div className="space-y-4">
           <div className="bg-slate-900 rounded-lg p-4 space-y-4">
             <div>
@@ -325,10 +381,23 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
               </div>
             )}
           </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="saveCreds"
+              checked={saveCredentials}
+              onChange={e => setSaveCredentials(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="saveCreds" className="text-sm text-slate-400">
+              Save credentials securely (PWA encrypted storage)
+            </label>
+          </div>
         </div>
       )}
 
-      {bearerToken === '' && (
+      {!tcc && !bearerToken && (
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
