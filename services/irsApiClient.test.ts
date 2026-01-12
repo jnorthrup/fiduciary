@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { ERROR_CODES, ERROR_MESSAGES } from '../types/errors';
 import {
   formatEIN,
   formatSSN,
@@ -36,19 +37,19 @@ describe('formatEIN', () => {
   });
 
   it('should throw an error for strings with less than 9 digits', () => {
-    expect(() => formatEIN('12345678')).toThrow('Invalid EIN: must be 9 digits');
+    expect(() => formatEIN('12345678')).toThrow(ERROR_MESSAGES[ERROR_CODES.INVALID_EIN_FORMAT]);
   });
 
   it('should throw an error for strings with more than 9 digits', () => {
-    expect(() => formatEIN('1234567890')).toThrow('Invalid EIN: must be 9 digits');
+    expect(() => formatEIN('1234567890')).toThrow(ERROR_MESSAGES[ERROR_CODES.INVALID_EIN_FORMAT]);
   });
 
   it('should throw an error for empty strings', () => {
-    expect(() => formatEIN('')).toThrow('Invalid EIN: must be 9 digits');
+    expect(() => formatEIN('')).toThrow(ERROR_MESSAGES[ERROR_CODES.INVALID_EIN_FORMAT]);
   });
 
   it('should throw an error for strings with no digits', () => {
-    expect(() => formatEIN('abcdefghi')).toThrow('Invalid EIN: must be 9 digits');
+    expect(() => formatEIN('abcdefghi')).toThrow(ERROR_MESSAGES[ERROR_CODES.INVALID_EIN_FORMAT]);
   });
 });
 
@@ -67,19 +68,19 @@ describe('formatSSN', () => {
   });
 
   it('should throw an error for strings with less than 9 digits', () => {
-    expect(() => formatSSN('12345678')).toThrow('Invalid SSN: must be 9 digits');
+    expect(() => formatSSN('12345678')).toThrow(ERROR_MESSAGES[ERROR_CODES.INVALID_TIN_FORMAT]);
   });
 
   it('should throw an error for strings with more than 9 digits', () => {
-    expect(() => formatSSN('1234567890')).toThrow('Invalid SSN: must be 9 digits');
+    expect(() => formatSSN('1234567890')).toThrow(ERROR_MESSAGES[ERROR_CODES.INVALID_TIN_FORMAT]);
   });
 
   it('should throw an error for empty strings', () => {
-    expect(() => formatSSN('')).toThrow('Invalid SSN: must be 9 digits');
+    expect(() => formatSSN('')).toThrow(ERROR_MESSAGES[ERROR_CODES.INVALID_TIN_FORMAT]);
   });
 
   it('should throw an error for strings with no digits', () => {
-    expect(() => formatSSN('abcdefghi')).toThrow('Invalid SSN: must be 9 digits');
+    expect(() => formatSSN('abcdefghi')).toThrow(ERROR_MESSAGES[ERROR_CODES.INVALID_TIN_FORMAT]);
   });
 });
 

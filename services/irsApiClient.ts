@@ -6,8 +6,10 @@
  *
  * @see OpenAPI Spec: /public/irs-iris-openapi.yaml
  */
+import { isValidEINFormat, isValidSSNFormat } from '../utils/validation';
+import { ERROR_CODES, ERROR_MESSAGES } from '../types/errors';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/irs';
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:3001/api/irs';
 
 // ============================================================================
 // Types
@@ -430,9 +432,14 @@ export const irsApi = new IrsApiClient();
 /**
  * Format EIN to standard format XX-XXXXXXX
  */
+/**
+ * Format EIN to standard format XX-XXXXXXX
+ */
 export function formatEIN(ein: string): string {
   const cleaned = ein.replace(/\D/g, '');
-  if (cleaned.length !== 9) throw new Error('Invalid EIN: must be 9 digits');
+  if (cleaned.length !== 9) {
+    throw new Error(ERROR_MESSAGES[ERROR_CODES.INVALID_EIN_FORMAT]);
+  }
   return `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
 }
 
@@ -441,7 +448,9 @@ export function formatEIN(ein: string): string {
  */
 export function formatSSN(ssn: string): string {
   const cleaned = ssn.replace(/\D/g, '');
-  if (cleaned.length !== 9) throw new Error('Invalid SSN: must be 9 digits');
+  if (cleaned.length !== 9) {
+    throw new Error(ERROR_MESSAGES[ERROR_CODES.INVALID_TIN_FORMAT]);
+  }
   return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 5)}-${cleaned.slice(5)}`;
 }
 

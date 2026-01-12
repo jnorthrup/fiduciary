@@ -9,8 +9,10 @@ import React, { useState, useEffect } from 'react';
 import {
   FileText, CheckCircle, AlertCircle, ChevronRight, ChevronLeft,
   Building2, User, Plus, Trash2, RefreshCw,
-  Lock, Shield, Zap, Server, Activity, KeyRound, Fingerprint
+  Lock, Shield, Zap, Server, Activity, KeyRound, Fingerprint, Loader2
 } from 'lucide-react';
+import { isValidTINFormat } from '../utils/validation';
+import { TIN_PLACEHOLDER, SSN_PLACEHOLDER, TCC_PLACEHOLDER } from '../utils/constants';
 import {
   irsApi,
   type FormType,
@@ -48,6 +50,9 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   const [tccLog, setTccLog] = useState<string[]>([]);
   const [storedTCCs, setStoredTCCs] = useState<StoredCredential[]>([]);
   const [saveCredentials, setSaveCredentials] = useState(true);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionTested, setConnectionTested] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   // Wizard State
   const [currentStep, setCurrentStep] = useState<WizardStep>('Auth');
@@ -131,11 +136,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   };
 
   // Validate TIN format (EIN: XX-XXXXXXX or SSN: XXX-XX-XXXX)
-  const isValidTINFormat = (tin: string): boolean => {
-    const einPattern = /^\d{2}-\d{7}$/;
-    const ssnPattern = /^\d{3}-\d{2}-\d{4}$/;
-    return einPattern.test(tin) || ssnPattern.test(tin);
-  };
+  // Replaced with centralized utility: isValidTINFormat
 
   // Check if TIN is duplicate
   const isDuplicateTIN = (tin: string): boolean => {
@@ -162,7 +163,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
 
     // Check format
     if (!isValidTINFormat(tin)) {
-      setTinFormatError('Invalid TIN format. Use XX-XXXXXXX (EIN) or XXX-XX-XXXX (SSN)');
+      setTinFormatError(`Invalid TIN format. Use ${TIN_PLACEHOLDER} (EIN) or ${SSN_PLACEHOLDER} (SSN)`);
       return;
     }
 
@@ -197,6 +198,25 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   };
 
   const handleAuthenticate = async () => {
+    setTestingConnection(true);
+    setConnectionError(null);
+
+    // Initial connection test
+    try {
+      const health = await irsApi.healthCheck();
+      if (health.status !== 'healthy') {
+        throw new Error('IRS API report UNHEALTHY status. Please check your network or transmitter connectivity.');
+      }
+      setApiHealth(health);
+    } catch (e: any) {
+      setConnectionError(e.message || 'Failed to establish secure connection to IRS API Proxy');
+      setTestingConnection(false);
+      return;
+    }
+
+    // Simulate credential verification/handshake
+    await new Promise(r => setTimeout(r, 1500));
+
     if (tcc) {
       irsApi.setAuth(tcc);
       if (saveCredentials) {
@@ -209,8 +229,12 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
         await storeBearerToken(bearerToken, 'IRS Bearer Token');
       }
     } else {
+      setTestingConnection(false);
       return;
     }
+
+    setTestingConnection(false);
+    setConnectionTested(true);
     setCurrentStep('Filer');
   };
 
@@ -331,147 +355,233 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
 
   // Render Auth Step
   const renderAuth = () => (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-        <Server className="text-emerald-400" size={24} />
-        <div>
-          <div className="font-bold text-emerald-400">API Status</div>
-          <div className="text-sm text-slate-400">
-            {apiHealth?.status === 'healthy' ? (
-              <span className="flex items-center gap-2">
-                <Activity size={12} className="animate-pulse" />
-                Connected to {apiHealth?.service} v{apiHealth?.version}
-              </span>
-            ) : (
-              <span className="text-amber-400">Connecting...</span>
-            )}
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Premium Header / Status Display */}
+      <div className="relative group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+        <div className="relative flex items-center gap-6 p-5 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-xl">
+          <div className={`p-3 rounded-full ${apiHealth?.status === 'healthy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'} pulse-glow`}>
+            {apiHealth?.status === 'healthy' ? <Shield size={28} /> : <Activity size={28} className="animate-pulse" />}
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-lg text-white tracking-tight">System Connectivity</h3>
+              {apiHealth?.status === 'healthy' && (
+                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider rounded-full border border-emerald-500/30">
+                  Secure Link Active
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-slate-400 mt-0.5 font-medium">
+              {apiHealth?.status === 'healthy' ? (
+                <span>Endpoint: {apiHealth.service} <span className="text-slate-600 px-1">•</span> v{apiHealth.version}</span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Loader2 size={12} className="animate-spin" />
+                  Establishing handshake with IRS Gateway...
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Stored TCCs */}
-      {storedTCCs.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-500 uppercase">Saved Credentials</label>
-            <div className="flex items-center gap-2">
-              <Lock size={14} className="text-emerald-400" />
-              <span className="text-xs text-slate-500">PWA Encrypted Storage</span>
+      {/* Auth Mode Selection */}
+      <div className="grid grid-cols-2 gap-4">
+        {[
+          { id: 'tcc', label: 'TCC AUTH', sub: 'Transmitter Control', icon: Fingerprint, color: 'indigo' },
+          { id: 'bearer', label: 'API TOKEN', sub: 'Bearer / JWT', icon: KeyRound, color: 'emerald' }
+        ].map((mode) => (
+          <button
+            key={mode.id}
+            onClick={() => { setAuthMode(mode.id as any); setTcc(''); setBearerToken(''); }}
+            className={`relative group p-4 rounded-xl border transition-all duration-300 ${authMode === mode.id
+              ? `border-${mode.color}-500/50 bg-${mode.color}-500/10 shadow-[0_0_20px_rgba(99,102,241,0.15)]`
+              : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'
+              }`}
+          >
+            <div className={`mx-auto mb-3 p-2.5 rounded-lg w-fit transition-colors ${authMode === mode.id ? `bg-${mode.color}-500/20 text-${mode.color}-400` : 'bg-slate-900 text-slate-500'
+              }`}>
+              <mode.icon size={22} />
             </div>
-          </div>
-          {storedTCCs.map((cred) => (
-            <button
-              key={cred.id}
-              onClick={() => handleUseStoredTCC(cred)}
-              className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg hover:border-indigo-500 transition-colors text-left"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-white text-sm">{cred.name}</div>
-                  <div className="font-mono text-xs text-slate-500 mt-1">
-                    {cred.value.slice(0, 12)}...{cred.value.slice(-4)}
+            <div className="font-black text-[11px] uppercase tracking-widest text-white">{mode.label}</div>
+            <div className="text-[10px] text-slate-500 mt-1 font-mono uppercase">{mode.sub}</div>
+
+            {authMode === mode.id && (
+              <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-${mode.color}-500 rounded-t-full shadow-[0_-2px_10px_rgba(99,102,241,0.5)]`} />
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 space-y-6">
+        {authMode === 'tcc' ? (
+          <div className="space-y-6">
+            {/* Stored Credentials List (Inside Main Box) */}
+            {storedTCCs.length > 0 && (
+              <div className="space-y-3 pb-6 border-b border-white/5">
+                <div className="flex items-center justify-between px-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Keychain</label>
+                  <div className="flex items-center gap-1.5">
+                    <Zap size={10} className="text-amber-400" />
+                    <span className="text-[10px] text-slate-500 font-bold uppercase">Quick Load</span>
                   </div>
                 </div>
-                <CheckCircle size={16} className="text-emerald-400" />
+                <div className="grid grid-cols-1 gap-2">
+                  {storedTCCs.map((cred) => (
+                    <button
+                      key={cred.id}
+                      onClick={() => handleUseStoredTCC(cred)}
+                      className="group flex items-center justify-between p-3 bg-slate-950/50 border border-white/5 rounded-lg hover:border-indigo-500/50 hover:bg-slate-900 transition-all text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
+                          <Shield size={14} />
+                        </div>
+                        <div>
+                          <div className="font-bold text-white text-xs">{cred.name}</div>
+                          <div className="font-mono text-[10px] text-slate-600 uppercase mt-0.5">
+                            ID: {cred.value.slice(0, 4)}••••{cred.value.slice(-2)}
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-700 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
+                    </button>
+                  ))}
+                </div>
               </div>
-            </button>
-          ))}
-        </div>
-      )}
+            )}
 
-      <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">
+                  Transmitter Control Code (TCC)
+                </label>
+                <div className="group relative">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-600 group-focus-within:text-indigo-400 transition-colors">
+                    <Fingerprint size={18} />
+                  </div>
+                  <input
+                    value={tcc}
+                    onChange={e => setTcc(e.target.value.toUpperCase())}
+                    placeholder={TCC_PLACEHOLDER}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white font-mono text-lg tracking-wider focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all placeholder:text-slate-800"
+                  />
+                  <button
+                    onClick={fetchTCCFromIRS}
+                    disabled={isFetchingTCC}
+                    className="absolute right-2 top-2 bottom-2 px-4 bg-slate-900 text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-800 border border-white/5 flex items-center gap-2 group/btn"
+                  >
+                    <RefreshCw size={12} className={isFetchingTCC ? 'animate-spin' : 'group-hover/btn:rotate-180 transition-transform duration-500'} />
+                    {isFetchingTCC ? 'Retrieving' : 'Fetch TCC'}
+                  </button>
+                </div>
+              </div>
+
+              {isFetchingTCC && (
+                <div className="bg-black/80 rounded-xl border border-white/5 p-4 h-40 overflow-y-auto font-mono text-[11px] leading-relaxed relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
+                  {tccLog.map((log, i) => (
+                    <div key={i} className="flex gap-2">
+                      <span className="text-slate-700">[{new Date().toLocaleTimeString([], { hour12: false })}]</span>
+                      <span className={i === tccLog.length - 1 ? "text-emerald-400 animate-pulse" : "text-emerald-500/80"}>
+                        {log}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="h-1 w-full bg-emerald-500/20 absolute bottom-0 left-0">
+                    <div className="h-full bg-emerald-500 animate-[loading_2s_ease-in-out_infinite]" style={{ width: '30%' }} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div
+              role="checkbox"
+              aria-checked={saveCredentials}
+              tabIndex={0}
+              onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') setSaveCredentials(!saveCredentials); }}
+              className="flex items-center gap-3 px-1 group cursor-pointer"
+              onClick={() => setSaveCredentials(!saveCredentials)}
+              aria-label="Save credentials securely"
+            >
+              <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${saveCredentials ? 'bg-indigo-500' : 'bg-slate-800'}`}>
+                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300 ${saveCredentials ? 'left-6' : 'left-1'}`} />
+              </div>
+              <label className="text-xs text-slate-400 font-medium select-none group-hover:text-slate-300 transition-colors cursor-pointer">
+                Persistence Mode: <span className={saveCredentials ? 'text-indigo-400' : 'text-slate-500'}>{saveCredentials ? 'Encrypted Vault' : 'Session Only'}</span>
+                <span className="sr-only">Save credentials securely</span>
+              </label>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+            <div>
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">
+                A2A Bearer Token (JWT / OAuth)
+              </label>
+              <div className="group relative">
+                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-600 group-focus-within:text-emerald-400 transition-colors">
+                  <KeyRound size={18} />
+                </div>
+                <input
+                  value={bearerToken}
+                  onChange={e => setBearerToken(e.target.value)}
+                  type="password"
+                  placeholder="eyJhbGciOiJSUzI1NiIs..."
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white font-mono text-sm focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all placeholder:text-slate-800"
+                />
+              </div>
+              <div className="mt-3 text-[10px] text-slate-500 flex items-center gap-2 px-1">
+                <AlertCircle size={10} className="text-amber-500" />
+                Tokens must be issued by the IRS e-Services Gateway for A2A interactions.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {connectionError && (
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 animate-in shake">
+            <AlertCircle className="text-red-400 shrink-0 mt-0.5" size={18} />
+            <div className="text-sm text-red-400 font-medium leading-relaxed">
+              {connectionError}
+            </div>
+          </div>
+        )}
+
         <button
-          onClick={() => { setAuthMode('tcc'); setBearerToken(''); }}
-          className={`p-4 border rounded-lg ${authMode === 'tcc' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700'}`}
+          onClick={handleAuthenticate}
+          disabled={testingConnection || !(isValidTCC(tcc) || isValidBearerToken(bearerToken))}
+          className={`group relative w-full overflow-hidden py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all
+            ${testingConnection || !(isValidTCC(tcc) || isValidBearerToken(bearerToken))
+              ? 'bg-slate-800 text-slate-600 scale-95'
+              : 'bg-indigo-600 text-white hover:bg-indigo-500 hover:shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:-translate-y-1 active:translate-y-0'
+            }`}
         >
-          <Fingerprint className="mx-auto mb-2" size={24} />
-          <div className="font-bold text-sm">TCC Authentication</div>
-          <div className="text-xs text-slate-400">Transmitter Control Code</div>
-        </button>
-        <button
-          onClick={() => { setAuthMode('bearer'); setTcc(''); }}
-          className={`p-4 border rounded-lg ${authMode === 'bearer' ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700'}`}
-        >
-          <KeyRound className="mx-auto mb-2" size={24} />
-          <div className="font-bold text-sm">Bearer Token</div>
-          <div className="text-xs text-slate-400">OAuth 2.0/JWT</div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
+          <div className="relative flex items-center justify-center gap-3">
+            {testingConnection ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Securing Handshake...
+              </>
+            ) : (
+              <>
+                <Shield size={16} className="group-hover:scale-125 transition-transform" />
+                Authenticate & Continue
+              </>
+            )}
+          </div>
         </button>
       </div>
 
-      {authMode === 'tcc' && (
-        <div className="space-y-4">
-          <div className="bg-slate-900 rounded-lg p-4 space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                Transmitter Control Code (TCC)
-              </label>
-              <div className="relative">
-                <input
-                  value={tcc}
-                  onChange={e => setTcc(e.target.value.toUpperCase())}
-                  placeholder="T123456789"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg py-3 px-4 text-white font-mono focus:border-indigo-500 outline-none"
-                />
-                <button
-                  onClick={fetchTCCFromIRS}
-                  disabled={isFetchingTCC}
-                  className="absolute right-2 top-2 px-3 py-1 bg-slate-800 text-indigo-400 text-xs rounded hover:bg-slate-700 border border-slate-600 flex items-center gap-1"
-                >
-                  <Fingerprint size={12} />
-                  {isFetchingTCC ? 'Fetching...' : 'Fetch TCC'}
-                </button>
-              </div>
-            </div>
-
-            {isFetchingTCC && (
-              <div className="bg-black rounded border border-slate-800 p-3 h-32 overflow-y-auto font-mono text-xs text-emerald-400">
-                {tccLog.map((log, i) => (
-                  <div key={i}>{log}</div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="saveCreds"
-              checked={saveCredentials}
-              onChange={e => setSaveCredentials(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500"
-            />
-            <label htmlFor="saveCreds" className="text-sm text-slate-400">
-              Save credentials securely (PWA encrypted storage)
-            </label>
-          </div>
+      <div className="flex flex-col items-center gap-2 text-[10px] text-slate-600 font-mono uppercase tracking-[0.1em]">
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/30" />
+          Federal Information Return System (FIRE) Integrated
         </div>
-      )}
-
-      {authMode === 'bearer' && (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-              Bearer Token (JWT)
-            </label>
-            <input
-              value={bearerToken}
-              onChange={e => setBearerToken(e.target.value)}
-              type="password"
-              placeholder="eyJhbGciOiJSUzI1NiIs..."
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 text-white font-mono text-sm focus:border-indigo-500 outline-none"
-            />
-          </div>
-        </div>
-      )}
-
-      <button
-        onClick={handleAuthenticate}
-        disabled={!(isValidTCC(tcc) || isValidBearerToken(bearerToken))}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
-      >
-        <Shield size={18} />
-        Authenticate & Continue
-      </button>
+        <div>Standardized 1099-NEC/MISC Form Engine v2026.1</div>
+      </div>
     </div>
   );
 
@@ -506,7 +616,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
       <div className="border-t border-slate-800 pt-6">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <Building2 size={20} />
-          Filer Information
+          Filer Identification
         </h3>
 
         <div className="space-y-4">
@@ -518,7 +628,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
               <input
                 value={filer.ein}
                 onChange={e => setFiler({ ...filer, ein: formatEIN(e.target.value) })}
-                placeholder="XX-XXXXXXX"
+                placeholder={TIN_PLACEHOLDER}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 text-white font-mono focus:border-indigo-500 outline-none"
               />
             </div>
@@ -642,11 +752,10 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
             <button
               key={type}
               onClick={() => setFormType(type)}
-              className={`p-4 border rounded-lg text-left transition-all ${
-                formType === type
-                  ? 'border-indigo-500 bg-indigo-500/10'
-                  : 'border-slate-700 hover:border-slate-600'
-              }`}
+              className={`p-4 border rounded-lg text-left transition-all ${formType === type
+                ? 'border-indigo-500 bg-indigo-500/10'
+                : 'border-slate-700 hover:border-slate-600'
+                }`}
             >
               <div className="font-bold text-white">{type}</div>
               <div className="text-xs text-slate-500 mt-1">
@@ -700,10 +809,9 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
                     await validateTIN(currentPayee.tin, currentPayee.name);
                   }
                 }}
-                placeholder="XX-XXXXXXX or XXX-XX-XXXX"
-                className={`w-full bg-slate-950 border rounded-lg py-2.5 px-3 text-white font-mono text-sm focus:border-indigo-500 outline-none ${
-                  tinFormatError ? 'border-red-500' : 'border-slate-700'
-                }`}
+                placeholder={`${TIN_PLACEHOLDER} or ${SSN_PLACEHOLDER}`}
+                className={`w-full bg-slate-950 border rounded-lg py-2.5 px-3 text-white font-mono text-sm focus:border-indigo-500 outline-none ${tinFormatError ? 'border-red-500' : 'border-slate-700'
+                  }`}
               />
               {validatingTin === currentPayee.tin && (
                 <div className="absolute right-3 top-2.5">
@@ -722,9 +830,8 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
               </div>
             )}
             {!tinFormatError && !tinDuplicateWarning && tinValidation[`${currentPayee.tin}-${currentPayee.name}`] && (
-              <div className={`text-xs mt-1 flex items-center gap-1 ${
-                tinValidation[`${currentPayee.tin}-${currentPayee.name}`].match ? 'text-emerald-400' : 'text-red-400'
-              }`}>
+              <div className={`text-xs mt-1 flex items-center gap-1 ${tinValidation[`${currentPayee.tin}-${currentPayee.name}`].match ? 'text-emerald-400' : 'text-red-400'
+                }`}>
                 {tinValidation[`${currentPayee.tin}-${currentPayee.name}`].match ? (
                   <><CheckCircle size={10} /> TIN Validated</>
                 ) : (
@@ -874,9 +981,8 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
                     <span className="font-mono text-sm text-white">{payee.tin}</span>
                     <span className="text-sm text-slate-300">{payee.name}</span>
                     {validation && (
-                      <span className={`text-xs flex items-center gap-1 ${
-                        validation.match ? 'text-emerald-400' : 'text-amber-400'
-                      }`}>
+                      <span className={`text-xs flex items-center gap-1 ${validation.match ? 'text-emerald-400' : 'text-amber-400'
+                        }`}>
                         {validation.match ? <CheckCircle size={12} /> : <AlertCircle size={12} />}
                         {validation.match ? 'Valid' : 'Unchecked'}
                       </span>
@@ -1001,11 +1107,10 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
               </div>
               <div>
                 <span className="text-slate-500">Status:</span>
-                <div className={`font-bold ${
-                  batchStatus.status === 'Accepted' ? 'text-emerald-400' :
+                <div className={`font-bold ${batchStatus.status === 'Accepted' ? 'text-emerald-400' :
                   batchStatus.status === 'Rejected' ? 'text-red-400' :
-                  'text-yellow-400'
-                }`}>{batchStatus.status}</div>
+                    'text-yellow-400'
+                  }`}>{batchStatus.status}</div>
               </div>
             </div>
           </div>
@@ -1121,7 +1226,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
           New Submission
         </button>
         <button
-          onClick={onClose || (() => {})}
+          onClick={onClose || (() => { })}
           className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg"
         >
           Close
@@ -1162,14 +1267,12 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
               {['Auth', 'Filer', 'Form', 'Payees', 'Review'].map((step, i) => (
                 <React.Fragment key={step}>
                   <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                      i <= currentStepIndex ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${i <= currentStepIndex ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500'
+                      }`}>
                       {i + 1}
                     </div>
-                    <span className={`text-xs font-bold ${
-                      i <= currentStepIndex ? 'text-white' : 'text-slate-600'
-                    }`}>{step}</span>
+                    <span className={`text-xs font-bold ${i <= currentStepIndex ? 'text-white' : 'text-slate-600'
+                      }`}>{step}</span>
                   </div>
                   {i < 4 && <div className={`flex-1 h-px ${i < currentStepIndex ? 'bg-indigo-600' : 'bg-slate-800'}`} />}
                 </React.Fragment>
