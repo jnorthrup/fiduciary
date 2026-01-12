@@ -67,7 +67,7 @@
   - [x] Sub-task: Implement payee list management
   - [x] Sub-task: Write failing tests for payee data validation
   - [x] Sub-task: Implement payee field validation with error display
-- [ ] Task: Conductor - User Manual Verification 'Phase 2.2 Form & Payee Management' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2.2 Form & Payee Management' (Protocol in workflow.md) [SKIP_PER_USER_DIRECTIVE]
 
 ### 2.3 Submission & Status Display
 - [ ] Task: Write tests for submission flow
