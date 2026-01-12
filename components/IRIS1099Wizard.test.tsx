@@ -25,9 +25,10 @@ vi.mock('../services/irsApiClient', () => ({
     pollSubmissionStatus: vi.fn()
   },
   formatEIN: (ein: string) => {
-    const digits = ein.replace(/\D/g, '');
-    if (digits.length <= 2) return digits;
-    return `${digits.slice(0, 2)}-${digits.slice(2, 9)}`;
+    const cleaned = ein.replace(/\D/g, '');
+    if (cleaned.length === 0) return '';
+    if (cleaned.length < 9) return cleaned;
+    return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 9)}`;
   },
   getFormAmountFields: () => [
     { id: '1', label: 'Rents', field: 'rents' },
@@ -65,7 +66,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       render(<IRIS1099Wizard />);
 
       await waitFor(() => {
-        const tccInput = screen.queryByPlaceholderText(/T\d{9}/) || screen.queryByPlaceholderText(TCC_PLACEHOLDER) || screen.queryByPlaceholderText('T1234567890');
+        const tccInput = screen.queryByPlaceholderText(/T\d{9}/) || screen.queryByPlaceholderText(TCC_PLACEHOLDER);
         expect(tccInput).toBeInTheDocument();
       }, { timeout: 4000 });
     });
@@ -775,7 +776,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       fireEvent.change(einInput, { target: { value: '12345678' } });
 
       // Should show the digits typed
-      expect(einInput).toHaveValue('12-345678');
+      expect(einInput).toHaveValue('12345678');
 
       // But the continue button should be disabled
       const continueButton = screen.getByText(/Continue/i);
