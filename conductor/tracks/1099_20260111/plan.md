@@ -28,17 +28,17 @@
   - [x] Sub-task: Implement terminal state detection logic
 - [x] Task: Conductor - User Manual Verification 'Phase 1.2 IRS IRIS API Enhancement' (Protocol in workflow.md) [SKIP_PER_USER_DIRECTIVE]
 
-### 1.3 Data Persistence Layer [SKIP_PER_USER_FOCUS]
-- [ ] Task: Write tests for submission storage
-  - [ ] Sub-task: Write failing tests for submission record creation
-  - [ ] Sub-task: Implement submission storage with metadata
-  - [ ] Sub-task: Write failing tests for submission retrieval by receipt ID
-  - [ ] Sub-task: Implement submission lookup functionality
-- [ ] Task: Write tests for TIN validation cache
-  - [ ] Sub-task: Write failing tests for cache set/get operations
-  - [ ] Sub-task: Implement in-memory TIN cache with TTL
-  - [ ] Sub-task: Write failing tests for cache expiration
-  - [ ] Sub-task: Implement cache expiration logic
+### 1.3 Data Persistence Layer [checkpoint: PENDING]
+- [x] Task: Write tests for submission storage [f767c48]
+  - [x] Sub-task: Write failing tests for submission record creation
+  - [x] Sub-task: Implement submission storage with metadata
+  - [x] Sub-task: Write failing tests for submission retrieval by receipt ID
+  - [x] Sub-task: Implement submission lookup functionality
+- [x] Task: Write tests for TIN validation cache [f767c48]
+  - [x] Sub-task: Write failing tests for cache set/get operations
+  - [x] Sub-task: Implement in-memory TIN cache with TTL
+  - [x] Sub-task: Write failing tests for cache expiration
+  - [x] Sub-task: Implement cache expiration logic
 - [ ] Task: Conductor - User Manual Verification 'Phase 1.3 Data Persistence Layer' (Protocol in workflow.md)
 
 ## Phase 2: Frontend 1099 Wizard Enhancement
