@@ -1,13 +1,32 @@
-/**
- * Lightweight IRS IRIS API Mock Server
- *
- * Simplified backend that approximates IRS IRIS A2A API behavior
- * for the 1099 filing wizard. No external dependencies required.
- */
-
 import express from 'express';
 import cors from 'cors';
 import { randomUUID } from 'crypto';
+
+// In-project logger is TS, but server is JS. 
+// For JS server, we'll implement a simple structured logger or just clean up console calls.
+const logger = {
+  info: (msg, ...args) => console.info(`[INFO] ${msg}`, ...args),
+  error: (msg, ...args) => console.error(`[ERROR] ${msg}`, ...args),
+  debug: (msg, ...args) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug(`[DEBUG] ${msg}`, ...args);
+    }
+  }
+};
+
+const ERROR_CODES = {
+  AUTH_MISSING_TCC: 'AUTH_MISSING_TCC',
+  INVALID_EIN_FORMAT: 'INVALID_EIN_FORMAT',
+  INVALID_PAYEE_TIN: 'INVALID_PAYEE_TIN',
+  INVALID_TIN_FORMAT: 'INVALID_TIN_FORMAT',
+  NO_PAYEES: 'NO_PAYEES',
+  BATCH_TOO_LARGE: 'BATCH_TOO_LARGE',
+  MISSING_TRANSMITTER_ID: 'MISSING_TRANSMITTER_ID',
+  MISSING_FILER_EIN: 'MISSING_FILER_EIN',
+  RECEIPT_NOT_FOUND: 'RECEIPT_NOT_FOUND',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+};
 
 const PORT = process.env.PORT || 3001;
 
@@ -24,7 +43,12 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  const tcc = req.headers['x-irs-tcc'];
+  const auth = req.headers.authorization;
+  const maskedTcc = tcc ? `****${String(tcc).slice(-4)}` : 'N/A';
+  const maskedAuth = auth ? 'Bearer ****' : 'N/A';
+
+  logger.info(`${req.method} ${req.path} [TCC: ${maskedTcc}, Auth: ${maskedAuth}]`);
   next();
 });
 
@@ -75,7 +99,7 @@ app.post('/api/irs/submissions', (req, res) => {
 
     if (!submission.transmitterId) {
       errors.push({
-        code: 'MISSING_TRANSMITTER_ID',
+        code: ERROR_CODES.MISSING_TRANSMITTER_ID,
         message: 'Transmitter ID is required',
         field: 'transmitterId',
         severity: 'ERROR'
@@ -93,7 +117,7 @@ app.post('/api/irs/submissions', (req, res) => {
       const einPattern = /^\d{2}-\d{7}$/;
       if (!einPattern.test(submission.filer.ein)) {
         errors.push({
-          code: 'INVALID_EIN_FORMAT',
+          code: ERROR_CODES.INVALID_EIN_FORMAT,
           message: 'EIN must be in format XX-XXXXXXX',
           field: 'filer.ein',
           severity: 'ERROR'
@@ -103,7 +127,7 @@ app.post('/api/irs/submissions', (req, res) => {
 
     if (!submission.payees || submission.payees.length === 0) {
       errors.push({
-        code: 'NO_PAYEES',
+        code: ERROR_CODES.NO_PAYEES,
         message: 'At least one payee is required',
         field: 'payees',
         severity: 'ERROR'
@@ -112,7 +136,7 @@ app.post('/api/irs/submissions', (req, res) => {
 
     if (submission.payees && submission.payees.length > 1000) {
       errors.push({
-        code: 'BATCH_TOO_LARGE',
+        code: ERROR_CODES.BATCH_TOO_LARGE,
         message: 'Maximum 1000 payees per submission',
         field: 'payees',
         severity: 'ERROR'
@@ -126,7 +150,7 @@ app.post('/api/irs/submissions', (req, res) => {
 
       if (!einPattern.test(payee.tin) && !ssnPattern.test(payee.tin)) {
         errors.push({
-          code: 'INVALID_PAYEE_TIN',
+          code: ERROR_CODES.INVALID_PAYEE_TIN,
           message: `Payee ${index + 1}: TIN must be in format XX-XXXXXXX or XXX-XX-XXXX`,
           field: `payees[${index}].tin`,
           severity: 'ERROR'
@@ -137,7 +161,7 @@ app.post('/api/irs/submissions', (req, res) => {
     // If errors, return 400
     if (errors.length > 0) {
       return res.status(400).json({
-        code: 'VALIDATION_ERROR',
+        code: ERROR_CODES.VALIDATION_ERROR,
         message: 'Submission validation failed',
         errors,
         timestamp: new Date().toISOString()
@@ -172,9 +196,9 @@ app.post('/api/irs/submissions', (req, res) => {
     });
 
   } catch (error) {
-    console.error('Submission error:', error);
+    logger.error('Submission error:', error);
     res.status(500).json({
-      code: 'INTERNAL_ERROR',
+      code: ERROR_CODES.INTERNAL_ERROR,
       message: error.message,
       timestamp: new Date().toISOString()
     });
@@ -308,9 +332,9 @@ app.post('/api/irs/tin-validation', (req, res) => {
     });
 
   } catch (error) {
-    console.error('TIN validation error:', error);
+    logger.error('TIN validation error:', error);
     res.status(500).json({
-      code: 'INTERNAL_ERROR',
+      code: ERROR_CODES.INTERNAL_ERROR,
       message: error.message
     });
   }
@@ -396,11 +420,11 @@ app.post('/api/irs/transmission-check', (req, res) => {
     });
 
   } catch (error) {
-    console.error('Transmission check error:', error);
+    logger.error('Transmission check error:', error);
     res.status(500).json({
       valid: false,
       errors: [{
-        code: 'INTERNAL_ERROR',
+        code: ERROR_CODES.INTERNAL_ERROR,
         message: error.message,
         severity: 'ERROR'
       }]
@@ -482,9 +506,9 @@ app.get('/api/irs/schemas/:formType', (req, res) => {
 // ============================================================================
 
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
+  logger.error('Unhandled error:', err);
   res.status(500).json({
-    code: 'INTERNAL_ERROR',
+    code: ERROR_CODES.INTERNAL_ERROR,
     message: err.message || 'An unexpected error occurred',
     timestamp: new Date().toISOString()
   });
@@ -495,20 +519,7 @@ app.use((err, req, res, next) => {
 // ============================================================================
 
 app.listen(PORT, () => {
-  console.log(`
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║   IRS IRIS A2A API Mock Server                                ║
-║   Lightweight 1099 Backend                                    ║
-║                                                               ║
-║   Server running on: http://localhost:${PORT}                     ║
-║   API Endpoint:  /api/irs                                     ║
-║   Health Check:  /api/irs/health                              ║
-║                                                               ║
-║   No external dependencies required                           ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-  `);
+  logger.info(`IRS IRIS A2A API Mock Server running on http://localhost:${PORT}`);
 });
 
 export default app;

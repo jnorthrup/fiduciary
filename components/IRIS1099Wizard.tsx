@@ -11,6 +11,8 @@ import {
   Building2, User, Plus, Trash2, RefreshCw,
   Lock, Shield, Zap, Server, Activity, KeyRound, Fingerprint
 } from 'lucide-react';
+import { isValidTINFormat } from '../utils/validation';
+import { TIN_PLACEHOLDER, SSN_PLACEHOLDER } from '../utils/constants';
 import {
   irsApi,
   type FormType,
@@ -131,11 +133,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   };
 
   // Validate TIN format (EIN: XX-XXXXXXX or SSN: XXX-XX-XXXX)
-  const isValidTINFormat = (tin: string): boolean => {
-    const einPattern = /^\d{2}-\d{7}$/;
-    const ssnPattern = /^\d{3}-\d{2}-\d{4}$/;
-    return einPattern.test(tin) || ssnPattern.test(tin);
-  };
+  // Replaced with centralized utility: isValidTINFormat
 
   // Check if TIN is duplicate
   const isDuplicateTIN = (tin: string): boolean => {
@@ -162,7 +160,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
 
     // Check format
     if (!isValidTINFormat(tin)) {
-      setTinFormatError('Invalid TIN format. Use XX-XXXXXXX (EIN) or XXX-XX-XXXX (SSN)');
+      setTinFormatError(`Invalid TIN format. Use ${TIN_PLACEHOLDER} (EIN) or ${SSN_PLACEHOLDER} (SSN)`);
       return;
     }
 
@@ -518,7 +516,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
               <input
                 value={filer.ein}
                 onChange={e => setFiler({ ...filer, ein: formatEIN(e.target.value) })}
-                placeholder="XX-XXXXXXX"
+                placeholder={TIN_PLACEHOLDER}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 text-white font-mono focus:border-indigo-500 outline-none"
               />
             </div>
@@ -642,11 +640,10 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
             <button
               key={type}
               onClick={() => setFormType(type)}
-              className={`p-4 border rounded-lg text-left transition-all ${
-                formType === type
-                  ? 'border-indigo-500 bg-indigo-500/10'
-                  : 'border-slate-700 hover:border-slate-600'
-              }`}
+              className={`p-4 border rounded-lg text-left transition-all ${formType === type
+                ? 'border-indigo-500 bg-indigo-500/10'
+                : 'border-slate-700 hover:border-slate-600'
+                }`}
             >
               <div className="font-bold text-white">{type}</div>
               <div className="text-xs text-slate-500 mt-1">
@@ -700,10 +697,9 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
                     await validateTIN(currentPayee.tin, currentPayee.name);
                   }
                 }}
-                placeholder="XX-XXXXXXX or XXX-XX-XXXX"
-                className={`w-full bg-slate-950 border rounded-lg py-2.5 px-3 text-white font-mono text-sm focus:border-indigo-500 outline-none ${
-                  tinFormatError ? 'border-red-500' : 'border-slate-700'
-                }`}
+                placeholder={`${TIN_PLACEHOLDER} or ${SSN_PLACEHOLDER}`}
+                className={`w-full bg-slate-950 border rounded-lg py-2.5 px-3 text-white font-mono text-sm focus:border-indigo-500 outline-none ${tinFormatError ? 'border-red-500' : 'border-slate-700'
+                  }`}
               />
               {validatingTin === currentPayee.tin && (
                 <div className="absolute right-3 top-2.5">
@@ -722,9 +718,8 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
               </div>
             )}
             {!tinFormatError && !tinDuplicateWarning && tinValidation[`${currentPayee.tin}-${currentPayee.name}`] && (
-              <div className={`text-xs mt-1 flex items-center gap-1 ${
-                tinValidation[`${currentPayee.tin}-${currentPayee.name}`].match ? 'text-emerald-400' : 'text-red-400'
-              }`}>
+              <div className={`text-xs mt-1 flex items-center gap-1 ${tinValidation[`${currentPayee.tin}-${currentPayee.name}`].match ? 'text-emerald-400' : 'text-red-400'
+                }`}>
                 {tinValidation[`${currentPayee.tin}-${currentPayee.name}`].match ? (
                   <><CheckCircle size={10} /> TIN Validated</>
                 ) : (
@@ -874,9 +869,8 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
                     <span className="font-mono text-sm text-white">{payee.tin}</span>
                     <span className="text-sm text-slate-300">{payee.name}</span>
                     {validation && (
-                      <span className={`text-xs flex items-center gap-1 ${
-                        validation.match ? 'text-emerald-400' : 'text-amber-400'
-                      }`}>
+                      <span className={`text-xs flex items-center gap-1 ${validation.match ? 'text-emerald-400' : 'text-amber-400'
+                        }`}>
                         {validation.match ? <CheckCircle size={12} /> : <AlertCircle size={12} />}
                         {validation.match ? 'Valid' : 'Unchecked'}
                       </span>
@@ -1001,11 +995,10 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
               </div>
               <div>
                 <span className="text-slate-500">Status:</span>
-                <div className={`font-bold ${
-                  batchStatus.status === 'Accepted' ? 'text-emerald-400' :
+                <div className={`font-bold ${batchStatus.status === 'Accepted' ? 'text-emerald-400' :
                   batchStatus.status === 'Rejected' ? 'text-red-400' :
-                  'text-yellow-400'
-                }`}>{batchStatus.status}</div>
+                    'text-yellow-400'
+                  }`}>{batchStatus.status}</div>
               </div>
             </div>
           </div>
@@ -1121,7 +1114,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
           New Submission
         </button>
         <button
-          onClick={onClose || (() => {})}
+          onClick={onClose || (() => { })}
           className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg"
         >
           Close
@@ -1162,14 +1155,12 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
               {['Auth', 'Filer', 'Form', 'Payees', 'Review'].map((step, i) => (
                 <React.Fragment key={step}>
                   <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                      i <= currentStepIndex ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${i <= currentStepIndex ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-500'
+                      }`}>
                       {i + 1}
                     </div>
-                    <span className={`text-xs font-bold ${
-                      i <= currentStepIndex ? 'text-white' : 'text-slate-600'
-                    }`}>{step}</span>
+                    <span className={`text-xs font-bold ${i <= currentStepIndex ? 'text-white' : 'text-slate-600'
+                      }`}>{step}</span>
                   </div>
                   {i < 4 && <div className={`flex-1 h-px ${i < currentStepIndex ? 'bg-indigo-600' : 'bg-slate-800'}`} />}
                 </React.Fragment>

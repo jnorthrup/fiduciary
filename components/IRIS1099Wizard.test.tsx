@@ -13,6 +13,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { IRIS1099Wizard } from './IRIS1099Wizard';
 import * as irsApiClient from '../services/irsApiClient';
 import * as secureStorage from '../services/secureStorage';
+import { TIN_PLACEHOLDER, SSN_PLACEHOLDER } from '../utils/constants';
 
 // Mock IRS API client
 vi.mock('../services/irsApiClient', () => ({
@@ -26,8 +27,9 @@ vi.mock('../services/irsApiClient', () => ({
   },
   formatEIN: (ein: string) => {
     const cleaned = ein.replace(/\D/g, '');
-    if (cleaned.length !== 9) throw new Error('Invalid EIN');
-    return `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
+    if (cleaned.length === 0) return '';
+    if (cleaned.length < 9) return cleaned;
+    return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 9)}`;
   },
   getFormAmountFields: () => [
     { key: 'nonemployeeCompensation', label: 'Nonemployee Compensation', required: true }
@@ -61,7 +63,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       render(<IRIS1099Wizard />);
 
       await waitFor(() => {
-        const tccInput = screen.queryByPlaceholderText('T123456789');
+        const tccInput = screen.queryByPlaceholderText(/T\d{9}/) || screen.queryByPlaceholderText('T123456789');
         expect(tccInput).toBeInTheDocument();
       });
     });
@@ -327,7 +329,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
     });
 
     it('should display connecting status when API is not yet responded', () => {
-      (irsApiClient.irsApi.healthCheck as any).mockImplementation(() => new Promise(() => {}));
+      (irsApiClient.irsApi.healthCheck as any).mockImplementation(() => new Promise(() => { }));
 
       render(<IRIS1099Wizard />);
 
@@ -482,7 +484,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       });
 
       // Enter EIN but not name
-      const einInput = screen.getByPlaceholderText('XX-XXXXXXX');
+      const einInput = screen.getByPlaceholderText(/XX-XXXXXXX/);
       fireEvent.change(einInput, { target: { value: '12-3456789' } });
 
       const continueButton = screen.getByText('Continue');
@@ -504,7 +506,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       });
 
       // Fill required fields
-      const einInput = screen.getByPlaceholderText('XX-XXXXXXX');
+      const einInput = screen.getByPlaceholderText(/XX-XXXXXXX/);
       const nameInput = screen.getByPlaceholderText('ABC Corporation Inc');
 
       fireEvent.change(einInput, { target: { value: '12-3456789' } });
@@ -607,7 +609,8 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       });
 
       // Add a payee - only TIN and Name are required
-      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeesTinPlaceholder = /XX-XXXXXXX or XXX-XX-XXXX/;
+      const payeeTinInput = screen.getByPlaceholderText(payeesTinPlaceholder);
       const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
 
       fireEvent.change(payeeTinInput, { target: { value: '12-3456789' } });
@@ -773,15 +776,17 @@ describe('IRIS1099Wizard - Authentication Step', () => {
         expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
       });
 
-      const einInput = screen.getByPlaceholderText('XX-XXXXXXX');
+      const einInput = screen.getByPlaceholderText(/XX-XXXXXXX/);
 
-      // Type only 8 digits - formatEIN will throw an error
-      // The component throws and the value doesn't change
+      // Type only 8 digits - new formatEIN allows this for UX
       fireEvent.change(einInput, { target: { value: '12345678' } });
 
-      // Current implementation throws error, so input remains unchanged (empty)
-      // This is expected behavior - formatEIN validates strictly
-      expect(einInput).toHaveValue('');
+      // Should show the digits typed
+      expect(einInput).toHaveValue('12345678');
+
+      // But the continue button should be disabled
+      const continueButton = screen.getByText('Continue');
+      expect(continueButton).toBeDisabled();
     });
 
     it('should require state abbreviation (2 characters)', async () => {
@@ -1509,7 +1514,8 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       });
 
       // Payees step - add a valid payee
-      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeesTinPlaceholder = /XX-XXXXXXX or XXX-XX-XXXX/;
+      const payeeTinInput = screen.getByPlaceholderText(payeesTinPlaceholder);
       const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
 
       fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
@@ -1559,7 +1565,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
     it('should show validating status when pre-validation starts', async () => {
       // Make transmissionCheck hang to see loading state
       (irsApiClient.irsApi.transmissionCheck as any).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
+        () => new Promise(() => { }) // Never resolves
       );
 
       await navigateToReviewStep();
@@ -1642,7 +1648,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       });
       // Make submitBatch hang to see loading state
       (irsApiClient.irsApi.submitBatch as any).mockImplementation(
-        () => new Promise(() => {})
+        () => new Promise(() => { })
       );
 
       await navigateToReviewStep();
@@ -1768,7 +1774,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       });
       // Make poll hang to see processing state
       (irsApiClient.irsApi.pollSubmissionStatus as any).mockImplementation(
-        () => new Promise(() => {})
+        () => new Promise(() => { })
       );
 
       await navigateToReviewStep();
