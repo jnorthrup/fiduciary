@@ -93,17 +93,17 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 3.1 CAFR Search & Retrieval' (Protocol in workflow.md) [6cf2b1e]
 
 ### 3.2 Financial Data Extraction
-- [ ] Task: Write tests for CAFR data extraction
-  - [ ] Sub-task: Write failing tests for revenue extraction
-  - [ ] Sub-task: Implement revenue table parsing
-  - [ ] Sub-task: Write failing tests for expenditure extraction
-  - [ ] Sub-task: Implement expenditure table parsing
-  - [ ] Sub-task: Write failing tests for debt ratio calculation
-  - [ ] Sub-task: Implement debt ratio calculation logic
-- [ ] Task: Write tests for historical comparison
-  - [ ] Sub-task: Write failing tests for year-over-year comparison
-  - [ ] Sub-task: Implement comparison visualization
-- [ ] Task: Conductor - User Manual Verification 'Phase 3.2 Financial Data Extraction' (Protocol in workflow.md)
+- [x] Task: Write tests for CAFR data extraction [0a907f2]
+  - [x] Sub-task: Write failing tests for revenue extraction
+  - [x] Sub-task: Implement revenue table parsing
+  - [x] Sub-task: Write failing tests for expenditure extraction
+  - [x] Sub-task: Implement expenditure table parsing
+  - [x] Sub-task: Write failing tests for debt ratio calculation
+  - [x] Sub-task: Implement debt ratio calculation logic
+- [x] Task: Write tests for historical comparison [0a907f2]
+  - [x] Sub-task: Write failing tests for year-over-year comparison
+  - [x] Sub-task: Implement comparison visualization
+- [x] Task: Conductor - User Manual Verification 'Phase 3.2 Financial Data Extraction' (Protocol in workflow.md) [SKIP_PER_USER_DIRECTIVE]
 
 ## Phase 4: Integration & Testing
 
