@@ -40,6 +40,7 @@ import { TenNinetyNineWizard } from './TenNinetyNineWizard';
 import { AccountReconciliationWizard } from './AccountReconciliationWizard';
 import { MARADAuthorityWizard } from './MARADAuthorityWizard';
 import { CAFRViewer } from './CAFRViewer';
+import { APDashboard } from './APDashboard';
 
 const WizardModal = ({ children, onClose }: { children?: React.ReactNode, onClose: () => void }) => (
   <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95">
@@ -134,6 +135,9 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
                   <button onClick={() => openWizard('1099')} className="w-full text-left text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded border">Create 1099</button>
                   <button onClick={() => openWizard('SETTLEMENT')} className="w-full text-left text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded border">Settlement Engine</button>
                 </div>
+              </div>
+              <div className="md:col-span-2 h-96">
+                <APDashboard entity={entity} onSettlementClick={() => openWizard('SETTLEMENT')} />
               </div>
             </div>
             <JournalRegister journals={store.journals} entityId={entity.id} />
