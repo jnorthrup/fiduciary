@@ -218,13 +218,13 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
     await new Promise(r => setTimeout(r, 1500));
 
     if (tcc) {
-      irsApi.setAuth(tcc);
+      await irsApi.setAuth(tcc);
       if (saveCredentials) {
         await storeTCC(tcc, `IRS TCC (${tcc.slice(0, 6)}...)`, tcc);
         await loadStoredCredentials();
       }
     } else if (bearerToken) {
-      irsApi.setAuth(undefined, bearerToken);
+      await irsApi.setAuth(undefined, bearerToken);
       if (saveCredentials) {
         await storeBearerToken(bearerToken, 'IRS Bearer Token');
       }
