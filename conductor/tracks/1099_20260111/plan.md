@@ -70,11 +70,11 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2.2 Form & Payee Management' (Protocol in workflow.md) [SKIP_PER_USER_DIRECTIVE]
 
 ### 2.3 Submission & Status Display
-- [ ] Task: Write tests for submission flow
-  - [ ] Sub-task: Write failing tests for pre-submission validation call
-  - [ ] Sub-task: Implement pre-validation with error display
-  - [ ] Sub-task: Write failing tests for submission API call
-  - [ ] Sub-task: Implement submission with loading states
+- [x] Task: Write tests for submission flow [1542336]
+  - [x] Sub-task: Write failing tests for pre-submission validation call
+  - [x] Sub-task: Implement pre-validation with error display
+  - [x] Sub-task: Write failing tests for submission API call
+  - [x] Sub-task: Implement submission with loading states
 - [ ] Task: Write tests for status polling UI
   - [ ] Sub-task: Write failing tests for status update display
   - [ ] Sub-task: Implement real-time status updates
