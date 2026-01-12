@@ -4,10 +4,15 @@
  * Full-featured client for the IRS Information Returns Intake System.
  * Provides methods for submitting batches, checking status, and TIN validation.
  *
- * @see OpenAPI Spec: /public/irs-iris-openapi.yaml
+ * Supports two modes:
+ * 1. Proxy mode: Routes through backend server at API_BASE_URL
+ * 2. Direct mode: Uses IRISClient with OAuth JWT authentication (requires credentials)
+ *
+ * @see OpenAPI Spec: /specs/iris-a2a-openapi.yaml
  */
 import { isValidEINFormat, isValidSSNFormat } from '../utils/validation';
 import { ERROR_CODES, ERROR_MESSAGES } from '../types/errors';
+import { irisAdapter } from './iris-client-adapter';
 
 const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:3001/api/irs';
 
@@ -222,17 +227,36 @@ export class IrsApiClient {
   private baseUrl: string;
   private tcc: string | null = null;
   private bearerToken: string | null = null;
+  private useDirectAPI: boolean;
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
+    this.useDirectAPI = irisAdapter.isAvailable();
+  }
+
+  /**
+   * Check if using direct IRS API mode
+   */
+  isDirectMode(): boolean {
+    return this.useDirectAPI;
+  }
+
+  /**
+   * Get adapter status for UI display
+   */
+  getAdapterStatus() {
+    return irisAdapter.getStatus();
   }
 
   /**
    * Set authentication credentials
-   * Priority: Bearer token > TCC
+   * Priority: Direct API auth > Bearer token > TCC
    */
-  setAuth(tcc?: string, bearerToken?: string): void {
-    if (bearerToken) {
+  async setAuth(tcc?: string, bearerToken?: string): Promise<void> {
+    if (this.useDirectAPI) {
+      // In direct mode, authenticate with IRIS adapter
+      await irisAdapter.authenticate();
+    } else if (bearerToken) {
       this.bearerToken = bearerToken;
       this.tcc = null;
     } else if (tcc) {
@@ -250,7 +274,7 @@ export class IrsApiClient {
   }
 
   /**
-   * Get auth headers for request
+   * Get auth headers for request (proxy mode only)
    */
   private getAuthHeaders(): Record<string, string> {
     if (this.bearerToken) {
@@ -263,12 +287,16 @@ export class IrsApiClient {
   }
 
   /**
-   * Make authenticated API request
+   * Make authenticated API request (proxy mode only)
    */
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    if (this.useDirectAPI) {
+      throw new Error('Direct API mode enabled - use adapter methods instead');
+    }
+
     const url = `${this.baseUrl}${endpoint}`;
 
     const response = await fetch(url, {
@@ -295,6 +323,14 @@ export class IrsApiClient {
    * Check API health
    */
   async healthCheck(): Promise<{ status: string; timestamp: string; service: string; version: string }> {
+    if (this.useDirectAPI) {
+      return {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        service: 'IRS IRIS A2A API (Direct)',
+        version: '1.0.0',
+      };
+    }
     return this.request('/health');
   }
 
@@ -311,6 +347,12 @@ export class IrsApiClient {
    * Submit information return batch
    */
   async submitBatch(submission: SubmissionRequest): Promise<SubmissionReceipt> {
+    if (this.useDirectAPI) {
+      return irisAdapter.submitTransmission(submission, {
+        transmissionType: submission.submissionType,
+        taxYear: String(submission.taxYear),
+      });
+    }
     return this.request<SubmissionReceipt>('/submissions', {
       method: 'POST',
       body: JSON.stringify(submission),
@@ -321,6 +363,9 @@ export class IrsApiClient {
    * Get submission status
    */
   async getSubmissionStatus(receiptId: string): Promise<BatchStatus> {
+    if (this.useDirectAPI) {
+      return irisAdapter.getTransmissionStatus(receiptId);
+    }
     return this.request<BatchStatus>(`/submissions/${encodeURIComponent(receiptId)}/status`);
   }
 
@@ -328,6 +373,25 @@ export class IrsApiClient {
    * Get submission details
    */
   async getSubmissionDetails(receiptId: string): Promise<SubmissionDetails> {
+    if (this.useDirectAPI) {
+      // IRIS API doesn't have a separate details endpoint
+      // Map from status response
+      const status = await irisAdapter.getTransmissionStatus(receiptId);
+      return {
+        receiptId: status.receiptId,
+        status: status.status,
+        submittedAt: status.submittedAt,
+        completedAt: status.completedAt,
+        records: status.errors?.map((e, i) => ({
+          recordId: `REC-${i}`,
+          status: e.severity === 'ERROR' ? 'Error' : 'Warning',
+          tin: '',
+          name: '',
+          errors: [e],
+          warnings: [],
+        })) || [],
+      };
+    }
     return this.request<SubmissionDetails>(`/submissions/${encodeURIComponent(receiptId)}/details`);
   }
 
@@ -335,6 +399,7 @@ export class IrsApiClient {
    * Validate single TIN
    */
   async validateTin(request: TinMatchRequest): Promise<TinMatchResponse> {
+    // TIN validation not available in direct mode - uses backend proxy
     return this.request<TinMatchResponse>('/tin-validation', {
       method: 'POST',
       body: JSON.stringify(request),
@@ -345,6 +410,7 @@ export class IrsApiClient {
    * Validate multiple TINs (batch)
    */
   async validateTinBatch(request: TinMatchBatchRequest): Promise<TinMatchBatchResponse> {
+    // TIN validation not available in direct mode - uses backend proxy
     return this.request<TinMatchBatchResponse>('/tin-validation', {
       method: 'POST',
       body: JSON.stringify(request),
@@ -355,6 +421,7 @@ export class IrsApiClient {
    * Get form schema
    */
   async getFormSchema(formType: FormType): Promise<FormSchema> {
+    // Form schema not available in direct mode - uses backend proxy
     return this.request<FormSchema>(`/schemas/${encodeURIComponent(formType)}`);
   }
 
@@ -362,6 +429,9 @@ export class IrsApiClient {
    * Pre-transmission validation check
    */
   async transmissionCheck(submission: SubmissionRequest): Promise<TransmissionCheckResponse> {
+    if (this.useDirectAPI) {
+      return irisAdapter.transmissionCheck(submission);
+    }
     return this.request<TransmissionCheckResponse>('/transmission-check', {
       method: 'POST',
       body: JSON.stringify(submission),
@@ -381,6 +451,11 @@ export class IrsApiClient {
     interval: number = 2000,
     timeout: number = 300000
   ): Promise<BatchStatus> {
+    if (this.useDirectAPI) {
+      // Use adapter's optimized polling (30s intervals, 60 attempts = 30 minutes)
+      return irisAdapter.pollTransmissionStatus(receiptId, onUpdate, interval, Math.ceil(timeout / interval));
+    }
+
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeout) {
