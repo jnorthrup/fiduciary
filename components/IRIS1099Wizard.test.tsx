@@ -1477,4 +1477,284 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       });
     });
   });
+
+  describe('Submission Flow', () => {
+    // Helper to navigate to Review step with valid data
+    const navigateToReviewStep = async () => {
+      render(<IRIS1099Wizard />);
+
+      // Auth step
+      const tccInput = await screen.findByPlaceholderText('T123456789');
+      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.click(screen.getByText('Authenticate & Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitter ID')).toBeInTheDocument();
+      });
+
+      // Filer step
+      fireEvent.change(screen.getByPlaceholderText('XX-XXXXXXX'), { target: { value: '12-3456789' } });
+      fireEvent.change(screen.getByPlaceholderText('ABC Corporation Inc'), { target: { value: 'Test Corp' } });
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Tax Year')).toBeInTheDocument();
+      });
+
+      // FormType step
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Add Payee')).toBeInTheDocument();
+      });
+
+      // Payees step - add a valid payee
+      const payeeTinInput = screen.getByPlaceholderText('XX-XXXXXXX or XXX-XX-XXXX');
+      const payeeNameInput = screen.getByPlaceholderText('John D Contractor');
+
+      fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
+      fireEvent.change(payeeNameInput, { target: { value: 'Jane Smith' } });
+      fireEvent.click(screen.getByText('Add Payee to Batch'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Jane Smith')).toBeInTheDocument();
+      });
+
+      // Go to Review step
+      fireEvent.click(screen.getByText('Continue'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Submission Summary')).toBeInTheDocument();
+        expect(screen.queryByText('Validate & Submit')).toBeInTheDocument();
+      });
+    };
+
+    it('should call transmissionCheck for pre-validation on submit', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockResolvedValue({
+        status: 'Accepted',
+        recordCount: 1,
+        acceptedCount: 1,
+        warningCount: 0,
+        errorCount: 0
+      });
+
+      await navigateToReviewStep();
+
+      // Click Validate & Submit
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(irsApiClient.irsApi.transmissionCheck).toHaveBeenCalled();
+      });
+    });
+
+    it('should show validating status when pre-validation starts', async () => {
+      // Make transmissionCheck hang to see loading state
+      (irsApiClient.irsApi.transmissionCheck as any).mockImplementation(
+        () => new Promise(() => {}) // Never resolves
+      );
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Validating Submission...')).toBeInTheDocument();
+      });
+    });
+
+    it('should display validation errors when pre-validation fails', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: false,
+        errors: [
+          { code: 'ERR001', message: 'Invalid filer EIN', field: 'filer.ein' },
+          { code: 'ERR002', message: 'Missing payee address' }
+        ]
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        // Check error messages are displayed (may have multiple matches)
+        expect(screen.queryAllByText(/Validation failed/i).length).toBeGreaterThan(0);
+        expect(screen.queryByText(/Invalid filer EIN/)).toBeInTheDocument();
+        expect(screen.queryByText(/Missing payee address/)).toBeInTheDocument();
+      });
+    });
+
+    it('should not call submitBatch when validation fails', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: false,
+        errors: [{ code: 'ERR001', message: 'Invalid data' }]
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryAllByText(/Validation failed/i).length).toBeGreaterThan(0);
+      });
+
+      expect(irsApiClient.irsApi.submitBatch).not.toHaveBeenCalled();
+    });
+
+    it('should call submitBatch when validation passes', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockResolvedValue({
+        status: 'Accepted',
+        recordCount: 1,
+        acceptedCount: 1,
+        warningCount: 0,
+        errorCount: 0
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(irsApiClient.irsApi.submitBatch).toHaveBeenCalled();
+      });
+    });
+
+    it('should show transmitting status during submission', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      // Make submitBatch hang to see loading state
+      (irsApiClient.irsApi.submitBatch as any).mockImplementation(
+        () => new Promise(() => {})
+      );
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Transmitting to IRS IRIS A2A...')).toBeInTheDocument();
+      });
+    });
+
+    it('should display receipt ID after successful submission', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'IRS-RECEIPT-ABC123',
+        timestamp: new Date().toISOString()
+      });
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockResolvedValue({
+        status: 'Accepted',
+        recordCount: 1,
+        acceptedCount: 1,
+        warningCount: 0,
+        errorCount: 0
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Submission Complete')).toBeInTheDocument();
+        expect(screen.queryByText(/IRS-RECEIPT-ABC123/)).toBeInTheDocument();
+      });
+    });
+
+    it('should handle submission API error', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockRejectedValue(
+        new Error('Network error: Unable to connect to IRS')
+      );
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryAllByText(/Submission Failed/i).length).toBeGreaterThan(0);
+        expect(screen.queryAllByText(/Network error/i).length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should poll for status after submission', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockResolvedValue({
+        status: 'Accepted',
+        recordCount: 1,
+        acceptedCount: 1,
+        warningCount: 0,
+        errorCount: 0
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(irsApiClient.irsApi.pollSubmissionStatus).toHaveBeenCalledWith(
+          'test-receipt-123',
+          expect.any(Function)
+        );
+      });
+    });
+
+    it('should display final status results', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockResolvedValue({
+        status: 'Accepted',
+        recordCount: 5,
+        acceptedCount: 4,
+        warningCount: 1,
+        errorCount: 0
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Submission Complete')).toBeInTheDocument();
+        expect(screen.queryByText('5')).toBeInTheDocument(); // Total
+        expect(screen.queryByText('4')).toBeInTheDocument(); // Accepted
+      });
+    });
+  });
 });
