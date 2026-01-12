@@ -13,7 +13,7 @@
  * @see https://www.irs.gov/pub/irs-pdf/p5718.pdf
  */
 
-import { randomUUID } from 'crypto';
+import { randomUUID, sign } from 'node:crypto';
 
 // ============================================================================
 // Types
@@ -178,15 +178,19 @@ export class IRISClient {
       jti: randomUUID(),
     };
 
-    // For now, return a placeholder - actual JWT signing requires crypto library
-    // In production, this would use the private key to sign
+    // Encode header and payload
     const headerB64 = Buffer.from(JSON.stringify(header)).toString('base64url');
     const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
 
-    // TODO: Implement RS256 signing with privateKey
-    const signature = 'signature_placeholder';
+    // Create signing input
+    const signingInput = `${headerB64}.${payloadB64}`;
 
-    return `${headerB64}.${payloadB64}.${signature}`;
+    // Sign with RS256 (RSA-SHA256 with PKCS#1 v1.5 padding)
+    const signature = sign('rsa-sha256', Buffer.from(signingInput), {
+      key: this.credentials.privateKey,
+    }).toString('base64url');
+
+    return `${signingInput}.${signature}`;
   }
 
   /**

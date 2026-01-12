@@ -10,13 +10,17 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { IRISClient, createIRISClient, validateTCC, validateUTID, generateUTID, type IRISCredentials } from '../services/iris-client';
+import { readFileSync } from 'node:fs';
+
+// Real RSA key for testing (generated for test purposes)
+const testPrivateKey = readFileSync('./test/fixtures/test-rsa-key.pem', 'utf-8');
 
 // Mock credentials for testing
 const mockCredentials: IRISCredentials = {
   clientId: 'test-client-id-12345',
   userId: 'testuser-12345',
   tcc: 'D1234',
-  privateKey: '-----BEGIN PRIVATE KEY-----\\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQ...\\n-----END PRIVATE KEY-----',
+  privateKey: testPrivateKey,
   keyId: 'test-key-id',
   testMode: true,
 };
