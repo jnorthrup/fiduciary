@@ -1,150 +1,175 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { 
-  Entity, EntityRole, EntityType, Account, AccountType, DCFlag, TaxModule, 
-  Contractor, ComplianceFiling, WalletCredential, BSORole, BSOSubmission, 
-  IRSAPICredential, Employee, PayrollRun, IRMDocument, SSAStatement, 
-  ResolutionRecord, TrustSubType, JournalEntry, CreditDefenseRecord, IntrusionRecord,
-  CreditResolution, CreditInstrument, PurchaseContract, RealEstateAsset, LegalInstrument, CollateralPool, TransmissionLog
+import {
+    Entity, EntityRole, EntityType, Account, AccountType, DCFlag, TaxModule,
+    Contractor, ComplianceFiling, WalletCredential, BSORole, BSOSubmission,
+    IRSAPICredential, Employee, PayrollRun, IRMDocument, SSAStatement,
+    ResolutionRecord, TrustSubType, JournalEntry, CreditDefenseRecord, IntrusionRecord,
+    CreditResolution, CreditInstrument, PurchaseContract, RealEstateAsset, LegalInstrument, CollateralPool, TransmissionLog
 } from '../types';
 
 const GENESIS_HASH = "0000000000000000";
 
 // --- 1. JIM PROFILE DATA (JRN,  ) ---
 
-export const JIM_ENTITIES: Entity[] = [
-  // FIDUCIARY ROOT
-  {
-    id: "ENT-ROOT",
-    name: "Private Banker",
-    type: EntityType.INDIVIDUAL,
-    role: EntityRole.TRUSTEE,
-    einLast4: "0055", // 38-00-0055
-    parentEntityId: null,
-    _version: GENESIS_HASH,
-    imfProfile: {
-        dsaStatus: 'Sustainable',
-        arrearsPolicy: 'None',
-        financingAssurances: true,
-        programStatus: 'On Track'
-    }
-  },
-  // ECCLESIASTICAL LAYER
-  {
-    id: "ENT-MIN-SOLE",
-    name: "JRN Ministries Corp Sole",
-    type: EntityType.TRUST,
-    trustSubType: TrustSubType.ECCLESIASTICAL,
-    role: EntityRole.HOLDING_TRUST,
-    einLast4: "0085", // 33-00-0085
-    parentEntityId: "ENT-ROOT",
-    _version: GENESIS_HASH,
-    imfProfile: {
-        dsaStatus: 'Sustainable',
-        arrearsPolicy: 'NTP',
-        financingAssurances: true,
-        programStatus: 'On Track'
-    }
-  },
-  // ESTATE LAYER
-  {
-    id: "ENT-EST-JRN",
-    name: "Estate of James R. Northrup Jr.",
-    type: EntityType.ESTATE,
-    role: EntityRole.LIVING_ESTATE,
-    einLast4: "0075", // 99-00-0075
-    parentEntityId: "ENT-ROOT",
-    _version: GENESIS_HASH,
-    imfProfile: {
-        dsaStatus: 'Unsustainable',
-        arrearsPolicy: 'LIA',
-        financingAssurances: false,
-        programStatus: 'Review Pending'
-    }
-  },  
-  // TRUST ARMS
-  {
-    id: "ENT-AAA-TRUST",
-    name: "AAA Angel Inv. Express Trust",
-    type: EntityType.TRUST,
-    trustSubType: TrustSubType.EXPRESS,
-    role: EntityRole.HOLDING_TRUST,
-    einLast4: "0060", // 33-00-0060
-    parentEntityId: "ENT-EST-JRN",
-    _version: GENESIS_HASH,
-    imfProfile: {
-        dsaStatus: 'Sustainable (High Prob)',
-        arrearsPolicy: 'None',
-        financingAssurances: true,
-        programStatus: 'On Track'
-    }
-  },
-  {
-    id: "ENT-VERSA-LLC",
-    name: "Versatile Consulting LLC",
+// --- 1. FACTORIES ---
+
+export const createEntity = (props: Partial<Entity>): Entity => ({
+    id: uuidv4(),
+    name: "Unknown Entity",
     type: EntityType.LLC,
     role: EntityRole.OPERATING_LLC,
-    einLast4: "0073", // 33-00-0073
-    parentEntityId: "ENT-AAA-TRUST",
+    einLast4: "0000",
+    parentEntityId: null,
     _version: GENESIS_HASH,
-    imfProfile: {
-        dsaStatus: 'Sustainable',
-        arrearsPolicy: 'None',
-        financingAssurances: true,
-        programStatus: 'On Track'
+    ...props
+});
+
+// --- 2. JIM PROFILE DATA (JRN,  ) ---
+
+export const JIM_ENTITIES: Entity[] = [
+    // FIDUCIARY ROOT
+    createEntity({
+        id: "ENT-ROOT",
+        name: "Private Banker",
+        type: EntityType.INDIVIDUAL,
+        role: EntityRole.TRUSTEE,
+        einLast4: "0055",
+        imfProfile: {
+            dsaStatus: 'Sustainable',
+            arrearsPolicy: 'None',
+            financingAssurances: true,
+            programStatus: 'On Track'
+        }
+    }),
+    // ECCLESIASTICAL LAYER
+    {
+        id: "ENT-MIN-SOLE",
+        name: "JRN Ministries Corp Sole",
+        type: EntityType.TRUST,
+        trustSubType: TrustSubType.ECCLESIASTICAL,
+        role: EntityRole.HOLDING_TRUST,
+        einLast4: "0085", // 33-00-0085
+        parentEntityId: "ENT-ROOT",
+        _version: GENESIS_HASH,
+        imfProfile: {
+            dsaStatus: 'Sustainable',
+            arrearsPolicy: 'NTP',
+            financingAssurances: true,
+            programStatus: 'On Track'
+        }
+    },
+    // ESTATE LAYER
+    {
+        id: "ENT-EST-JRN",
+        name: "Estate of James R. Northrup Jr.",
+        type: EntityType.ESTATE,
+        role: EntityRole.LIVING_ESTATE,
+        einLast4: "0075", // 99-00-0075
+        parentEntityId: "ENT-ROOT",
+        _version: GENESIS_HASH,
+        imfProfile: {
+            dsaStatus: 'Unsustainable',
+            arrearsPolicy: 'LIA',
+            financingAssurances: false,
+            programStatus: 'Review Pending'
+        }
+    },
+    // TRUST ARMS
+    {
+        id: "ENT-AAA-TRUST",
+        name: "AAA Angel Inv. Express Trust",
+        type: EntityType.TRUST,
+        trustSubType: TrustSubType.EXPRESS,
+        role: EntityRole.HOLDING_TRUST,
+        einLast4: "0060", // 33-00-0060
+        parentEntityId: "ENT-EST-JRN",
+        _version: GENESIS_HASH,
+        imfProfile: {
+            dsaStatus: 'Sustainable (High Prob)',
+            arrearsPolicy: 'None',
+            financingAssurances: true,
+            programStatus: 'On Track'
+        }
+    },
+    {
+        id: "ENT-VERSA-LLC",
+        name: "Versatile Consulting LLC",
+        type: EntityType.LLC,
+        role: EntityRole.OPERATING_LLC,
+        einLast4: "0073", // 33-00-0073
+        parentEntityId: "ENT-AAA-TRUST",
+        _version: GENESIS_HASH,
+        imfProfile: {
+            dsaStatus: 'Sustainable',
+            arrearsPolicy: 'None',
+            financingAssurances: true,
+            programStatus: 'On Track'
+        }
+    },
+    {
+        id: "ENT-FARMS-LAND",
+        name: "Macaroon Farms Land Trust",
+        type: EntityType.TRUST,
+        trustSubType: TrustSubType.ASSET_PROTECTION,
+        role: EntityRole.HOLDING_TRUST,
+        einLast4: "0008", // 33-00-0008
+        parentEntityId: "ENT-EST-JRN",
+        _version: GENESIS_HASH
+    },
+    {
+        id: "ENT-GINGER-TRUST",
+        name: "Ginger Waffle Trust",
+        type: EntityType.TRUST,
+        role: EntityRole.HOLDING_TRUST,
+        einLast4: "0058",
+        parentEntityId: "ENT-EST-JRN",
+        _version: GENESIS_HASH
+    },
+    {
+        id: "ENT-LIVING-TRUST",
+        name: "Northrup Living Trust",
+        type: EntityType.TRUST,
+        trustSubType: TrustSubType.REVOCABLE,
+        role: EntityRole.HOLDING_TRUST,
+        einLast4: "7721",
+        parentEntityId: "ENT-ROOT",
+        _version: GENESIS_HASH
     }
-  },
-  {
-    id: "ENT-FARMS-LAND",
-    name: "Macaroon Farms Land Trust",
-    type: EntityType.TRUST,
-    trustSubType: TrustSubType.ASSET_PROTECTION,
-    role: EntityRole.HOLDING_TRUST,
-    einLast4: "0008", // 33-00-0008
-    parentEntityId: "ENT-EST-JRN",
-    _version: GENESIS_HASH
-  },
-  {
-    id: "ENT-GINGER-TRUST",
-    name: "Ginger Waffle Trust",
-    type: EntityType.TRUST,
-    role: EntityRole.HOLDING_TRUST,
-    einLast4: "0058",
-    parentEntityId: "ENT-EST-JRN",
-    _version: GENESIS_HASH
-  },
-  {
-    id: "ENT-LIVING-TRUST",
-    name: "Northrup Living Trust",
-    type: EntityType.TRUST,
-    trustSubType: TrustSubType.REVOCABLE,
-    role: EntityRole.HOLDING_TRUST,
-    einLast4: "7721",
-    parentEntityId: "ENT-ROOT",
-    _version: GENESIS_HASH
-  }
 ];
 
-export const JIM_ACCOUNTS: Account[] = [
-  { id: "AC-101", entityId: "ENT-ROOT", code: "101000", name: "Master Treasury Account", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 1250000.00, _version: GENESIS_HASH },
-  { id: "AC-RE-001", entityId: "ENT-ROOT", code: "150000", name: "Real Estate Assets", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 400000.00, _version: GENESIS_HASH },
-  { id: "AC-LIAB-001", entityId: "ENT-ROOT", code: "250000", name: "Credit Instruments Payable", type: AccountType.LIABILITY, normalBalance: DCFlag.Credit, balance: 400000.00, _version: GENESIS_HASH },
-  
-  { id: "AC-102", entityId: "ENT-AAA-TRUST", code: "101000", name: "Operating Cash", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 485000.00, _version: GENESIS_HASH }, // Reduced by 15k for payment
-  { id: "AC-AAA-TAX-LIAB", entityId: "ENT-AAA-TRUST", code: "210000", name: "Federal Tax Liability", type: AccountType.LIABILITY, normalBalance: DCFlag.Credit, balance: 0, _version: GENESIS_HASH },
+export const createAccount = (props: Partial<Account>): Account => ({
+    id: uuidv4(),
+    entityId: "ENT-ROOT",
+    code: "000000",
+    name: "Unknown Account",
+    type: AccountType.ASSET,
+    normalBalance: DCFlag.Debit,
+    balance: 0,
+    _version: GENESIS_HASH,
+    ...props
+});
 
-  { id: "AC-103", entityId: "ENT-VERSA-LLC", code: "101000", name: "Business Checking", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 285400.00, _version: GENESIS_HASH },
-  { id: "AC-104", entityId: "ENT-FARMS-LAND", code: "101000", name: "Land Trust Reserves", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 45000.00, _version: GENESIS_HASH },
-  // Versatile Accounts
-  { id: "AC-V-INC", entityId: "ENT-VERSA-LLC", code: "400000", name: "Consulting Revenue", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0, _version: GENESIS_HASH },
-  { id: "AC-V-EXP", entityId: "ENT-VERSA-LLC", code: "500000", name: "Software Expense", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, _version: GENESIS_HASH },
-  { id: "AC-V-PAY", entityId: "ENT-VERSA-LLC", code: "510000", name: "Payroll Expense", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, _version: GENESIS_HASH },
-  { id: "AC-V-EQ", entityId: "ENT-VERSA-LLC", code: "300000", name: "Member Capital", type: AccountType.EQUITY, normalBalance: DCFlag.Credit, balance: 0, _version: GENESIS_HASH },
-  // Trust Accounts
-  { id: "AC-T-INC", entityId: "ENT-AAA-TRUST", code: "410000", name: "Distribution Income", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0, _version: GENESIS_HASH },
-  { id: "AC-T-EXP", entityId: "ENT-AAA-TRUST", code: "520000", name: "Trustee Fees", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, _version: GENESIS_HASH },
-  { id: "AC-UNCAT", entityId: "ENT-VERSA-LLC", code: "599000", name: "Uncategorized Expense", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, _version: GENESIS_HASH },
- ];
+export const JIM_ACCOUNTS: Account[] = [
+    createAccount({ id: "AC-101", entityId: "ENT-ROOT", code: "101000", name: "Master Treasury Account", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 1250000.00 }),
+    createAccount({ id: "AC-RE-001", entityId: "ENT-ROOT", code: "150000", name: "Real Estate Assets", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 400000.00 }),
+    createAccount({ id: "AC-LIAB-001", entityId: "ENT-ROOT", code: "250000", name: "Credit Instruments Payable", type: AccountType.LIABILITY, normalBalance: DCFlag.Credit, balance: 400000.00 }),
+
+    createAccount({ id: "AC-102", entityId: "ENT-AAA-TRUST", code: "101000", name: "Operating Cash", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 485000.00 }),
+    createAccount({ id: "AC-AAA-TAX-LIAB", entityId: "ENT-AAA-TRUST", code: "210000", name: "Federal Tax Liability", type: AccountType.LIABILITY, normalBalance: DCFlag.Credit, balance: 0 }),
+
+    createAccount({ id: "AC-103", entityId: "ENT-VERSA-LLC", code: "101000", name: "Business Checking", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 285400.00 }),
+    createAccount({ id: "AC-104", entityId: "ENT-FARMS-LAND", code: "101000", name: "Land Trust Reserves", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 45000.00 }),
+
+    createAccount({ id: "AC-V-INC", entityId: "ENT-VERSA-LLC", code: "400000", name: "Consulting Revenue", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0 }),
+    createAccount({ id: "AC-V-EXP", entityId: "ENT-VERSA-LLC", code: "500000", name: "Software Expense", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0 }),
+    createAccount({ id: "AC-V-PAY", entityId: "ENT-VERSA-LLC", code: "510000", name: "Payroll Expense", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0 }),
+    createAccount({ id: "AC-V-EQ", entityId: "ENT-VERSA-LLC", code: "300000", name: "Member Capital", type: AccountType.EQUITY, normalBalance: DCFlag.Credit, balance: 0 }),
+
+    createAccount({ id: "AC-T-INC", entityId: "ENT-AAA-TRUST", code: "410000", name: "Distribution Income", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0 }),
+    createAccount({ id: "AC-T-EXP", entityId: "ENT-AAA-TRUST", code: "520000", name: "Trustee Fees", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0 }),
+    createAccount({ id: "AC-UNCAT", entityId: "ENT-VERSA-LLC", code: "599000", name: "Uncategorized Expense", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0 }),
+];
 
 const generateHistory = (): JournalEntry[] => {
     const journals: JournalEntry[] = [];
@@ -158,7 +183,7 @@ const generateHistory = (): JournalEntry[] => {
         const dateStr = currentDate.toISOString().split('T')[0];
         const month = currentDate.toLocaleString('default', { month: 'short' });
         const year = currentDate.getFullYear();
-        const revenue = 15000 + Math.floor(Math.random() * 8000); 
+        const revenue = 15000 + Math.floor(Math.random() * 8000);
         journals.push({
             id: uuidv4(),
             entityId: llcId,
@@ -211,14 +236,14 @@ JIM_JOURNALS.push({
 });
 
 export const JIM_MODULES: TaxModule[] = [
-  { id: "TM-AAA-Q1", entityId: "ENT-AAA-TRUST", period: "Q1", year: 2025, type: "INCOME", status: "Open", dueDate: "2025-04-15" },
-  { id: "TM-VERSA-Q1", entityId: "ENT-VERSA-LLC", period: "Q1", year: 2025, type: "PAYROLL", status: "Open", dueDate: "2025-04-30" },
-  { id: "TM-LAS-Q1", entityId: "ENT-LAS-TRUST", period: "Annual", year: 2025, type: "INFO_RETURN", status: "Open", dueDate: "2025-04-15" },
+    { id: "TM-AAA-Q1", entityId: "ENT-AAA-TRUST", period: "Q1", year: 2025, type: "INCOME", status: "Open", dueDate: "2025-04-15" },
+    { id: "TM-VERSA-Q1", entityId: "ENT-VERSA-LLC", period: "Q1", year: 2025, type: "PAYROLL", status: "Open", dueDate: "2025-04-30" },
+    { id: "TM-LAS-Q1", entityId: "ENT-LAS-TRUST", period: "Annual", year: 2025, type: "INFO_RETURN", status: "Open", dueDate: "2025-04-15" },
 ];
 
 export const JIM_FILINGS: ComplianceFiling[] = [
-  { id: "FIL-56-ROOT", entityId: "ENT-ROOT", formType: "56", status: "Accepted", filingDate: "2024-01-01", notes: "Fiduciary Capacity Established", _version: GENESIS_HASH },
-  { id: "FIL-56-MIN", entityId: "ENT-MIN-SOLE", formType: "56", status: "Accepted", filingDate: new Date().toISOString().split('T')[0], submissionId: "TRX1234567890", _version: GENESIS_HASH },
+    { id: "FIL-56-ROOT", entityId: "ENT-ROOT", formType: "56", status: "Accepted", filingDate: "2024-01-01", notes: "Fiduciary Capacity Established", _version: GENESIS_HASH },
+    { id: "FIL-56-MIN", entityId: "ENT-MIN-SOLE", formType: "56", status: "Accepted", filingDate: new Date().toISOString().split('T')[0], submissionId: "TRX1234567890", _version: GENESIS_HASH },
 ];
 
 export const JIM_TRANSMISSIONS: TransmissionLog[] = [

@@ -85,7 +85,7 @@
 ## Phase 3: CAFR Research Interface
 
 ### 3.1 CAFR Search & Retrieval
-- [ ] Task: Write tests for CAFR search functionality
+- [~] Task: Write tests for CAFR search functionality
   - [ ] Sub-task: Write failing tests for search by entity name
   - [ ] Sub-task: Implement CAFR search API integration
   - [ ] Sub-task: Write failing tests for search by state
