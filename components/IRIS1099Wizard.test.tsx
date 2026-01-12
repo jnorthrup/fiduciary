@@ -1756,5 +1756,208 @@ describe('IRIS1099Wizard - Authentication Step', () => {
         expect(screen.queryByText('4')).toBeInTheDocument(); // Accepted
       });
     });
+
+    it('should show processing status during polling', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+      // Make poll hang to see processing state
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockImplementation(
+        () => new Promise(() => {})
+      );
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Processing...')).toBeInTheDocument();
+      });
+    });
+
+    it('should display batch status counts during polling', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+
+      // Mock pollSubmissionStatus to call the callback with intermediate status
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockImplementation(
+        async (receiptId: string, callback: (status: any) => void) => {
+          // Simulate intermediate status update
+          callback({
+            status: 'Processing',
+            recordCount: 10,
+            acceptedCount: 5,
+            warningCount: 0,
+            errorCount: 0
+          });
+          // Return final status
+          return {
+            status: 'Accepted',
+            recordCount: 10,
+            acceptedCount: 10,
+            warningCount: 0,
+            errorCount: 0
+          };
+        }
+      );
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      // Wait for final result
+      await waitFor(() => {
+        expect(screen.queryByText('Submission Complete')).toBeInTheDocument();
+      });
+    });
+
+    it('should display all accepted message on full success', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockResolvedValue({
+        status: 'Accepted',
+        recordCount: 3,
+        acceptedCount: 3,
+        warningCount: 0,
+        errorCount: 0
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Submission Complete')).toBeInTheDocument();
+        expect(screen.queryByText(/All records accepted by IRS/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should show New Submission button after completion', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockResolvedValue({
+        status: 'Accepted',
+        recordCount: 1,
+        acceptedCount: 1,
+        warningCount: 0,
+        errorCount: 0
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('New Submission')).toBeInTheDocument();
+      });
+    });
+
+    it('should show Close button after completion', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockResolvedValue({
+        status: 'Accepted',
+        recordCount: 1,
+        acceptedCount: 1,
+        warningCount: 0,
+        errorCount: 0
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Close')).toBeInTheDocument();
+      });
+    });
+
+    it('should display warning count in results', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockResolvedValue({
+        status: 'Accepted',
+        recordCount: 10,
+        acceptedCount: 8,
+        warningCount: 2,
+        errorCount: 0
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Submission Complete')).toBeInTheDocument();
+        expect(screen.queryByText('10')).toBeInTheDocument(); // Total
+        expect(screen.queryByText('8')).toBeInTheDocument(); // Accepted
+        expect(screen.queryByText('2')).toBeInTheDocument(); // Warnings
+      });
+    });
+
+    it('should display error list when errors exist in batch status', async () => {
+      (irsApiClient.irsApi.transmissionCheck as any).mockResolvedValue({
+        valid: true,
+        errors: []
+      });
+      (irsApiClient.irsApi.submitBatch as any).mockResolvedValue({
+        receiptId: 'test-receipt-123',
+        timestamp: new Date().toISOString()
+      });
+      (irsApiClient.irsApi.pollSubmissionStatus as any).mockResolvedValue({
+        status: 'Accepted',
+        recordCount: 5,
+        acceptedCount: 4,
+        warningCount: 0,
+        errorCount: 1,
+        errors: [
+          { code: 'REC001', message: 'Invalid TIN for payee 3' }
+        ]
+      });
+
+      await navigateToReviewStep();
+
+      fireEvent.click(screen.getByText('Validate & Submit'));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Submission Complete')).toBeInTheDocument();
+        expect(screen.queryByText(/Invalid TIN for payee 3/)).toBeInTheDocument();
+      });
+    });
   });
 });
