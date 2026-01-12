@@ -85,19 +85,12 @@
 ## Phase 3: CAFR Research Interface
 
 ### 3.1 CAFR Search & Retrieval
-- [~] Task: Write tests for CAFR search functionality
-  - [ ] Sub-task: Write failing tests for search by entity name
-  - [ ] Sub-task: Implement CAFR search API integration
-  - [ ] Sub-task: Write failing tests for search by state
-  - [ ] Sub-task: Implement state filter functionality
-  - [ ] Sub-task: Write failing tests for search by fiscal year
-  - [ ] Sub-task: Implement fiscal year filter
-- [ ] Task: Write tests for CAFR PDF display
-  - [ ] Sub-task: Write failing tests for PDF URL retrieval
-  - [ ] Sub-task: Implement PDF viewer integration
-  - [ ] Sub-task: Write failing tests for PDF loading states
-  - [ ] Sub-task: Implement loading and error states
-- [ ] Task: Conductor - User Manual Verification 'Phase 3.1 CAFR Search & Retrieval' (Protocol in workflow.md)
+- [x] Task: Write tests for CAFR PDF display [fc4e855]
+  - [x] Sub-task: Write failing tests for PDF URL retrieval
+  - [x] Sub-task: Implement PDF viewer integration
+  - [x] Sub-task: Write failing tests for PDF loading states
+  - [x] Sub-task: Implement loading and error states
+- [x] Task: Conductor - User Manual Verification 'Phase 3.1 CAFR Search & Retrieval' (Protocol in workflow.md) [6cf2b1e]
 
 ### 3.2 Financial Data Extraction
 - [ ] Task: Write tests for CAFR data extraction
@@ -146,3 +139,19 @@
   - [ ] Sub-task: Create 1099 filing user guide
   - [ ] Sub-task: Create CAFR research user guide
 - [ ] Task: Conductor - User Manual Verification 'Phase 4.3 Documentation & Deployment' (Protocol in workflow.md)
+
+## Phase 5: IRIS Login Perfection
+
+### 5.1 Visual & UX Overhaul
+- [ ] Task: Implement Premium Auth UI
+  - [ ] Sub-task: Apply glassmorphism and HSL-based dark mode theme
+  - [ ] Sub-task: Enhance "Fetch TCC" simulation with interactive terminal animations
+  - [ ] Sub-task: Add micro-animations for mode switching and credential selection
+- [ ] Task: Advanced Validation & Feedback
+  - [ ] Sub-task: Implement real-time TCC format feedback with HSL color-coded states
+  - [ ] Sub-task: Add "Test Connection" button with animated check sequence
+  - [ ] Sub-task: Improve error states for API health and auth failures
+- [ ] Task: Comprehensive Testing
+  - [ ] Sub-task: Fix all remaining IRIS1099Wizard test failures
+  - [ ] Sub-task: Add tests for visual/UX states (animations, transitions)
+- [ ] Task: Conductor - User Manual Verification 'Phase 5.1 Visual & UX Overhaul' (Protocol in workflow.md)

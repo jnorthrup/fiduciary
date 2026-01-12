@@ -1,5 +1,6 @@
 
 export const TIN_PLACEHOLDER = 'XX-XXXXXXX';
+export const TCC_PLACEHOLDER = 'T1234567890';
 export const SSN_PLACEHOLDER = 'XXX-XX-XXXX';
 export const ACCOUNT_PLACEHOLDER = 'XXXX-XXXX';
 export const PENDING_STATUS = 'PENDING';
