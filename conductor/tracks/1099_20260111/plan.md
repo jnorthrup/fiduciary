@@ -75,11 +75,11 @@
   - [x] Sub-task: Implement pre-validation with error display
   - [x] Sub-task: Write failing tests for submission API call
   - [x] Sub-task: Implement submission with loading states
-- [ ] Task: Write tests for status polling UI
-  - [ ] Sub-task: Write failing tests for status update display
-  - [ ] Sub-task: Implement real-time status updates
-  - [ ] Sub-task: Write failing tests for completion notification
-  - [ ] Sub-task: Implement completion state with results display
+- [x] Task: Write tests for status polling UI [c9c7e4f]
+  - [x] Sub-task: Write failing tests for status update display
+  - [x] Sub-task: Implement real-time status updates
+  - [x] Sub-task: Write failing tests for completion notification
+  - [x] Sub-task: Implement completion state with results display
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.3 Submission & Status Display' (Protocol in workflow.md)
 
 ## Phase 3: CAFR Research Interface
