@@ -14,6 +14,7 @@
  */
 
 import { randomUUID, sign } from 'node:crypto';
+import { XMLParser } from 'fast-xml-parser';
 
 // ============================================================================
 // Types
@@ -142,12 +143,23 @@ export class IRISClient {
   private refreshToken: string | null = null;
   private tokenExpiresAt: number = 0;
   private refreshExpiresAt: number = 0;
+  private xmlParser: XMLParser;
 
   constructor(credentials: IRISCredentials) {
     this.credentials = credentials;
     this.endpoints = credentials.testMode
       ? IRIS_ENDPOINTS.test
       : IRIS_ENDPOINTS.production;
+
+    // Initialize XML parser
+    this.xmlParser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: '',
+      textNodeName: '#text',
+      parseAttributeValue: true,
+      parseTagValue: true,
+      trimValues: true,
+    });
   }
 
   // ========================================================================
@@ -394,13 +406,17 @@ export class IRISClient {
    * Extract receipt ID from XML response
    */
   private extractReceiptId(xmlResponse: string): string {
-    // TODO: Implement proper XML parsing
-    // For now, use regex as fallback
-    const match = xmlResponse.match(/<ReceiptId>([^<]+)<\/ReceiptId>/);
-    if (match && match[1]) {
-      return match[1].trim();
+    try {
+      const parsed = this.xmlParser.parse(xmlResponse);
+      // Handle both direct ReceiptId and nested structures
+      const receiptId = parsed.ReceiptId || parsed?.ReceiptId?.['#text'];
+      if (receiptId) {
+        return String(receiptId).trim();
+      }
+      throw new Error('ReceiptId not found in XML response');
+    } catch (error) {
+      throw new Error(`Failed to extract ReceiptId: ${error instanceof Error ? error.message : String(error)}`);
     }
-    throw new Error('Could not extract ReceiptId from response');
   }
 
   /**
@@ -417,87 +433,65 @@ export class IRISClient {
    * Parse status response XML
    */
   private parseStatusResponse(xmlResponse: string): IRISStatusResponse {
-    // Simple XML parsing for status response
-    const searchIdMatch = xmlResponse.match(/<SearchId>([^<]+)<\/SearchId>/);
-    const tccMatch = xmlResponse.match(/<TCC>([^<]+)<\/TCC>/);
-    const utidMatch = xmlResponse.match(/<UTID>([^<]+)<\/UTID>/);
-    const statusMatch = xmlResponse.match(/<TransmissionStatusCd>([^<]+)<\/TransmissionStatusCd>/);
+    try {
+      const parsed = this.xmlParser.parse(xmlResponse);
 
-    const transmissionStatusCd = (statusMatch?.[1] as any) || 'Processing';
+      // Handle IRISStatusResponse wrapper or direct fields
+      const root = parsed.IRISStatusResponse || parsed;
 
-    // Parse submission results if present
-    const submissionResults: IRISSubmissionResult[] = [];
-    const submissionGrps = xmlResponse.matchAll(/<SubmissionResultGrp>([\s\S]*?)<\/SubmissionResultGrp>/g);
+      // Extract transmission-level fields
+      const searchId = root.SearchId || root.IRISStatusRequest?.SearchId || '';
+      const tcc = root.TCC || this.credentials.tcc;
+      const utid = root.UTID || '';
+      const transmissionStatusCd = (root.TransmissionStatusCd || 'Processing') as IRISStatusResponse['transmissionStatusCd'];
 
-    for (const match of submissionGrps) {
-      const grp = match[0]; // Get the full matched string
-      const subIdMatch = grp.match(/<SubmissionId>([^<]+)<\/SubmissionId>/);
-      const subStatusMatch = grp.match(/<SubmissionStatusCd>([^<]+)<\/SubmissionStatusCd>/);
+      // Parse submission results if present
+      let submissionResults: IRISSubmissionResult[] | undefined;
+      const submissionResultGrps = root.SubmissionResultGrp;
 
-      const submissionResult: IRISSubmissionResult = {
-        submissionId: subIdMatch?.[1] || '',
-        submissionStatusCd: (subStatusMatch?.[1] as any) || 'Processing',
-      };
+      if (submissionResultGrps) {
+        const submissions = Array.isArray(submissionResultGrps) ? submissionResultGrps : [submissionResultGrps];
+        submissionResults = submissions.map(sub => {
+          const result: IRISSubmissionResult = {
+            submissionId: sub.SubmissionId || '',
+            submissionStatusCd: (sub.SubmissionStatusCd || 'Processing') as IRISSubmissionResult['submissionStatusCd'],
+          };
 
-      // Parse errors
-      const errorGrps = grp.matchAll(/<ErrorInformationGrp>([\s\S]*?)<\/ErrorInformationGrp>/g);
-      const errors: IRISError[] = [];
+          // Parse submission-level errors
+          if (sub.ErrorInformationGrp) {
+            const errors = Array.isArray(sub.ErrorInformationGrp) ? sub.ErrorInformationGrp : [sub.ErrorInformationGrp];
+            result.errors = errors.map(err => ({
+              code: err.ErrorMessageCode || '',
+              message: err.ErrorMessageText || '',
+            }));
+          }
 
-      for (const errMatch of errorGrps) {
-        const errGrp = errMatch[0];
-        const codeMatch = errGrp.match(/<ErrorMessageCode>([^<]+)<\/ErrorMessageCode>/);
-        const msgMatch = errGrp.match(/<ErrorMessageText>([^<]+)<\/ErrorMessageText>/);
-
-        if (codeMatch && msgMatch) {
-          errors.push({
-            code: codeMatch[1],
-            message: msgMatch[1],
-          });
-        }
-      }
-
-      if (errors.length > 0) {
-        submissionResult.errors = errors;
-      }
-
-      submissionResults.push(submissionResult);
-    }
-
-    // Parse transmission-level errors
-    const errors: IRISError[] = [];
-    const txErrorGrps = xmlResponse.matchAll(/<ErrorInformationGrp>([\s\S]*?)<\/ErrorInformationGrp>/g);
-
-    // Only include errors at transmission level (not within submission groups)
-    // Check if error is not within a SubmissionResultGrp
-    const txErrors = Array.from(xmlResponse.matchAll(/<ErrorInformationGrp>([\s\S]*?)<\/ErrorInformationGrp>/g))
-      .filter(match => {
-        const beforeError = xmlResponse.substring(0, match.index);
-        // Count opening SubmissionResultGrp before this error
-        const openGrps = (beforeError.match(/<SubmissionResultGrp>/g) || []).length;
-        const closeGrps = (beforeError.match(/<\/SubmissionResultGrp>/g) || []).length;
-        return openGrps === closeGrps; // Error is at transmission level if not inside a submission group
-      });
-
-    for (const errGrp of txErrors) {
-      const codeMatch = errGrp[0].match(/<ErrorMessageCode>([^<]+)<\/ErrorMessageCode>/);
-      const msgMatch = errGrp[0].match(/<ErrorMessageText>([^<]+)<\/ErrorMessageText>/);
-
-      if (codeMatch && msgMatch) {
-        errors.push({
-          code: codeMatch[1],
-          message: msgMatch[1],
+          return result;
         });
       }
-    }
 
-    return {
-      searchId: searchIdMatch?.[1] || '',
-      tcc: tccMatch?.[1] || this.credentials.tcc,
-      utid: utidMatch?.[1] || '',
-      transmissionStatusCd,
-      submissionResults: submissionResults.length > 0 ? submissionResults : undefined,
-      errors: errors.length > 0 ? errors : undefined,
-    };
+      // Parse transmission-level errors (outside submission groups)
+      let errors: IRISError[] | undefined;
+      const transmissionErrors = root.TransmissionErrorGrp?.ErrorInformationGrp || root.ErrorInformationGrp;
+      if (transmissionErrors) {
+        const errorArray = Array.isArray(transmissionErrors) ? transmissionErrors : [transmissionErrors];
+        errors = errorArray.map(err => ({
+          code: err.ErrorMessageCode || '',
+          message: err.ErrorMessageText || '',
+        }));
+      }
+
+      return {
+        searchId,
+        tcc,
+        utid,
+        transmissionStatusCd,
+        submissionResults,
+        errors,
+      };
+    } catch (error) {
+      throw new Error(`Failed to parse status response: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 }
 
