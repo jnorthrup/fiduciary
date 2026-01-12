@@ -4,5 +4,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
+## [x] Track: ACH Settlement Logic
+*Link:- [x] [ACH Settlement Logic](tracks/ach_settlement_20260112/plan.md)
+
+
 ## [~] Track: 1099 IRS CAFR Proficiency
 *Link: [./conductor/tracks/1099_20260111/](./conductor/tracks/1099_20260111/)*

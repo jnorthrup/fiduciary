@@ -406,3 +406,7 @@ export const SEED_COLLATERAL_POOLS: CollateralPool[] = [
 ];
 
 export const SEED_CLOSING_RECORDS: any[] = [];
+
+export const SEED_INVOICES: any[] = [];
+export const SEED_PAYABLES: any[] = [];
+export const SEED_SETTLEMENT_CONFIRMATIONS: any[] = [];
