@@ -99,6 +99,102 @@ class CAFRApiClient {
   }
 
   /**
+   * Extract revenue breakdown from a CAFR document
+   */
+  async extractRevenue(id: string): Promise<{
+    documentId: string;
+    revenue: {
+      total: number;
+      breakdown: Array<{ category: string; amount: number }>;
+      fiscalYear: number;
+    };
+  }> {
+    const response = await fetch(`${this.baseUrl}/documents/${id}/revenue`);
+    if (!response.ok) {
+      throw new Error(`Revenue extraction failed: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Extract expenditure breakdown from a CAFR document
+   */
+  async extractExpenditure(id: string): Promise<{
+    documentId: string;
+    expenditure: {
+      total: number;
+      breakdown: Array<{ category: string; amount: number }>;
+      fiscalYear: number;
+    };
+  }> {
+    const response = await fetch(`${this.baseUrl}/documents/${id}/expenditure`);
+    if (!response.ok) {
+      throw new Error(`Expenditure extraction failed: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Calculate debt ratio from financial summary
+   * Debt Ratio = Total Debt / Total Revenue
+   * Per Capita Debt = Total Debt / Population Served
+   */
+  async calculateDebtRatio(id: string): Promise<{
+    debtRatio: number | null;
+    perCapitaDebt?: number;
+    totalDebt: number;
+    totalRevenue: number;
+  }> {
+    const summary = await this.getFinancialSummary(id);
+
+    const debtRatio = summary.totalRevenue > 0
+      ? summary.totalDebt / summary.totalRevenue
+      : null;
+
+    const perCapitaDebt = summary.populationServed && summary.populationServed > 0
+      ? summary.totalDebt / summary.populationServed
+      : undefined;
+
+    return {
+      debtRatio,
+      perCapitaDebt,
+      totalDebt: summary.totalDebt,
+      totalRevenue: summary.totalRevenue,
+    };
+  }
+
+  /**
+   * Get historical year-over-year financial comparison for an entity
+   */
+  async getHistoricalComparison(
+    entityId: string,
+    years: number[]
+  ): Promise<{
+    entityId: string;
+    years: Array<{
+      fiscalYear: number;
+      totalRevenue: number;
+      totalExpenditure: number;
+      generalFundBalance?: number;
+      totalDebt: number;
+      debtRatio?: number;
+    }>;
+    trends: {
+      revenueChange: number;
+      expenditureChange: number;
+      debtRatioChange?: number;
+      fundBalanceGrowth?: number;
+    };
+  }> {
+    const yearsParam = years.join(',');
+    const response = await fetch(`${this.baseUrl}/entities/${entityId}/comparison?years=${yearsParam}`);
+    if (!response.ok) {
+      throw new Error(`Historical comparison failed: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  /**
    * Get list of US states for filtering
    */
   getStates(): { code: string; name: string }[] {
