@@ -5,16 +5,54 @@
  * These tests verify username/password + 2FA authentication flows.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest';
 import { IRSPortalClient } from './iris-portal-client';
 import type { Browser, BrowserContext, Page } from 'playwright';
 
-// Mock playwright
-vi.mock('playwright', () => ({
-  chromium: {
-    launch: vi.fn(),
-  },
-}));
+// Mock playwright module with factory function
+vi.mock('playwright', () => {
+  const mockPage = {
+    goto: vi.fn().mockResolvedValue(undefined),
+    fill: vi.fn().mockResolvedValue(undefined),
+    click: vi.fn().mockResolvedValue(undefined),
+    waitForSelector: vi.fn().mockResolvedValue({}),
+    waitForURL: vi.fn().mockResolvedValue(undefined),
+    textContent: vi.fn().mockResolvedValue(''),
+    $: vi.fn().mockResolvedValue(null), // No error element by default
+    $$: vi.fn().mockResolvedValue([]),
+    locator: vi.fn().mockReturnValue({
+      fill: vi.fn().mockResolvedValue(undefined),
+      click: vi.fn().mockResolvedValue(undefined),
+      textContent: vi.fn().mockResolvedValue(''),
+      count: vi.fn().mockResolvedValue(0),
+      isVisible: vi.fn().mockResolvedValue(true),
+    }),
+    url: vi.fn().mockReturnValue('https://sa.www4.irs.gov/'),
+    evaluate: vi.fn().mockResolvedValue(undefined),
+    waitForNavigation: vi.fn().mockResolvedValue(undefined),
+    setDefaultTimeout: vi.fn(),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+
+  const mockContext = {
+    newPage: vi.fn().mockResolvedValue(mockPage),
+    cookies: vi.fn().mockResolvedValue([]),
+    addCookies: vi.fn().mockResolvedValue(undefined),
+    storageState: vi.fn().mockResolvedValue({ cookies: [], origins: [] }),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+
+  const mockBrowser = {
+    newContext: vi.fn().mockResolvedValue(mockContext),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+
+  return {
+    chromium: {
+      launch: vi.fn().mockResolvedValue(mockBrowser),
+    },
+  };
+});
 
 describe('IRS Portal Client', () => {
   let client: IRSPortalClient;
