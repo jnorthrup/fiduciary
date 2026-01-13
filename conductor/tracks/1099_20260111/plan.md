@@ -97,7 +97,7 @@
   - [x] Sub-task: Write failing tests for cookie/session storage [24cc8ba]
   - [x] Sub-task: Implement session state persistence to disk
   - [x] Sub-task: Write failing tests for session reuse across requests
-  - [ ] Sub-task: Implement session restoration logic
+  - [x] Sub-task: Implement session restoration logic
 - [ ] Task: Write tests for session monitoring and time-series recording
   - [ ] Sub-task: Write failing tests for session event capture
   - [ ] Sub-task: Implement time-series state recording for web sessions
