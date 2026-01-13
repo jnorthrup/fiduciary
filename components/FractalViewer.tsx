@@ -159,8 +159,14 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
       }
     });
 
-    const uniqueLanes = Array.from(new Set(Object.values(SWIMLANES).map(l => JSON.stringify(l)))).map(s => JSON.parse(s));
-    uniqueLanes.sort((a, b) => a.index - b.index);
+    // Deduplicate lanes by index, keeping first label for each index
+    const lanesByIndex = new Map<number, { index: number; label: string }>();
+    Object.values(SWIMLANES).forEach(lane => {
+      if (!lanesByIndex.has(lane.index)) {
+        lanesByIndex.set(lane.index, lane);
+      }
+    });
+    const uniqueLanes = Array.from(lanesByIndex.values()).sort((a, b) => a.index - b.index);
 
     return { nodes: layoutNodes, links: layoutLinks, intrusionNodes: iNodes, intrusionLinks: iLinks, lanes: uniqueLanes };
   }, [initialEntities, intrusions, expandedNodeId, isHighFidelity, pinnedNodes]);

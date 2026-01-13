@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react';
 import {
   FileText, CheckCircle, AlertCircle, ChevronRight, ChevronLeft,
   Building2, User, Plus, Trash2, RefreshCw,
-  Lock, Shield, Zap, Server, Activity, KeyRound, Fingerprint, Loader2
+  Lock, Shield, Zap, Server, Activity, KeyRound, Fingerprint, Loader2, ExternalLink
 } from 'lucide-react';
 import { isValidTINFormat } from '../utils/validation';
 import { TIN_PLACEHOLDER, SSN_PLACEHOLDER, TCC_PLACEHOLDER } from '../utils/constants';
@@ -32,19 +32,37 @@ import {
   storeBearerToken,
   type StoredCredential
 } from '../services/secureStorage';
+import { IRSLoginModal } from './IRSLoginModal';
 
 interface Props {
   onClose?: () => void;
 }
 
-type WizardStep = 'Auth' | 'Filer' | 'FormType' | 'Payees' | 'Review' | 'Submit' | 'Result';
+type WizardStep = 'Auth' | 'TwoFA' | 'Filer' | 'FormType' | 'Payees' | 'Review' | 'Submit' | 'Result';
 type SubmissionStatus = 'idle' | 'validating' | 'submitting' | 'polling' | 'success' | 'error';
+type AuthStep = 'credentials' | '2fa';
+type TwoFAMethod = 'sms' | 'email' | 'app' | 'backup';
+
+/**
+ * Format EIN as user types, without throwing errors
+ */
+const formatEINInput = (value: string): string => {
+  const digits = value.replace(/\D/g, '');
+  const limited = digits.slice(0, 9);
+  if (limited.length <= 2) return limited;
+  return `${limited.slice(0, 2)}-${limited.slice(2)}`;
+};
 
 export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   // Auth State
   const [authMode, setAuthMode] = useState<'tcc' | 'bearer'>('tcc');
+  const [authStep, setAuthStep] = useState<AuthStep>('credentials');
   const [tcc, setTcc] = useState('');
   const [bearerToken, setBearerToken] = useState('');
+
+  // IRS Login Modal State
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState<string | null>(null);
   const [apiHealth, setApiHealth] = useState<{ status: string; service: string; version?: string } | null>(null);
   const [isFetchingTCC, setIsFetchingTCC] = useState(false);
   const [tccLog, setTccLog] = useState<string[]>([]);
@@ -53,6 +71,15 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionTested, setConnectionTested] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  // 2FA State
+  const [twoFAMethod, setTwoFAMethod] = useState<TwoFAMethod>('sms');
+  const [twoFACode, setTwoFACode] = useState('');
+  const [twoFAMaskedDestination, setTwoFAMaskedDestination] = useState('');
+  const [twoFARetryCount, setTwoFARetryCount] = useState(0);
+  const [twoFAResendCooldown, setTwoFAResendCooldown] = useState(0);
+  const [twoFAError, setTwoFAError] = useState<string | null>(null);
+  const [verifyingTwoFA, setVerifyingTwoFA] = useState(false);
 
   // Wizard State
   const [currentStep, setCurrentStep] = useState<WizardStep>('Auth');
@@ -235,7 +262,131 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
 
     setTestingConnection(false);
     setConnectionTested(true);
+
+    // Check if 2FA is required for this account
+    // In production, this would be determined by the API response
+    const requires2FA = (import.meta as any).env.VITE_REQUIRE_2FA !== 'false';
+
+    if (requires2FA) {
+      // Initiate 2FA flow
+      setAuthStep('2fa');
+      setCurrentStep('TwoFA');
+      // Simulate sending 2FA code
+      await initiateTwoFA();
+    } else {
+      setCurrentStep('Filer');
+    }
+  };
+
+  const handleLoginModalSuccess = async (credentials: { username: string; tcc?: string }) => {
+    console.log('[Wizard] Login modal success:', credentials);
+    setAuthenticatedUser(credentials.username);
+    if (credentials.tcc) {
+      setTcc(credentials.tcc);
+      try {
+        await irsApi.setAuth(credentials.tcc);
+        console.log('[Wizard] API auth set successfully');
+      } catch (e) {
+        console.error('[Wizard] Error setting API auth:', e);
+      }
+    }
+    console.log('[Wizard] Setting current step to Filer');
     setCurrentStep('Filer');
+    console.log('[Wizard] Current step set to Filer');
+  };
+
+  const initiateTwoFA = async () => {
+    // Simulate sending 2FA code
+    setTwoFAError(null);
+
+    // Set masked destination based on method
+    switch (twoFAMethod) {
+      case 'sms':
+        setTwoFAMaskedDestination('***-***-' + Math.floor(Math.random() * 9000 + 1000));
+        break;
+      case 'email':
+        setTwoFAMaskedDestination('u***@example.com');
+        break;
+      case 'app':
+        setTwoFAMaskedDestination('Enter code from authenticator app');
+        break;
+      case 'backup':
+        setTwoFAMaskedDestination('Enter one of your backup codes');
+        break;
+    }
+
+    // Start resend cooldown
+    setTwoFAResendCooldown(30);
+    const countdown = setInterval(() => {
+      setTwoFAResendCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdown);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleVerifyTwoFA = async () => {
+    setVerifyingTwoFA(true);
+    setTwoFAError(null);
+
+    // Simulate verification
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Validate 2FA code (6 digits)
+    if (twoFACode.length !== 6 || !/^\d+$/.test(twoFACode)) {
+      setTwoFAError('Invalid verification code. Please enter 6-digit code.');
+      setVerifyingTwoFA(false);
+      setTwoFARetryCount(prev => prev + 1);
+
+      if (twoFARetryCount + 1 >= 3) {
+        setTwoFAError('Maximum retry attempts exceeded. Please restart authentication.');
+      }
+      return;
+    }
+
+    // Simulate successful verification
+    // In production, this would call the actual 2FA verification endpoint
+    const isValid = twoFACode === '123456' || Math.random() > 0.3; // Demo: accept 123456 or random
+
+    if (!isValid) {
+      setTwoFAError('Incorrect verification code. Please try again.');
+      setVerifyingTwoFA(false);
+      setTwoFARetryCount(prev => prev + 1);
+
+      if (twoFARetryCount + 1 >= 3) {
+        setTwoFAError('Maximum retry attempts exceeded. Please restart authentication.');
+      }
+      return;
+    }
+
+    // Success - proceed to Filer step
+    setVerifyingTwoFA(false);
+    setAuthStep('credentials');
+    setCurrentStep('Filer');
+  };
+
+  const handleResendTwoFA = async () => {
+    if (twoFAResendCooldown > 0) return;
+
+    setTwoFAError(null);
+    await initiateTwoFA();
+  };
+
+  const handleChangeTwoFAMethod = (method: TwoFAMethod) => {
+    setTwoFAMethod(method);
+    setTwoFACode('');
+    initiateTwoFA();
+  };
+
+  const handleBackToCredentials = () => {
+    setAuthStep('credentials');
+    setCurrentStep('Auth');
+    setTwoFACode('');
+    setTwoFAError(null);
+    setTwoFARetryCount(0);
   };
 
   const handleUseStoredTCC = async (credential: StoredCredential) => {
@@ -387,7 +538,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
       </div>
 
       {/* Auth Mode Selection */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         {[
           { id: 'tcc', label: 'TCC AUTH', sub: 'Transmitter Control', icon: Fingerprint, color: 'indigo' },
           { id: 'bearer', label: 'API TOKEN', sub: 'Bearer / JWT', icon: KeyRound, color: 'emerald' }
@@ -395,17 +546,17 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
           <button
             key={mode.id}
             onClick={() => { setAuthMode(mode.id as any); setTcc(''); setBearerToken(''); }}
-            className={`relative group p-4 rounded-xl border transition-all duration-300 ${authMode === mode.id
+            className={`relative group p-3 rounded-xl border transition-all duration-300 ${authMode === mode.id
               ? `border-${mode.color}-500/50 bg-${mode.color}-500/10 shadow-[0_0_20px_rgba(99,102,241,0.15)]`
               : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'
               }`}
           >
-            <div className={`mx-auto mb-3 p-2.5 rounded-lg w-fit transition-colors ${authMode === mode.id ? `bg-${mode.color}-500/20 text-${mode.color}-400` : 'bg-slate-900 text-slate-500'
+            <div className={`mx-auto mb-2 p-2 rounded-lg w-fit transition-colors ${authMode === mode.id ? `bg-${mode.color}-500/20 text-${mode.color}-400` : 'bg-slate-900 text-slate-500'
               }`}>
-              <mode.icon size={22} />
+              <mode.icon size={18} />
             </div>
-            <div className="font-black text-[11px] uppercase tracking-widest text-white">{mode.label}</div>
-            <div className="text-[10px] text-slate-500 mt-1 font-mono uppercase">{mode.sub}</div>
+            <div className="font-black text-[10px] uppercase tracking-widest text-white">{mode.label}</div>
+            <div className="text-[9px] text-slate-500 mt-1 font-mono uppercase">{mode.sub}</div>
 
             {authMode === mode.id && (
               <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-${mode.color}-500 rounded-t-full shadow-[0_-2px_10px_rgba(99,102,241,0.5)]`} />
@@ -413,6 +564,35 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
           </button>
         ))}
       </div>
+
+      {/* IRS Login Modal Button */}
+      {authenticatedUser ? (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckCircle size={18} className="text-emerald-400" />
+            <div>
+              <div className="text-[10px] text-slate-400">Authenticated as</div>
+              <div className="text-sm font-mono text-white">{authenticatedUser}</div>
+            </div>
+          </div>
+          <button
+            onClick={() => { setAuthenticatedUser(null); setTcc(''); }}
+            className="text-[10px] text-slate-400 hover:text-white transition-colors"
+          >
+            Disconnect
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowLoginModal(true)}
+          className="w-full bg-slate-950/50 border border-dashed border-slate-700 hover:border-indigo-500/50 rounded-xl p-4 flex items-center justify-center gap-3 transition-all group"
+        >
+          <ExternalLink size={16} className="text-slate-500 group-hover:text-indigo-400 transition-colors" />
+          <span className="text-sm text-slate-400 group-hover:text-white transition-colors">
+            Connect IRS e-Services Account
+          </span>
+        </button>
+      )}
 
       <div className="bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 space-y-6">
         {authMode === 'tcc' ? (
@@ -585,6 +765,206 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
     </div>
   );
 
+  // Render TwoFA Step
+  const renderTwoFA = () => (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-[0_0_40px_rgba(99,102,241,0.3)]">
+          <Fingerprint size={32} className="text-white" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-white">Two-Factor Authentication</h2>
+          <p className="text-sm text-slate-400 mt-2">Enter the verification code sent to your device</p>
+        </div>
+      </div>
+
+      {/* Method Selector */}
+      <div className="grid grid-cols-4 gap-2">
+        <button
+          onClick={() => handleChangeTwoFAMethod('sms')}
+          className={`p-3 rounded-lg border transition-all ${
+            twoFAMethod === 'sms'
+              ? 'bg-indigo-600/20 border-indigo-500 text-white'
+              : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-600'
+          }`}
+        >
+          <div className="text-center">
+            <div className="text-lg mb-1">📱</div>
+            <div className="text-[10px] font-medium">SMS</div>
+          </div>
+        </button>
+        <button
+          onClick={() => handleChangeTwoFAMethod('email')}
+          className={`p-3 rounded-lg border transition-all ${
+            twoFAMethod === 'email'
+              ? 'bg-indigo-600/20 border-indigo-500 text-white'
+              : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-600'
+          }`}
+        >
+          <div className="text-center">
+            <div className="text-lg mb-1">📧</div>
+            <div className="text-[10px] font-medium">Email</div>
+          </div>
+        </button>
+        <button
+          onClick={() => handleChangeTwoFAMethod('app')}
+          className={`p-3 rounded-lg border transition-all ${
+            twoFAMethod === 'app'
+              ? 'bg-indigo-600/20 border-indigo-500 text-white'
+              : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-600'
+          }`}
+        >
+          <div className="text-center">
+            <div className="text-lg mb-1">🔐</div>
+            <div className="text-[10px] font-medium">App</div>
+          </div>
+        </button>
+        <button
+          onClick={() => handleChangeTwoFAMethod('backup')}
+          className={`p-3 rounded-lg border transition-all ${
+            twoFAMethod === 'backup'
+              ? 'bg-indigo-600/20 border-indigo-500 text-white'
+              : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-slate-600'
+          }`}
+        >
+          <div className="text-center">
+            <div className="text-lg mb-1">🔑</div>
+            <div className="text-[10px] font-medium">Backup</div>
+          </div>
+        </button>
+      </div>
+
+      {/* Code Destination Display */}
+      <div className="p-4 bg-slate-900/50 border border-slate-700 rounded-xl">
+        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Code sent to</div>
+        <div className="text-sm text-slate-300 font-mono">{twoFAMaskedDestination}</div>
+      </div>
+
+      {/* Code Input */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-1">
+            Enter 6-Digit Verification Code
+          </label>
+          <div className="flex justify-center gap-2">
+            {[0, 1, 2, 3, 4, 5].map((index) => (
+              <input
+                key={`wizard-2fa-${index}`}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                data-testid={`twofa-code-${index}`}
+                placeholder="•"
+                value={twoFACode[index] || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (!/^\d*$/.test(value)) return;
+                  const newCode = twoFACode.split('');
+                  newCode[index] = value;
+                  const updated = newCode.join('').slice(0, 6);
+                  setTwoFACode(updated);
+                  // Auto-focus next input
+                  if (value && index < 5) {
+                    const inputs = document.querySelectorAll('input[type="text"][maxLength="1"]');
+                    (inputs[index + 1] as HTMLInputElement)?.focus();
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // Handle backspace to go to previous input
+                  if (e.key === 'Backspace' && !twoFACode[index] && index > 0) {
+                    const inputs = document.querySelectorAll('input[type="text"][maxLength="1"]');
+                    (inputs[index - 1] as HTMLInputElement)?.focus();
+                  }
+                }}
+                className="w-14 h-16 text-center text-2xl font-bold bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Resend */}
+        <div className="text-center">
+          <button
+            onClick={handleResendTwoFA}
+            disabled={twoFAResendCooldown > 0}
+            className={`text-sm ${twoFAResendCooldown > 0 ? 'text-slate-600 cursor-not-allowed' : 'text-indigo-400 hover:text-indigo-300'}`}
+          >
+            {twoFAResendCooldown > 0
+              ? `Resend code in ${twoFAResendCooldown}s`
+              : "Didn't receive code? Resend"}
+          </button>
+        </div>
+
+        {/* Demo hint */}
+        <div className="text-center">
+          <span className="text-[10px] text-slate-600">Demo: use 123456 for auto-accept</span>
+        </div>
+      </div>
+
+      {/* Error Display */}
+      {twoFAError && (
+        <div className={`p-4 rounded-xl flex items-start gap-3 animate-in ${
+          twoFAError.includes('exceeded')
+            ? 'bg-red-500/10 border border-red-500/20'
+            : 'bg-amber-500/10 border border-amber-500/20'
+        }`}>
+          {twoFAError.includes('exceeded') ? (
+            <AlertCircle className="text-red-400 shrink-0 mt-0.5" size={18} />
+          ) : (
+            <AlertCircle className="text-amber-400 shrink-0 mt-0.5" size={18} />
+          )}
+          <div className={`text-sm font-medium leading-relaxed ${
+            twoFAError.includes('exceeded') ? 'text-red-400' : 'text-amber-400'
+          }`}>
+            {twoFAError}
+          </div>
+        </div>
+      )}
+
+      {/* Verify Button */}
+      <button
+        onClick={handleVerifyTwoFA}
+        disabled={verifyingTwoFA || twoFACode.length !== 6}
+        className={`group relative w-full overflow-hidden py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all ${
+          verifyingTwoFA || twoFACode.length !== 6
+            ? 'bg-slate-800 text-slate-600 scale-95'
+            : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-[0_0_40px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:translate-y-0'
+        }`}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
+        <div className="relative flex items-center justify-center gap-3">
+          {verifyingTwoFA ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Verifying...
+            </>
+          ) : (
+            <>
+              <CheckCircle size={16} className="group-hover:scale-125 transition-transform" />
+              Verify & Continue
+            </>
+          )}
+        </div>
+      </button>
+
+      {/* Back Button */}
+      <button
+        onClick={handleBackToCredentials}
+        className="w-full py-3 text-sm text-slate-500 hover:text-slate-300 transition-colors"
+      >
+        ← Back to credentials
+      </button>
+
+      {/* Retry counter */}
+      {twoFARetryCount > 0 && (
+        <div className="text-center text-[10px] text-slate-600">
+          Attempts remaining: {3 - twoFARetryCount}
+        </div>
+      )}
+    </div>
+  );
+
   // Render Filer Step
   const renderFiler = () => (
     <div className="space-y-6">
@@ -627,7 +1007,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
               </label>
               <input
                 value={filer.ein}
-                onChange={e => setFiler({ ...filer, ein: formatEIN(e.target.value) })}
+                onChange={e => setFiler({ ...filer, ein: formatEINInput(e.target.value) })}
                 placeholder={TIN_PLACEHOLDER}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 text-white font-mono focus:border-indigo-500 outline-none"
               />
@@ -1284,6 +1664,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
           {currentStep === 'Auth' && renderAuth()}
+          {currentStep === 'TwoFA' && renderTwoFA()}
           {currentStep === 'Filer' && renderFiler()}
           {currentStep === 'FormType' && renderFormType()}
           {currentStep === 'Payees' && renderPayees()}
@@ -1293,7 +1674,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
         </div>
 
         {/* Footer Navigation */}
-        {currentStep !== 'Submit' && currentStep !== 'Result' && currentStep !== 'Auth' && (
+        {currentStep !== 'Submit' && currentStep !== 'Result' && currentStep !== 'Auth' && currentStep !== 'TwoFA' && (
           <div className="px-6 py-4 border-t border-slate-800 flex justify-between">
             <button
               onClick={() => setCurrentStep(steps[currentStepIndex - 1])}
@@ -1327,6 +1708,13 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
           </div>
         )}
       </div>
+
+      {/* IRS Login Modal */}
+      <IRSLoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={handleLoginModalSuccess}
+      />
     </div>
   );
 };
