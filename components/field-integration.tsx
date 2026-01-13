@@ -4,7 +4,7 @@
  * Teach Mode field hover detection, mapping resolution, and conditional overlay display.
  */
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { TeachModeOverlay } from './overlay-interaction';
 import { TeachModeContent } from './overlay-content';
 
@@ -135,6 +135,13 @@ export function TeachModeField({
   const handleVisibleChange = useCallback((newVisible: boolean) => {
     setVisible(newVisible);
   }, []);
+
+  // When Teach Mode is disabled, hide any visible overlay
+  useEffect(() => {
+    if (!teachModeEnabled && visible) {
+      setVisible(false);
+    }
+  }, [teachModeEnabled, visible]);
 
   return (
     <TeachModeOverlay

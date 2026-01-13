@@ -87,28 +87,28 @@
 ## Phase 3: Validation Rule Integration
 
 ### 3.1 Rule Auto-Trigger
-- [ ] Task: Write tests for validation rule to overlay binding
-  - [ ] Sub-task: Write failing tests for rule-fired event handling
-  - [ ] Sub-task: Implement rule event listener integration
-  - [ ] Sub-task: Write failing tests for overlay auto-display on error
-  - [ ] Sub-task: Implement auto-show logic for validation failures
-- [ ] Task: Write tests for error-specific context display
-  - [ ] Sub-task: Write failing tests for error code to mapping resolution
-  - [ ] Sub-task: Implement error-context retrieval
-  - [ ] Sub-task: Write failing tests for error highlight in overlay
-  - [ ] Sub-task: Implement error-specific paragraph highlighting
+- [x] Task: Write tests for validation rule to overlay binding
+  - [x] Sub-task: Write failing tests for rule-fired event handling
+  - [x] Sub-task: Implement rule event listener integration
+  - [x] Sub-task: Write failing tests for overlay auto-display on error
+  - [x] Sub-task: Implement auto-show logic for validation failures
+- [x] Task: Write tests for error-specific context display
+  - [x] Sub-task: Write failing tests for error code to mapping resolution
+  - [x] Sub-task: Implement error-context retrieval
+  - [x] Sub-task: Write failing tests for error highlight in overlay
+  - [x] Sub-task: Implement error-specific paragraph highlighting
 
 ### 3.2 Form Wizard Integration
-- [ ] Task: Write tests for IRIS1099Wizard Teach Mode integration
-  - [ ] Sub-task: Write failing tests for Teach Mode prop passing
-  - [ ] Sub-task: Implement Teach Mode context provider
-  - [ ] Sub-task: Write failing tests for step-level Teach Mode state
-  - [ ] Sub-task: Implement per-step Teach Mode awareness
-- [ ] Task: Write tests for existing validation hook integration
-  - [ ] Sub-task: Write failing tests for validation + overlay coordination
-  - [ ] Sub-task: Implement combined validation-overlay flow
-  - [ ] Sub-task: Write failing tests for overlay dismissal on fix
-  - [ ] Sub-task: Implement auto-dismiss when field corrected
+- [x] Task: Write tests for IRIS1099Wizard Teach Mode integration
+  - [x] Sub-task: Write failing tests for Teach Mode prop passing
+  - [x] Sub-task: Implement Teach Mode context provider
+  - [x] Sub-task: Write failing tests for step-level Teach Mode state
+  - [x] Sub-task: Implement per-step Teach Mode awareness
+- [x] Task: Write tests for existing validation hook integration
+  - [x] Sub-task: Write failing tests for validation + overlay coordination
+  - [x] Sub-task: Implement combined validation-overlay flow
+  - [x] Sub-task: Write failing tests for overlay dismissal on fix
+  - [x] Sub-task: Implement auto-dismiss when field corrected
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Validation Rule Integration' (Protocol in workflow.md)
 
