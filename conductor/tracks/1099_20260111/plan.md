@@ -100,7 +100,7 @@
   - [x] Sub-task: Implement session restoration logic
 - [ ] Task: Write tests for session monitoring and time-series recording
   - [x] Sub-task: Write failing tests for session event capture [f9d419b]
-  - [ ] Sub-task: Implement time-series state recording for web sessions
+  - [x] Sub-task: Implement time-series state recording for web sessions [883b062]
   - [ ] Sub-task: Write failing tests for session replay validation
   - [ ] Sub-task: Implement correctness checking with recorded state
 - [ ] Task: Integrate IRSPortalClient with IRSLoginModal
