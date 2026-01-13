@@ -23,3 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 coverage/
+
+# Playwright
+test-results/
+test/screenshots/*.png
+test/session-storage/
+playwright-report/
+playwright/.cache/
