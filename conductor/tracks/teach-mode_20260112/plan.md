@@ -3,8 +3,8 @@
 ## Phase 1: Data Layer & Taxonomy Structure
 
 ### 1.1 Manual Annotation Data Structure
-- [ ] Task: Write tests for field mapping data structure
-  - [ ] Sub-task: Write failing tests for manual mapping schema validation
+- [~] Task: Write tests for field mapping data structure
+  - [x] Sub-task: Write failing tests for manual mapping schema validation
   - [ ] Sub-task: Implement manual mapping JSON schema with TypeScript types
   - [ ] Sub-task: Write failing tests for taxonomy path resolution
   - [ ] Sub-task: Implement taxonomy breadcrumb generation
