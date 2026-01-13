@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Entity, Invoice, Payable, SettlementInstruction } from '../types';
 import { useLedgerStore } from '../services/ledgerService';
-import { FileText, DollarSign, CheckCircle2, AlertCircle, Clock, ArrowUpRight, Scales, TrendingUp, Activity } from 'lucide-react';
+import { FileText, DollarSign, CheckCircle2, AlertCircle, Clock, ArrowUpRight, Scale, TrendingUp, Activity } from 'lucide-react';
 
 interface Props {
     entity: Entity;
@@ -248,7 +248,7 @@ export const APDashboard: React.FC<Props> = ({ entity, onSettlementClick }) => {
                                 {/* Match Rate */}
                                 <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200 p-4">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <Scales size={18} className="text-emerald-600" />
+                                        <Scale size={18} className="text-emerald-600" />
                                         <h3 className="text-xs font-bold text-emerald-700 uppercase">Match Rate</h3>
                                     </div>
                                     <div className="text-2xl font-bold text-emerald-900">{reconciliationMetrics.matchRate.toFixed(1)}%</div>
