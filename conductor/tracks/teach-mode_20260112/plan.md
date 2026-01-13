@@ -38,14 +38,14 @@
 ## Phase 2: Teach Mode UI Components
 
 ### 2.1 Teach Mode Toggle
-- [ ] Task: Write tests for Teach Mode toggle component
-  - [ ] Sub-task: Write failing tests for toggle state management
-  - [ ] Sub-task: Implement toggle switch with persistence
-  - [ ] Sub-task: Write failing tests for toggle state across wizard steps
-  - [ ] Sub-task: Implement localStorage persistence for toggle state
-- [ ] Task: Write tests for visual indicator when Teach Mode active
-  - [ ] Sub-task: Write failing tests for indicator rendering
-  - [ ] Sub-task: Implement active state badge/icon
+- [x] Task: Write tests for Teach Mode toggle component
+  - [x] Sub-task: Write failing tests for toggle state management
+  - [x] Sub-task: Implement toggle switch with persistence
+  - [x] Sub-task: Write failing tests for toggle state across wizard steps
+  - [x] Sub-task: Implement localStorage persistence for toggle state
+- [x] Task: Write tests for visual indicator when Teach Mode active
+  - [x] Sub-task: Write failing tests for indicator rendering
+  - [x] Sub-task: Implement active state badge/icon
 
 ### 2.2 Hover Overlay Panel
 - [ ] Task: Write tests for overlay positioning logic
