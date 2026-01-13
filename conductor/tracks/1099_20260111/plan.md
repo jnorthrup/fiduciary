@@ -82,6 +82,34 @@
   - [x] Sub-task: Implement completion state with results display
 - [x] Task: Conductor - User Manual Verification 'Phase 2.3 Submission & Status Display' (Protocol in workflow.md) [SKIP_PER_USER_DIRECTIVE]
 
+### 2.4 IRS Portal Automation & Session Monitoring
+- [ ] Task: Install and configure Playwright
+  - [ ] Sub-task: Write failing tests for Playwright browser launch
+  - [ ] Sub-task: Add Playwright to package.json and configure
+  - [ ] Sub-task: Write failing tests for headless mode with screenshots
+  - [ ] Sub-task: Implement Playwright browser configuration
+- [ ] Task: Write tests for IRS portal authentication service
+  - [ ] Sub-task: Write failing tests for IRS e-Services login flow
+  - [ ] Sub-task: Implement IRSPortalClient with username/password automation
+  - [ ] Sub-task: Write failing tests for 2FA code handling
+  - [ ] Sub-task: Implement 2FA automation with external code input
+- [ ] Task: Write tests for session persistence
+  - [ ] Sub-task: Write failing tests for cookie/session storage
+  - [ ] Sub-task: Implement session state persistence to disk
+  - [ ] Sub-task: Write failing tests for session reuse across requests
+  - [ ] Sub-task: Implement session restoration logic
+- [ ] Task: Write tests for session monitoring and time-series recording
+  - [ ] Sub-task: Write failing tests for session event capture
+  - [ ] Sub-task: Implement time-series state recording for web sessions
+  - [ ] Sub-task: Write failing tests for session replay validation
+  - [ ] Sub-task: Implement correctness checking with recorded state
+- [ ] Task: Integrate IRSPortalClient with IRSLoginModal
+  - [ ] Sub-task: Write failing tests for real authentication endpoint
+  - [ ] Sub-task: Replace mock authentication with IRSPortalClient calls
+  - [ ] Sub-task: Write failing tests for error handling and session expiry
+  - [ ] Sub-task: Implement error states and retry logic in modal
+- [ ] Task: Conductor - User Manual Verification 'Phase 2.4 IRS Portal Automation & Session Monitoring' (Protocol in workflow.md)
+
 ## Phase 3: CAFR Research Interface
 
 ### 3.1 CAFR Search & Retrieval
