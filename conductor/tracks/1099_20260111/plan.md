@@ -103,11 +103,11 @@
   - [x] Sub-task: Implement time-series state recording for web sessions [883b062]
   - [x] Sub-task: Write failing tests for session replay validation [f9d419b]
   - [x] Sub-task: Implement correctness checking with recorded state [883b062]
-- [ ] Task: Integrate IRSPortalClient with IRSLoginModal
+- [x] Task: Integrate IRSPortalClient with IRSLoginModal [5dbf197]
   - [x] Sub-task: Write failing tests for real authentication endpoint [d95976d]
   - [x] Sub-task: Replace mock authentication with IRSPortalClient calls [a15b46c]
   - [x] Sub-task: Write failing tests for error handling and session expiry [d95976d]
-  - [ ] Sub-task: Implement error states and retry logic in modal
+  - [x] Sub-task: Implement error states and retry logic in modal [5dbf197]
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.4 IRS Portal Automation & Session Monitoring' (Protocol in workflow.md)
 
 ## Phase 3: CAFR Research Interface
