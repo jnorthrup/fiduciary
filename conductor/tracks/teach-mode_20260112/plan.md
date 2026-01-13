@@ -27,11 +27,11 @@
   - [x] Sub-task: Implement graceful degradation to generic help
 
 ### 1.3 Example Data Management
-- [ ] Task: Write tests for example validation
-  - [ ] Sub-task: Write failing tests for valid/invalid example format
-  - [ ] Sub-task: Implement example data schema
-  - [ ] Sub-task: Write failing tests for example rendering
-  - [ ] Sub-task: Implement example display component logic
+- [x] Task: Write tests for example validation
+  - [x] Sub-task: Write failing tests for valid/invalid example format
+  - [x] Sub-task: Implement example data schema
+  - [x] Sub-task: Write failing tests for example rendering
+  - [x] Sub-task: Implement example display component logic
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Data Layer & Taxonomy Structure' (Protocol in workflow.md)
 
