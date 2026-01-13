@@ -15,16 +15,16 @@
   - [x] Sub-task: Implement reference cycle detection
 
 ### 1.2 AI Retrieval Integration
-- [ ] Task: Write tests for GenAI paragraph retrieval
-  - [ ] Sub-task: Write failing tests for PDF content query interface
-  - [ ] Sub-task: Implement GenAI semantic matching service
-  - [ ] Sub-task: Write failing tests for caching retrieved paragraphs
-  - [ ] Sub-task: Implement paragraph cache with TTL
-- [ ] Task: Write tests for hybrid fallback strategy
-  - [ ] Sub-task: Write failing tests for manual lookup before AI
-  - [ ] Sub-task: Implement hybrid resolution with fallback
-  - [ ] Sub-task: Write failing tests for AI failure handling
-  - [ ] Sub-task: Implement graceful degradation to generic help
+- [x] Task: Write tests for GenAI paragraph retrieval
+  - [x] Sub-task: Write failing tests for PDF content query interface
+  - [x] Sub-task: Implement GenAI semantic matching service
+  - [x] Sub-task: Write failing tests for caching retrieved paragraphs
+  - [x] Sub-task: Implement paragraph cache with TTL
+- [x] Task: Write tests for hybrid fallback strategy
+  - [x] Sub-task: Write failing tests for manual lookup before AI
+  - [x] Sub-task: Implement hybrid resolution with fallback
+  - [x] Sub-task: Write failing tests for AI failure handling
+  - [x] Sub-task: Implement graceful degradation to generic help
 
 ### 1.3 Example Data Management
 - [ ] Task: Write tests for example validation
