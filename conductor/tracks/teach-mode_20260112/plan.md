@@ -48,11 +48,11 @@
   - [x] Sub-task: Implement active state badge/icon
 
 ### 2.2 Hover Overlay Panel
-- [ ] Task: Write tests for overlay positioning logic
-  - [ ] Sub-task: Write failing tests for viewport edge detection
-  - [ ] Sub-task: Implement smart positioning algorithm
-  - [ ] Sub-task: Write failing tests for mobile responsive positioning
-  - [ ] Sub-task: Implement mobile-aware position calculation
+- [x] Task: Write tests for overlay positioning logic
+  - [x] Sub-task: Write failing tests for viewport edge detection
+  - [x] Sub-task: Implement smart positioning algorithm
+  - [x] Sub-task: Write failing tests for mobile responsive positioning
+  - [x] Sub-task: Implement mobile-aware position calculation
 - [ ] Task: Write tests for overlay content rendering
   - [ ] Sub-task: Write failing tests for paragraph excerpt display
   - [ ] Sub-task: Implement excerpt component with highlighting
