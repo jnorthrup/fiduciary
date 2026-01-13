@@ -20,48 +20,40 @@ describe('PDF Link Parsing', () => {
     const link = 'i1099nec.pdf#p12';
     const result = parsePDFLink(link);
 
-    expect(result).toEqual({
-      file: 'i1099nec.pdf',
-      page: 12,
-      section: undefined,
-      paragraph: undefined,
-    });
+    expect(result.file).toBe('i1099nec.pdf');
+    expect(result.page).toBe(12);
+    expect(result.section).toBeUndefined();
+    expect(result.paragraph).toBeUndefined();
   });
 
   it('should parse PDF link with page and section', () => {
     const link = 'i1099nec.pdf#p12.s3';
     const result = parsePDFLink(link);
 
-    expect(result).toEqual({
-      file: 'i1099nec.pdf',
-      page: 12,
-      section: 3,
-      paragraph: undefined,
-    });
+    expect(result.file).toBe('i1099nec.pdf');
+    expect(result.page).toBe(12);
+    expect(result.section).toBe(3);
+    expect(result.paragraph).toBeUndefined();
   });
 
   it('should parse PDF link with page, section, and paragraph', () => {
     const link = 'i1099gi.pdf#p15.s2.p4';
     const result = parsePDFLink(link);
 
-    expect(result).toEqual({
-      file: 'i1099gi.pdf',
-      page: 15,
-      section: 2,
-      paragraph: 4,
-    });
+    expect(result.file).toBe('i1099gi.pdf');
+    expect(result.page).toBe(15);
+    expect(result.section).toBe(2);
+    expect(result.paragraph).toBe(4);
   });
 
   it('should parse PDF link with page and paragraph only', () => {
     const link = 'manual.pdf#p5.p3';
     const result = parsePDFLink(link);
 
-    expect(result).toEqual({
-      file: 'manual.pdf',
-      page: 5,
-      section: undefined,
-      paragraph: 3,
-    });
+    expect(result.file).toBe('manual.pdf');
+    expect(result.page).toBe(5);
+    expect(result.section).toBeUndefined();
+    expect(result.paragraph).toBe(3);
   });
 
   it('should reject malformed PDF link (missing #)', () => {
@@ -224,7 +216,7 @@ describe('Cross-Reference Resolution', () => {
 
     const result = resolveCrossReference(xrefs, 'tcc_format');
     expect(result).toBeDefined();
-    expect(result?.targetFieldId).toBe('tcc_definition');
+    expect(result![0].targetFieldId).toBe('tcc_definition');
   });
 
   it('should return null for non-existent source field', () => {

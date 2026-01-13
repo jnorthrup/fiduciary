@@ -10,9 +10,9 @@
   - [ ] Sub-task: Implement taxonomy breadcrumb generation
 - [x] Task: Write tests for cross-reference resolution
   - [x] Sub-task: Write failing tests for PDF link parsing
-  - [ ] Sub-task: Implement cross-reference data structure
-  - [ ] Sub-task: Write failing tests for circular reference detection
-  - [ ] Sub-task: Implement reference cycle detection
+  - [x] Sub-task: Implement cross-reference data structure
+  - [x] Sub-task: Write failing tests for circular reference detection
+  - [x] Sub-task: Implement reference cycle detection
 
 ### 1.2 AI Retrieval Integration
 - [ ] Task: Write tests for GenAI paragraph retrieval
