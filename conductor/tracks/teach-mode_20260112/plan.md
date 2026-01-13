@@ -5,7 +5,7 @@
 ### 1.1 Manual Annotation Data Structure
 - [~] Task: Write tests for field mapping data structure
   - [x] Sub-task: Write failing tests for manual mapping schema validation
-  - [ ] Sub-task: Implement manual mapping JSON schema with TypeScript types
+  - [x] Sub-task: Implement manual mapping JSON schema with TypeScript types
   - [ ] Sub-task: Write failing tests for taxonomy path resolution
   - [ ] Sub-task: Implement taxonomy breadcrumb generation
 - [ ] Task: Write tests for cross-reference resolution

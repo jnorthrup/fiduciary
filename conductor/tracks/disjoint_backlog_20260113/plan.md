@@ -25,6 +25,7 @@
     - [x] Sub-task: Add Reconciliation Tab to APDashboard
     - [x] Sub-task: Implement 'Matched/Unmatched' visualization
     - [x] Sub-task: Add settlement timeline view
-- [ ] Task: Remediation of 'Teach Mode Implementation'
-  - [ ] Sub-task: Review and active unused track
-  - [ ] Sub-task: Begin Phase 1 of Teach Mode
+- [~] Task: Remediation of 'Teach Mode Implementation'
+  - [x] Sub-task: Review and active unused track
+  - [~] Sub-task: Begin Phase 1 of Teach Mode
+    - [x] Implemented Manual Mapping Schema & Validation
