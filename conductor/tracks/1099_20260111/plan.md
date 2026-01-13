@@ -160,9 +160,9 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 4.2 Performance & Security' (Protocol in workflow.md) [SKIP_NOTE: Performance testing requires load testing framework (k6). Log sanitization implemented.]
 
 ### 4.3 Documentation & Deployment
-- [ ] Task: Write API documentation
-  - [ ] Sub-task: Document all IRS API endpoints
-  - [ ] Sub-task: Create code examples for common operations
+- [x] Task: Write API documentation [3a438f4]
+  - [x] Sub-task: Document all IRS API endpoints
+  - [x] Sub-task: Create code examples for common operations
 - [ ] Task: Write user documentation
   - [ ] Sub-task: Create 1099 filing user guide
   - [ ] Sub-task: Create CAFR research user guide
