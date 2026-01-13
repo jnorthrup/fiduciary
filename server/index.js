@@ -3,6 +3,7 @@ import cors from 'cors';
 import { randomUUID } from 'crypto';
 import { irisOAuthRouter, authenticateToken } from './routes/iris-oauth.js';
 import { generateClientJWT, generateUserJWT } from './jwt-utils.js';
+import irsPortalAuthRouter from './routes/irs-portal-auth.js';
 
 // In-project logger is TS, but server is JS.
 // For JS server, we'll implement a simple structured logger or just clean up console calls.
@@ -67,6 +68,13 @@ const tinValidationCache = new Map();
 
 // Mount OAuth router at /api/iris
 app.use('/api/iris', irisOAuthRouter);
+
+// ============================================================================
+// IRS Portal Authentication Routes (Playwright-based)
+// ============================================================================
+
+// Mount portal auth router at /api/irs-portal/auth
+app.use('/api/irs-portal/auth', irsPortalAuthRouter);
 
 /**
  * POST /api/irs/demo/authenticate
