@@ -95,7 +95,7 @@
   - [x] Sub-task: Implement 2FA automation with external code input
 - [ ] Task: Write tests for session persistence
   - [x] Sub-task: Write failing tests for cookie/session storage [24cc8ba]
-  - [ ] Sub-task: Implement session state persistence to disk
+  - [x] Sub-task: Implement session state persistence to disk
   - [ ] Sub-task: Write failing tests for session reuse across requests
   - [ ] Sub-task: Implement session restoration logic
 - [ ] Task: Write tests for session monitoring and time-series recording
