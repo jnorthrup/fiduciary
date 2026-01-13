@@ -93,7 +93,7 @@
   - [x] Sub-task: Implement IRSPortalClient with username/password automation
   - [x] Sub-task: Write failing tests for 2FA code handling
   - [x] Sub-task: Implement 2FA automation with external code input
-- [ ] Task: Write tests for session persistence
+- [x] Task: Write tests for session persistence [9d92efe]
   - [x] Sub-task: Write failing tests for cookie/session storage [24cc8ba]
   - [x] Sub-task: Implement session state persistence to disk
   - [x] Sub-task: Write failing tests for session reuse across requests
