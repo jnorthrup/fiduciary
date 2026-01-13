@@ -13,8 +13,18 @@
  * @see https://www.irs.gov/pub/irs-pdf/p5718.pdf
  */
 
-import { randomUUID, sign } from 'node:crypto';
+import { v4 as randomUUID } from 'uuid';
 import { XMLParser } from 'fast-xml-parser';
+
+// Browser-compatible crypto signing using Web Crypto API
+const sign = async (
+  data: string,
+  privateKey: string
+): Promise<Buffer> => {
+  // For browser compatibility, this needs to be implemented with Web Crypto API
+  // Currently using a placeholder - production should use a proper JWT library
+  throw new Error('JWT signing not implemented for browser. Use server-side proxy or Web Crypto API.');
+};
 
 // ============================================================================
 // Types
@@ -121,14 +131,14 @@ export interface IRISError {
 
 const IRIS_ENDPOINTS = {
   production: {
-    token: 'https://api.www4.irs.gov/auth/oauth/v2/token',
+    token: 'https://api.www4.irs.gov/RIntakeAcceptanceA2A/1.0/irisa2a/v1/auth/oauth/v2/token',
     submit: 'https://api.www4.irs.gov/RIntakeAcceptanceA2A/1.0/irisa2a/v1/intake-acceptance',
-    status: 'https://api.www4.irs.gov/RIntakeAcceptanceA2A/1.0/iris/transstatusorack',
+    status: 'https://api.www4.irs.gov/RIntakeAcceptanceA2A/1.0/irisa2a/v1/transstatusorack',
   },
   test: {
-    token: 'https://api.alt.www4.irs.gov/auth/oauth/v2/token',
+    token: 'https://api.alt.www4.irs.gov/RIntakeAcceptanceA2A/1.0/irisa2a/v1/auth/oauth/v2/token',
     submit: 'https://api.alt.www4.irs.gov/RIntakeAcceptanceA2A/1.0/irisa2a/v1/intake-acceptance',
-    status: 'https://api.alt.www4.irs.gov/RIntakeAcceptanceA2A/1.0/iris/transstatusorack',
+    status: 'https://api.alt.www4.irs.gov/RIntakeAcceptanceA2A/1.0/irisa2a/v1/transstatusorack',
   },
 } as const;
 

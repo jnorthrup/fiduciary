@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import { randomUUID } from 'crypto';
+import { irisOAuthRouter, authenticateToken } from './routes/iris-oauth.js';
+import { generateClientJWT, generateUserJWT } from './jwt-utils.js';
 
-// In-project logger is TS, but server is JS. 
+// In-project logger is TS, but server is JS.
 // For JS server, we'll implement a simple structured logger or just clean up console calls.
 const logger = {
   info: (msg, ...args) => console.info(`[INFO] ${msg}`, ...args),
@@ -60,7 +62,49 @@ const submissions = new Map();
 const tinValidationCache = new Map();
 
 // ============================================================================
-// IRS API Routes - Lightweight Mock
+// IRS IRIS A2A OAuth Routes (Production API)
+// ============================================================================
+
+// Mount OAuth router at /api/iris
+app.use('/api/iris', irisOAuthRouter);
+
+/**
+ * POST /api/irs/demo/authenticate
+ * Demo endpoint: Generate JWTs for testing without real credentials
+ */
+app.post('/api/iris/demo/authenticate', (req, res) => {
+  try {
+    const { clientId, userId, tcc, privateKey, keyId } = req.body;
+
+    if (!clientId || !userId || !tcc || !privateKey || !keyId) {
+      return res.status(400).json({
+        error: 'missing_credentials',
+        message: 'clientId, userId, tcc, privateKey, and keyId are required'
+      });
+    }
+
+    const credentials = { clientId, userId, tcc, privateKey, keyId };
+    const clientJWT = generateClientJWT(credentials);
+    const userJWT = generateUserJWT(credentials);
+
+    res.json({
+      clientJWT,
+      userJWT,
+      expiresIn: 900,
+      message: 'Use these JWTs with /api/iris/auth/oauth/v2/token'
+    });
+
+  } catch (error) {
+    logger.error('[Demo] Auth error:', error);
+    res.status(500).json({
+      error: 'generation_failed',
+      message: error.message
+    });
+  }
+});
+
+// ============================================================================
+// Legacy Mock Routes (for backward compatibility)
 // ============================================================================
 
 /**
@@ -71,8 +115,19 @@ app.get('/api/irs/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    service: 'IRS IRIS A2A API Mock',
-    version: '1.3.0'
+    service: 'IRS IRIS A2A API Server',
+    version: '2.0.0',
+    features: [
+      'OAuth 2.0 JWT Bearer Authentication',
+      'IRIS Production API Endpoints',
+      'Legacy Mock Endpoints'
+    ],
+    endpoints: {
+      oauth: '/api/iris/auth/oauth/v2/token',
+      submission: '/api/iris/intake-acceptance',
+      status: '/api/iris/transstatusorack',
+      demo: '/api/iris/demo/authenticate'
+    }
   });
 });
 
@@ -519,7 +574,9 @@ app.use((err, req, res, next) => {
 // ============================================================================
 
 app.listen(PORT, () => {
-  logger.info(`IRS IRIS A2A API Mock Server running on http://localhost:${PORT}`);
+  logger.info(`IRS IRIS A2A API Server running on http://localhost:${PORT}`);
+  logger.info(`OAuth: http://localhost:${PORT}/api/iris/auth/oauth/v2/token`);
+  logger.info(`Demo JWT Gen: http://localhost:${PORT}/api/iris/demo/authenticate`);
 });
 
 export default app;

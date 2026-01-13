@@ -39,7 +39,7 @@
   - [x] Sub-task: Implement in-memory TIN cache with TTL
   - [x] Sub-task: Write failing tests for cache expiration
   - [x] Sub-task: Implement cache expiration logic
-- [ ] Task: Conductor - User Manual Verification 'Phase 1.3 Data Persistence Layer' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 1.3 Data Persistence Layer' (Protocol in workflow.md)
 
 ## Phase 2: Frontend 1099 Wizard Enhancement
 
