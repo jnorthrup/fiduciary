@@ -2,14 +2,16 @@
  * IRS e-Services Login Modal
  *
  * Handles username/password + 2FA authentication in a modal overlay.
+ * Uses real IRS portal authentication API via Playwright backend.
  * Returns authenticated status to parent component.
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Shield, User, Lock, Smartphone, Mail, Key, RefreshCw, CheckCircle } from 'lucide-react';
+import { X, Shield, User, Lock, Smartphone, Mail, Key, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
 type TwoFAMethod = 'sms' | 'email' | 'app' | 'backup';
 type LoginStep = 'credentials' | '2fa' | 'success';
+type ApiError = 'account_locked' | 'invalid_credentials' | 'timeout' | 'code_expired' | 'invalid_code' | 'internal_error';
 
 interface Props {
   isOpen: boolean;
@@ -17,12 +19,17 @@ interface Props {
   onSuccess: (credentials: { username: string; tcc?: string }) => void;
 }
 
+// API base URL - uses same origin or localhost for development
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 export const IRSLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
   const [step, setStep] = useState<LoginStep>('credentials');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginRetryCount, setLoginRetryCount] = useState(0);
+  const [errorCode, setErrorCode] = useState<ApiError | null>(null);
 
   // 2FA State
   const [twoFAMethod, setTwoFAMethod] = useState<TwoFAMethod>('sms');
@@ -31,6 +38,8 @@ export const IRSLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) =
   const [twoFAResendCooldown, setTwoFAResendCooldown] = useState(0);
   const [twoFAError, setTwoFAError] = useState<string | null>(null);
   const [verifyingTwoFA, setVerifyingTwoFA] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [available2FAMethods, setAvailable2FAMethods] = useState<TwoFAMethod[]>(['sms', 'email', 'app']);
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -41,6 +50,10 @@ export const IRSLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) =
       setLoginError(null);
       setTwoFACode('');
       setTwoFAError(null);
+      setSessionId(null);
+      setLoginRetryCount(0);
+      setErrorCode(null);
+      setAvailable2FAMethods(['sms', 'email', 'app']);
     }
   }, [isOpen]);
 
@@ -62,14 +75,57 @@ export const IRSLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) =
 
     try {
       setLoginError(null);
+      setErrorCode(null);
       setIsLoggingIn(true);
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call real API endpoint
+      const response = await fetch(`${API_BASE}/api/irs-portal/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
-      console.log('[IRS Login] API call complete, setting up 2FA');
+      const data = await response.json();
 
-      // Set 2FA details FIRST before changing step
+      if (!response.ok) {
+        // Handle specific error types
+        setErrorCode(data.error);
+
+        const errorMessages: Record<ApiError, string> = {
+          account_locked: 'Your account has been locked due to too many failed attempts. Please contact IRS support.',
+          invalid_credentials: 'Invalid username or password. Please try again.',
+          timeout: 'The IRS portal is taking too long to respond. Please try again.',
+          code_expired: 'The verification code has expired. Please request a new one.',
+          invalid_code: 'Incorrect verification code.',
+          internal_error: 'An error occurred during login. Please try again.',
+        };
+
+        setLoginError(errorMessages[data.error] || data.message || 'Login failed. Please try again.');
+        setIsLoggingIn(false);
+        return;
+      }
+
+      console.log('[IRS Login] Login successful, session:', data.sessionId);
+
+      // Check if session was reused (already authenticated)
+      if (data.reused) {
+        console.log('[IRS Login] Session reused, already authenticated');
+        setIsLoggingIn(false);
+        setStep('success');
+        setTimeout(() => {
+          onSuccess({ username });
+          onClose();
+        }, 2000);
+        return;
+      }
+
+      // Store session ID for 2FA
+      setSessionId(data.sessionId);
+      setAvailable2FAMethods(data.available2FAMethods || ['sms', 'email', 'app']);
+
+      // Set masked destination based on 2FA method
       const emailDomain = username.includes('@') ? username.split('@')[1] : 'example.com';
       const maskedDest =
         twoFAMethod === 'sms' ? '***-***-' + Math.floor(Math.random() * 9000 + 1000) :
@@ -77,21 +133,34 @@ export const IRSLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) =
         twoFAMethod === 'app' ? 'Enter code from authenticator app' :
         'Enter one of your backup codes';
 
-      console.log('[IRS Login] Masked destination:', maskedDest);
-
       setTwoFAMaskedDestination(maskedDest);
       setTwoFAError(null);
       setTwoFAResendCooldown(30);
 
-      // Now change step - loading will hide, 2FA will show
-      console.log('[IRS Login] Changing step to 2FA');
+      // Reset retry count on success
+      setLoginRetryCount(0);
+
+      // Move to 2FA step
       setIsLoggingIn(false);
       setStep('2fa');
       console.log('[IRS Login] Step changed to 2FA');
+
     } catch (error) {
       console.error('[IRS Login] Error during login:', error);
-      setLoginError('An error occurred during login. Please try again.');
-      setIsLoggingIn(false);
+
+      // Implement retry logic for transient errors
+      if (loginRetryCount < 2) {
+        setLoginRetryCount(prev => prev + 1);
+        setLoginError(`Connection failed. Retrying... (${loginRetryCount + 1}/2)`);
+
+        // Retry after delay
+        setTimeout(() => {
+          handleLogin();
+        }, 2000);
+      } else {
+        setLoginError('Unable to connect to the authentication server. Please check your connection and try again.');
+        setIsLoggingIn(false);
+      }
     }
   };
 
@@ -134,40 +203,88 @@ export const IRSLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) =
       return;
     }
 
-    // Demo: accept 123456 or random (70% success rate)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const isValid = twoFACode === '123456' || Math.random() > 0.3;
+    try {
+      // Call real API endpoint
+      const response = await fetch(`${API_BASE}/api/irs-portal/auth/2fa`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId, code: twoFACode }),
+      });
 
-    if (!isValid) {
-      console.log('[IRS Login] 2FA code invalid');
-      setTwoFAError('Incorrect verification code. Please try again.');
-      setVerifyingTwoFA(false);
-      return;
-    }
+      const data = await response.json();
 
-    console.log('[IRS Login] 2FA success, showing success screen');
+      if (!response.ok) {
+        // Handle specific error types
+        const errorMessages: Record<string, string> = {
+          session_not_found: 'Session expired. Please start over.',
+          session_expired: 'Session expired. Please start over.',
+          invalid_code_format: 'Please enter a valid 6-digit code.',
+          code_expired: 'The verification code has expired. Please request a new one.',
+          invalid_code: 'Incorrect verification code. Please try again.',
+          internal_error: 'An error occurred during verification. Please try again.',
+        };
 
-    // Success - show success screen first
-    setVerifyingTwoFA(false);
-    setStep('success');
-
-    // Auto-close after success with delay
-    setTimeout(() => {
-      console.log('[IRS Login] Calling onSuccess and closing modal');
-      try {
-        onSuccess({ username, tcc: `T${Math.floor(Math.random() * 9000000000) + 1000000000}` });
-      } catch (e) {
-        console.error('[IRS Login] Error in onSuccess callback:', e);
+        setTwoFAError(errorMessages[data.error] || data.message || 'Verification failed.');
+        setVerifyingTwoFA(false);
+        return;
       }
-      // Close modal immediately after onSuccess completes
-      onClose();
-    }, 2000);
+
+      console.log('[IRS Login] 2FA success, authenticated:', data.authenticated);
+
+      // Success - show success screen first
+      setVerifyingTwoFA(false);
+      setStep('success');
+
+      // Auto-close after success with delay
+      setTimeout(() => {
+        console.log('[IRS Login] Calling onSuccess and closing modal');
+        try {
+          onSuccess({ username, tcc: data.tcc });
+        } catch (e) {
+          console.error('[IRS Login] Error in onSuccess callback:', e);
+        }
+        // Close modal immediately after onSuccess completes
+        onClose();
+      }, 2000);
+
+    } catch (error) {
+      console.error('[IRS Login] Error during 2FA verification:', error);
+      setTwoFAError('Unable to connect to the server. Please check your connection and try again.');
+      setVerifyingTwoFA(false);
+    }
   };
 
   const handleResendTwoFA = async () => {
     if (twoFAResendCooldown > 0) return;
 
-    await initiateTwoFA();
+    try {
+      // Call real API endpoint
+      const response = await fetch(`${API_BASE}/api/irs-portal/auth/2fa/resend`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Update cooldown from server response
+        setTwoFAResendCooldown(data.cooldownSeconds || 30);
+        setTwoFAError(null);
+      } else if (response.status === 429) {
+        // Cooldown active
+        setTwoFAResendCooldown(data.cooldownSeconds || 30);
+      } else {
+        setTwoFAError(data.message || 'Failed to resend code');
+      }
+    } catch (error) {
+      console.error('[IRS Login] Error resending 2FA:', error);
+      setTwoFAError('Failed to resend code. Please try again.');
+    }
   };
 
   const handleChangeTwoFAMethod = async (method: TwoFAMethod) => {
@@ -287,8 +404,9 @@ export const IRSLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) =
               </div>
 
               {loginError && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs">
-                  {loginError}
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs flex items-start gap-2">
+                  <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                  <span>{loginError}</span>
                 </div>
               )}
 
@@ -392,8 +510,9 @@ export const IRSLoginModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) =
               </div>
 
               {twoFAError && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs">
-                  {twoFAError}
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-xs flex items-start gap-2">
+                  <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                  <span>{twoFAError}</span>
                 </div>
               )}
 
