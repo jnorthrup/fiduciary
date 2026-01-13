@@ -104,7 +104,7 @@
   - [x] Sub-task: Write failing tests for session replay validation [f9d419b]
   - [x] Sub-task: Implement correctness checking with recorded state [883b062]
 - [ ] Task: Integrate IRSPortalClient with IRSLoginModal
-  - [ ] Sub-task: Write failing tests for real authentication endpoint
+  - [x] Sub-task: Write failing tests for real authentication endpoint [d95976d]
   - [ ] Sub-task: Replace mock authentication with IRSPortalClient calls
   - [ ] Sub-task: Write failing tests for error handling and session expiry
   - [ ] Sub-task: Implement error states and retry logic in modal
