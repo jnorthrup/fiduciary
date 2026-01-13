@@ -82,12 +82,12 @@
   - [x] Sub-task: Implement completion state with results display
 - [x] Task: Conductor - User Manual Verification 'Phase 2.3 Submission & Status Display' (Protocol in workflow.md) [SKIP_PER_USER_DIRECTIVE]
 
-### 2.4 IRS Portal Automation & Session Monitoring
-- [ ] Task: Install and configure Playwright
-  - [ ] Sub-task: Write failing tests for Playwright browser launch
-  - [ ] Sub-task: Add Playwright to package.json and configure
-  - [ ] Sub-task: Write failing tests for headless mode with screenshots
-  - [ ] Sub-task: Implement Playwright browser configuration
+### 2.4 IRS Portal Automation & Session Monitoring [checkpoint: PENDING]
+- [x] Task: Install and configure Playwright
+  - [x] Sub-task: Write failing tests for Playwright browser launch
+  - [x] Sub-task: Add Playwright to package.json and configure
+  - [x] Sub-task: Write failing tests for headless mode with screenshots
+  - [x] Sub-task: Implement Playwright browser configuration
 - [ ] Task: Write tests for IRS portal authentication service
   - [ ] Sub-task: Write failing tests for IRS e-Services login flow
   - [ ] Sub-task: Implement IRSPortalClient with username/password automation
