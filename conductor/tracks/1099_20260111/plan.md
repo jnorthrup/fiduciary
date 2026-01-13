@@ -105,7 +105,7 @@
   - [x] Sub-task: Implement correctness checking with recorded state [883b062]
 - [ ] Task: Integrate IRSPortalClient with IRSLoginModal
   - [x] Sub-task: Write failing tests for real authentication endpoint [d95976d]
-  - [ ] Sub-task: Replace mock authentication with IRSPortalClient calls
+  - [x] Sub-task: Replace mock authentication with IRSPortalClient calls [a15b46c]
   - [ ] Sub-task: Write failing tests for error handling and session expiry
   - [ ] Sub-task: Implement error states and retry logic in modal
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.4 IRS Portal Automation & Session Monitoring' (Protocol in workflow.md)
