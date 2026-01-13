@@ -71,16 +71,16 @@
   - [x] Sub-task: Implement ESC to close, arrow key navigation
 
 ### 2.3 Field Integration
-- [ ] Task: Write tests for form field hover detection
-  - [ ] Sub-task: Write failing tests for field identification
-  - [ ] Sub-task: Implement field-to-mapping resolver
-  - [ ] Sub-task: Write failing tests for field state tracking
-  - [ ] Sub-task: Implement hover state manager
-- [ ] Task: Write tests for conditional overlay display
-  - [ ] Sub-task: Write failing tests for Teach Mode gate
-  - [ ] Sub-task: Implement teach-mode-only overlay logic
-  - [ ] Sub-task: Write failing tests for field-without-mapping handling
-  - [ ] Sub-task: Implement graceful handling of unmapped fields
+- [x] Task: Write tests for form field hover detection
+  - [x] Sub-task: Write failing tests for field identification
+  - [x] Sub-task: Implement field-to-mapping resolver
+  - [x] Sub-task: Write failing tests for field state tracking
+  - [x] Sub-task: Implement hover state manager
+- [x] Task: Write tests for conditional overlay display
+  - [x] Sub-task: Write failing tests for Teach Mode gate
+  - [x] Sub-task: Implement teach-mode-only overlay logic
+  - [x] Sub-task: Write failing tests for field-without-mapping handling
+  - [x] Sub-task: Implement graceful handling of unmapped fields
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Teach Mode UI Components' (Protocol in workflow.md)
 
