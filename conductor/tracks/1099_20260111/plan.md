@@ -88,11 +88,11 @@
   - [x] Sub-task: Add Playwright to package.json and configure
   - [x] Sub-task: Write failing tests for headless mode with screenshots
   - [x] Sub-task: Implement Playwright browser configuration
-- [ ] Task: Write tests for IRS portal authentication service
-  - [ ] Sub-task: Write failing tests for IRS e-Services login flow
-  - [ ] Sub-task: Implement IRSPortalClient with username/password automation
-  - [ ] Sub-task: Write failing tests for 2FA code handling
-  - [ ] Sub-task: Implement 2FA automation with external code input
+- [x] Task: Write tests for IRS portal authentication service [5917c58]
+  - [x] Sub-task: Write failing tests for IRS e-Services login flow
+  - [x] Sub-task: Implement IRSPortalClient with username/password automation
+  - [x] Sub-task: Write failing tests for 2FA code handling
+  - [x] Sub-task: Implement 2FA automation with external code input
 - [ ] Task: Write tests for session persistence
   - [ ] Sub-task: Write failing tests for cookie/session storage
   - [ ] Sub-task: Implement session state persistence to disk
