@@ -14,4 +14,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 ---
 
 ## [ ] Track: Teach Mode Paragraph Activation
-*Link: [./conductor/tracks/teach-mode_20260112/](./conductor/tracks/teach-mode_20260112/)* 
+*Link: [./conductor/tracks/teach-mode_20260112/](./conductor/tracks/teach-mode_20260112/)*
+
+---
+
+## [ ] Track: Disjoint Backlog
+*Link: [./conductor/tracks/disjoint_backlog_20260113/](./conductor/tracks/disjoint_backlog_20260113/)* 
