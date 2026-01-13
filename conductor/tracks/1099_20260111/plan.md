@@ -98,7 +98,7 @@
   - [x] Sub-task: Implement session state persistence to disk
   - [x] Sub-task: Write failing tests for session reuse across requests
   - [x] Sub-task: Implement session restoration logic
-- [ ] Task: Write tests for session monitoring and time-series recording
+- [x] Task: Write tests for session monitoring and time-series recording [41d9d47]
   - [x] Sub-task: Write failing tests for session event capture [f9d419b]
   - [x] Sub-task: Implement time-series state recording for web sessions [883b062]
   - [x] Sub-task: Write failing tests for session replay validation [f9d419b]
