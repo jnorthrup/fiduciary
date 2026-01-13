@@ -8,8 +8,8 @@
   - [x] Sub-task: Implement manual mapping JSON schema with TypeScript types
   - [ ] Sub-task: Write failing tests for taxonomy path resolution
   - [ ] Sub-task: Implement taxonomy breadcrumb generation
-- [ ] Task: Write tests for cross-reference resolution
-  - [ ] Sub-task: Write failing tests for PDF link parsing
+- [x] Task: Write tests for cross-reference resolution
+  - [x] Sub-task: Write failing tests for PDF link parsing
   - [ ] Sub-task: Implement cross-reference data structure
   - [ ] Sub-task: Write failing tests for circular reference detection
   - [ ] Sub-task: Implement reference cycle detection
