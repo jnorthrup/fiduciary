@@ -125,16 +125,133 @@ flowchart LR
 - Receives net settlement from operator
 
 ### ACH Operator (FedACH or EPN)
-- Federal Reserve (FedACH) or Electronic Payments Network (EPN)
+- **FedACH** (Federal Reserve Banks) or **EPN** (The Clearing House)
+- **Only two national switches in the U.S.** - all ACH entries route through one of them
 - Sorts and forwards entries to receiving banks
 - Calculates net interbank settlement amounts
 - Facilitates final settlement between institutions
+- **Never interact directly with corporates or ERPs** - only with ODFI/RDFI members
 
 ### RDFI (Receiving Depository Financial Institution)
 - Payee's bank
 - Receives ACH entries from operator
 - Posts credits to payee accounts
 - Returns entries if unable to post (Return codes: R01-R85)
+
+## Why You Can't "Plug ERP into ACH"
+
+**NACHA Operating Rules Requirement**: Every ACH entry must be originated by an **ODFI** (a regulated bank or credit union connected to FedACH or EPN).
+
+Corporates, ERPs, and fintechs **cannot** connect directly to ACH operators. Instead, they must:
+
+1. **Be sponsored by an ODFI** (partner with a bank), OR
+2. **Use a Third-Party Sender (TPS) / processor** that already has ODFI sponsorship
+
+The ACH operator is **infrastructure for banks**, not end-users.
+
+## Three ERP Integration Patterns
+
+### A. API-Driven (Modern)
+
+```
+ERP → REST/JSON API → Processor/TPP → ODFI → FedACH/EPN → RDFI
+```
+
+**Characteristics:**
+- ERP maintains obligation ledger (A/P, A/R)
+- Processor handles:
+  - NACHA file creation
+  - OFAC screening
+  - Return processing
+  - Status webhooks
+- Examples: Stripe Treasury, Modern Treasury, Unit, Column, Plaid
+
+**Advantages:**
+- Real-time status updates
+- Automatic return handling
+- Modern developer experience
+- No file format concerns
+
+### B. NACHA File Export (Traditional Treasury)
+
+```
+ERP exports NACHA file → Bank portal/SFTP → ODFI originates
+```
+
+**Characteristics:**
+- ERP generates conforming NACHA-formatted batch file
+- Manual or scheduled upload to bank
+- Bank validates and originates entries
+- Return reports downloaded separately
+
+**Advantages:**
+- Full control over NACHA formatting
+- No API dependency
+- Works with all banks (standard format)
+
+**Disadvantages:**
+- Manual reconciliation required
+- Delayed error detection
+- File format complexity
+
+### C. Inbound Only (No Origination)
+
+```
+Customer → Push ACH → RDFI → ERP reconciles via bank 822/BAI or API
+```
+
+**Characteristics:**
+- Only receive ACH credits (no outbound payments)
+- Customers initiate payments
+- ERP reconciles via:
+  - BAI2/BAI3 files (Bank Administration Institute format)
+  - ISO 20022 camt.053 (bank statement)
+  - Bank API (e.g., Treasury Prime, Plaid)
+
+**Advantages:**
+- Simpler compliance (no origination risk)
+- No ODFI sponsorship needed for inbound
+- Lower operational overhead
+
+## Accounting Hygiene: ACH Clearing Account
+
+**Best Practice**: Use an **"ACH Clearing / Pending"** GL account as intermediate holding.
+
+### Why?
+
+1. **Separation of obligation from settlement** - A/P recognized at invoice, not payment
+2. **Clean reversal on returns** - R01 (insufficient funds), R03 (no account), etc.
+3. **Preserve traceability** - Link obligation to specific ACH entry
+4. **Audit trail** - Clear timeline from authorization → settlement → posting
+
+### Journal Entry Pattern with Clearing Account
+
+**At Payment Authorization:**
+```
+Dr  Accounts Payable         $X,XXX.XX
+    Cr  ACH Clearing/Pending             $X,XXX.XX
+```
+
+**At Settlement Confirmation:**
+```
+Dr  ACH Clearing/Pending     $X,XXX.XX
+    Cr  Cash (Bank DDA)                  $X,XXX.XX
+```
+
+**On Return (e.g., R01 Insufficient Funds):**
+```
+Dr  Accounts Payable         $X,XXX.XX
+    Cr  ACH Clearing/Pending             $X,XXX.XX
+```
+(Reverses original authorization; A/P remains unpaid)
+
+### Clearing Account Reconciliation
+
+The ACH Clearing account should:
+- Clear to zero after all settlements/returns are posted
+- Age analysis for pending entries (flag items >2 banking days)
+- Match to bank 822/BAI reconciliation reports
+- Trigger alerts for unexpected balances
 
 ## Standard Entry Class (SEC) Codes
 
@@ -225,13 +342,40 @@ ACH payments may trigger information return requirements:
 - [IRS Publication 1220: Specifications for Electronic Filing of Forms 1097, 1098, 1099, 3921, 3922, 5498, and W-2G](https://www.irs.gov/pub/irs-pdf/p1220.pdf)
 - [ACH Return Codes](https://www.nacha.org/content/ach-return-codes)
 
+## Key Architectural Principle
+
+**The ACH operator is never your counter-party.**
+
+Your **bank-sponsored processor** (ODFI or TPS) is your integration point.
+
+The ERP's responsibilities:
+1. **Create the obligation** - Invoice → A/P or A/R ledger entry
+2. **Hand off compliant payment instruction** - Via API, NACHA file, or manual portal
+3. **Post/reconcile settlement** - Once operator-confirmed settlement (or return) arrives
+
+The ACH operator (FedACH/EPN) is inter-bank infrastructure. All corporate interactions go through an ODFI intermediary.
+
 ## Implementation Notes
 
 The Trust Ledger System implements ACH settlement logic in:
 
 - `components/SettlementEngine.tsx` - UI for settlement workflows
-- `services/ledgerService.ts` - Double-entry journal posting
+- `services/ledgerService.ts` - Double-entry journal posting with ACH clearing account support
 - `conductor/tracks/ach_settlement_20260112/` - ACH settlement track implementation
+
+### Recommended Integration Pattern for Trust Ledger
+
+**API-Driven with Modern Treasury / Unit / Column:**
+1. Obligation recognized in `ledgerService.ts` (Dr Expense, Cr A/P)
+2. Payment authorized → POST to processor API
+3. Processor creates NACHA, submits to ODFI
+4. Webhook callback on settlement → clear ACH Clearing account
+5. Return webhook → reverse clearing entry, restore A/P
+
+**Chart of Accounts additions needed:**
+- `2100` - Accounts Payable
+- `2105` - ACH Clearing/Pending (liability or contra-asset)
+- `1010` - Cash - Operating Account (DDA)
 
 For integration with 1099 filing, see:
 - `conductor/tracks/1099_20260111/` - IRS IRIS 1099 filing track
