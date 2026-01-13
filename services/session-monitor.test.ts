@@ -372,7 +372,7 @@ describe('Session Monitor', () => {
 
       expect(validation.isValid).toBe(false);
       expect(validation.differences).toHaveLength(1);
-      expect(validation.differences[0].path).toBe('#submit-btn.enabled');
+      expect(validation.differences[0]).toBe('element #submit-btn.enabled');
     });
 
     it('should validate correct session replay', async () => {
