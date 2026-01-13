@@ -53,15 +53,15 @@
   - [x] Sub-task: Implement smart positioning algorithm
   - [x] Sub-task: Write failing tests for mobile responsive positioning
   - [x] Sub-task: Implement mobile-aware position calculation
-- [ ] Task: Write tests for overlay content rendering
-  - [ ] Sub-task: Write failing tests for paragraph excerpt display
-  - [ ] Sub-task: Implement excerpt component with highlighting
-  - [ ] Sub-task: Write failing tests for taxonomy breadcrumb display
-  - [ ] Sub-task: Implement breadcrumb navigation component
-  - [ ] Sub-task: Write failing tests for cross-reference link rendering
-  - [ ] Sub-task: Implement cross-reference links
-  - [ ] Sub-task: Write failing tests for example data display
-  - [ ] Sub-task: Implement example code/data blocks
+- [x] Task: Write tests for overlay content rendering
+  - [x] Sub-task: Write failing tests for paragraph excerpt display
+  - [x] Sub-task: Implement excerpt component with highlighting
+  - [x] Sub-task: Write failing tests for taxonomy breadcrumb display
+  - [x] Sub-task: Implement breadcrumb navigation component
+  - [x] Sub-task: Write failing tests for cross-reference link rendering
+  - [x] Sub-task: Implement cross-reference links
+  - [x] Sub-task: Write failing tests for example data display
+  - [x] Sub-task: Implement example code/data blocks
 - [ ] Task: Write tests for overlay interaction
   - [ ] Sub-task: Write failing tests for hover delay timing
   - [ ] Sub-task: Implement configurable hover delay (default 300ms)
