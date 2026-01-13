@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Entity, Invoice, Payable, SettlementInstruction } from '../types';
 import { useLedgerStore } from '../services/ledgerService';
-import { FileText, DollarSign, CheckCircle2, AlertCircle, Clock, ArrowUpRight } from 'lucide-react';
+import { FileText, DollarSign, CheckCircle2, AlertCircle, Clock, ArrowUpRight, Scales, TrendingUp, Activity } from 'lucide-react';
 
 interface Props {
     entity: Entity;
@@ -11,7 +11,7 @@ interface Props {
 
 export const APDashboard: React.FC<Props> = ({ entity, onSettlementClick }) => {
     const { invoices, payables, settlements, settlementConfirmations } = useLedgerStore();
-    const [activeTab, setActiveTab] = useState<'Invoices' | 'Payables' | 'Settlements'>('Payables');
+    const [activeTab, setActiveTab] = useState<'Invoices' | 'Payables' | 'Settlements' | 'Reconciliation'>('Payables');
 
     // Filter Data for Entity
     const entityInvoices = invoices.filter(i => i.entityId === entity.id);
@@ -35,6 +35,57 @@ export const APDashboard: React.FC<Props> = ({ entity, onSettlementClick }) => {
     // Calculate Metrics
     const totalOpenPayables = entityPayables.filter(p => p.status === 'Open').reduce((acc, p) => acc + p.amountDue, 0);
     const pendingSettlements = entitySettlements.filter(s => s.status === 'Pending' || s.status === 'Authorized').length;
+
+    // Reconciliation Analysis
+    const reconciliationMetrics = useMemo(() => {
+        // Match settlements to confirmations
+        const matchedSettlements = entitySettlements.filter(s => getConfirmation(s.payment_id));
+        const unmatchedSettlements = entitySettlements.filter(s => !getConfirmation(s.payment_id));
+
+        // Calculate Time to Settle metrics (in days)
+        const settledWithConf = entitySettlements
+            .filter(s => {
+                const conf = getConfirmation(s.payment_id);
+                return conf?.confirmationTimestamp;
+            })
+            .map(s => {
+                const conf = getConfirmation(s.payment_id);
+                const created = new Date(s.date_created).getTime();
+                const confirmed = new Date(conf!.confirmationTimestamp).getTime();
+                return {
+                    ...s,
+                    timeToSettle: (confirmed - created) / (1000 * 60 * 60 * 24), // days
+                };
+            });
+
+        const avgTimeToSettle = settledWithConf.length > 0
+            ? settledWithConf.reduce((acc, s) => acc + s.timeToSettle, 0) / settledWithConf.length
+            : 0;
+
+        const maxTimeToSettle = settledWithConf.length > 0
+            ? Math.max(...settledWithConf.map(s => s.timeToSettle))
+            : 0;
+
+        const minTimeToSettle = settledWithConf.length > 0
+            ? Math.min(...settledWithConf.map(s => s.timeToSettle))
+            : 0;
+
+        // Match/Unmatch Amounts
+        const matchedAmount = matchedSettlements.reduce((acc, s) => acc + s.amount, 0);
+        const unmatchedAmount = unmatchedSettlements.reduce((acc, s) => acc + s.amount, 0);
+
+        return {
+            matchedCount: matchedSettlements.length,
+            unmatchedCount: unmatchedSettlements.length,
+            matchRate: entitySettlements.length > 0 ? (matchedSettlements.length / entitySettlements.length) * 100 : 0,
+            matchedAmount,
+            unmatchedAmount,
+            avgTimeToSettle: Math.round(avgTimeToSettle * 10) / 10,
+            maxTimeToSettle: Math.round(maxTimeToSettle * 10) / 10,
+            minTimeToSettle: Math.round(minTimeToSettle * 10) / 10,
+            settlementTimeline: settledWithConf.sort((a, b) => a.timeToSettle - b.timeToSettle),
+        };
+    }, [entitySettlements, settlementConfirmations]);
 
     return (
         <div className="space-y-6 h-full flex flex-col">
@@ -67,7 +118,7 @@ export const APDashboard: React.FC<Props> = ({ entity, onSettlementClick }) => {
             {/* Main List Area */}
             <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="flex items-center border-b border-slate-200 px-6">
-                    {['Payables', 'Invoices', 'Settlements'].map(tab => (
+                    {['Payables', 'Invoices', 'Settlements', 'Reconciliation'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab as any)}
@@ -187,6 +238,160 @@ export const APDashboard: React.FC<Props> = ({ entity, onSettlementClick }) => {
                                 })}
                             </tbody>
                         </table>
+                    )}
+
+                    {/* RECONCILIATION TAB */}
+                    {activeTab === 'Reconciliation' && (
+                        <div className="p-6 space-y-6">
+                            {/* Reconciliation Metrics Cards */}
+                            <div className="grid grid-cols-4 gap-4">
+                                {/* Match Rate */}
+                                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200 p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Scales size={18} className="text-emerald-600" />
+                                        <h3 className="text-xs font-bold text-emerald-700 uppercase">Match Rate</h3>
+                                    </div>
+                                    <div className="text-2xl font-bold text-emerald-900">{reconciliationMetrics.matchRate.toFixed(1)}%</div>
+                                    <div className="text-xs text-emerald-600 mt-1">
+                                        {reconciliationMetrics.matchedCount} of {entitySettlements.length} settlements
+                                    </div>
+                                </div>
+
+                                {/* Matched Amount */}
+                                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl border border-indigo-200 p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <CheckCircle2 size={18} className="text-indigo-600" />
+                                        <h3 className="text-xs font-bold text-indigo-700 uppercase">Matched</h3>
+                                    </div>
+                                    <div className="text-xl font-bold text-indigo-900">${reconciliationMetrics.matchedAmount.toLocaleString()}</div>
+                                    <div className="text-xs text-indigo-600 mt-1">{reconciliationMetrics.matchedCount} confirmed</div>
+                                </div>
+
+                                {/* Unmatched Amount */}
+                                <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200 p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <AlertCircle size={18} className="text-amber-600" />
+                                        <h3 className="text-xs font-bold text-amber-700 uppercase">Unmatched</h3>
+                                    </div>
+                                    <div className="text-xl font-bold text-amber-900">${reconciliationMetrics.unmatchedAmount.toLocaleString()}</div>
+                                    <div className="text-xs text-amber-600 mt-1">{reconciliationMetrics.unmatchedCount} pending</div>
+                                </div>
+
+                                {/* Time to Settle */}
+                                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <TrendingUp size={18} className="text-blue-600" />
+                                        <h3 className="text-xs font-bold text-blue-700 uppercase">Avg Time to Settle</h3>
+                                    </div>
+                                    <div className="text-xl font-bold text-blue-900">{reconciliationMetrics.avgTimeToSettle} days</div>
+                                    <div className="text-xs text-blue-600 mt-1">Range: {reconciliationMetrics.minTimeToSettle}-{reconciliationMetrics.maxTimeToSettle}d</div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                {/* Settlement Timeline */}
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
+                                        <Activity size={16} className="text-blue-500" />
+                                        Settlement Timeline (Time to Confirm)
+                                    </h3>
+                                    <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                                        {reconciliationMetrics.settlementTimeline.length === 0 ? (
+                                            <div className="p-8 text-center text-slate-400 italic text-sm">No settlement timeline data.</div>
+                                        ) : (
+                                            <div className="p-4 space-y-3 max-h-64 overflow-y-auto">
+                                                {reconciliationMetrics.settlementTimeline.map((s, idx) => {
+                                                    const conf = getConfirmation(s.payment_id);
+                                                    const days = Math.round(s.timeToSettle * 10) / 10;
+                                                    const widthPercent = Math.min((days / reconciliationMetrics.maxTimeToSettle) * 100, 100);
+                                                    return (
+                                                        <div key={s.payment_id} className="space-y-1">
+                                                            <div className="flex justify-between items-center text-xs">
+                                                                <span className="font-mono text-slate-500">{s.internal_trace_id.slice(0, 8)}</span>
+                                                                <span className="font-bold text-slate-700">{days}d</span>
+                                                            </div>
+                                                            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={`h-full rounded-full ${
+                                                                        days < 2 ? 'bg-emerald-500' :
+                                                                        days < 4 ? 'bg-blue-500' :
+                                                                        days < 7 ? 'bg-amber-500' : 'bg-red-500'
+                                                                    }`}
+                                                                    style={{ width: `${widthPercent}%` }}
+                                                                />
+                                                            </div>
+                                                            <div className="flex justify-between items-center text-[10px] text-slate-400">
+                                                                <span>{s.payee}</span>
+                                                                <span>${s.amount.toLocaleString()}</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Unmatched Instructions */}
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
+                                        <AlertCircle size={16} className="text-amber-500" />
+                                        Unmatched Instructions
+                                    </h3>
+                                    <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                                        {entitySettlements.filter(s => !getConfirmation(s.payment_id)).length === 0 ? (
+                                            <div className="p-8 text-center text-slate-400 italic text-sm">All instructions matched.</div>
+                                        ) : (
+                                            <div className="divide-y divide-slate-100">
+                                                {entitySettlements.filter(s => !getConfirmation(s.payment_id)).map(s => (
+                                                    <div key={s.payment_id} className="p-3 hover:bg-white transition-colors">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <span className="font-mono text-xs font-bold text-slate-600">{s.internal_trace_id}</span>
+                                                            <span className="text-xs text-slate-400">{s.date_created.split('T')[0]}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-sm font-bold text-slate-800">{s.payee}</span>
+                                                            <span className="font-mono text-sm font-bold text-amber-600">${s.amount.toLocaleString()}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Confirmed Grid */}
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
+                                    <CheckCircle2 size={16} className="text-emerald-500" />
+                                    Confirmed Settlements
+                                </h3>
+                                <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                                    {entitySettlements.filter(s => getConfirmation(s.payment_id)).length === 0 ? (
+                                        <div className="p-8 text-center text-slate-400 italic text-sm">No matched settlements yet.</div>
+                                    ) : (
+                                        <div className="divide-y divide-slate-100">
+                                            {entitySettlements.filter(s => getConfirmation(s.payment_id)).map(s => {
+                                                const conf = getConfirmation(s.payment_id);
+                                                return (
+                                                    <div key={s.payment_id} className="p-3 hover:bg-white transition-colors border-l-4 border-emerald-500">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <span className="font-mono text-xs font-bold text-indigo-900">{conf?.traceNumber}</span>
+                                                            <span className="text-[10px] uppercase font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">{conf?.status}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-xs text-slate-500">
+                                                            <span>Matches: {s.internal_trace_id}</span>
+                                                            <span>{conf?.effectiveDate}</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>
