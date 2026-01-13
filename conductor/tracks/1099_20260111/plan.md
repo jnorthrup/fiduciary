@@ -94,7 +94,7 @@
   - [x] Sub-task: Write failing tests for 2FA code handling
   - [x] Sub-task: Implement 2FA automation with external code input
 - [ ] Task: Write tests for session persistence
-  - [ ] Sub-task: Write failing tests for cookie/session storage
+  - [x] Sub-task: Write failing tests for cookie/session storage [24cc8ba]
   - [ ] Sub-task: Implement session state persistence to disk
   - [ ] Sub-task: Write failing tests for session reuse across requests
   - [ ] Sub-task: Implement session restoration logic
