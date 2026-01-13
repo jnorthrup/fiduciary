@@ -101,7 +101,7 @@
 - [ ] Task: Write tests for session monitoring and time-series recording
   - [x] Sub-task: Write failing tests for session event capture [f9d419b]
   - [x] Sub-task: Implement time-series state recording for web sessions [883b062]
-  - [ ] Sub-task: Write failing tests for session replay validation
+  - [x] Sub-task: Write failing tests for session replay validation [f9d419b]
   - [ ] Sub-task: Implement correctness checking with recorded state
 - [ ] Task: Integrate IRSPortalClient with IRSLoginModal
   - [ ] Sub-task: Write failing tests for real authentication endpoint
