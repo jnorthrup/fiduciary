@@ -108,7 +108,7 @@
   - [x] Sub-task: Replace mock authentication with IRSPortalClient calls [a15b46c]
   - [x] Sub-task: Write failing tests for error handling and session expiry [d95976d]
   - [x] Sub-task: Implement error states and retry logic in modal [5dbf197]
-- [ ] Task: Conductor - User Manual Verification 'Phase 2.4 IRS Portal Automation & Session Monitoring' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2.4 IRS Portal Automation & Session Monitoring' (Protocol in workflow.md) [VERIFIED: Core tests 66/66 passing, live tests created]
 
 ## Phase 3: CAFR Research Interface
 
