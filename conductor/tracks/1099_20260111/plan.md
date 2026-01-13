@@ -163,9 +163,9 @@
 - [x] Task: Write API documentation [3a438f4]
   - [x] Sub-task: Document all IRS API endpoints
   - [x] Sub-task: Create code examples for common operations
-- [ ] Task: Write user documentation
-  - [ ] Sub-task: Create 1099 filing user guide
-  - [ ] Sub-task: Create CAFR research user guide
+- [x] Task: Write user documentation [fecccf2]
+  - [x] Sub-task: Create 1099 filing user guide
+  - [x] Sub-task: Create CAFR research user guide
 - [ ] Task: Conductor - User Manual Verification 'Phase 4.3 Documentation & Deployment' (Protocol in workflow.md)
 
 ## Phase 5: IRIS Login Perfection
