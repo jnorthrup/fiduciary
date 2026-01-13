@@ -62,13 +62,13 @@
   - [x] Sub-task: Implement cross-reference links
   - [x] Sub-task: Write failing tests for example data display
   - [x] Sub-task: Implement example code/data blocks
-- [ ] Task: Write tests for overlay interaction
-  - [ ] Sub-task: Write failing tests for hover delay timing
-  - [ ] Sub-task: Implement configurable hover delay (default 300ms)
-  - [ ] Sub-task: Write failing tests for overlay close behavior
-  - [ ] Sub-task: Implement close button and click-outside handling
-  - [ ] Sub-task: Write failing tests for keyboard navigation
-  - [ ] Sub-task: Implement ESC to close, arrow key navigation
+- [x] Task: Write tests for overlay interaction
+  - [x] Sub-task: Write failing tests for hover delay timing
+  - [x] Sub-task: Implement configurable hover delay (default 300ms)
+  - [x] Sub-task: Write failing tests for overlay close behavior
+  - [x] Sub-task: Implement close button and click-outside handling
+  - [x] Sub-task: Write failing tests for keyboard navigation
+  - [x] Sub-task: Implement ESC to close, arrow key navigation
 
 ### 2.3 Field Integration
 - [ ] Task: Write tests for form field hover detection
