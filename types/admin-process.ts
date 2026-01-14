@@ -415,3 +415,75 @@ export interface CertificateOfService {
   notarized: boolean;
   notaryCommissionNumber?: string;
 }
+
+/**
+ * Validate a notice object
+ */
+export function validateNotice(notice: Partial<Notice>): ValidationResult {
+  const errors: string[] = [];
+
+  if (!notice.id) {
+    errors.push('notice.id is required');
+  }
+
+  if (!notice.senderId) {
+    errors.push('notice.senderId is required');
+  }
+
+  if (!notice.recipientId) {
+    errors.push('notice.recipientId is required');
+  }
+
+  if (!notice.recipientAddress) {
+    errors.push('notice.recipientAddress is required');
+  }
+
+  if (!notice.content) {
+    errors.push('notice.content is required');
+  }
+
+  if (!notice.deliveryMethod) {
+    errors.push('notice.deliveryMethod is required');
+  }
+
+  if (!notice.sentDate) {
+    errors.push('notice.sentDate is required');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Validate a response object
+ */
+export function validateResponse(response: Partial<Response>): ValidationResult {
+  const errors: string[] = [];
+
+  if (!response.id) {
+    errors.push('response.id is required');
+  }
+
+  if (!response.noticeId) {
+    errors.push('response.noticeId is required');
+  }
+
+  if (!response.type) {
+    errors.push('response.type is required');
+  }
+
+  if (!response.content) {
+    errors.push('response.content is required');
+  }
+
+  if (!response.receivedDate) {
+    errors.push('response.receivedDate is required');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
