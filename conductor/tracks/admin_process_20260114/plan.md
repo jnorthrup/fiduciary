@@ -16,16 +16,16 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1.1 Affidavit Data Model' (Protocol in workflow.md) [c5f962b]
 
 ### 1.2 Citation & Reference System
-- [ ] Task: Build statute reference database
-  - [ ] Sub-task: Write failing tests for StatuteCitation type (title, section, url, text_snippet)
-  - [ ] Sub-task: Implement StatuteCitation with URL validation
-  - [ ] Sub-task: Write failing tests for CaseCitation type (court, docket, year, holding)
-  - [ ] Sub-task: Implement CaseCitation with parallel citation support
-- [ ] Task: Implement citation lookup service
-  - [ ] Sub-task: Write failing tests for retrieveStatuteText()
-  - [ ] Sub-task: Implement statute text retrieval from govinfo sources
-  - [ ] Sub-task: Write failing tests for formatCitationMLA()
-  - [ ] Sub-task: Implement citation formatting (MLA, Bluebook, plain)
+- [x] Task: Build statute reference database [450bcff]
+  - [x] Sub-task: Write failing tests for StatuteCitation type (title, section, url, text_snippet)
+  - [x] Sub-task: Implement StatuteCitation with URL validation
+  - [x] Sub-task: Write failing tests for CaseCitation type (court, docket, year, holding)
+  - [x] Sub-task: Implement CaseCitation with parallel citation support
+- [x] Task: Implement citation lookup service [450bcff]
+  - [x] Sub-task: Write failing tests for retrieveStatuteText()
+  - [x] Sub-task: Implement statute text retrieval from govinfo sources
+  - [x] Sub-task: Write failing tests for formatCitationMLA()
+  - [x] Sub-task: Implement citation formatting (MLA, Bluebook, plain)
 - [ ] Task: Conductor - User Manual Verification 'Phase 1.2 Citation & Reference System' (Protocol in workflow.md)
 
 ### 1.3 Calculation Engine
