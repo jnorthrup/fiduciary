@@ -29,11 +29,11 @@
 - [ ] Task: Conductor - User Manual Verification 'Phase 1.2 Citation & Reference System' (Protocol in workflow.md)
 
 ### 1.3 Calculation Engine
-- [ ] Task: Implement fractional reserve calculator
-  - [ ] Sub-task: Write failing tests for calculateSpread(loan_amount, reserve_ratio)
-  - [ ] Sub-task: Implement spread calculation with configurable ratio
-  - [ ] Sub-task: Write failing tests for calculateUsury(principal, interest_rate, term)
-  - [ ] Sub-task: Implement usury calculation with state-specific thresholds
+- [x] Task: Implement fractional reserve calculator [0a9d390]
+  - [x] Sub-task: Write failing tests for calculateSpread(loan_amount, reserve_ratio)
+  - [x] Sub-task: Implement spread calculation with configurable ratio
+  - [x] Sub-task: Write failing tests for calculateUsury(principal, interest_rate, term)
+  - [x] Sub-task: Implement usury calculation with state-specific thresholds
 - [ ] Task: Add OC-10 interpretation tools
   - [ ] Sub-task: Write failing tests for parseOCText(section_number)
   - [ ] Sub-task: Implement OC-10 section parser with citation extraction
