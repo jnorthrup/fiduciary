@@ -8,11 +8,11 @@
   - [x] Sub-task: Implement Affidavit type with validation
   - [x] Sub-task: Write failing tests for Claim type (description, legal_basis, supporting_citations)
   - [x] Sub-task: Implement Claim type with citation reference support
-- [ ] Task: Define Notice data structures
-  - [ ] Sub-task: Write failing tests for Notice type (sender, recipient, content, method)
-  - [ ] Sub-task: Implement Notice type with delivery method enum
-  - [ ] Sub-task: Write failing tests for Response type (acceptance, rebuttal, default)
-  - [ ] Sub-task: Implement Response type with timestamp tracking
+- [x] Task: Define Notice data structures [cf81a17]
+  - [x] Sub-task: Write failing tests for Notice type (sender, recipient, content, method)
+  - [x] Sub-task: Implement Notice type with delivery method enum
+  - [x] Sub-task: Write failing tests for Response type (acceptance, rebuttal, default)
+  - [x] Sub-task: Implement Response type with timestamp tracking
 - [ ] Task: Conductor - User Manual Verification 'Phase 1.1 Affidavit Data Model' (Protocol in workflow.md)
 
 ### 1.2 Citation & Reference System
