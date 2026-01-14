@@ -34,11 +34,11 @@
   - [x] Sub-task: Implement spread calculation with configurable ratio
   - [x] Sub-task: Write failing tests for calculateUsury(principal, interest_rate, term)
   - [x] Sub-task: Implement usury calculation with state-specific thresholds
-- [ ] Task: Add OC-10 interpretation tools
-  - [ ] Sub-task: Write failing tests for parseOCText(section_number)
-  - [ ] Sub-task: Implement OC-10 section parser with citation extraction
-  - [ ] Sub-task: Write failing tests for generateInterpretation(claim, statute)
-  - [ ] Sub-task: Implement interpretation generator with legal basis mapping
+- [x] Task: Add OC-10 interpretation tools [bb1b099]
+  - [x] Sub-task: Write failing tests for parseOCText(section_number)
+  - [x] Sub-task: Implement OC-10 section parser with citation extraction
+  - [x] Sub-task: Write failing tests for generateInterpretation(claim, statute)
+  - [x] Sub-task: Implement interpretation generator with legal basis mapping
 - [ ] Task: Conductor - User Manual Verification 'Phase 1.3 Calculation Engine' (Protocol in workflow.md)
 
 ## Phase 2: Affidavit Generator
