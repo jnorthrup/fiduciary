@@ -41,6 +41,19 @@
   - [x] Sub-task: Implement interpretation generator with legal basis mapping
 - [ ] Task: Conductor - User Manual Verification 'Phase 1.3 Calculation Engine' (Protocol in workflow.md)
 
+### Phase 3 Foundation (Pre-completed)
+- [x] Task: Formal EBNF grammar specification [7522a01]
+  - [x] Sub-task: Document 10 grammar specifications (Notice, Conditional Acceptance, NOF, COS, Response, Default)
+  - [x] Sub-task: Define terminal symbols and production rules
+  - [x] Sub-task: Implement TypeScript interfaces matching EBNF (15+ types)
+  - [x] Sub-task: Add factory and validation functions (19 tests passing)
+- [x] Task: Notice transport type system [7522a01]
+  - [x] Sub-task: EventIdentifier, EventMetadata types
+  - [x] Sub-task: NoticeTemplate, ConditionalAcceptanceTemplate, NoticeOfFaultTemplate
+  - [x] Sub-task: CertificateOfServiceTemplate, ResponseTemplate, DefaultDeclarationTemplate
+  - [x] Sub-task: EventChain, TransportEvent types
+  - [x] Sub-task: Utility functions: calculateDeadline(), formatNoticeDateTime()
+
 ## Phase 2: Affidavit Generator
 
 ### 2.1 Template System
