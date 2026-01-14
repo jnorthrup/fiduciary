@@ -13,7 +13,7 @@
   - [x] Sub-task: Implement Notice type with delivery method enum
   - [x] Sub-task: Write failing tests for Response type (acceptance, rebuttal, default)
   - [x] Sub-task: Implement Response type with timestamp tracking
-- [ ] Task: Conductor - User Manual Verification 'Phase 1.1 Affidavit Data Model' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 1.1 Affidavit Data Model' (Protocol in workflow.md)
 
 ### 1.2 Citation & Reference System
 - [ ] Task: Build statute reference database
