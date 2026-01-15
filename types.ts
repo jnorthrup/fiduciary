@@ -93,6 +93,7 @@ export interface Account {
   type: AccountType;
   normalBalance: DCFlag;
   balance: number;
+  beginningBalance?: number; // Opening balance for accrual accounting
   internalAlias?: string; // e.g. TRUST-TREASURY-001
   parentAccountId?: string; // For account hierarchy
   children?: Account[]; // Populated for tree display
