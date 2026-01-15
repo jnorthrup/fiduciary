@@ -38,7 +38,7 @@
   - [x] Sub-task: `getDebitAccounts(entityId)` - Asset, Expense
   - [x] Sub-task: `getActiveAccounts(entityId)` - filter isActive=true
 
-## Phase 2: Account UI Components
+## Phase 2: Account UI Components [checkpoint: PENDING]
 
 ### 2.1 Account Management Component
 - [x] Task: Create `AccountManager.tsx` component
@@ -50,7 +50,7 @@
   - [x] Sub-task: Create account button with modal
   - [x] Sub-task: Edit account inline or modal
   - [x] Sub-task: Delete account with confirmation
-  - [ ] Sub-task: View account details (balance, journal history)
+  - [x] Sub-task: View account details (balance, journal history) [AccountActivity.tsx]
 
 ### 2.2 Account Form Component
 - [x] Task: Create `AccountForm.tsx` component
