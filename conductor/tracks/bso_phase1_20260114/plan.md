@@ -28,14 +28,14 @@
 
 ### 2.1 Create EFW2 Builder Module Structure
 - [x] Task: Create `lib/efw2/` directory and module structure
-- [ ] Task: Define TypeScript interfaces for SSA record types (RA, RS, RE, RW, RT, RU, RF)
+- [x] Task: Define TypeScript interfaces for SSA record types (RA, RS, RE, RW, RT, RU, RF)
 
 ### 2.2 Implement Record Builders
-- [ ] Task: Implement RA (Employer Record) builder
-- [ ] Task: Implement RE (Employee Wage Record) builder
-- [ ] Task: Implement RS (Special Tax Record) builder
-- [ ] Task: Implement RT (Total Record) builder with checksum validation
-- [ ] Task: Implement remaining record types (RW, RU, RF)
+- [x] Task: Implement RA (Employer Record) builder
+- [x] Task: Implement RE (Employee Wage Record) builder
+- [x] Task: Implement RS (Special Tax Record) builder
+- [x] Task: Implement RT (Total Record) builder with checksum validation
+- [x] Task: Implement remaining record types (RW, RU, RF)
 
 ### 2.3 EFW2 File Assembly
 - [ ] Task: Create EFW2File class that assembles records into compliant fixed-width format
