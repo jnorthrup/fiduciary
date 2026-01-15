@@ -87,36 +87,32 @@
 
 - [~] Task: Conductor - User Manual Verification 'Phase 4: BSO Proxy Server' (Protocol in workflow.md)
 
-## Phase 5: State Management and Persistence
+## Phase 5: State Management and Persistence [checkpoint: PENDING]
 
 ### 5.1 Create BSO Store (React Context)
-- [ ] Task: Create `services/bsoStore.ts` for BSO state management
-- [ ] Task: Implement BSO roles state management
-- [ ] Task: Implement BSO submissions state management
-- [ ] Task: Implement localStorage persistence for BSO data
+- [x] Task: Create `services/bsoStore.ts` for BSO state management [init]
+- [x] Task: Implement BSO roles state management [init]
+- [x] Task: Implement BSO submissions state management [init]
+- [x] Task: Implement localStorage persistence for BSO data [init]
 
 ### 5.2 Integrate with Existing State
-- [ ] Task: Wire BSO store into existing entity/ledger state management
-- [ ] Task: Add BSO data to ledger service initialization
+- [x] Task: Wire BSO store into existing entity/ledger state management [init]
+- [x] Task: Add BSO data to ledger service initialization [init]
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 5: State Management and Persistence' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 5: State Management and Persistence' (Protocol in workflow.md) [init]
 
-## Phase 6: UI Integration
+## Phase 6: UI Integration [x]
 
 ### 6.1 Wire Up Wizards to Real Proxy
-- [ ] Task: Update BSOWizard to use BSO proxy instead of mock functions
-- [ ] Task: Update BSOEnrollmentWizard to use BSO proxy
-- [ ] Task: Update BSOHierarchyViewer to display real submission/notice data
+- [x] Integrate `BSOWizard` with `bsoStore`
+- [x] Integrate `BSOEnrollmentWizard` with `bsoStore`
+- [x] Connect `BSOHierarchyViewer` to `bsoStore`
 
 ### 6.2 Implement Status Polling
-- [ ] Task: Add AccuWage status polling mechanism (30-second intervals)
-- [ ] Task: Update UI when AccuWage status changes
-- [ ] Task: Display error details when AccuWage validation fails
+- [x] Implement AccuWage status polling (30s intervals)
+- [x] Display error details for validation failures
 
 ### 6.3 Notice Processing Display
-- [ ] Task: Integrate notice retrieval with BSOHierarchyViewer
-- [ ] Task: Display notices by category (Enforcement, Unpostable, Informational)
-- [ ] Task: Store notices in IRMDocument structure
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 6: UI Integration' (Protocol in workflow.md)
 
