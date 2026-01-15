@@ -35,5 +35,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-## [ ] Track: Mobile + QuickBooks Layout
+## [x] Track: Mobile + QuickBooks Layout
 *Link: [./conductor/tracks/mobile_quickbooks_layout_20260115/plan.md](./conductor/tracks/mobile_quickbooks_layout_20260115/plan.md)*
