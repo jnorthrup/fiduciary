@@ -41,33 +41,33 @@
 ## Phase 2: Account UI Components
 
 ### 2.1 Account Management Component
-- [ ] Task: Create `AccountManager.tsx` component
-  - [ ] Sub-task: Display account list with hierarchy (tree view)
-  - [ ] Sub-task: Filter by account class (Credit/Debit)
-  - [ ] Sub-task: Filter by account type (Asset/Liability/Equity/Income/Expense)
-  - [ ] Sub-task: Search by code or name
-- [ ] Task: Add account actions
-  - [ ] Sub-task: Create account button with modal
-  - [ ] Sub-task: Edit account inline or modal
-  - [ ] Sub-task: Delete account with confirmation
+- [x] Task: Create `AccountManager.tsx` component
+  - [x] Sub-task: Display account list with hierarchy (tree view)
+  - [x] Sub-task: Filter by account class (Credit/Debit)
+  - [x] Sub-task: Filter by account type (Asset/Liability/Equity/Income/Expense)
+  - [x] Sub-task: Search by code or name
+- [x] Task: Add account actions
+  - [x] Sub-task: Create account button with modal
+  - [x] Sub-task: Edit account inline or modal
+  - [x] Sub-task: Delete account with confirmation
   - [ ] Sub-task: View account details (balance, journal history)
 
 ### 2.2 Account Form Component
-- [ ] Task: Create `AccountForm.tsx` component
-  - [ ] Sub-task: Account code input with validation
-  - [ ] Sub-task: Account name input
-  - [ ] Sub-task: Account type dropdown (Asset/Liability/Equity/Income/Expense)
-  - [ ] Sub-task: Normal balance auto-select based on type
-  - [ ] Sub-task: Parent account dropdown (for hierarchy)
-  - [ ] Sub-task: Description textarea
-  - [ ] Sub-task: Tax line mapping input
+- [x] Task: Create `AccountForm.tsx` component
+  - [x] Sub-task: Account code input with validation
+  - [x] Sub-task: Account name input
+  - [x] Sub-task: Account type dropdown (Asset/Liability/Equity/Income/Expense)
+  - [x] Sub-task: Normal balance auto-select based on type
+  - [x] Sub-task: Parent account dropdown (for hierarchy)
+  - [x] Sub-task: Description textarea
+  - [x] Sub-task: Tax line mapping input
 
 ### 2.3 Account Dashboard Widget
-- [ ] Task: Create `AccountSummary.tsx` widget
-  - [ ] Sub-task: Display total assets vs liabilities
-  - [ ] Sub-task: Display equity calculation
-  - [ ] Sub-task: Display income/expense summary
-  - [ ] Sub-task: Quick links to create accounts
+- [x] Task: Create `AccountSummary.tsx` widget
+  - [x] Sub-task: Display total assets vs liabilities
+  - [x] Sub-task: Display equity calculation
+  - [x] Sub-task: Display income/expense summary
+  - [x] Sub-task: Quick links to create accounts
 
 ## Phase 3: Journal Entry Integration
 

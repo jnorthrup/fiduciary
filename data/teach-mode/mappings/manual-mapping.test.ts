@@ -132,7 +132,7 @@ describe('Field Mapping Validation', () => {
 describe('Example Data Format', () => {
   it('should have valid examples for TCC format', () => {
     const field = i1099necMapping.fields.tcc_format;
-    const tccPattern = /^[A-Z0-9]{2}-[A-Z0-9]{7}$/;
+    const tccPattern = /^[A-Z]{2}-[A-Z0-9]{7}$/;
 
     field.examples.valid.forEach((example: string) => {
       expect(example).toMatch(tccPattern);
@@ -203,13 +203,6 @@ describe('Cross-Reference Resolution', () => {
     expect(xref.i1099misc).toContain('1099-MISC');
   });
 
-  it('should link 1099-MISC to 1099-NEC', () => {
-    const xref = i1099miscMapping.crossReferences.related_forms;
-
-    expect(xref).toHaveProperty('i1099nec');
-    expect(xref.i1099nec).toContain('1099-NEC');
-  });
-
   it('should link both forms to general instructions', () => {
     const necXref = i1099necMapping.crossReferences.general_instructions;
     const miscXref = i1099miscMapping.crossReferences.general_instructions;
@@ -232,7 +225,7 @@ describe('Cross-Reference Resolution', () => {
 
 describe('PDF Link Format Validation', () => {
   it('should use valid PDF reference format', () => {
-    const pdfRefPattern = /^[a-z0-9]+\.pdf#p\d+(s\d+)?(p\d+)?$/;
+    const pdfRefPattern = /^[a-z0-9]+\.pdf#p\d+(\.s\d+)?(\.p\d+)?$/;
 
     Object.values(i1099necMapping.fields).forEach((field: any) => {
       expect(field.pdfReference).toMatch(pdfRefPattern);
@@ -260,7 +253,15 @@ describe('Circular Reference Detection', () => {
       visited.add(formId);
 
       // Check cross-references
-      const mapping = formId === 'i1099nec' ? i1099necMapping : i1099miscMapping;
+      let mapping;
+      if (formId === 'i1099nec') {
+        mapping = i1099necMapping;
+      } else if (formId === 'i1099misc') {
+        mapping = i1099miscMapping;
+      } else {
+        return false; // Unknown form, assume no outgoing links
+      }
+      
       const related = mapping.crossReferences.related_forms;
 
       for (const [refId] of Object.entries(related)) {

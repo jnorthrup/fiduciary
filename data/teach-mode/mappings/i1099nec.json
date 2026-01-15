@@ -59,8 +59,8 @@
         "All payments during calendar year count toward total"
       ],
       "examples": {
-        "valid": ["600", "1000", "599.99"],
-        "invalid": ["599", "599.00", "0"]
+        "valid": ["600", "1000"],
+        "invalid": ["599", "599.00", "0", "599.99"]
       },
       "thresholds": {
         "min": 600,

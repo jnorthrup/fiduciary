@@ -115,30 +115,30 @@
 ## Phase 4: Manual Annotation Creation
 
 ### 4.1 Critical Field Mappings
-- [ ] Task: Create manual annotation file for 1099-NEC
-  - [ ] Sub-task: Map TCC format field to instructions
-  - [ ] Sub-task: Map EIN format field to instructions
-  - [ ] Sub-task: Map payment threshold fields to instructions
-  - [ ] Sub-task: Map payee count limit to instructions
-  - [ ] Sub-task: Add valid/invalid examples for each field
-- [ ] Task: Create manual annotation file for 1099-MISC
-  - [ ] Sub-task: Map rent/royalty threshold fields
-  - [ ] Sub-task: Map specific box requirements
-  - [ ] Sub-task: Add examples for rent/royalty scenarios
-- [ ] Task: Create cross-reference mappings between forms
-  - [ ] Sub-task: Link 1099-NEC to 1099-MISC related sections
-  - [ ] Sub-task: Link to general instructions (i1099gi.pdf)
+- [x] Task: Create manual annotation file for 1099-NEC
+  - [x] Sub-task: Map TCC format field to instructions
+  - [x] Sub-task: Map EIN format field to instructions
+  - [x] Sub-task: Map payment threshold fields to instructions
+  - [x] Sub-task: Map payee count limit to instructions
+  - [x] Sub-task: Add valid/invalid examples for each field
+- [x] Task: Create manual annotation file for 1099-MISC
+  - [x] Sub-task: Map rent/royalty threshold fields
+  - [x] Sub-task: Map specific box requirements
+  - [x] Sub-task: Add examples for rent/royalty scenarios
+- [x] Task: Create cross-reference mappings between forms
+  - [x] Sub-task: Link 1099-NEC to 1099-MISC related sections
+  - [x] Sub-task: Link to general instructions (i1099gi.pdf)
 
 ### 4.2 Process & Topic Taxonomy Population
-- [ ] Task: Define process-based taxonomy
-  - [ ] Sub-task: Create Preparation stage mappings
-  - [ ] Sub-task: Create Validation stage mappings
-  - [ ] Sub-task: Create Submission stage mappings
-- [ ] Task: Define topic-based taxonomy
-  - [ ] Sub-task: Create Thresholds topic mappings
-  - [ ] Sub-task: Create TIN Format topic mappings
-  - [ ] Sub-task: Create Payee Rules topic mappings
-  - [ ] Sub-task: Create Filer Requirements topic mappings
+- [x] Task: Define process-based taxonomy
+  - [x] Sub-task: Create Preparation stage mappings
+  - [x] Sub-task: Create Validation stage mappings
+  - [x] Sub-task: Create Submission stage mappings
+- [x] Task: Define topic-based taxonomy
+  - [x] Sub-task: Create Thresholds topic mappings
+  - [x] Sub-task: Create TIN Format topic mappings
+  - [x] Sub-task: Create Payee Rules topic mappings
+  - [x] Sub-task: Create Filer Requirements topic mappings
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Manual Annotation Creation' (Protocol in workflow.md)
 
