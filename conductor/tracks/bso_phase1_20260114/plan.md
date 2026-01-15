@@ -67,25 +67,25 @@
 ## Phase 4: BSO Proxy Server
 
 ### 4.1 Create BSO Proxy Module
-- [ ] Task: Create `services/bsoProxy.ts` based on IRIS A2A proxy pattern
-- [ ] Task: Implement authentication/session management for BSO endpoints
+- [x] Task: Create `services/bsoProxy.ts` based on IRIS A2A proxy pattern
+- [x] Task: Implement authentication/session management for BSO endpoints
 
 ### 4.2 Implement BSO Endpoints
-- [ ] Task: Implement user registration endpoint proxy
-- [ ] Task: Implement employer linking endpoint proxy
-- [ ] Task: Implement service provisioning endpoint proxy
-- [ ] Task: Implement account activation endpoint proxy
-- [ ] Task: Implement W-2 submission upload endpoint proxy
-- [ ] Task: Implement submission status checking endpoint proxy
-- [ ] Task: Implement notice retrieval endpoint proxy
+- [x] Task: Implement user registration endpoint proxy
+- [x] Task: Implement employer linking endpoint proxy
+- [x] Task: Implement service provisioning endpoint proxy
+- [x] Task: Implement account activation endpoint proxy
+- [x] Task: Implement W-2 submission upload endpoint proxy
+- [x] Task: Implement submission status checking endpoint proxy
+- [x] Task: Implement notice retrieval endpoint proxy
 
 ### 4.3 OpenAPI Specification
-- [ ] Task: Create `services/bsoOpenApiSpec.ts` with endpoint schemas
-- [ ] Task: Define request/response schemas for all endpoints
-- [ ] Task: Define error response formats
-- [ ] Task: Add JSDoc documentation
+- [x] Task: Create `services/bsoOpenApiSpec.ts` with endpoint schemas
+- [x] Task: Define request/response schemas for all endpoints
+- [x] Task: Define error response formats
+- [x] Task: Add JSDoc documentation
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: BSO Proxy Server' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 4: BSO Proxy Server' (Protocol in workflow.md)
 
 ## Phase 5: State Management and Persistence
 
