@@ -48,7 +48,7 @@
 
 - [x] Task: Conductor - User Manual Verification 'Phase 2: EFW2 File Generation Library' (Protocol in workflow.md)
 
-## Phase 3: BSO Error Handling
+## Phase 3: BSO Error Handling [checkpoint: c6c20a3]
 
 ### 3.1 Create Error Code Mapping Module
 - [x] Task: Create `lib/bso/errors.ts` module
@@ -62,7 +62,7 @@
 - [x] Task: Add fallback to static mapping when AI unavailable
 - [x] Task: Add JSDoc documentation
 
-- [~] Task: Conductor - User Manual Verification 'Phase 3: BSO Error Handling' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: BSO Error Handling' (Protocol in workflow.md)
 
 ## Phase 4: BSO Proxy Server
 
