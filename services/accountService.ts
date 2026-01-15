@@ -21,6 +21,7 @@ export interface CreateAccountInput {
   taxLine?: string;
   parentAccountId?: string;
   normalBalance?: types.DCFlag;
+  beginningBalance?: number;
 }
 
 export interface UpdateAccountInput {
@@ -29,6 +30,7 @@ export interface UpdateAccountInput {
   taxLine?: string;
   parentAccountId?: string;
   isActive?: boolean;
+  beginningBalance?: number;
 }
 
 export interface AccountFilters {
@@ -185,6 +187,8 @@ export function createAccount(
   const accountClass = getAccountClass(input.type);
   const normalBalance = input.normalBalance || getDefaultNormalBalance(input.type);
 
+  const beginningBalance = input.beginningBalance ?? 0;
+
   const account: types.Account = {
     id: uuidv4(),
     entityId: input.entityId,
@@ -192,7 +196,8 @@ export function createAccount(
     name: input.name.trim(),
     type: input.type,
     normalBalance,
-    balance: 0,
+    balance: beginningBalance,
+    beginningBalance,
     accountClass,
     description: input.description?.trim(),
     taxLine: input.taxLine?.trim(),
@@ -226,6 +231,16 @@ export function updateAccount(
   }
 
   const existingAccount = existingAccounts[accountIndex];
+
+  // If beginningBalance is being updated, recalculate the current balance
+  let balanceUpdates: { beginningBalance?: number; balance?: number } = {};
+  if (updates.beginningBalance !== undefined) {
+    const oldBeginningBalance = existingAccount.beginningBalance ?? 0;
+    const activity = existingAccount.balance - oldBeginningBalance;
+    balanceUpdates.beginningBalance = updates.beginningBalance;
+    balanceUpdates.balance = updates.beginningBalance + activity;
+  }
+
   const updatedAccount: types.Account = {
     ...existingAccount,
     ...(updates.name !== undefined && { name: updates.name.trim() }),
@@ -233,6 +248,7 @@ export function updateAccount(
     ...(updates.taxLine !== undefined && { taxLine: updates.taxLine.trim() }),
     ...(updates.parentAccountId !== undefined && { parentAccountId: updates.parentAccountId }),
     ...(updates.isActive !== undefined && { isActive: updates.isActive }),
+    ...balanceUpdates,
     _version: String(parseInt(existingAccount._version) + 1)
   };
 
