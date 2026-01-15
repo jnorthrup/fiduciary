@@ -51,18 +51,18 @@
 ## Phase 3: BSO Error Handling
 
 ### 3.1 Create Error Code Mapping Module
-- [ ] Task: Create `lib/bso/errors.ts` module
-- [ ] Task: Map SSA BSO error codes (BSO-900, BSO-403, BSO-101, BSO-500) to user messages
-- [ ] Task: Define resolution suggestions for each error category
-- [ ] Task: Add JSDoc documentation for error mapping functions
+- [x] Task: Create `lib/bso/errors.ts` module
+- [x] Task: Map SSA BSO error codes (BSO-900, BSO-403, BSO-101, BSO-500) to user messages
+- [x] Task: Define resolution suggestions for each error category
+- [x] Task: Add JSDoc documentation for error mapping functions
 
 ### 3.2 Implement AI-Assisted Error Interpreter
-- [ ] Task: Create `lib/bso/aiErrorInterpreter.ts` using Google GenAI
-- [ ] Task: Implement error context analysis function
-- [ ] Task: Add fallback to static mapping when AI unavailable
-- [ ] Task: Add JSDoc documentation
+- [x] Task: Create `lib/bso/aiErrorInterpreter.ts` using Google GenAI
+- [x] Task: Implement error context analysis function
+- [x] Task: Add fallback to static mapping when AI unavailable
+- [x] Task: Add JSDoc documentation
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: BSO Error Handling' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 3: BSO Error Handling' (Protocol in workflow.md)
 
 ## Phase 4: BSO Proxy Server
 
