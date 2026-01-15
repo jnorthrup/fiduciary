@@ -5,11 +5,11 @@
  * Integrates with the backend API server and Google GenAI for validation.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText, CheckCircle, AlertCircle, ChevronRight, ChevronLeft,
   Building2, User, Plus, Trash2, RefreshCw,
-  Lock, Shield, Zap, Server, Activity, KeyRound, Fingerprint, Loader2, ExternalLink
+  Lock, Shield, Zap, Server, Activity, KeyRound, Fingerprint, Loader2, ExternalLink, Terminal
 } from 'lucide-react';
 import { isValidTINFormat } from '../utils/validation';
 import { TIN_PLACEHOLDER, SSN_PLACEHOLDER, TCC_PLACEHOLDER } from '../utils/constants';
@@ -71,6 +71,10 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionTested, setConnectionTested] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [connectionCheckState, setConnectionCheckState] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+  const [tccFormatStatus, setTccFormatStatus] = useState<'empty' | 'invalid' | 'partial' | 'valid'>('empty');
+  const [authModeAnimating, setAuthModeAnimating] = useState(false);
+  const terminalRef = useRef<HTMLDivElement>(null);
 
   // 2FA State
   const [twoFAMethod, setTwoFAMethod] = useState<TwoFAMethod>('sms');
@@ -137,6 +141,26 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
     checkApiHealth();
     loadStoredCredentials();
   }, []);
+
+  // TCC format validation with HSL color feedback
+  useEffect(() => {
+    if (!tcc) {
+      setTccFormatStatus('empty');
+      return;
+    }
+
+    // Check TCC format: T + exactly 10 digits
+    const tccPattern = /^T\d{10}$/;
+    const partialPattern = /^T\d{0,10}$/;
+
+    if (tccPattern.test(tcc)) {
+      setTccFormatStatus('valid');
+    } else if (partialPattern.test(tcc)) {
+      setTccFormatStatus('partial');
+    } else {
+      setTccFormatStatus('invalid');
+    }
+  }, [tcc]);
 
   const loadStoredCredentials = async () => {
     const tccs = await getStoredTCCs();
@@ -227,15 +251,20 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   const handleAuthenticate = async () => {
     setTestingConnection(true);
     setConnectionError(null);
+    setConnectionCheckState('checking');
 
     // Initial connection test
     try {
       const health = await irsApi.healthCheck();
       if (health.status !== 'healthy') {
+        setConnectionCheckState('invalid');
         throw new Error('IRS API report UNHEALTHY status. Please check your network or transmitter connectivity.');
       }
       setApiHealth(health);
+      setConnectionCheckState('valid');
+      await new Promise(r => setTimeout(r, 500)); // Brief delay for success animation
     } catch (e: any) {
+      setConnectionCheckState('invalid');
       setConnectionError(e.message || 'Failed to establish secure connection to IRS API Proxy');
       setTestingConnection(false);
       return;
@@ -540,26 +569,66 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
       {/* Auth Mode Selection */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { id: 'tcc', label: 'TCC AUTH', sub: 'Transmitter Control', icon: Fingerprint, color: 'indigo' },
-          { id: 'bearer', label: 'API TOKEN', sub: 'Bearer / JWT', icon: KeyRound, color: 'emerald' }
+          { id: 'tcc', label: 'TCC AUTH', sub: 'Transmitter Control', icon: Fingerprint, color: 'indigo' as const, activeColor: 'rgba(99, 102, 241, 0.5)', glowColor: 'rgba(99, 102, 241, 0.4)' },
+          { id: 'bearer', label: 'API TOKEN', sub: 'Bearer / JWT', icon: KeyRound, color: 'emerald' as const, activeColor: 'rgba(16, 185, 129, 0.5)', glowColor: 'rgba(16, 185, 129, 0.4)' }
         ].map((mode) => (
           <button
             key={mode.id}
-            onClick={() => { setAuthMode(mode.id as any); setTcc(''); setBearerToken(''); }}
-            className={`relative group p-3 rounded-xl border transition-all duration-300 ${authMode === mode.id
-              ? `border-${mode.color}-500/50 bg-${mode.color}-500/10 shadow-[0_0_20px_rgba(99,102,241,0.15)]`
-              : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'
-              }`}
+            onClick={() => {
+              setAuthModeAnimating(true);
+              setAuthMode(mode.id as any);
+              setTcc('');
+              setBearerToken('');
+              setTimeout(() => setAuthModeAnimating(false), 300);
+            }}
+            className={`relative group p-3 rounded-xl border transition-all duration-300 overflow-hidden ${
+              authMode === mode.id
+                ? 'scale-105'
+                : 'border-slate-800 bg-slate-950/50 hover:border-slate-700 hover:scale-[1.02]'
+            } ${authModeAnimating ? 'transition-all duration-300' : ''}`}
+            style={authMode === mode.id ? {
+              borderColor: mode.activeColor,
+              backgroundColor: mode.activeColor.replace('0.5', '0.1'),
+              boxShadow: `0 0 30px ${mode.glowColor}, inset 0 0 20px ${mode.activeColor.replace('0.5', '0.05')}`
+            } : {
+              backgroundColor: 'rgba(2, 6, 23, 0.5)'
+            }}
           >
-            <div className={`mx-auto mb-2 p-2 rounded-lg w-fit transition-colors ${authMode === mode.id ? `bg-${mode.color}-500/20 text-${mode.color}-400` : 'bg-slate-900 text-slate-500'
-              }`}>
-              <mode.icon size={18} />
-            </div>
-            <div className="font-black text-[10px] uppercase tracking-widest text-white">{mode.label}</div>
-            <div className="text-[9px] text-slate-500 mt-1 font-mono uppercase">{mode.sub}</div>
-
+            {/* Animated gradient background on hover/select */}
             {authMode === mode.id && (
-              <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-${mode.color}-500 rounded-t-full shadow-[0_-2px_10px_rgba(99,102,241,0.5)]`} />
+              <div
+                className="absolute inset-0 opacity-20 animate-pulse"
+                style={{
+                  background: `linear-gradient(135deg, transparent 0%, ${mode.activeColor} 50%, transparent 100%)`
+                }}
+              />
+            )}
+
+            <div className={`mx-auto mb-2 p-2 rounded-lg w-fit transition-all duration-300 ${
+              authMode === mode.id
+                ? 'scale-110'
+                : 'group-hover:scale-105'
+            }`}>
+              <mode.icon
+                size={18}
+                className="transition-colors duration-300"
+                style={{
+                  color: authMode === mode.id ? (mode.id === 'tcc' ? 'rgb(99, 102, 241)' : 'rgb(16, 185, 129)') : '#64748b'
+                }}
+              />
+            </div>
+            <div className="font-black text-[10px] uppercase tracking-widest text-white relative z-10">{mode.label}</div>
+            <div className="text-[9px] text-slate-500 mt-1 font-mono uppercase relative z-10">{mode.sub}</div>
+
+            {/* Bottom indicator bar with glow */}
+            {authMode === mode.id && (
+              <div
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-t-full animate-pulse"
+                style={{
+                  backgroundColor: mode.id === 'tcc' ? 'rgb(99, 102, 241)' : 'rgb(16, 185, 129)',
+                  boxShadow: `0 -4px 12px ${mode.glowColor}`
+                }}
+              />
             )}
           </button>
         ))}
@@ -603,29 +672,38 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
                 <div className="flex items-center justify-between px-1">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Keychain</label>
                   <div className="flex items-center gap-1.5">
-                    <Zap size={10} className="text-amber-400" />
+                    <Zap size={10} className="text-amber-400 animate-pulse" />
                     <span className="text-[10px] text-slate-500 font-bold uppercase">Quick Load</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-2">
-                  {storedTCCs.map((cred) => (
+                  {storedTCCs.map((cred, index) => (
                     <button
                       key={cred.id}
                       onClick={() => handleUseStoredTCC(cred)}
-                      className="group flex items-center justify-between p-3 bg-slate-950/50 border border-white/5 rounded-lg hover:border-indigo-500/50 hover:bg-slate-900 transition-all text-left"
+                      className="group relative flex items-center justify-between p-3 bg-slate-950/50 backdrop-blur border border-white/5 rounded-lg hover:border-indigo-500/50 hover:bg-slate-900/80 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 text-left overflow-hidden animate-in slide-in-from-bottom-2"
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="p-1.5 rounded bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
+                      {/* Hover gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                      <div className="flex items-center gap-3 relative z-10">
+                        <div className="p-1.5 rounded bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
                           <Shield size={14} />
                         </div>
                         <div>
-                          <div className="font-bold text-white text-xs">{cred.name}</div>
-                          <div className="font-mono text-[10px] text-slate-600 uppercase mt-0.5">
+                          <div className="font-bold text-white text-xs group-hover:text-indigo-300 transition-colors">{cred.name}</div>
+                          <div className="font-mono text-[10px] text-slate-600 uppercase mt-0.5 group-hover:text-slate-500 transition-colors">
                             ID: {cred.value.slice(0, 4)}••••{cred.value.slice(-2)}
                           </div>
                         </div>
                       </div>
-                      <ChevronRight size={14} className="text-slate-700 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
+                      <ChevronRight size={14} className="text-slate-700 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all duration-300 relative z-10" />
+
+                      {/* Selection indicator */}
+                      {tcc === cred.value && (
+                        <div className="absolute inset-0 border-2 border-emerald-500/50 rounded-lg animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.3)]" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -634,43 +712,135 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">
-                  Transmitter Control Code (TCC)
-                </label>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Transmitter Control Code (TCC)
+                  </label>
+                  {/* Real-time format feedback indicator */}
+                  {tcc && (
+                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
+                      <div
+                        className={`w-2 h-2 rounded-full animate-pulse ${
+                          tccFormatStatus === 'valid' ? 'bg-emerald-400' :
+                          tccFormatStatus === 'partial' ? 'bg-amber-400' :
+                          'bg-red-400'
+                        }`}
+                        style={{
+                          boxShadow: tccFormatStatus === 'valid' ? '0 0 8px rgba(52, 211, 153, 0.8)' :
+                                  tccFormatStatus === 'partial' ? '0 0 8px rgba(251, 191, 36, 0.8)' :
+                                  '0 0 8px rgba(248, 113, 113, 0.8)'
+                        }}
+                      />
+                      <span
+                        className={`text-[9px] font-black uppercase tracking-wider ${
+                          tccFormatStatus === 'valid' ? 'text-emerald-400' :
+                          tccFormatStatus === 'partial' ? 'text-amber-400' :
+                          'text-red-400'
+                        }`}
+                      >
+                        {tccFormatStatus === 'valid' ? 'FORMAT VALID' :
+                         tccFormatStatus === 'partial' ? `${tcc.length - 1}/10 DIGITS` :
+                         'INVALID FORMAT'}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <div className="group relative">
-                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-600 group-focus-within:text-indigo-400 transition-colors">
+                  <div
+                    className={`absolute inset-y-0 left-4 flex items-center pointer-events-none transition-colors duration-300 ${
+                      tccFormatStatus === 'valid' ? 'text-emerald-400' :
+                      tccFormatStatus === 'partial' ? 'text-amber-400' :
+                      tccFormatStatus === 'invalid' ? 'text-red-400' :
+                      'text-slate-600 group-focus-within:text-indigo-400'
+                    }`}
+                  >
                     <Fingerprint size={18} />
                   </div>
                   <input
                     value={tcc}
                     onChange={e => setTcc(e.target.value.toUpperCase())}
                     placeholder={TCC_PLACEHOLDER}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white font-mono text-lg tracking-wider focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all placeholder:text-slate-800"
+                    className="w-full bg-slate-950/80 backdrop-blur border rounded-xl py-4 pl-12 pr-4 text-white font-mono text-lg tracking-wider outline-none transition-all duration-300 placeholder:text-slate-800"
+                    style={
+                      tccFormatStatus === 'valid'
+                        ? { borderColor: 'rgba(16, 185, 129, 0.5)', boxShadow: '0 0 20px rgba(16, 185, 129, 0.2), inset 0 0 20px rgba(16, 185, 129, 0.05)' }
+                        : tccFormatStatus === 'partial'
+                        ? { borderColor: 'rgba(251, 191, 36, 0.5)', boxShadow: '0 0 20px rgba(251, 191, 36, 0.2)' }
+                        : tccFormatStatus === 'invalid'
+                        ? { borderColor: 'rgba(248, 113, 113, 0.5)', boxShadow: '0 0 20px rgba(248, 113, 113, 0.2)' }
+                        : { borderColor: 'rgba(255, 255, 255, 0.1)' }
+                    }
                   />
                   <button
                     onClick={fetchTCCFromIRS}
                     disabled={isFetchingTCC}
-                    className="absolute right-2 top-2 bottom-2 px-4 bg-slate-900 text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-800 border border-white/5 flex items-center gap-2 group/btn"
+                    className="absolute right-2 top-2 bottom-2 px-4 bg-slate-900/80 backdrop-blur text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-800 border border-white/5 flex items-center gap-2 group/btn transition-all duration-300"
+                    style={{ boxShadow: 'none' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 15px rgba(99, 102, 241, 0.3)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                   >
-                    <RefreshCw size={12} className={isFetchingTCC ? 'animate-spin' : 'group-hover/btn:rotate-180 transition-transform duration-500'} />
-                    {isFetchingTCC ? 'Retrieving' : 'Fetch TCC'}
+                    <Terminal size={12} className={isFetchingTCC ? 'animate-pulse' : 'group-hover/btn:scale-110 transition-transform duration-300'} />
+                    {isFetchingTCC ? 'Retrieving...' : 'Fetch TCC'}
                   </button>
                 </div>
               </div>
 
               {isFetchingTCC && (
-                <div className="bg-black/80 rounded-xl border border-white/5 p-4 h-40 overflow-y-auto font-mono text-[11px] leading-relaxed relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
-                  {tccLog.map((log, i) => (
-                    <div key={i} className="flex gap-2">
-                      <span className="text-slate-700">[{new Date().toLocaleTimeString([], { hour12: false })}]</span>
-                      <span className={i === tccLog.length - 1 ? "text-emerald-400 animate-pulse" : "text-emerald-500/80"}>
-                        {log}
+                <div
+                  ref={terminalRef}
+                  className="bg-black/90 backdrop-blur-md rounded-xl border border-emerald-500/20 p-4 h-40 overflow-y-auto font-mono text-[11px] leading-relaxed relative overflow-hidden shadow-[0_0_40px_rgba(16,185,129,0.1)]"
+                >
+                  {/* Scanline effect */}
+                  <div className="absolute inset-0 pointer-events-none opacity-5">
+                    <div className="h-full w-full" style={{
+                      background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(16, 185, 129, 0.1) 2px, rgba(16, 185, 129, 0.1) 4px)'
+                    }} />
+                  </div>
+
+                  {/* Glow effect from bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-emerald-500/10 to-transparent pointer-events-none" />
+
+                  {/* Terminal content */}
+                  <div className="relative z-10 space-y-1">
+                    {tccLog.map((log, i) => (
+                      <div
+                        key={i}
+                        className={`flex gap-2 animate-in slide-in-from-left-2 duration-300 ${
+                          i === tccLog.length - 1 ? 'animate-pulse' : ''
+                        }`}
+                        style={{ animationDelay: `${i * 50}ms` }}
+                      >
+                        <span className="text-emerald-700/80 shrink-0">
+                          [{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]
+                        </span>
+                        <span className={i === tccLog.length - 1
+                          ? "text-emerald-400 font-medium drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+                          : "text-emerald-500/80"
+                        }>
+                          {log}
+                        </span>
+                      </div>
+                    ))}
+
+                    {/* Blinking cursor */}
+                    <div className="flex gap-2 items-center mt-1">
+                      <span className="text-emerald-700/80 shrink-0">
+                        [{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]
+                      </span>
+                      <span className="text-emerald-400">
+                        <span className="inline-block w-2 h-4 bg-emerald-400 animate-pulse" style={{
+                          boxShadow: '0 0 8px rgba(52, 211, 153, 0.8)'
+                        }} />
                       </span>
                     </div>
-                  ))}
-                  <div className="h-1 w-full bg-emerald-500/20 absolute bottom-0 left-0">
-                    <div className="h-full bg-emerald-500 animate-[loading_2s_ease-in-out_infinite]" style={{ width: '30%' }} />
+                  </div>
+
+                  {/* Progress bar with glow */}
+                  <div className="h-1 w-full bg-emerald-950/50 absolute bottom-0 left-0">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)] animate-[loading_2s_ease-in-out_infinite]"
+                      style={{ width: '30%' }}
+                    />
                   </div>
                 </div>
               )}
@@ -685,11 +855,39 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
               onClick={() => setSaveCredentials(!saveCredentials)}
               aria-label="Save credentials securely"
             >
-              <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${saveCredentials ? 'bg-indigo-500' : 'bg-slate-800'}`}>
-                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300 ${saveCredentials ? 'left-6' : 'left-1'}`} />
+              <div
+                className={`w-12 h-6 rounded-full relative transition-all duration-300 ${
+                  saveCredentials
+                    ? 'bg-indigo-600 shadow-[0_0_15px_hsl(238,84%,67%,0.4)]'
+                    : 'bg-slate-800'
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-lg ${
+                    saveCredentials
+                      ? 'left-7 scale-110'
+                      : 'left-1 scale-100'
+                  } ${!saveCredentials ? 'bg-slate-500' : 'bg-white'}`}
+                />
+                {/* Glow effect when active */}
+                {saveCredentials && (
+                  <div className="absolute inset-0 rounded-full animate-pulse opacity-50" style={{
+                      boxShadow: '0 0 20px rgba(99, 102, 241, 0.6), inset 0 0 10px rgba(99, 102, 241, 0.3)'
+                    }}
+                  />
+                )}
               </div>
-              <label className="text-xs text-slate-400 font-medium select-none group-hover:text-slate-300 transition-colors cursor-pointer">
-                Persistence Mode: <span className={saveCredentials ? 'text-indigo-400' : 'text-slate-500'}>{saveCredentials ? 'Encrypted Vault' : 'Session Only'}</span>
+              <label className="text-xs text-slate-400 font-medium select-none group-hover:text-slate-300 transition-colors cursor-pointer flex items-center gap-2">
+                <span>Persistence Mode:</span>
+                <span
+                  className={`font-black text-[10px] uppercase tracking-wider px-2 py-0.5 rounded transition-all duration-300 ${
+                    saveCredentials
+                      ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                      : 'text-slate-500 bg-slate-800/50 border border-slate-700'
+                  }`}
+                >
+                  {saveCredentials ? 'Encrypted Vault' : 'Session Only'}
+                </span>
                 <span className="sr-only">Save credentials securely</span>
               </label>
             </div>
@@ -721,7 +919,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
         )}
 
         {connectionError && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 animate-in shake">
+          <div className="p-4 bg-red-500/10 backdrop-blur border border-red-500/20 rounded-xl flex items-start gap-3 animate-in shake shadow-[0_0_20px_rgba(239,68,68,0.15)]">
             <AlertCircle className="text-red-400 shrink-0 mt-0.5" size={18} />
             <div className="text-sm text-red-400 font-medium leading-relaxed">
               {connectionError}
@@ -732,26 +930,54 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
         <button
           onClick={handleAuthenticate}
           disabled={testingConnection || !(isValidTCC(tcc) || isValidBearerToken(bearerToken))}
-          className={`group relative w-full overflow-hidden py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all
-            ${testingConnection || !(isValidTCC(tcc) || isValidBearerToken(bearerToken))
-              ? 'bg-slate-800 text-slate-600 scale-95'
-              : 'bg-indigo-600 text-white hover:bg-indigo-500 hover:shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:-translate-y-1 active:translate-y-0'
-            }`}
+          className={`group relative w-full overflow-hidden py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-300 ${
+            testingConnection || !(isValidTCC(tcc) || isValidBearerToken(bearerToken))
+              ? 'bg-slate-800/50 text-slate-600 scale-95 cursor-not-allowed'
+              : 'bg-indigo-600 text-white hover:bg-indigo-500 hover:shadow-[0_0_40px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:translate-y-0'
+          }`}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
           <div className="relative flex items-center justify-center gap-3">
             {testingConnection ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
-                Securing Handshake...
+                {connectionCheckState === 'checking' && (
+                  <>
+                    <Loader2 size={16} className="animate-spin text-blue-400" />
+                    <span>Testing Connection...</span>
+                    <div className="flex gap-1">
+                      <span className="w-1 h-1 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1 h-1 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1 h-1 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </>
+                )}
+                {connectionCheckState === 'valid' && (
+                  <>
+                    <CheckCircle size={16} className="text-emerald-400 animate-in zoom-in duration-300" />
+                    <span>Connection Verified</span>
+                  </>
+                )}
+              </>
+            ) : connectionCheckState === 'valid' && connectionTested ? (
+              <>
+                <CheckCircle size={16} className="text-emerald-400" />
+                <span>Re-Authenticate</span>
               </>
             ) : (
               <>
-                <Shield size={16} className="group-hover:scale-125 transition-transform" />
+                <Shield size={16} className="group-hover:scale-125 group-hover:rotate-12 transition-all duration-300" />
                 Authenticate & Continue
               </>
             )}
           </div>
+
+          {/* Connection check indicator */}
+          {connectionCheckState === 'checking' && (
+            <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500 animate-[loading_1.5s_ease-in-out_infinite]" />
+          )}
+          {connectionCheckState === 'valid' && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+          )}
         </button>
       </div>
 
