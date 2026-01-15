@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Entity } from '../types';
 import { useLedgerStore } from '../services/ledgerService';
 import {
@@ -59,11 +59,27 @@ const WizardModal = ({ children, onClose }: { children?: React.ReactNode, onClos
 const BSOTabContent = ({ entity, onOpenWizard }: { entity: Entity, onOpenWizard: (type: WizardType) => void }) => {
   const { roles, submissions } = useBSOStore();
   const store = useLedgerStore();
+  const [bsoMode, setBsoMode] = useState<'mock' | 'real' | 'loading'>('loading');
+
+  useEffect(() => {
+    fetch('/api/bso/config')
+      .then(res => res.json())
+      .then(data => setBsoMode(data.bsoMode))
+      .catch(() => setBsoMode('mock')); // Fallback to mock
+  }, []);
 
   return (
     <div className="h-full flex flex-col gap-6 overflow-hidden">
       <div className="flex justify-between items-center shrink-0">
-        <h3 className="font-bold text-slate-700 uppercase tracking-widest text-xs">BSO Business Services Online</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="font-bold text-slate-700 uppercase tracking-widest text-xs">BSO Business Services Online</h3>
+          {bsoMode !== 'loading' && (
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase ${bsoMode === 'real' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-500 border-slate-200'
+              }`}>
+              {bsoMode} MODE
+            </span>
+          )}
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => onOpenWizard('BSO_WIZARD')}

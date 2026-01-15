@@ -9,6 +9,7 @@ import { generateClientJWT, generateUserJWT } from './jwt-utils.js';
 import irsPortalAuthRouter from './routes/irs-portal-auth.js';
 import auditRouter from './routes/audit.js';
 import bankingRouter from './routes/banking.js';
+import bsoRouter from './routes/bso.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -94,6 +95,9 @@ app.use('/api/audit', auditRouter);
 
 // Mount banking router at /api/banking
 app.use('/api/banking', bankingRouter);
+
+// Mount BSO router at /api/bso
+app.use('/api/bso', bsoRouter);
 
 
 /**
