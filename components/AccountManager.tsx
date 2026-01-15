@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useLedgerStore } from '../services/ledgerService';
 import * as types from '../types';
 import { AccountForm } from './AccountForm';
+import { AccountActivity } from './AccountActivity';
 import { 
   FolderTree, List, Plus, Search, Filter, 
   ChevronRight, ChevronDown, Edit2, Trash2, 
-  CreditCard, DollarSign, PieChart, Wallet, Receipt
+  CreditCard, DollarSign, PieChart, Wallet, Receipt,
+  Activity
 } from 'lucide-react';
 
 interface Props {
@@ -29,9 +31,10 @@ interface TreeNodeProps {
   level: number;
   onEdit: (account: types.Account) => void;
   onDelete: (id: string) => void;
+  onViewActivity: (account: types.Account) => void;
 }
 
-const AccountTreeNode: React.FC<TreeNodeProps> = ({ account, level, onEdit, onDelete }) => {
+const AccountTreeNode: React.FC<TreeNodeProps> = ({ account, level, onEdit, onDelete, onViewActivity }) => {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = account.children && account.children.length > 0;
   const Icon = TYPE_ICONS[account.type];
@@ -55,7 +58,10 @@ const AccountTreeNode: React.FC<TreeNodeProps> = ({ account, level, onEdit, onDe
           )}
         </div>
 
-        <div className="flex items-center flex-1">
+        <div 
+          className="flex items-center flex-1 cursor-pointer"
+          onClick={() => onViewActivity(account)}
+        >
           <Icon className={`w-4 h-4 mr-2 ${
             account.type === types.AccountType.ASSET ? 'text-emerald-500' :
             account.type === types.AccountType.LIABILITY ? 'text-red-500' :
@@ -90,6 +96,13 @@ const AccountTreeNode: React.FC<TreeNodeProps> = ({ account, level, onEdit, onDe
 
           <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-1 transition-opacity">
             <button
+              onClick={() => onViewActivity(account)}
+              className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+              title="View History"
+            >
+              <Activity className="w-3.5 h-3.5" />
+            </button>
+            <button
               onClick={() => onEdit(account)}
               className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"
               title="Edit Account"
@@ -116,6 +129,7 @@ const AccountTreeNode: React.FC<TreeNodeProps> = ({ account, level, onEdit, onDe
               level={level + 1} 
               onEdit={onEdit} 
               onDelete={onDelete} 
+              onViewActivity={onViewActivity}
             />
           ))}
         </div>
@@ -134,6 +148,7 @@ export const AccountManager: React.FC<Props> = ({ entityId }) => {
   // UI State
   const [viewMode, setViewMode] = useState<'list' | 'tree'>('tree');
   const [showForm, setShowForm] = useState(false);
+  const [viewingActivityAccount, setViewingActivityAccount] = useState<types.Account | undefined>(undefined);
   const [editingAccount, setEditingAccount] = useState<types.Account | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<types.AccountType | 'All'>('All');
@@ -164,6 +179,14 @@ export const AccountManager: React.FC<Props> = ({ entityId }) => {
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingAccount(undefined);
+  };
+
+  const handleViewActivity = (account: types.Account) => {
+    setViewingActivityAccount(account);
+  };
+
+  const handleCloseActivity = () => {
+    setViewingActivityAccount(undefined);
   };
 
   return (
@@ -257,6 +280,7 @@ export const AccountManager: React.FC<Props> = ({ entityId }) => {
                   level={0} 
                   onEdit={handleEdit} 
                   onDelete={handleDelete} 
+                  onViewActivity={handleViewActivity}
                 />
               ))
             )}
@@ -278,7 +302,7 @@ export const AccountManager: React.FC<Props> = ({ entityId }) => {
                       account.type === types.AccountType.EQUITY ? 'bg-blue-500' :
                       'bg-amber-500'
                     }`} />
-                    <div>
+                    <div className="cursor-pointer" onClick={() => handleViewActivity(account)}>
                       <div className="flex items-center">
                         <span className="font-mono text-xs text-slate-500 mr-2 bg-slate-100 px-1.5 rounded">{account.code}</span>
                         <span className="text-sm font-medium text-slate-700">{account.name}</span>
@@ -296,10 +320,13 @@ export const AccountManager: React.FC<Props> = ({ entityId }) => {
                         {account.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </span>
                       <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-2 transition-opacity">
-                        <button onClick={() => handleEdit(account)} className="text-slate-400 hover:text-blue-600">
+                        <button onClick={() => handleViewActivity(account)} className="text-slate-400 hover:text-indigo-600" title="View History">
+                          <Activity className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleEdit(account)} className="text-slate-400 hover:text-blue-600" title="Edit Account">
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(account.id)} className="text-slate-400 hover:text-red-600">
+                        <button onClick={() => handleDelete(account.id)} className="text-slate-400 hover:text-red-600" title="Delete Account">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -322,6 +349,16 @@ export const AccountManager: React.FC<Props> = ({ entityId }) => {
               onCancel={handleCloseForm}
             />
           </div>
+        </div>
+      )}
+
+      {/* ACTIVITY OVERLAY */}
+      {viewingActivityAccount && (
+        <div className="absolute inset-0 z-50 bg-slate-900/20 backdrop-blur-sm p-4 lg:p-8">
+          <AccountActivity 
+            account={viewingActivityAccount} 
+            onClose={handleCloseActivity} 
+          />
         </div>
       )}
 
