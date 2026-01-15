@@ -197,3 +197,278 @@ spec:
     ports:
     - protocol: TCP
       port: 5672
+---
+# BSO Service policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bso-service-policy
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: bso-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+    ports:
+    - protocol: TCP
+      port: 3002
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: bso-db
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - podSelector:
+        matchLabels:
+          app: rabbitmq
+    ports:
+    - protocol: TCP
+      port: 5672
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+---
+# IRS Service ingress policy (allow from api-gateway)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: irs-service-ingress
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: irs-service
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+    ports:
+    - protocol: TCP
+      port: 3001
+---
+# Ledger Service ingress policy (allow from api-gateway)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ledger-service-ingress
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: ledger-service
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+    ports:
+    - protocol: TCP
+      port: 3003
+---
+# Banking Service ingress policy (allow from api-gateway)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: banking-service-ingress
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: banking-service
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+    ports:
+    - protocol: TCP
+      port: 3004
+---
+# Audit Service ingress policy (allow from api-gateway)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: audit-service-ingress
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: audit-service
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+    ports:
+    - protocol: TCP
+      port: 3006
+---
+# Database policies - restrict ingress to only their respective services
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: irs-db-policy
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: irs-db
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: irs-service
+    ports:
+    - protocol: TCP
+      port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bso-db-policy
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: bso-db
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: bso-service
+    ports:
+    - protocol: TCP
+      port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ledger-db-policy
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: ledger-db
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: ledger-service
+    ports:
+    - protocol: TCP
+      port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: banking-db-policy
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: banking-db
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: banking-service
+    ports:
+    - protocol: TCP
+      port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: audit-db-policy
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: audit-db
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: audit-service
+    ports:
+    - protocol: TCP
+      port: 5432
+---
+# RabbitMQ ingress policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rabbitmq-ingress-policy
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: rabbitmq
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchExpressions:
+        - key: app
+          operator: In
+          values: [irs-service, bso-service, ledger-service, banking-service, audit-service]
+    ports:
+    - protocol: TCP
+      port: 5672
+---
+# Redis ingress policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-ingress-policy
+  namespace: fiduciary-system
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchExpressions:
+        - key: app
+          operator: In
+          values: [irs-service, bso-service, ledger-service, banking-service, audit-service]
+    ports:
+    - protocol: TCP
+      port: 6379

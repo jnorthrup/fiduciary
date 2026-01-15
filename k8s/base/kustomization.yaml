@@ -50,9 +50,5 @@ images:
     newTag: latest
   - name: fiduciary/banking-service
     newTag: latest
-  - name: fiduciary/auth-service
-    newTag: latest
   - name: fiduciary/audit-service
-    newTag: latest
-  - name: fiduciary/teach-mode-service
     newTag: latest

@@ -29,9 +29,15 @@ spec:
           protocol: TCP
         env:
         - name: RABBITMQ_DEFAULT_USER
-          value: "admin"
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: username
         - name: RABBITMQ_DEFAULT_PASS
-          value: "change-me-in-production"
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-credentials
+              key: password
         - name: RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS
           value: "-rabbit log_levels [{connection,error},{default,warning}]"
         resources:
