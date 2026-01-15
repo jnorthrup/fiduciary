@@ -32,3 +32,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 *Link: [./conductor/tracks/bso_phase1_20260114/](./conductor/tracks/bso_phase1_20260114/)* 
 ## [ ] Track: Full Ledgering - Credit & Debit Account CRUD
 *Link: [./conductor/tracks/ledger_20260114/](./conductor/tracks/ledger_20260114/)*
+
+---
+
+## [ ] Track: Mobile + QuickBooks Layout
+*Link: [./conductor/tracks/mobile_quickbooks_layout_20260115/plan.md](./conductor/tracks/mobile_quickbooks_layout_20260115/plan.md)*
