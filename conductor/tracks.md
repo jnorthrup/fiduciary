@@ -30,3 +30,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## [~] Track: BSO Implementation Phase 1
 *Link: [./conductor/tracks/bso_phase1_20260114/](./conductor/tracks/bso_phase1_20260114/)* 
+## [ ] Track: Full Ledgering - Credit & Debit Account CRUD
+*Link: [./conductor/tracks/ledger_20260114/](./conductor/tracks/ledger_20260114/)*

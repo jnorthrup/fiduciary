@@ -1,7 +1,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import {
-    Entity, EntityRole, EntityType, Account, AccountType, DCFlag, TaxModule,
+    Entity, EntityRole, EntityType, Account, AccountType, AccountClass, DCFlag, TaxModule,
     Contractor, ComplianceFiling, WalletCredential, BSORole, BSOSubmission,
     IRSAPICredential, Employee, PayrollRun, IRMDocument, SSAStatement,
     ResolutionRecord, TrustSubType, JournalEntry, CreditDefenseRecord, IntrusionRecord,
@@ -138,17 +138,25 @@ export const JIM_ENTITIES: Entity[] = [
     }
 ];
 
-export const createAccount = (props: Partial<Account>): Account => ({
-    id: uuidv4(),
-    entityId: "ENT-ROOT",
-    code: "000000",
-    name: "Unknown Account",
-    type: AccountType.ASSET,
-    normalBalance: DCFlag.Debit,
-    balance: 0,
-    _version: GENESIS_HASH,
-    ...props
-});
+export const createAccount = (props: Partial<Account> & { type?: AccountType }): Account => {
+    const type = props.type ?? AccountType.ASSET;
+    const accountClass: AccountClass = (type === AccountType.LIABILITY || type === AccountType.EQUITY || type === AccountType.INCOME) ? 'Credit' : 'Debit';
+
+    return {
+        id: uuidv4(),
+        entityId: "ENT-ROOT",
+        code: "000000",
+        name: "Unknown Account",
+        type,
+        normalBalance: DCFlag.Debit,
+        balance: 0,
+        accountClass,
+        isActive: true,
+        children: [],
+        _version: GENESIS_HASH,
+        ...props
+    };
+};
 
 export const JIM_ACCOUNTS: Account[] = [
     createAccount({ id: "AC-101", entityId: "ENT-ROOT", code: "101000", name: "Master Treasury Account", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 1250000.00 }),
