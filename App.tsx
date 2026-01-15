@@ -84,6 +84,8 @@ export const App = () => {
         onUpdateUser={store.updateUser}
         onDeleteUser={store.deleteUser}
         onEditUser={setEditingUser}
+        // Teach Mode
+        onTeachModeChange={store.setTeachModeEnabled}
         // Quick Actions
         onQuickInvoice={() => setQuickAction('Invoice')}
         onQuickReceipt={() => setQuickAction('Receipt')}

@@ -40,6 +40,7 @@ interface CacheEntry {
 }
 
 const cache: Record<string, CacheEntry> = {};
+const pendingRequests: Record<string, Promise<PDFRetrievalResult>> = {};
 
 /**
  * Query PDF content using semantic search.
@@ -66,23 +67,36 @@ export async function queryPDFContent(
     };
   }
 
+  // Check for pending request to deduplicate
+  if (pendingRequests[cacheKey]) {
+    return pendingRequests[cacheKey];
+  }
+
   // Perform semantic search (mock implementation)
-  // In production, this would call a GenAI service
-  const paragraphs: Array<PDFParagraph & { relevance: number }> = [];
+  const requestPromise = (async () => {
+    // In production, this would call a GenAI service
+    const paragraphs: Array<PDFParagraph & { relevance: number }> = [];
 
-  const result: PDFRetrievalResult = {
-    paragraphs,
-    metadata: {
-      queryTime: Date.now() - startTime,
-      cacheHit: false,
-      source: 'ai',
-    },
-  };
+    const result: PDFRetrievalResult = {
+      paragraphs,
+      metadata: {
+        queryTime: Date.now() - startTime,
+        cacheHit: false,
+        source: 'ai',
+      },
+    };
 
-  // Cache the result (default TTL: 1 hour)
-  setCachedParagraph(cacheKey, result, 3600000);
+    // Cache the result (default TTL: 1 hour)
+    setCachedParagraph(cacheKey, result, 3600000);
+    
+    // Clean up pending request
+    delete pendingRequests[cacheKey];
 
-  return result;
+    return result;
+  })();
+
+  pendingRequests[cacheKey] = requestPromise;
+  return requestPromise;
 }
 
 /**

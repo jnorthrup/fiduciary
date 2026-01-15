@@ -46,7 +46,7 @@ export interface ParagraphExcerptProps {
   maxLength?: number;
 }
 
-export function ParagraphExcerpt({ paragraph, maxLength }: ParagraphExcerptProps) {
+export const ParagraphExcerpt = React.memo(function ParagraphExcerpt({ paragraph, maxLength }: ParagraphExcerptProps) {
   let content = paragraph.content;
 
   // Truncate if needed
@@ -88,7 +88,7 @@ export function ParagraphExcerpt({ paragraph, maxLength }: ParagraphExcerptProps
       )}
     </div>
   );
-}
+});
 
 export interface TaxonomyBreadcrumbProps {
   breadcrumbs: Breadcrumb[];
@@ -96,7 +96,7 @@ export interface TaxonomyBreadcrumbProps {
   onNavigate?: (path: string[]) => void;
 }
 
-export function TaxonomyBreadcrumb({
+export const TaxonomyBreadcrumb = React.memo(function TaxonomyBreadcrumb({
   breadcrumbs,
   separator = ' / ',
   onNavigate,
@@ -116,13 +116,13 @@ export function TaxonomyBreadcrumb({
       ))}
     </nav>
   );
-}
+});
 
 export interface CrossReferenceLinksProps {
   links: CrossReferenceLink[];
 }
 
-export function CrossReferenceLinks({ links }: CrossReferenceLinksProps) {
+export const CrossReferenceLinks = React.memo(function CrossReferenceLinks({ links }: CrossReferenceLinksProps) {
   if (!links.length) return null;
 
   return (
@@ -145,13 +145,13 @@ export function CrossReferenceLinks({ links }: CrossReferenceLinksProps) {
       </ul>
     </div>
   );
-}
+});
 
 export interface ExampleDisplayProps {
   examples: ExampleSet;
 }
 
-export function ExampleDisplay({ examples }: ExampleDisplayProps) {
+export const ExampleDisplay = React.memo(function ExampleDisplay({ examples }: ExampleDisplayProps) {
   return (
     <div className="examples mt-4">
       {examples.category && (
@@ -191,36 +191,40 @@ export function ExampleDisplay({ examples }: ExampleDisplayProps) {
       )}
     </div>
   );
-}
+});
 
 export interface TeachModeOverlayContentProps {
   content: TeachModeContent;
 }
 
-export function TeachModeOverlayContent({
+export const TeachModeOverlayContent = React.memo(function TeachModeOverlayContent({
   content,
 }: TeachModeOverlayContentProps) {
   return (
-    <div className="teach-mode-overlay-content p-4">
-      {content.paragraph && (
-        <div className="paragraph-section mb-4">
-          <ParagraphExcerpt paragraph={content.paragraph} />
-        </div>
-      )}
-
+    <div className="teach-mode-overlay-content p-5 bg-white rounded-xl shadow-2xl border border-slate-200 max-h-[80vh] overflow-y-auto custom-scrollbar">
       {content.taxonomy && content.taxonomy.length > 0 && (
-        <div className="taxonomy-section mb-4">
+        <div className="taxonomy-section mb-3">
           <TaxonomyBreadcrumb breadcrumbs={content.taxonomy} />
         </div>
       )}
 
-      {content.crossReferences && content.crossReferences.length > 0 && (
-        <CrossReferenceLinks links={content.crossReferences} />
+      {content.paragraph && (
+        <div className="paragraph-section mb-6">
+          <ParagraphExcerpt paragraph={content.paragraph} />
+        </div>
       )}
 
       {content.examples && (
-        <ExampleDisplay examples={content.examples} />
+        <div className="examples-section bg-slate-50 -mx-5 px-5 py-4 border-t border-slate-100">
+          <ExampleDisplay examples={content.examples} />
+        </div>
+      )}
+
+      {content.crossReferences && content.crossReferences.length > 0 && (
+        <div className="cross-refs-section mt-4 pt-4 border-t border-slate-100">
+          <CrossReferenceLinks links={content.crossReferences} />
+        </div>
       )}
     </div>
   );
-}
+});

@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Switch } from './ui/switch';
+import { HelpCircle, Sparkles } from 'lucide-react';
 
 export interface TeachModeToggleProps {
   label?: string;
@@ -49,24 +50,28 @@ export function TeachModeToggle({
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div 
+      data-testid={enabled ? 'teach-mode-indicator' : undefined}
+      className={`flex items-center gap-3 px-3 py-1.5 rounded-full border transition-all duration-300 ${
+      enabled 
+        ? 'bg-indigo-50 border-indigo-200 shadow-sm' 
+        : 'bg-slate-50 border-slate-200'
+    } ${className}`}>
+      <div className={`p-1 rounded-full ${enabled ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+        {enabled ? <Sparkles size={14} /> : <HelpCircle size={14} />}
+      </div>
+      <label htmlFor={label} className={`text-xs font-bold uppercase tracking-wider cursor-pointer ${
+        enabled ? 'text-indigo-700' : 'text-slate-600'
+      }`}>
+        {label}
+      </label>
       <Switch
         checked={enabled}
         onCheckedChange={handleToggle}
         role="switch"
         aria-label={label}
+        className={enabled ? 'bg-indigo-600' : ''}
       />
-      <label htmlFor={label} className="text-sm font-medium cursor-pointer">
-        {label}
-      </label>
-      {enabled && (
-        <span
-          data-testid="teach-mode-indicator"
-          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800"
-        >
-          Active
-        </span>
-      )}
     </div>
   );
 }
