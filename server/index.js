@@ -1,9 +1,17 @@
 import express from 'express';
 import cors from 'cors';
 import { randomUUID } from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { irisOAuthRouter, authenticateToken } from './routes/iris-oauth.js';
 import { generateClientJWT, generateUserJWT } from './jwt-utils.js';
 import irsPortalAuthRouter from './routes/irs-portal-auth.js';
+import auditRouter from './routes/audit.js';
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // In-project logger is TS, but server is JS.
 // For JS server, we'll implement a simple structured logger or just clean up console calls.
@@ -76,6 +84,10 @@ app.use('/api/iris', irisOAuthRouter);
 // Mount portal auth router at /api/irs-portal/auth
 app.use('/api/irs-portal/auth', irsPortalAuthRouter);
 
+// Mount audit router at /api/audit
+app.use('/api/audit', auditRouter);
+
+
 /**
  * POST /api/irs/demo/authenticate
  * Demo endpoint: Generate JWTs for testing without real credentials
@@ -134,7 +146,75 @@ app.get('/api/irs/health', (req, res) => {
       oauth: '/api/iris/auth/oauth/v2/token',
       submission: '/api/iris/intake-acceptance',
       status: '/api/iris/transstatusorack',
-      demo: '/api/iris/demo/authenticate'
+      demo: '/api/iris/demo/authenticate',
+      openapi: '/api/openapi.yaml',
+      docs: '/api/docs'
+    }
+  });
+});
+
+/**
+ * GET /api/openapi.yaml
+ * Serve OpenAPI 3.1 specification
+ */
+app.get('/api/openapi.yaml', (req, res) => {
+  try {
+    const specPath = path.join(__dirname, '../specs/unified-api-openapi.yaml');
+    const spec = fs.readFileSync(specPath, 'utf-8');
+    res.setHeader('Content-Type', 'text/yaml');
+    res.send(spec);
+  } catch (error) {
+    logger.error('Failed to read OpenAPI spec:', error);
+    res.status(500).json({
+      error: 'Failed to load OpenAPI specification',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/docs
+ * Redirect to Swagger UI for API documentation
+ */
+app.get('/api/docs', (req, res) => {
+  res.redirect('https://redocly.github.io/redoc/?url=' + encodeURIComponent(`${req.protocol}://${req.get('host')}/api/openapi.yaml`));
+});
+
+/**
+ * GET /api
+ * API information and links
+ */
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'Trust Ledger System API',
+    version: '1.0.0',
+    description: 'Unified API for IRS IRIS, SSA BSO, and Ledger management',
+    endpoints: {
+      health: '/api/health',
+      irs: '/api/iris',
+      bso: '/api/bso',
+      ledger: '/api/ledger',
+      docs: '/api/docs',
+      openapi: '/api/openapi.yaml'
+    },
+    documentation: `${req.protocol}://${req.get('host')}/api/docs`,
+    openapiSpec: `${req.protocol}://${req.get('host')}/api/openapi.yaml`
+  });
+});
+
+/**
+ * GET /api/health
+ * Root health check endpoint
+ */
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    services: {
+      irs: 'operational',
+      bso: 'operational',
+      ledger: 'operational'
     }
   });
 });

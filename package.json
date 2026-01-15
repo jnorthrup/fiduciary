@@ -13,7 +13,9 @@
     "test:server": "vitest --config vitest.server.config.ts",
     "test:live-portal": "tsx test/irs-portal-live-test.ts",
     "test:live-api": "tsx test/irs-api-live-test.ts",
-    "lint": "eslint . --max-warnings 0"
+    "lint": "eslint . --max-warnings 0",
+    "api:generate": "openapi-typescript-codegen -i specs/unified-api-openapi.yaml -o generated/api-client -c ApiClient --useOptions",
+    "server:dev": "cd server && npm run dev"
   },
   "dependencies": {
     "cors": "^2.8.5",
