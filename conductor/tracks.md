@@ -19,4 +19,14 @@ This file tracks all major tracks for the project. Each track has its own detail
 ---
 
 ## [ ] Track: Disjoint Backlog
-*Link: [./conductor/tracks/disjoint_backlog_20260113/](./conductor/tracks/disjoint_backlog_20260113/)* 
+*Link: [./conductor/tracks/disjoint_backlog_20260113/](./conductor/tracks/disjoint_backlog_20260113/)*
+
+---
+
+## [ ] Track: Administrative Process Management
+*Link: [./conductor/tracks/admin_process_20260114/](./conductor/tracks/admin_process_20260114/)*
+
+---
+
+## [~] Track: BSO Implementation Phase 1
+*Link: [./conductor/tracks/bso_phase1_20260114/](./conductor/tracks/bso_phase1_20260114/)* 

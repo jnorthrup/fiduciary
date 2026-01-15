@@ -154,7 +154,18 @@ export interface WalletCredential {
 export interface BSORole {
   id: string;
   entityId: string;
-  registrationStatus: 'Active' | 'Pending';
+  registrationStatus: 'Active' | 'Pending' | 'Failed';
+  services: string[];
+  activationCode: string | null;
+  registeredAt: string;
+  lastAuthenticated: string;
+}
+
+export interface BSOErrorDetail {
+  code: string;
+  message: string;
+  resolution: string;
+  category: 'Authentication' | 'Validation' | 'System' | 'Unknown';
 }
 
 export interface BSOSubmission {
@@ -164,6 +175,10 @@ export interface BSOSubmission {
   submissionDate: string;
   status: string;
   batchId: string;
+  accuWageStatus: 'Pass' | 'Errors' | 'Pending' | 'Rejected';
+  errorDetails: BSOErrorDetail[] | null;
+  submittedAt: string;
+  acknowledgedAt: string | null;
 }
 
 export interface Employee {
