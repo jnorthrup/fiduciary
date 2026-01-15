@@ -269,6 +269,42 @@ export const JIM_TRANSMISSIONS: TransmissionLog[] = [
     }
 ];
 
+export const JIM_BSO_ROLES: BSORole[] = [
+    {
+        id: "BSO-ROLE-001",
+        entityId: "ENT-ROOT",
+        registrationStatus: 'Active',
+        services: ['AccuWage', 'W-2 Online'],
+        activationCode: null,
+        registeredAt: "2024-01-10T09:00:00Z",
+        lastAuthenticated: new Date().toISOString()
+    },
+    {
+        id: "BSO-ROLE-002",
+        entityId: "ENT-AAA-TRUST",
+        registrationStatus: 'Active',
+        services: ['AccuWage'],
+        activationCode: null,
+        registeredAt: "2024-11-15T14:30:00Z",
+        lastAuthenticated: new Date().toISOString()
+    }
+];
+
+export const JIM_BSO_SUBMISSIONS: BSOSubmission[] = [
+    {
+        id: "BSO-SUB-101",
+        bsoRoleId: "BSO-ROLE-001",
+        reportType: "W-2",
+        submissionDate: "2025-01-14",
+        status: "Accepted",
+        batchId: "B-20250114-01",
+        accuWageStatus: 'Pass',
+        errorDetails: null,
+        submittedAt: "2025-01-14T10:00:00Z",
+        acknowledgedAt: "2025-01-14T10:15:00Z"
+    }
+];
+
 // --- 2. FUZZ / SYNTHETIC DATA (Disjoint) ---
 
 export const FUZZ_ENTITIES: Entity[] = [
@@ -279,9 +315,9 @@ export const FUZZ_ENTITIES: Entity[] = [
 ];
 
 export const FUZZ_ACCOUNTS: Account[] = [
-    { id: "FA-01", entityId: "FZ-CORP", code: "101000", name: "Fuzz Cash", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 99999, _version: GENESIS_HASH },
-    { id: "FA-02", entityId: "FZ-CORP", code: "400000", name: "Noise Revenue", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0, _version: GENESIS_HASH },
-    { id: "FA-03", entityId: "FZ-TRUST", code: "300000", name: "Static Corpus", type: AccountType.EQUITY, normalBalance: DCFlag.Credit, balance: 5000, _version: GENESIS_HASH }
+    { id: "FA-01", entityId: "FZ-CORP", code: "101000", name: "Fuzz Cash", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 99999, accountClass: 'Debit', isActive: true, _version: GENESIS_HASH },
+    { id: "FA-02", entityId: "FZ-CORP", code: "400000", name: "Noise Revenue", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0, accountClass: 'Credit', isActive: true, _version: GENESIS_HASH },
+    { id: "FA-03", entityId: "FZ-TRUST", code: "300000", name: "Static Corpus", type: AccountType.EQUITY, normalBalance: DCFlag.Credit, balance: 5000, accountClass: 'Credit', isActive: true, _version: GENESIS_HASH }
 ];
 
 export const FUZZ_JOURNALS: JournalEntry[] = [
@@ -318,13 +354,26 @@ export const SEED_CREDIT_DEFENSE: CreditDefenseRecord[] = [
 
 export const SEED_CONTRACTORS: Contractor[] = [];
 export const SEED_WALLETS: WalletCredential[] = [];
-export const SEED_BSO_ROLES: BSORole[] = [];
-export const SEED_BSO_SUBMISSIONS: BSOSubmission[] = [];
+export const SEED_BSO_ROLES: BSORole[] = JIM_BSO_ROLES;
+export const SEED_BSO_SUBMISSIONS: BSOSubmission[] = JIM_BSO_SUBMISSIONS;
 export const SEED_IRS_CREDS: IRSAPICredential[] = [];
 export const SEED_EMPLOYEES: Employee[] = [];
 export const SEED_PAYROLL_RUNS: PayrollRun[] = [];
 export const SEED_SSA_STATEMENTS: SSAStatement[] = [];
-export const SEED_DOCUMENTS: IRMDocument[] = [];
+export const SEED_DOCUMENTS: IRMDocument[] = [
+    {
+        id: "DOC-BSO-001",
+        entityId: "ENT-AAA-OPERATING",
+        title: "SSA-941-Notice: Non-receipt of Quarterly Wage Report",
+        category: 'Enforcement'
+    },
+    {
+        id: "DOC-BSO-002",
+        entityId: "ENT-AAA-OPERATING",
+        title: "AccuWage-Unpostable: Invalid Name/SSN Combination",
+        category: 'Unpostable'
+    }
+];
 export const SEED_RESOLUTIONS: ResolutionRecord[] = [];
 
 // New Real Estate & Credit Instrument Seeds

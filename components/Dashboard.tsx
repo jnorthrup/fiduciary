@@ -22,6 +22,9 @@ import { EscrowManager } from './EscrowManager';
 import { CanalDepository } from './CanalDepository';
 import { HRHeadcountViewer } from './HRHeadcountViewer';
 import { BSOHierarchyViewer } from './BSOHierarchyViewer';
+import { BSOWizard } from './BSOWizard';
+import { BSOEnrollmentWizard } from './BSOEnrollmentWizard';
+import { useBSOStore } from '../services/bsoStore';
 
 // Wizards
 import { DTCCLiquidationWizard } from './DTCCLiquidationWizard';
@@ -53,7 +56,42 @@ const WizardModal = ({ children, onClose }: { children?: React.ReactNode, onClos
   </div>
 );
 
-type WizardType = 'DTCC' | 'EXCHANGE' | 'REAL_ESTATE' | 'COLLATERAL' | 'FORENSIC' | 'SETTLEMENT' | 'LEGAL' | 'RESITUS' | 'RESOLUTION' | 'CREDIT_DEFENSE' | 'CHANCERY' | '1099' | 'ACCOUNT_RECON' | 'EDGAR' | 'MARAD' | 'CAFR';
+const BSOTabContent = ({ entity, onOpenWizard }: { entity: Entity, onOpenWizard: (type: WizardType) => void }) => {
+  const { roles, submissions } = useBSOStore();
+  const store = useLedgerStore();
+
+  return (
+    <div className="h-full flex flex-col gap-6 overflow-hidden">
+      <div className="flex justify-between items-center shrink-0">
+        <h3 className="font-bold text-slate-700 uppercase tracking-widest text-xs">BSO Business Services Online</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onOpenWizard('BSO_WIZARD')}
+            className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded font-bold hover:bg-indigo-700 transition-colors"
+          >
+            Register Employer
+          </button>
+          <button
+            onClick={() => onOpenWizard('BSO_ENROLL')}
+            className="text-xs bg-white text-slate-600 border border-slate-200 px-3 py-1.5 rounded font-bold hover:bg-slate-50 transition-colors"
+          >
+            Enroll New User
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-hidden">
+        <BSOHierarchyViewer
+          entities={store.entities}
+          bsoRoles={roles}
+          submissions={submissions}
+          documents={store.documents}
+        />
+      </div>
+    </div>
+  );
+};
+
+type WizardType = 'DTCC' | 'EXCHANGE' | 'REAL_ESTATE' | 'COLLATERAL' | 'FORENSIC' | 'SETTLEMENT' | 'LEGAL' | 'RESITUS' | 'RESOLUTION' | 'CREDIT_DEFENSE' | 'CHANCERY' | '1099' | 'ACCOUNT_RECON' | 'EDGAR' | 'MARAD' | 'CAFR' | 'BSO_WIZARD' | 'BSO_ENROLL';
 
 interface Props {
   entity: Entity;
@@ -80,6 +118,7 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
       { id: 'Intelligence', label: 'Intelligence', icon: Database },
     ];
     if (entity.role === 'OPERATING_LLC') commonTabs.push({ id: 'HR', label: 'HR & Payroll', icon: Users });
+    if (entity.role === 'HOLDING_TRUST' || entity.role === 'OPERATING_LLC') commonTabs.push({ id: 'BSO', label: 'BSO', icon: Shield });
     if (entity.role === 'HOLDING_TRUST') commonTabs.push({ id: 'Escrow', label: 'Escrow', icon: Lock });
     if (entity.type === 'VESSEL') commonTabs.push({ id: 'Maritime', label: 'Maritime', icon: Anchor });
     return commonTabs;
@@ -221,6 +260,10 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
             <HRHeadcountViewer entity={entity} employees={store.employees} payrollRuns={store.payrollRuns} onAddEmployee={() => { }} />
           </div>
         );
+      case 'BSO':
+        return (
+          <BSOTabContent entity={entity} onOpenWizard={openWizard} />
+        );
       default: return null;
     }
   };
@@ -243,6 +286,8 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
       case 'ACCOUNT_RECON': return <AccountReconciliationWizard entity={entity} onClose={closeWizard} />;
       case 'MARAD': return <MARADAuthorityWizard entity={entity} onComplete={store.addMaradRecord} onPostJournal={store.postJournal} onClose={closeWizard} />;
       case 'CAFR': return <div className="p-8 h-full bg-[#0f172a] overflow-y-auto"><CAFRSearch /></div>;
+      case 'BSO_WIZARD': return <BSOWizard entity={entity} onComplete={() => closeWizard()} />;
+      case 'BSO_ENROLL': return <BSOEnrollmentWizard entity={entity} onComplete={() => closeWizard()} />;
       default: return null;
     }
   };

@@ -11,6 +11,7 @@ import { TIN_PLACEHOLDER, PENDING_STATUS, GEMINI_MODEL } from '../utils/constant
 import { formatEINOrPending } from '../utils/formatters';
 import { BSO_SAMPLE_DATA } from '../tests/fixtures/sampleData';
 import { CITATIONS } from '../utils/citations';
+import { useBSOStore } from '../services/bsoStore';
 
 interface Props {
   entity: Entity;
@@ -26,6 +27,7 @@ const STEPS = [
 ];
 
 export const BSOWizard: React.FC<Props> = ({ entity, onComplete }) => {
+  const { addRole } = useBSOStore();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
@@ -79,8 +81,23 @@ export const BSOWizard: React.FC<Props> = ({ entity, onComplete }) => {
   };
 
   const handleNext = () => {
-    if (currentStep < 5) setCurrentStep(currentStep + 1);
-    else onComplete(bsoUserId);
+    if (currentStep < 5) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      // Create and persist the role
+      const newRole = {
+        id: `BSO-ROLE-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        entityId: entity.id,
+        registrationStatus: 'Active' as const,
+        services: selectedService ? [selectedService === 'SSA' ? 'Wage Reporting' : 'Proxy Entitlement'] : [],
+        activationCode,
+        registeredAt: new Date().toISOString(),
+        lastAuthenticated: new Date().toISOString()
+      };
+
+      addRole(newRole);
+      onComplete(bsoUserId);
+    }
   };
 
   const TutorialPanel = () => (
