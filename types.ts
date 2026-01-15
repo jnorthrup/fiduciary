@@ -83,6 +83,8 @@ export enum DCFlag {
   Credit = 'Credit'
 }
 
+export type AccountClass = 'Credit' | 'Debit';
+
 export interface Account {
   id: string;
   entityId: string;
@@ -92,6 +94,13 @@ export interface Account {
   normalBalance: DCFlag;
   balance: number;
   internalAlias?: string; // e.g. TRUST-TREASURY-001
+  parentAccountId?: string; // For account hierarchy
+  children?: Account[]; // Populated for tree display
+  accountClass: AccountClass; // 'Credit' for Liability/Equity/Income, 'Debit' for Asset/Expense
+  description?: string; // Account description/purpose
+  taxLine?: string; // Tax line mapping (e.g., "IRS Form 1041, Line 9")
+  isActive: boolean; // Soft delete flag
+  createdAt?: string; // Account creation timestamp
   _version: string;
 }
 

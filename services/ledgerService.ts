@@ -7,6 +7,7 @@ import { UseCaseLogger } from './useCaseLogger';
 import { GoogleGenAI } from "@google/genai";
 import { initFirebase, getDb, batchUpload } from './firebase';
 import { collection, onSnapshot, setDoc, doc } from 'firebase/firestore';
+import * as accountService from './accountService';
 
 // Unified State Interface to reduce useState bloat
 interface LedgerDb {
@@ -202,6 +203,39 @@ type LedgerContextType = LedgerDb & {
   addEntity: (parentId: string, type: types.EntityType, role: types.EntityRole, nameOverride?: string) => Promise<types.Entity>;
   updateEntity: (id: string, updates: Partial<types.Entity>) => void;
   deleteEntity: (id: string) => void;
+
+  // Account CRUD
+  createAccount: (input: {
+    entityId: string;
+    code: string;
+    name: string;
+    type: types.AccountType;
+    description?: string;
+    taxLine?: string;
+    parentAccountId?: string;
+  }) => { account: types.Account | null; errors: Array<{ field: string; message: string }> };
+  getAccount: (accountId: string) => types.Account | null;
+  getAccounts: (filters?: {
+    entityId?: string;
+    type?: types.AccountType;
+    accountClass?: types.AccountClass;
+    isActive?: boolean;
+    parentAccountId?: string | null;
+    searchTerm?: string;
+  }) => types.Account[];
+  updateAccount: (accountId: string, updates: {
+    name?: string;
+    description?: string;
+    taxLine?: string;
+    parentAccountId?: string;
+    isActive?: boolean;
+  }) => { account: types.Account | null; errors: Array<{ field: string; message: string }> };
+  deleteAccount: (accountId: string) => { account: types.Account | null; errors: Array<{ field: string; message: string }> };
+  getCreditAccounts: (entityId: string, activeOnly?: boolean) => types.Account[];
+  getDebitAccounts: (entityId: string, activeOnly?: boolean) => types.Account[];
+  getActiveAccounts: (entityId: string) => types.Account[];
+  getAccountHierarchy: (entityId: string) => types.Account[];
+  getAccountTotals: (entityId: string) => { debitTotal: number; creditTotal: number; netWorth: number; breakdown: Record<types.AccountType, number> };
 
   // Specific Actions
   createFiling: (entityId: string, formType: types.IRSFormType) => void;
@@ -549,6 +583,31 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     addInteraction: (pid: string, i: types.Interaction) => setDb(p => ({ ...p, crmPeople: p.crmPeople.map(person => person.id === pid ? { ...person, interactions: [i, ...person.interactions] } : person) })),
     updateIrsCredential: (id, u) => setDb(p => ({ ...p, irsCreds: p.irsCreds.map(c => c.id === id ? { ...c, ...u } : c) })), addIrsCredential: (c) => addItem('irsCreds', c), deleteIrsCredential: (id) => deleteItem('irsCreds', id),
     addAccount: (account: types.Account) => addItem('accounts', account),
+
+    // Account CRUD
+    createAccount: (input) => {
+      const result = accountService.createAccount(input, db.accounts);
+      if (result.account) addItem('accounts', result.account);
+      return result;
+    },
+    getAccount: (accountId) => accountService.getAccount(accountId, db.accounts),
+    getAccounts: (filters) => accountService.getAccounts(filters || {}, db.accounts),
+    updateAccount: (accountId, updates) => {
+      const result = accountService.updateAccount(accountId, updates, db.accounts);
+      if (result.account) updateItem('accounts', result.account);
+      return result;
+    },
+    deleteAccount: (accountId) => {
+      const result = accountService.deleteAccount(accountId, db.accounts);
+      if (result.account) updateItem('accounts', result.account);
+      return result;
+    },
+    getCreditAccounts: (entityId, activeOnly = true) => accountService.getCreditAccounts(entityId, db.accounts, activeOnly),
+    getDebitAccounts: (entityId, activeOnly = true) => accountService.getDebitAccounts(entityId, db.accounts, activeOnly),
+    getActiveAccounts: (entityId) => accountService.getActiveAccounts(entityId, db.accounts),
+    getAccountHierarchy: (entityId) => accountService.getAccountHierarchy(entityId, db.accounts),
+    getAccountTotals: (entityId) => accountService.getAccountTotals(entityId, db.accounts),
+
     addDocument: (doc: types.IRMDocument) => addItem('documents', doc),
     addSettlement: (s: types.SettlementInstruction) => addItem('settlements', s),
     addInvoice: (i) => addItem('invoices', i), updateInvoice: (i) => updateItem('invoices', i),
