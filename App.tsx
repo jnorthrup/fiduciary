@@ -17,6 +17,7 @@ import { ACHMovementWizard } from './components/ACHMovementWizard';
 import { LLCContractorForm } from './components/forms/LLCContractorForm';
 import { IRIS1099Wizard } from './components/IRIS1099Wizard';
 import { X } from 'lucide-react';
+import { MobileQuickBooksLayout } from './components/layouts/MobileQuickBooksLayout';
 
 const WizardModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => (
   <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -68,52 +69,71 @@ export const App = () => {
   // Quick Action Handlers
   const closeQuickAction = () => setQuickAction(null);
 
-  return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
-      <Sidebar
+  const isMobileQuickBooks = store.settings.layoutMode === 'MobileQuickBooks';
+
+  const mainContent = (
+    <>
+      {activeEntity ? (
+        <Dashboard 
+          entity={activeEntity} 
+          onOpenApiConsole={() => setShowApiConsole(true)}
+          onEditEntity={setActiveEntityId}
+        />
+      ) : (
+        <SystemOverview 
+          entities={store.entities}
+          accounts={store.accounts}
+          journals={store.journals}
+          wallets={store.wallets}
+          onUpdateEntity={store.updateEntity}
+          onAddEntity={store.addEntity}
+          onDeleteEntity={store.deleteEntity}
+          initialWizard={autoLaunchWizard}
+        />
+      )}
+    </>
+  );
+
+  if (isMobileQuickBooks) {
+    return (
+      <MobileQuickBooksLayout
         activeEntityId={activeEntityId}
         onSelectEntity={setActiveEntityId}
-        onOpenIRM={() => setShowIRM(true)}
-        onOpenSettings={() => setShowSettings(true)}
-        entities={store.entities}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        currentUser={store.currentUser}
-        users={store.users}
-        onAddUser={store.addUser}
-        onUpdateUser={store.updateUser}
-        onDeleteUser={store.deleteUser}
-        onEditUser={setEditingUser}
-        // Teach Mode
-        onTeachModeChange={store.setTeachModeEnabled}
-        // Quick Actions
-        onQuickInvoice={() => setQuickAction('Invoice')}
-        onQuickReceipt={() => setQuickAction('Receipt')}
-        onQuickPayment={() => setQuickAction('Payment')}
-        onQuickWire={() => setQuickAction('Wire')}
-        onQuick1099={() => setQuickAction('1099')}
-      />
-
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {activeEntity ? (
-          <Dashboard 
-            entity={activeEntity} 
-            onOpenApiConsole={() => setShowApiConsole(true)}
-            onEditEntity={setActiveEntityId}
-          />
-        ) : (
-          <SystemOverview 
-            entities={store.entities}
-            accounts={store.accounts}
-            journals={store.journals}
-            wallets={store.wallets}
-            onUpdateEntity={store.updateEntity}
-            onAddEntity={store.addEntity}
-            onDeleteEntity={store.deleteEntity}
-            initialWizard={autoLaunchWizard}
+      >
+        {mainContent}
+        {/* Overlays and Modals still need to be rendered */}
+        {showSettings && (
+          <SettingsModal 
+            onClose={() => setShowSettings(false)}
+            onExport={() => JSON.stringify(store, null, 2)}
+            onImport={store.importData}
+            onReset={store.resetData}
           />
         )}
-      </div>
+        {showIRM && (
+          <IRMTreeWidget 
+            isOpen={showIRM}
+            onClose={() => setShowIRM(false)}
+            entities={store.entities}
+            documents={store.documents}
+            onFileAll={() => {}}
+          />
+        )}
+        {editingUser && (
+          <UserProfileModal 
+            user={editingUser}
+            currentUser={store.currentUser}
+            onSave={(u) => { store.updateUser(u); setEditingUser(null); }}
+            onDelete={(id) => { store.deleteUser(id); setEditingUser(null); }}
+            onClose={() => setEditingUser(null)}
+          />
+        )}
+      </MobileQuickBooksLayout>
+    );
+  }
+
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
 
       {/* QUICK ACTION MODALS (Global Context) */}
       {activeEntity && quickAction === 'Receipt' && (
