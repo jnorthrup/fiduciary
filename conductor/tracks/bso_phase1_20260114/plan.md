@@ -116,11 +116,11 @@
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 6: UI Integration' (Protocol in workflow.md)
 
-## Phase 7: Environment Configuration
+## Phase 7: Environment Configuration [checkpoint: PENDING]
 
 ### 7.1 Mock/Real Mode Switching
-- [ ] Task: Add environment variable for BSO mock/real mode
-- [ ] Task: Implement mode switching logic in BSO proxy
-- [ ] Task: Add mode indicator in UI for debugging
+- [x] Task: Add environment variable for BSO mock/real mode
+- [x] Task: Implement mode switching logic in BSO proxy
+- [x] Task: Add mode indicator in UI for debugging
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 7: Environment Configuration' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 7: Environment Configuration' (Protocol in workflow.md)
