@@ -142,7 +142,7 @@
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Manual Annotation Creation' (Protocol in workflow.md)
 
-## Phase 5: Performance & Polish
+## Phase 5: Performance & Polish [checkpoint: 7686563]
 
 ### 5.1 Performance Optimization
 - [x] Task: Write tests for overlay render performance
