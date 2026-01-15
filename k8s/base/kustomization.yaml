@@ -1,0 +1,58 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fiduciary-system
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - ../ingress.yaml
+  - ../networkpolicies.yaml
+  - ../infrastructure/redis/deployment.yaml
+  - ../infrastructure/redis/service.yaml
+  - ../infrastructure/rabbitmq/deployment.yaml
+  - ../infrastructure/rabbitmq/service.yaml
+  - ../infrastructure/postgres/deployment.yaml
+  - ../infrastructure/postgres/service.yaml
+  - ../services/api-gateway/deployment.yaml
+  - ../services/api-gateway/service.yaml
+  - ../services/irs-service/deployment.yaml
+  - ../services/irs-service/service.yaml
+  - ../services/irs-service/hpa.yaml
+  - ../services/irs-service/poddisruptionbudget.yaml
+  - ../services/bso-service/deployment.yaml
+  - ../services/bso-service/service.yaml
+  - ../services/ledger-service/deployment.yaml
+  - ../services/ledger-service/service.yaml
+  - ../services/ledger-service/hpa.yaml
+  - ../services/banking-service/deployment.yaml
+  - ../services/banking-service/service.yaml
+  - ../services/audit-service/deployment.yaml
+  - ../services/audit-service/service.yaml
+  - ../observability/prometheus/configmap.yaml
+  - ../observability/prometheus/deployment.yaml
+  - ../observability/prometheus/service.yaml
+  - ../observability/grafana/deployment.yaml
+  - ../observability/grafana/service.yaml
+  - ../observability/grafana/datasources.yaml
+  - ../observability/grafana/dashboards.yaml
+  - ../observability/grafana/secrets.yaml
+
+images:
+  - name: fiduciary/api-gateway
+    newTag: latest
+  - name: fiduciary/irs-service
+    newTag: latest
+  - name: fiduciary/bso-service
+    newTag: latest
+  - name: fiduciary/ledger-service
+    newTag: latest
+  - name: fiduciary/banking-service
+    newTag: latest
+  - name: fiduciary/auth-service
+    newTag: latest
+  - name: fiduciary/audit-service
+    newTag: latest
+  - name: fiduciary/teach-mode-service
+    newTag: latest
