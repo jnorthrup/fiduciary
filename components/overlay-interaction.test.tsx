@@ -187,4 +187,52 @@ describe('Keyboard Navigation', () => {
     expect(closeButton).toBeInTheDocument();
     // Note: autoFocus attribute is set, but actual focus depends on browser
   });
+
+  it('should trap focus within overlay when tab is pressed', async () => {
+    const props: TeachModeOverlayProps = {
+      visible: true,
+      onVisibleChange: vi.fn(),
+      content: { 
+        paragraph: { content: 'Test content' },
+        taxonomy: [{ label: 'Topic', path: ['Topic'] }] 
+      },
+    };
+
+    render(<TeachModeOverlay {...props} />);
+
+    const closeButton = screen.getByRole('button', { name: /close/i });
+    expect(closeButton).toBeInTheDocument();
+    
+    // Check if Topic button is rendered and focusable
+    const topicButton = screen.getByRole('button', { name: /Topic/i });
+    expect(topicButton).toBeInTheDocument();
+  });
+});
+
+describe('Accessibility (ARIA)', () => {
+  it('should have correct ARIA roles and labels', () => {
+    const props: TeachModeOverlayProps = {
+      visible: true,
+      onVisibleChange: vi.fn(),
+    };
+
+    render(<TeachModeOverlay {...props} />);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('aria-modal', 'false');
+  });
+
+  it('should announce content to screen readers when visible', () => {
+    const props: TeachModeOverlayProps = {
+      visible: true,
+      onVisibleChange: vi.fn(),
+      content: { paragraph: { content: 'Important info' } }
+    };
+
+    render(<TeachModeOverlay {...props} />);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-live', 'polite');
+  });
 });

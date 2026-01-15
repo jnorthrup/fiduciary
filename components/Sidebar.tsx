@@ -5,6 +5,8 @@ import { Entity, EntityRole, User } from '../types';
 import { TeamManagementModal } from './modals/TeamManagementModal';
 import { UseCaseLogger } from '../services/useCaseLogger';
 
+import { TeachModeToggle } from './teach-mode-toggle';
+
 interface SidebarProps {
   activeEntityId: string | null;
   onSelectEntity: (id: string | null) => void;
@@ -19,6 +21,8 @@ interface SidebarProps {
   onUpdateUser: (user: User) => void;
   onDeleteUser: (id: string) => void;
   onEditUser: (user: User) => void;
+  // Teach Mode
+  onTeachModeChange?: (enabled: boolean) => void;
   // Quick Actions
   onQuickInvoice: () => void;
   onQuickReceipt: () => void;
@@ -30,6 +34,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
     activeEntityId, onSelectEntity, onOpenIRM, onOpenSettings, entities, isOpen, onClose,
     currentUser, users, onAddUser, onUpdateUser, onDeleteUser, onEditUser,
+    onTeachModeChange,
     onQuickInvoice, onQuickReceipt, onQuickPayment, onQuickWire, onQuick1099
 }) => {
   const [showTeamModal, setShowTeamModal] = useState(false);
@@ -170,6 +175,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
              </div>
           </div>
         </nav>
+
+        {/* Teach Mode Toggle */}
+        <div className="p-4 border-t border-slate-900 bg-slate-950/50">
+           <TeachModeToggle 
+              onChange={onTeachModeChange}
+              className="w-full bg-slate-900/50 border-slate-800" 
+           />
+        </div>
 
         {/* User Profile Hook */}
         <div className="p-4 border-t border-slate-900 bg-slate-950/80">

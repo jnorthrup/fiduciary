@@ -30,7 +30,7 @@ export function TeachModeOverlay({
 }: TeachModeOverlayProps) {
   const triggerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = React.useState({ x: 0, y: 0 });
+  const [position, setPosition] = React.useState<{ x: number; y: number; width?: number }>({ x: 0, y: 0 });
   const showTimeoutRef = useRef<number>();
   const hideTimeoutRef = useRef<number>();
   const triggerElementRef = useRef<HTMLElement>();
@@ -54,29 +54,48 @@ export function TeachModeOverlay({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [visible, onVisibleChange]);
 
-  // Close on ESC key
-  useEffect(() => {
-    if (!visible) return;
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        handleClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [visible]);
-
   // Handle close with focus return
   const handleClose = useCallback(() => {
-    triggerElementRef.current = document.activeElement as HTMLElement;
     onVisibleChange(false);
     // Return focus to trigger after a brief delay to allow render
     setTimeout(() => {
       triggerElementRef.current?.focus();
     }, 0);
   }, [onVisibleChange]);
+
+  // Handle ESC key and Focus Trap
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+
+      if (event.key === 'Tab' && overlayRef.current) {
+        const focusableElements = overlayRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (event.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            event.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            event.preventDefault();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [visible, handleClose]);
 
   // Handle mouse enter on trigger
   const handleMouseEnter = useCallback(() => {
@@ -155,9 +174,11 @@ export function TeachModeOverlay({
           style={{
             left: `${position.x}px`,
             top: `${position.y}px`,
+            width: position.width ? `${position.width}px` : undefined,
           }}
           role="dialog"
           aria-modal="false"
+          aria-live="polite"
         >
           <button
             onClick={handleClose}

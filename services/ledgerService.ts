@@ -183,8 +183,10 @@ type LedgerContextType = LedgerDb & {
   canResume: boolean;
   isCloudEnabled: boolean;
   is2FAOpen: boolean;
+  teachModeEnabled: boolean;
 
   // Methods
+  setTeachModeEnabled: (enabled: boolean) => void;
   connectToFirebase: (config: any) => Promise<boolean>;
   pushLocalToCloud: () => Promise<void>;
   requestAuthorization: (callback: () => void) => void;
@@ -349,6 +351,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [canResume, setCanResume] = useState(!!initialData.user.name);
   const [isCloudEnabled, setIsCloudEnabled] = useState(false);
   const [is2FAOpen, setIs2FAOpen] = useState(false);
+  const [teachModeEnabled, setTeachModeEnabled] = useState(false);
   const [pendingCallback, setPendingCallback] = useState<(() => void) | null>(null);
 
   // --- Persistence & Sync ---
@@ -399,6 +402,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // --- Effects ---
   useEffect(() => {
+    // Load Teach Mode preference
+    try {
+      const stored = localStorage.getItem('teachModeEnabled');
+      if (stored === 'true') setTeachModeEnabled(true);
+    } catch (e) {}
+
     const handler = setTimeout(() => {
       if (currentUser.name || db.entities.length > 0) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...db, currentUser, secrets, settings }));
@@ -465,6 +474,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const contextValue: LedgerContextType = {
     ...db,
     currentUser, apiSystemStatus, searchResults, isSearching, secrets, settings, changeGraph, canResume, isCloudEnabled, is2FAOpen,
+    teachModeEnabled,
+    setTeachModeEnabled,
     connectToFirebase,
     pushLocalToCloud: async () => { if (isCloudEnabled) { await batchUpload('entities', db.entities); await batchUpload('accounts', db.accounts); await batchUpload('journals', db.journals); } },
     requestAuthorization: (cb) => { setPendingCallback(() => cb); setIs2FAOpen(true); },

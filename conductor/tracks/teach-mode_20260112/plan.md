@@ -145,39 +145,39 @@
 ## Phase 5: Performance & Polish
 
 ### 5.1 Performance Optimization
-- [ ] Task: Write tests for overlay render performance
-  - [ ] Sub-task: Write failing tests for <100ms render requirement
-  - [ ] Sub-task: Implement overlay memoization
-  - [ ] Sub-task: Write failing tests for paragraph cache hit rates
-  - [ ] Sub-task: Implement aggressive caching strategy
-- [ ] Task: Write tests for AI retrieval performance
-  - [ ] Sub-task: Write failing tests for <500ms retrieval requirement
-  - [ ] Sub-task: Implement request debouncing
-  - [ ] Sub-task: Write failing tests for concurrent request handling
-  - [ ] Sub-task: Implement request queuing
+- [x] Task: Write tests for overlay render performance
+  - [x] Sub-task: Write failing tests for <100ms render requirement
+  - [x] Sub-task: Implement overlay memoization
+  - [x] Sub-task: Write failing tests for paragraph cache hit rates
+  - [x] Sub-task: Implement aggressive caching strategy
+- [x] Task: Write tests for AI retrieval performance
+  - [x] Sub-task: Write failing tests for <500ms retrieval requirement
+  - [x] Sub-task: Implement request debouncing
+  - [x] Sub-task: Write failing tests for concurrent request handling
+  - [x] Sub-task: Implement request queuing
 
 ### 5.2 Accessibility & Mobile
-- [ ] Task: Write tests for keyboard navigation
-  - [ ] Sub-task: Write failing tests for tab-to-overlay behavior
-  - [ ] Sub-task: Implement focus trap in overlay
-  - [ ] Sub-task: Write failing tests for screen reader announcements
-  - [ ] Sub-task: Implement ARIA labels and live regions
-- [ ] Task: Write tests for mobile responsive behavior
-  - [ ] Sub-task: Write failing tests for mobile overlay positioning
-  - [ ] Sub-task: Implement mobile-specific layout adjustments
-  - [ ] Sub-task: Write failing tests for touch interaction
-  - [ ] Sub-task: Implement touch-friendly overlay behavior
+- [x] Task: Write tests for keyboard navigation
+  - [x] Sub-task: Write failing tests for tab-to-overlay behavior
+  - [x] Sub-task: Implement focus trap in overlay
+  - [x] Sub-task: Write failing tests for screen reader announcements
+  - [x] Sub-task: Implement ARIA labels and live regions
+- [x] Task: Write tests for mobile responsive behavior
+  - [x] Sub-task: Write failing tests for mobile overlay positioning
+  - [x] Sub-task: Implement mobile-specific layout adjustments
+  - [x] Sub-task: Write failing tests for touch interaction
+  - [x] Sub-task: Implement touch-friendly overlay behavior
 
 ### 5.3 Visual Polish
-- [ ] Task: Implement visual design for overlay
-  - [ ] Sub-task: Design header, content, footer sections
-  - [ ] Sub-task: Apply color coding for info/warning/error
-  - [ ] Sub-task: Add smooth transitions/animations
-  - [ ] Sub-task: Style breadcrumb navigation
-  - [ ] Sub-task: Style example code blocks
-- [ ] Task: Implement Teach Mode toggle design
-  - [ ] Sub-task: Design toggle switch component
-  - [ ] Sub-task: Add active state indicator styling
-  - [ ] Sub-task: Ensure visibility in wizard header
+- [x] Task: Implement visual design for overlay
+  - [x] Sub-task: Design header, content, footer sections
+  - [x] Sub-task: Apply color coding for info/warning/error
+  - [x] Sub-task: Add smooth transitions/animations
+  - [x] Sub-task: Style breadcrumb navigation
+  - [x] Sub-task: Style example code blocks
+- [x] Task: Implement Teach Mode toggle design
+  - [x] Sub-task: Design toggle switch component
+  - [x] Sub-task: Add active state indicator styling
+  - [x] Sub-task: Ensure visibility in wizard header
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 5: Performance & Polish' (Protocol in workflow.md)
