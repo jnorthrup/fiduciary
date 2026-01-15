@@ -8,6 +8,7 @@ import { irisOAuthRouter, authenticateToken } from './routes/iris-oauth.js';
 import { generateClientJWT, generateUserJWT } from './jwt-utils.js';
 import irsPortalAuthRouter from './routes/irs-portal-auth.js';
 import auditRouter from './routes/audit.js';
+import bankingRouter from './routes/banking.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -86,6 +87,13 @@ app.use('/api/irs-portal/auth', irsPortalAuthRouter);
 
 // Mount audit router at /api/audit
 app.use('/api/audit', auditRouter);
+
+// ============================================================================
+// Banking API Routes
+// ============================================================================
+
+// Mount banking router at /api/banking
+app.use('/api/banking', bankingRouter);
 
 
 /**
