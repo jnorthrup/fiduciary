@@ -5,7 +5,7 @@
  * Provides REST endpoints for multi-bank connectivity.
  */
 
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
 // Import banking types (Note: In a real implementation, you'd use a JS-compatible version)
@@ -556,4 +556,4 @@ router.get('/summary', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
