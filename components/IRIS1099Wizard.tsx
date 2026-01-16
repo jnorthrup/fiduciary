@@ -249,6 +249,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
   };
 
   const handleAuthenticate = async () => {
+    console.log('[Wizard] Authenticating...');
     setTestingConnection(true);
     setConnectionError(null);
     setConnectionCheckState('checking');
@@ -256,6 +257,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
     // Initial connection test
     try {
       const health = await irsApi.healthCheck();
+      console.log('[Wizard] Health check:', health);
       if (health.status !== 'healthy') {
         setConnectionCheckState('invalid');
         throw new Error('IRS API report UNHEALTHY status. Please check your network or transmitter connectivity.');
@@ -264,6 +266,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
       setConnectionCheckState('valid');
       await new Promise(r => setTimeout(r, 500)); // Brief delay for success animation
     } catch (e: any) {
+      console.log('[Wizard] Auth error:', e);
       setConnectionCheckState('invalid');
       setConnectionError(e.message || 'Failed to establish secure connection to IRS API Proxy');
       setTestingConnection(false);
@@ -271,6 +274,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
     }
 
     // Simulate credential verification/handshake
+    console.log('[Wizard] Verifying credentials...');
     await new Promise(r => setTimeout(r, 1500));
 
     if (tcc) {
@@ -295,6 +299,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
     // Check if 2FA is required for this account
     // In production, this would be determined by the API response
     const requires2FA = (import.meta as any).env.VITE_REQUIRE_2FA !== 'false';
+    console.log('[Wizard] 2FA required:', requires2FA);
 
     if (requires2FA) {
       // Initiate 2FA flow
@@ -303,6 +308,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ onClose }) => {
       // Simulate sending 2FA code
       await initiateTwoFA();
     } else {
+      console.log('[Wizard] Proceeding to Filer step');
       setCurrentStep('Filer');
     }
   };

@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Entity, Invoice, Payable, SettlementInstruction, ExternalRail, DCFlag, PayeeBankingDetails } from '../types';
 import { useLedgerStore } from '../services/ledgerService';
+import { RailRegistry } from '../services/railAdapters';
+import { PaymentRail, PaymentInstruction } from '../types/settlement';
 import { Landmark, ArrowRight, ShieldCheck, FileText, Code2, PlayCircle, Loader2, CheckCircle2, FilePlus, Banknote } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -10,25 +12,21 @@ interface Props {
     onClose: () => void;
 }
 
-// Simple Mock ACH Generator
-function generateACHFile(instruction: SettlementInstruction): string {
-    const now = new Date();
-    const dateStr = now.toISOString().slice(2, 8).replace(/-/g, ''); // YYMMDD
-    const timeStr = now.toISOString().slice(11, 15).replace(/:/g, ''); // HHMM
-
-    // File Header Record (1)
-    let file = `101 073000228 123456789 ${dateStr} ${timeStr} A 094101\n`;
-    // Batch Header Record (5)
-    file += `5225 ${instruction.payee.substring(0, 16).padEnd(16)} 0045678901 PPD Payment    ${dateStr} 0001 073000228 0000001\n`;
-    // Entry Detail Record (6)
-    if (instruction.payee_banking) {
-        file += `622 ${instruction.payee_banking.routingNumber.substring(0, 8)}${instruction.payee_banking.routingNumber.charAt(8)} ${instruction.payee_banking.accountNumber.padEnd(17)} ${Math.round(instruction.amount * 100).toString().padStart(10, '0')} ${instruction.payment_id.padEnd(15)} ${instruction.payee.substring(0, 22).padEnd(22)} 00 073000220000001\n`;
+// Helper to map UI Rail selection to Adapter Rail
+function mapToPaymentRail(rail: ExternalRail): PaymentRail {
+    switch (rail) {
+        case ExternalRail.ACH:
+        case ExternalRail.SPONSORED_ACH:
+            return PaymentRail.ODFI_ACH;
+        case ExternalRail.SPONSORED_WIRE:
+            return PaymentRail.WIRE;
+        case ExternalRail.CHECK_VENDOR:
+        case ExternalRail.MANUAL_TENDER:
+        case ExternalRail.MANUAL_TENDER_CERTIFIED_FUNDS:
+            return PaymentRail.MANUAL_CHECK;
+        default:
+            return PaymentRail.MANUAL_CHECK;
     }
-    // Batch Control Record (8)
-    file += `8225 000001 00073000228 000000000001 ${Math.round(instruction.amount * 100).toString().padStart(12, '0')} 000000000000 ${instruction.entityId.padEnd(10)} 073000228 0000001\n`;
-    // File Control Record (9)
-    file += `9000001 000001 00000001 00073000228 000000000001 ${Math.round(instruction.amount * 100).toString().padStart(12, '0')} 000000000000\n`;
-    return file;
 }
 
 export const SettlementEngine: React.FC<Props> = ({ entity, onClose }) => {
@@ -113,14 +111,14 @@ export const SettlementEngine: React.FC<Props> = ({ entity, onClose }) => {
         setStep(2);
     };
 
-    const handleGenerateInstruction = () => {
+    const handleGenerateInstruction = async () => {
         const bankingDetails: PayeeBankingDetails = {
             routingNumber,
             accountNumber,
             accountType
         };
 
-        const instruction: SettlementInstruction = {
+        const settlementInstruction: SettlementInstruction = {
             payment_id: `PAY-${Date.now()}`,
             entityId: entity.id,
             payee,
@@ -138,11 +136,37 @@ export const SettlementEngine: React.FC<Props> = ({ entity, onClose }) => {
             date_created: new Date().toISOString()
         };
 
-        setGeneratedJson(JSON.stringify(instruction, null, 2));
+        setGeneratedJson(JSON.stringify(settlementInstruction, null, 2));
 
-        // Generate Mock ACH
-        if (rail === ExternalRail.SPONSORED_ACH || rail === ExternalRail.ACH) {
-            setAchFileContent(generateACHFile(instruction));
+        // Generate Payload via Adapter
+        const adapterRail = mapToPaymentRail(rail);
+        try {
+            const adapter = RailRegistry.get(adapterRail);
+            
+            // Map to PaymentInstruction interface
+            const paymentInstruction: PaymentInstruction = {
+                id: settlementInstruction.payment_id,
+                entityId: entity.id,
+                payeeId: payee, // Using name as ID for now
+                amount: amount,
+                currency: 'USD',
+                description: description,
+                rail: adapterRail,
+                executionDate: new Date().toISOString(),
+                metadata: {
+                    payeeBanking: bankingDetails
+                }
+            };
+
+            if (adapter.generate_payload) {
+                const payload = await adapter.generate_payload(paymentInstruction);
+                setAchFileContent(payload);
+            } else {
+                setAchFileContent('(No file payload required for this rail)');
+            }
+        } catch (e) {
+            console.error(e);
+            setAchFileContent('Error generating payload: ' + e);
         }
 
         setStep(3);
@@ -154,40 +178,54 @@ export const SettlementEngine: React.FC<Props> = ({ entity, onClose }) => {
         });
     };
 
-    const handleExecute = () => {
+    const handleExecute = async () => {
         if (!isAuthorized) return;
         setLoading(true);
 
-        setTimeout(() => {
-            const instruction: SettlementInstruction = JSON.parse(generatedJson);
-            instruction.status = 'Settled'; // Simulator immediately settles
+        const adapterRail = mapToPaymentRail(rail);
+        const adapter = RailRegistry.get(adapterRail);
+        const instruction: SettlementInstruction = JSON.parse(generatedJson); // Retrieve from state
 
-            addSettlement(instruction);
+        try {
+            // Submit via Adapter
+            const result = await adapter.submit_payment(instruction.payment_id);
+            
+            if (result.success) {
+                instruction.status = 'Settled';
+                addSettlement(instruction);
 
-            // Post Ledger Journal for Settlement
-            // DR Accounts Payable | CR Asset (Funding Source)
-            const sourceAccount = accounts.find(a => a.id === fundingSource);
+                // Post Ledger Journal for Settlement
+                // DR Accounts Payable | CR Asset (Funding Source)
+                const sourceAccount = accounts.find(a => a.id === fundingSource);
 
-            postJournal(
-                entity.id,
-                new Date().toISOString().split('T')[0],
-                `Settlement to ${payee} via ${rail}`,
-                'SETTLEMENT',
-                [
-                    { accountCode: '200000', dc: DCFlag.Debit, amount: amount, accountName: 'Accounts Payable' },
-                    {
-                        accountId: fundingSource,
-                        accountCode: sourceAccount?.code || '101000',
-                        accountName: sourceAccount?.name || 'Asset',
-                        dc: DCFlag.Credit,
-                        amount: amount
-                    }
-                ]
-            );
-
+                postJournal(
+                    entity.id,
+                    new Date().toISOString().split('T')[0],
+                    `Settlement to ${payee} via ${rail}`,
+                    'SETTLEMENT',
+                    [
+                        { accountCode: '200000', dc: DCFlag.Debit, amount: amount, accountName: 'Accounts Payable' },
+                        {
+                            accountId: fundingSource,
+                            accountCode: sourceAccount?.code || '101000',
+                            accountName: sourceAccount?.name || 'Asset',
+                            dc: DCFlag.Credit,
+                            amount: amount
+                        }
+                    ]
+                );
+                
+                setLoading(false);
+                setStep(4);
+            } else {
+                alert('Payment Failed: ' + result.error);
+                setLoading(false);
+            }
+        } catch (e) {
+            console.error(e);
             setLoading(false);
-            setStep(4);
-        }, 1500);
+            alert('System Error executing payment');
+        }
     };
 
     return (

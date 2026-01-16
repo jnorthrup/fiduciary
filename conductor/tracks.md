@@ -35,5 +35,18 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-## [x] Track: Mobile + QuickBooks Layout
+## [ ] Track: Mobile + QuickBooks Layout
 *Link: [./conductor/tracks/mobile_quickbooks_layout_20260115/plan.md](./conductor/tracks/mobile_quickbooks_layout_20260115/plan.md)*
+
+---
+
+## [ ] Track: Settlement Architecture & Rail Adapters
+*Link: [./conductor/tracks/settlement_architecture_20260115/plan.md](./conductor/tracks/settlement_architecture_20260115/plan.md)*
+
+---
+
+## [~] Track: Event-Driven CI/CD for Ledger PWA (WAL+LSM)
+*Link: [./conductor/tracks/cid_deploy_20260115/](./conductor/tracks/cid_deploy_20260115/)*
+
+---
+

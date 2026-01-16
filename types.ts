@@ -329,7 +329,7 @@ export interface FuzzConfig {
 
 export interface SystemSettings {
   layoutMode?: 'Standard' | 'MobileQuickBooks';
-  fuzzing: {
+  fuzzing: FuzzConfig;
   network: string;
   firebaseConfig?: {
     apiKey: string;

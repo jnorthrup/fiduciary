@@ -5,8 +5,10 @@ import * as types from '../types';
 import { simulateTransmission, searchIRSManual } from './irsApiService';
 import { UseCaseLogger } from './useCaseLogger';
 import { GoogleGenAI } from "@google/genai";
-import { initFirebase, getDb, batchUpload } from './firebase';
+import { initFirebase, getDb, batchUpload, getFirebaseAuth } from './firebase';
 import { collection, onSnapshot, setDoc, doc } from 'firebase/firestore';
+import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
+import { cryptoService } from './cryptoService';
 import * as accountService from './accountService';
 
 // Unified State Interface to reduce useState bloat
@@ -112,12 +114,25 @@ function createResource<T>(promise: Promise<T>) {
 const STORAGE_KEY = 'trust_ledger_state';
 
 // The Async Data Fetcher
-async function fetchLedgerData(): Promise<{ db: LedgerDb, user: types.User, secrets: types.ApiSecrets, settings: types.SystemSettings }> {
+async function fetchLedgerData(key?: CryptoKey): Promise<{ db: LedgerDb, user: types.User, secrets: types.ApiSecrets, settings: types.SystemSettings }> {
   // 1. Try Local Storage first
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
-      const parsed = JSON.parse(saved);
+      let data = saved;
+      // If key is provided, attempt to decrypt
+      if (key) {
+        const encrypted: any = JSON.parse(saved);
+        if (encrypted.ciphertext) {
+          data = await cryptoService.decrypt(
+            Uint8Array.from(atob(encrypted.ciphertext), c => c.charCodeAt(0)).buffer,
+            key,
+            new Uint8Array(atob(encrypted.iv).split('').map(c => c.charCodeAt(0)))
+          );
+        }
+      }
+
+      const parsed = JSON.parse(data);
       // Ensure we merge with EMPTY_DB to ensure all keys exist even if local storage is old
       const db = { ...EMPTY_DB, ...parsed };
       // Clean up top-level keys that might have been merged into db by mistake if structure changed, 
@@ -168,9 +183,6 @@ async function fetchLedgerData(): Promise<{ db: LedgerDb, user: types.User, secr
   };
 }
 
-// Initialize the resource outside the component lifecycle to start fetching immediately
-const initialDataResource = createResource(fetchLedgerData());
-
 // Explicit Context Type Definition
 type LedgerContextType = LedgerDb & {
   currentUser: types.User;
@@ -188,6 +200,7 @@ type LedgerContextType = LedgerDb & {
   // Methods
   setTeachModeEnabled: (enabled: boolean) => void;
   connectToFirebase: (config: any) => Promise<boolean>;
+  signInWithGoogle: () => Promise<types.User | null>;
   pushLocalToCloud: () => Promise<void>;
   requestAuthorization: (callback: () => void) => void;
   verify2FA: (code: string) => boolean;
@@ -324,11 +337,20 @@ export const useLedgerStore = () => {
   return context;
 };
 
-export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // SUSPENSE: This will throw if data is not yet ready
-  const initialData = initialDataResource.read();
+export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey?: CryptoKey }> = ({ children, encryptionKey }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [initialData, setInitialData] = useState<any>(null);
 
-  // Consolidated Ledger Database State initialized from Suspense resource
+  useEffect(() => {
+    fetchLedgerData(encryptionKey).then(data => {
+      setInitialData(data);
+      setIsLoaded(true);
+    });
+  }, [encryptionKey]);
+
+  if (!isLoaded) return null; // Or show a local loading state
+
+  // Consolidated Ledger Database State
   const [db, setDb] = useState<LedgerDb>(initialData.db);
 
   // System/UI State
@@ -406,16 +428,26 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       const stored = localStorage.getItem('teachModeEnabled');
       if (stored === 'true') setTeachModeEnabled(true);
-    } catch (e) {}
+    } catch (e) { }
 
-    const handler = setTimeout(() => {
+    const handler = setTimeout(async () => {
       if (currentUser.name || db.entities.length > 0) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...db, currentUser, secrets, settings }));
+        const state = JSON.stringify({ ...db, currentUser, secrets, settings });
+        if (encryptionKey) {
+          const { ciphertext, iv } = await cryptoService.encrypt(state, encryptionKey);
+          const encrypted = JSON.stringify({
+            ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+            iv: btoa(String.fromCharCode(...iv))
+          });
+          localStorage.setItem(STORAGE_KEY, encrypted);
+        } else {
+          localStorage.setItem(STORAGE_KEY, state);
+        }
         if (!canResume) setCanResume(true);
       }
     }, 1000);
     return () => clearTimeout(handler);
-  }, [db, currentUser, secrets, settings]);
+  }, [db, currentUser, secrets, settings, encryptionKey]);
 
   useEffect(() => {
     // Connect to firebase if config exists in loaded settings
@@ -471,12 +503,44 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return success;
   };
 
+  const signInWithGoogle = async (): Promise<types.User | null> => {
+    const auth = getFirebaseAuth();
+    if (!auth) {
+      console.error("Firebase Auth not initialized");
+      return null;
+    }
+
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      const u: types.User = {
+        id: user.uid,
+        name: user.displayName || 'Google User',
+        email: user.email || '',
+        role: 'Owner' as types.UserRole,
+        avatarInitials: (user.displayName || 'GU').substring(0, 2).toUpperCase(),
+        lastActive: 'Now',
+        _version: '1'
+      };
+
+      setCurrentUser(u);
+      addItem('users', u);
+      return u;
+    } catch (e) {
+      console.error("Google Sign-In failed", e);
+      return null;
+    }
+  };
+
   const contextValue: LedgerContextType = {
     ...db,
     currentUser, apiSystemStatus, searchResults, isSearching, secrets, settings, changeGraph, canResume, isCloudEnabled, is2FAOpen,
     teachModeEnabled,
     setTeachModeEnabled,
     connectToFirebase,
+    signInWithGoogle,
     pushLocalToCloud: async () => { if (isCloudEnabled) { await batchUpload('entities', db.entities); await batchUpload('accounts', db.accounts); await batchUpload('journals', db.journals); } },
     requestAuthorization: (cb) => { setPendingCallback(() => cb); setIs2FAOpen(true); },
     verify2FA: (code) => { if (code.length === 6 && !isNaN(Number(code))) { pendingCallback?.(); setIs2FAOpen(false); return true; } return false; },
