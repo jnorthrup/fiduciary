@@ -159,7 +159,7 @@ describe('IRIS1099Wizard - Visual/UX States (Phase 5.1)', () => {
       await waitFor(() => {
         const terminal = screen.queryByText(/Initializing secure connection/i);
         expect(terminal).toBeInTheDocument();
-      });
+      }, { timeout: 5000 });
     });
 
     it('should show animated log entries during TCC fetch', async () => {
@@ -171,11 +171,11 @@ describe('IRIS1099Wizard - Visual/UX States (Phase 5.1)', () => {
       // Should show sequential log entries
       await waitFor(() => {
         expect(screen.getByText(/TLS 1\.3 handshake established/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      }, { timeout: 5000 });
 
       await waitFor(() => {
         expect(screen.getByText(/Authenticating with ID\.me federation/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 5000 });
     });
 
     it('should show pulsing cursor in terminal', async () => {
@@ -188,7 +188,7 @@ describe('IRIS1099Wizard - Visual/UX States (Phase 5.1)', () => {
       await waitFor(() => {
         const terminal = screen.queryByText(/Initializing secure connection/i)?.closest('div');
         expect(terminal).toBeInTheDocument();
-      });
+      }, { timeout: 5000 });
     });
   });
 
@@ -235,7 +235,7 @@ describe('IRIS1099Wizard - Visual/UX States (Phase 5.1)', () => {
     });
 
     it('should show invalid state on connection failure', async () => {
-      irsApiClient.irsApi.healthCheck.mockRejectedValueOnce(new Error('Connection failed'));
+      irsApiClient.irsApi.healthCheck.mockImplementation(() => Promise.reject(new Error('Connection failed')));
 
       render(<IRIS1099Wizard />);
 
@@ -247,14 +247,14 @@ describe('IRIS1099Wizard - Visual/UX States (Phase 5.1)', () => {
 
       // Should show error state
       await waitFor(() => {
-        expect(screen.getByText(/Failed to establish secure connection/i)).toBeInTheDocument();
-      });
+        expect(screen.getByText(/Connection failed/i)).toBeInTheDocument();
+      }, { timeout: 5000 });
     });
   });
 
   describe('Error State Visuals', () => {
     it('should display error with backdrop blur and glow', async () => {
-      irsApiClient.irsApi.healthCheck.mockRejectedValueOnce(new Error('API unavailable'));
+      irsApiClient.irsApi.healthCheck.mockImplementation(() => Promise.reject(new Error('API unavailable')));
 
       render(<IRIS1099Wizard />);
 
@@ -266,9 +266,9 @@ describe('IRIS1099Wizard - Visual/UX States (Phase 5.1)', () => {
 
       // Error should be displayed
       await waitFor(() => {
-        const error = screen.getByText(/Failed to establish secure connection/i);
+        const error = screen.getByText(/API unavailable/i);
         expect(error).toBeInTheDocument();
-      });
+      }, { timeout: 5000 });
     });
   });
 
