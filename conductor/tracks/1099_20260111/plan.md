@@ -179,7 +179,7 @@
   - [x] Sub-task: Implement real-time TCC format feedback with HSL color-coded states
   - [x] Sub-task: Add "Test Connection" button with animated check sequence
   - [x] Sub-task: Improve error states for API health and auth failures
-- [ ] Task: Comprehensive Testing
+- [x] Task: Comprehensive Testing [6103767]
   - [x] Sub-task: Verify build passes with no regressions
-  - [ ] Sub-task: Add tests for visual/UX states (animations, transitions)
+  - [x] Sub-task: Add tests for visual/UX states (animations, transitions)
 - [~] Task: Conductor - User Manual Verification 'Phase 5.1 Visual & UX Overhaul' (Protocol in workflow.md)
