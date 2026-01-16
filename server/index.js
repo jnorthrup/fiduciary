@@ -10,6 +10,9 @@ import irsPortalAuthRouter from './routes/irs-portal-auth.js';
 import auditRouter from './routes/audit.js';
 import bankingRouter from './routes/banking.js';
 import bsoRouter from './routes/bso.js';
+import ledgerRouter from './routes/ledger.js';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import { connect as connectBus, subscribe } from './lib/event-bus.js';
 import admin from 'firebase-admin';
 
 // Initialize Firebase Admin
@@ -143,6 +146,28 @@ app.use('/api/banking', verifyFirebaseToken, bankingRouter);
 
 // Mount BSO router at /api/bso
 app.use('/api/bso', verifyFirebaseToken, bsoRouter);
+
+// Mount Ledger router
+if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'ledger-service') {
+  // For demo, we skip auth on this specific route for easier testing, or use verifyFirebaseToken
+  app.use('/api/ledger', ledgerRouter); 
+} else if (process.env.SERVICE_NAME === 'api-gateway' && process.env.LEDGER_SERVICE_URL) {
+  // Proxy to Ledger Service
+  app.use('/api/ledger', createProxyMiddleware({ 
+    target: process.env.LEDGER_SERVICE_URL, 
+    changeOrigin: true,
+    pathRewrite: { '^/api/ledger': '/api/ledger' }
+  }));
+}
+
+if (process.env.SERVICE_NAME === 'api-gateway' && process.env.AUDIT_SERVICE_URL) {
+  // Proxy to Audit Service
+  app.use('/api/audit', createProxyMiddleware({ 
+    target: process.env.AUDIT_SERVICE_URL, 
+    changeOrigin: true,
+    pathRewrite: { '^/api/audit': '/api/audit' }
+  }));
+}
 
 
 /**
@@ -718,10 +743,33 @@ app.use((err, req, res, next) => {
 // Start Server
 // ============================================================================
 
-app.listen(PORT, () => {
-  logger.info(`IRS IRIS A2A API Server running on http://localhost:${PORT}`);
-  logger.info(`OAuth: http://localhost:${PORT}/api/iris/auth/oauth/v2/token`);
-  logger.info(`Demo JWT Gen: http://localhost:${PORT}/api/iris/demo/authenticate`);
-});
+const startServer = async () => {
+  // Connect to Event Bus if configured
+  if (process.env.RABBITMQ_HOST) {
+    try {
+      await connectBus(process.env.RABBITMQ_HOST, process.env.RABBITMQ_PORT);
+      
+      // Setup Audit Consumer (if this is the audit service or the monolith)
+      if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'audit-service') {
+        subscribe('journal.entry_created', async (data) => {
+           logger.info('AUDIT LOG: Journal Entry Created:', data);
+           // In a real implementation, we would write to the audit database here
+        }, 'audit_queue');
+      }
+    } catch (e) {
+      logger.error('Failed to init Event Bus:', e);
+    }
+  }
+
+  app.listen(PORT, () => {
+    logger.info(`IRS IRIS A2A API Server running on http://localhost:${PORT}`);
+    logger.info(`OAuth: http://localhost:${PORT}/api/iris/auth/oauth/v2/token`);
+    logger.info(`Demo JWT Gen: http://localhost:${PORT}/api/iris/demo/authenticate`);
+  });
+};
+
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
 export default app;

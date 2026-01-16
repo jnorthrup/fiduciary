@@ -1,4 +1,4 @@
-# Docker Compose for local development
+# Docker Compose for local development (Thin Demo / Event-Driven)
 version: '3.8'
 
 services:
@@ -33,22 +33,6 @@ services:
       retries: 5
 
   # Databases
-  irs-db:
-    image: postgres:15-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: irs_service
-      POSTGRES_USER: irs_service
-      POSTGRES_PASSWORD: irs_service
-    volumes:
-      - irs-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U irs_service -d irs_service"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   ledger-db:
     image: postgres:15-alpine
     ports:
@@ -61,22 +45,6 @@ services:
       - ledger-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ledger_service -d ledger_service"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  banking-db:
-    image: postgres:15-alpine
-    ports:
-      - "5434:5432"
-    environment:
-      POSTGRES_DB: banking_service
-      POSTGRES_USER: banking_service
-      POSTGRES_PASSWORD: banking_service
-    volumes:
-      - banking-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U banking_service -d banking_service"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -97,76 +65,57 @@ services:
       timeout: 5s
       retries: 5
 
-  # Observability
-  prometheus:
-    image: prom/prometheus:v2.45.0
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./k8s/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-
-  grafana:
-    image: grafana/grafana:10.1.0
-    ports:
-      - "3000:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_INSTALL_PLUGINS: grafana-piechart-panel
-    volumes:
-      - grafana-data:/var/lib/grafana
-
-  # Application Services
-  irs-service:
+  # Application Services (Monolith as Microservices)
+  
+  # 1. API Gateway / Frontend Host (if needed, or just routing)
+  api-gateway:
     build:
-      context: .
-      dockerfile: services/irs-service/Dockerfile
+      context: ./server
     ports:
-      - "3001:3001"
+      - "8080:3001" # Expose on 8080 like K8s gateway
     environment:
       NODE_ENV: development
       PORT: 3001
-      DB_HOST: irs-db
-      DB_PORT: 5432
-      DB_NAME: irs_service
-      DB_USER: irs_service
-      DB_PASSWORD: irs_service
+      SERVICE_NAME: api-gateway
+      # Routes
+      LEDGER_SERVICE_URL: http://ledger-service:3003
+      AUDIT_SERVICE_URL: http://audit-service:3006
+      # Infra
       REDIS_HOST: redis
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin
     depends_on:
-      irs-db:
-        condition: service_healthy
       redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
 
+  # 2. Ledger Service (Producer)
   ledger-service:
     build:
-      context: .
-      dockerfile: services/ledger-service/Dockerfile
+      context: ./server
     ports:
       - "3003:3003"
     environment:
       NODE_ENV: development
       PORT: 3003
+      SERVICE_NAME: ledger-service
+      # DB
       DB_HOST: ledger-db
       DB_PORT: 5432
       DB_NAME: ledger_service
       DB_USER: ledger_service
       DB_PASSWORD: ledger_service
+      # Infra
       REDIS_HOST: redis
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin
     depends_on:
       ledger-db:
         condition: service_healthy
@@ -175,50 +124,29 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  banking-service:
-    build:
-      context: .
-      dockerfile: services/banking-service/Dockerfile
-    ports:
-      - "3004:3004"
-    environment:
-      NODE_ENV: development
-      PORT: 3004
-      DB_HOST: banking-db
-      DB_PORT: 5432
-      DB_NAME: banking_service
-      DB_USER: banking_service
-      DB_PASSWORD: banking_service
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-    depends_on:
-      banking-db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-
+  # 3. Audit Service (Consumer)
   audit-service:
     build:
-      context: .
-      dockerfile: services/audit-service/Dockerfile
+      context: ./server
     ports:
       - "3006:3006"
     environment:
       NODE_ENV: development
       PORT: 3006
+      SERVICE_NAME: audit-service
+      # DB
       DB_HOST: audit-db
       DB_PORT: 5432
       DB_NAME: audit_service
       DB_USER: audit_service
       DB_PASSWORD: audit_service
+      # Infra
       REDIS_HOST: redis
       REDIS_PORT: 6379
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin
     depends_on:
       audit-db:
         condition: service_healthy
@@ -230,9 +158,6 @@ services:
 volumes:
   redis-data:
   rabbitmq-data:
-  irs-db-data:
   ledger-db-data:
-  banking-db-data:
   audit-db-data:
-  prometheus-data:
-  grafana-data:
+
