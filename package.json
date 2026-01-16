@@ -13,14 +13,26 @@
     "test:server": "vitest --config vitest.server.config.ts",
     "test:live-portal": "tsx test/irs-portal-live-test.ts",
     "test:live-api": "tsx test/irs-api-live-test.ts",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "eslint .",
+    "audit:pwa": "lhci assert",
+    "check": "npm run lint && npm run test -- --run && npm run build && npm run audit:pwa",
     "api:generate": "openapi-typescript-codegen -i specs/unified-api-openapi.yaml -o generated/api-client -c ApiClient --useOptions",
-    "server:dev": "cd server && npm run dev"
+    "server:dev": "cd server && npm run dev",
+
+    "ci:remote-build": "sh -lc 'if [ -z \"${PROJECT_ID:-}\" ]; then echo \"ERROR: PROJECT_ID must be set\"; exit 1; fi; gcloud builds submit --config cloudbuild.yaml --project \"$PROJECT_ID\"'",
+    "ci:remote-deploy": "sh -lc 'if [ -z \"${PROJECT_ID:-}\" ]; then echo \"ERROR: PROJECT_ID must be set\"; exit 1; fi; gcloud builds submit --config cloudbuild.yaml --substitutions=_RUN_TESTS=false --project \"$PROJECT_ID\"'",
+    "ci:remote-deploy-test": "sh -lc 'if [ -z \"${PROJECT_ID:-}\" ]; then echo \"ERROR: PROJECT_ID must be set\"; exit 1; fi; gcloud builds submit --config cloudbuild.yaml --substitutions=_RUN_TESTS=true --project \"$PROJECT_ID\"'",
+    "ci:trigger-build": "sh -lc 'if [ -z \"${PROJECT_ID:-}\" ]; then echo \"ERROR: PROJECT_ID must be set\"; exit 1; fi; gcloud beta builds triggers run trust-ledger-trigger --branch=main --project \"$PROJECT_ID\"'",
+    "ci:create-trigger": "bash scripts/create-cloudbuild-trigger.sh",
+    "ci:create-hello-demo-trigger": "bash scripts/create-hello-demo-trigger.sh",
+    "deploy:hello": "bash scripts/deploy-hello.sh",
+    "deploy:hello:local": "bash scripts/deploy-hello.sh"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "d3": "7.8.5",
     "express": "^4.18.2",
+    "fake-indexeddb": "^6.2.5",
     "fast-xml-parser": "^4.5.1",
     "firebase": "^12.7.0",
     "lucide-react": "^0.561.0",
@@ -30,10 +42,13 @@
     "react-dom": "^19.2.3",
     "uuid": "9.0.1",
     "xlsx": "0.18.5",
+    "y-indexeddb": "^9.0.12",
+    "yjs": "^13.6.29",
     "zod": "^4.3.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
@@ -48,11 +63,13 @@
     "eslint-plugin-react-refresh": "^0.4.26",
     "globals": "^17.0.0",
     "jsdom": "^27.4.0",
+    "lighthouse": "^13.0.1",
     "playwright": "^1.57.0",
     "supertest": "^7.2.2",
     "typescript": "~5.8.2",
     "typescript-eslint": "^8.52.0",
     "vite": "^6.2.0",
+    "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.0.16"
   }
 }
