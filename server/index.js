@@ -10,6 +10,24 @@ import irsPortalAuthRouter from './routes/irs-portal-auth.js';
 import auditRouter from './routes/audit.js';
 import bankingRouter from './routes/banking.js';
 import bsoRouter from './routes/bso.js';
+import admin from 'firebase-admin';
+
+// Initialize Firebase Admin
+// In production, use GOOGLE_APPLICATION_CREDENTIALS env var
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    logger.info("Firebase Admin initialized");
+  } catch (e) {
+    logger.error("Failed to initialize Firebase Admin:", e.message);
+  }
+} else {
+  // Fallback for local development if UID is provided
+  admin.initializeApp();
+}
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -65,6 +83,33 @@ app.use((req, res, next) => {
   next();
 });
 
+/**
+ * Middleware to verify Firebase ID Token
+ */
+const verifyFirebaseToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'unauthorized', message: 'No ID token provided' });
+  }
+
+  const idToken = authHeader.split('Bearer ')[1];
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    logger.error('Firebase token verification failed:', error.message);
+    res.status(403).json({ error: 'forbidden', message: 'Invalid ID token' });
+  }
+};
+
+// Apply auth to ledger/banking routes (preserving bypass for health/iris-oauth)
+const protectedRoutes = ['/api/banking', '/api/audit', '/api/bso'];
+protectedRoutes.forEach(route => {
+  // For now, we'll selectively apply to these routers or within the routers themselves
+  // For simplicity here, we'll just define the middleware and note that routers should use it
+});
+
 // ============================================================================
 // In-Memory Storage
 // ============================================================================
@@ -86,18 +131,18 @@ app.use('/api/iris', irisOAuthRouter);
 // Mount portal auth router at /api/irs-portal/auth
 app.use('/api/irs-portal/auth', irsPortalAuthRouter);
 
-// Mount audit router at /api/audit
-app.use('/api/audit', auditRouter);
+// Protected Routes
+app.use('/api/audit', verifyFirebaseToken, auditRouter);
 
 // ============================================================================
 // Banking API Routes
 // ============================================================================
 
 // Mount banking router at /api/banking
-app.use('/api/banking', bankingRouter);
+app.use('/api/banking', verifyFirebaseToken, bankingRouter);
 
 // Mount BSO router at /api/bso
-app.use('/api/bso', bsoRouter);
+app.use('/api/bso', verifyFirebaseToken, bsoRouter);
 
 
 /**

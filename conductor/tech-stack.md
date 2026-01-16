@@ -7,16 +7,17 @@
 | Framework | React | 19.2.3 | UI framework |
 | Language | TypeScript | 5.8.2 | Type-safe development |
 | Build Tool | Vite | 6.2.0 | Fast dev server & bundler |
-| State Management | React Context | - | Ledger store, entity state |
+| State Management | Yjs + Redux | - | CRDT-based shared state, UI state |
 | Styling | Tailwind CSS | CDN | Utility-first CSS |
 | Icons | Lucide React | 0.561.0 | Icon library |
 | Data Viz | D3.js | 7.8.5 | Charts, graphs |
 | Diagrams | Mermaid | 10.6.1 | Flowcharts, diagrams |
 | Documents | Mammoth | 1.6.0 | Word (.docx) parsing |
 | Spreadsheets | XLSX | 0.18.5 | Excel processing |
-| Auth | Firebase Auth | 12.7.0 | Authentication |
+| Auth | Firebase Auth / OIDC | 12.7.0 | Authentication |
 | Database | Firebase Firestore | 12.7.0 | Cloud database |
 | AI | Google GenAI | 1.34.0 | Gemini API integration |
+| Encryption | Web Crypto API | - | Client-side IndexedDB encryption |
 
 ## Backend
 
@@ -24,6 +25,7 @@
 |-----------|-----------|---------|---------|
 | Runtime | Node.js | - | Server runtime |
 | Framework | Express | 4.18.2 | API server |
+| Persistence | RocksDB | - | High-performance KV/Graph storage |
 | API Layer | IRS IRIS A2A | 1.3.0 | Tax filing API proxy |
 | AI | Google GenAI | 1.34.0 | Intelligent validation |
 

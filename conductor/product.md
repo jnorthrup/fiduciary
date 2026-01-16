@@ -53,7 +53,7 @@ The Trust Ledger System provides a unified platform that:
 - SEC EDGAR corporate filings research
 - MSRB EMMA municipal securities data
 - National GIS parcel data lookup
-- FedLine wire transfer initiation
+- FedLine wire transfer instruction generation (via ODFI/Sponsor)
 
 ### Document Processing
 - Receipt capture and categorization
@@ -85,8 +85,17 @@ The Trust Ledger System provides a unified platform that:
 - **Visualization**: D3.js, Mermaid diagrams
 
 ### Backend
-- **API**: Node.js/Express server
+- **API**: Node.js/Express server (migrating to Domain-Driven Modular Architecture)
 - **IRS Integration**: IRIS A2A API proxy with OpenAPI 3.1 spec
+- **Settlement**: Agnostic Rail Adapter pattern (ODFI/ACH, Wire, Check, Stripe)
+- **Core Modules**:
+  - **Ledger**: Double-entry system of record
+  - **Rail**: Bank feed and reconciliation
+  - **Vault**: Asset tracking
+  - **Notes**: Instrument issuance and amortization
+  - **Claims**: Identity and claims registry
+  - **Compliance**: Rule engine and audit packs
+  - **Charts**: Cross-module analytics
 - **AI**: Google GenAI (Gemini 2.5 Flash/Pro)
 - **Database**: Firebase Firestore (planned for persistence)
 

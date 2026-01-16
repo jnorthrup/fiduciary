@@ -10,6 +10,14 @@ afterEach(() => {
   cleanup();
 });
 
+import { webcrypto } from 'node:crypto';
+
+// Polyfill Web Crypto API for jsdom
+if (!global.crypto) {
+  // @ts-ignore
+  global.crypto = webcrypto;
+}
+
 // Mock IntersectionObserver
 global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),

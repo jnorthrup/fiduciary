@@ -43,6 +43,7 @@ export const MobileQuickBooksLayout: React.FC<MobileQuickBooksLayoutProps> = ({
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setMenuOpen(true)}
+            aria-label="Open navigation menu"
             className="p-1 hover:bg-white/10 rounded-md transition-colors"
           >
             <Menu size={24} />
@@ -60,11 +61,15 @@ export const MobileQuickBooksLayout: React.FC<MobileQuickBooksLayoutProps> = ({
         <div className="flex items-center gap-2">
           <button 
             onClick={() => setSearchOpen(!searchOpen)}
+            aria-label="Toggle quick search"
             className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >
             <Search size={20} />
           </button>
-          <button className="p-2 hover:bg-white/10 rounded-full transition-colors relative">
+          <button 
+            className="p-2 hover:bg-white/10 rounded-full transition-colors relative"
+            aria-label="View notifications"
+          >
             <Bell size={20} />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full border border-[#2ca01c]"></span>
           </button>
@@ -97,6 +102,7 @@ export const MobileQuickBooksLayout: React.FC<MobileQuickBooksLayoutProps> = ({
             onClick={() => setFocusMode(!focusMode)}
             className={`fixed right-4 bottom-20 z-40 p-3 rounded-full shadow-lg transition-all duration-300 ${focusMode ? 'bg-[#2ca01c] text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
             title="Toggle Focus Mode"
+            aria-label="Toggle focus mode"
           >
             <Settings size={20} className={focusMode ? 'animate-spin-slow' : ''} />
           </button>
@@ -154,6 +160,7 @@ export const MobileQuickBooksLayout: React.FC<MobileQuickBooksLayoutProps> = ({
                       onSelectEntity(e.target.value || null);
                       setMenuOpen(false);
                     }}
+                    aria-label="Active entity selection"
                     className="w-full bg-slate-100 border border-slate-200 rounded-lg p-3 text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-[#2ca01c]"
                   >
                     <option value="">Global Overview</option>
