@@ -5,7 +5,7 @@ import {
   Contractor, ComplianceFiling, WalletCredential, BSORole, BSOSubmission, 
   IRSAPICredential, Employee, PayrollRun, IRMDocument, SSAStatement, 
   ResolutionRecord, TrustSubType, JournalEntry, CreditDefenseRecord, IntrusionRecord,
-  CreditResolution, CreditInstrument, PurchaseContract, RealEstateAsset, LegalInstrument, CollateralPool
+  CreditResolution, CreditInstrument, PurchaseContract, RealEstateAsset, LegalInstrument, CollateralPool, TransmissionLog
 } from '../types';
 
 const GENESIS_HASH = "0000000000000000";
@@ -130,7 +130,9 @@ export const JIM_ACCOUNTS: Account[] = [
   { id: "AC-RE-001", entityId: "ENT-ROOT", code: "150000", name: "Real Estate Assets", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 400000.00, _version: GENESIS_HASH },
   { id: "AC-LIAB-001", entityId: "ENT-ROOT", code: "250000", name: "Credit Instruments Payable", type: AccountType.LIABILITY, normalBalance: DCFlag.Credit, balance: 400000.00, _version: GENESIS_HASH },
   
-  { id: "AC-102", entityId: "ENT-AAA-TRUST", code: "101000", name: "Operating Cash", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 500000.00, _version: GENESIS_HASH },
+  { id: "AC-102", entityId: "ENT-AAA-TRUST", code: "101000", name: "Operating Cash", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 485000.00, _version: GENESIS_HASH }, // Reduced by 15k for payment
+  { id: "AC-AAA-TAX-LIAB", entityId: "ENT-AAA-TRUST", code: "210000", name: "Federal Tax Liability", type: AccountType.LIABILITY, normalBalance: DCFlag.Credit, balance: 0, _version: GENESIS_HASH },
+
   { id: "AC-103", entityId: "ENT-VERSA-LLC", code: "101000", name: "Business Checking", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 285400.00, _version: GENESIS_HASH },
   { id: "AC-104", entityId: "ENT-FARMS-LAND", code: "101000", name: "Land Trust Reserves", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 45000.00, _version: GENESIS_HASH },
   // Versatile Accounts
@@ -193,6 +195,21 @@ JIM_JOURNALS.push({
     _version: GENESIS_HASH
 });
 
+// Inject EFTPS Payment
+JIM_JOURNALS.push({
+    id: "JNL-TAX-PAY-001",
+    entityId: "ENT-AAA-TRUST",
+    date: "2025-04-15",
+    memo: "EFTPS Tax Payment - Q1 2025",
+    type: "TAX_PAYMENT",
+    lines: [
+        { id: uuidv4(), accountId: "AC-AAA-TAX-LIAB", accountCode: "210000", accountName: "Federal Tax Liability", dc: DCFlag.Debit, amount: 15000.00 },
+        { id: uuidv4(), accountId: "AC-102", accountCode: "101000", accountName: "Operating Cash", dc: DCFlag.Credit, amount: 15000.00 }
+    ],
+    locked: true,
+    _version: GENESIS_HASH
+});
+
 export const JIM_MODULES: TaxModule[] = [
   { id: "TM-AAA-Q1", entityId: "ENT-AAA-TRUST", period: "Q1", year: 2025, type: "INCOME", status: "Open", dueDate: "2025-04-15" },
   { id: "TM-VERSA-Q1", entityId: "ENT-VERSA-LLC", period: "Q1", year: 2025, type: "PAYROLL", status: "Open", dueDate: "2025-04-30" },
@@ -201,6 +218,22 @@ export const JIM_MODULES: TaxModule[] = [
 
 export const JIM_FILINGS: ComplianceFiling[] = [
   { id: "FIL-56-ROOT", entityId: "ENT-ROOT", formType: "56", status: "Accepted", filingDate: "2024-01-01", notes: "Fiduciary Capacity Established", _version: GENESIS_HASH },
+  { id: "FIL-56-MIN", entityId: "ENT-MIN-SOLE", formType: "56", status: "Accepted", filingDate: new Date().toISOString().split('T')[0], submissionId: "TRX1234567890", _version: GENESIS_HASH },
+];
+
+export const JIM_TRANSMISSIONS: TransmissionLog[] = [
+    {
+        id: "TRX-LOG-001",
+        timestamp: new Date().toISOString(),
+        channel: 'MeF',
+        formType: '56',
+        entityId: 'ENT-MIN-SOLE',
+        status: 'Accepted',
+        submissionId: 'TRX1234567890',
+        xmlPayload: '<Form56><Fiduciary>JRN Ministries</Fiduciary></Form56>',
+        ackPayload: '<Ack><Status>Accepted</Status><SubmissionId>TRX1234567890</SubmissionId></Ack>',
+        latencyMs: 145
+    }
 ];
 
 // --- 2. FUZZ / SYNTHETIC DATA (Disjoint) ---
