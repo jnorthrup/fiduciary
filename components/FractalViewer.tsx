@@ -3,7 +3,7 @@ import React, { useRef, useState, useEffect, useMemo } from 'react';
 import * as d3 from 'd3';
 import { Entity, Account, JournalEntry, WalletCredential, EntityRole, EntityType, IntrusionRecord, JurisdictionType, DCFlag } from '../types';
 import {
-  ZoomIn, ZoomOut, Move, Edit, Layers, Fingerprint, Skull, AlertOctagon, Filter,
+  ZoomIn, ZoomOut, Move, Edit, Layers, Fingerprint, Skull, AlertOctagon, Filter, DollarSign,
   Grid, LayoutTemplate, Share2, Hexagon, Circle, Square, Triangle, Ship, Globe,
   BookOpen, ChevronDown, ChevronUp, Receipt, ArrowRightLeft, Pin, PinOff,
   Landmark
@@ -54,6 +54,7 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
   const [pinnedNodes, setPinnedNodes] = useState<Set<string>>(new Set());
 
   const [showOverlay, setShowOverlay] = useState(true);
+  const [showAccounts, setShowAccounts] = useState(false);
   const [imfOverlayMode, setImfOverlayMode] = useState(false);
   const [activeTouchTest, setActiveTouchTest] = useState<JurisdictionType | null>(null);
 
@@ -115,6 +116,7 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
 
       return {
         ...entity,
+        nodeType: 'entity',
         x: baseX,
         y: baseY,
         lane: laneConfig.index,
@@ -123,11 +125,47 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
       };
     });
 
+    // 2.1 Add Account Nodes
+    const accountNodes: any[] = [];
+    if (showAccounts) {
+      // Group accounts by entity for structured layout
+      const accountsByEntity = new Map<string, Account[]>();
+      accounts.forEach(a => {
+        const list = accountsByEntity.get(a.entityId) || [];
+        list.push(a);
+        accountsByEntity.set(a.entityId, list);
+      });
+
+      accountsByEntity.forEach((entityAccounts, entityId) => {
+        const parentNode = layoutNodes.find(n => n.id === entityId);
+        if (parentNode) {
+          const count = entityAccounts.length;
+          entityAccounts.forEach((account, idx) => {
+            // Position accounts in a structured circle around parent
+            const angle = (idx / count) * Math.PI * 2;
+            const dist = 240 + (idx % 2 === 0 ? 0 : 40); // Slight stagger for clarity
+            accountNodes.push({
+              ...account,
+              nodeType: 'account',
+              x: parentNode.x + Math.cos(angle) * dist,
+              y: parentNode.y + Math.sin(angle) * dist,
+              lane: parentNode.lane,
+              depth: parentNode.depth,
+              radius: 50
+            });
+          });
+        }
+      });
+    }
+
+    const allNodes = [...layoutNodes, ...accountNodes];
+
     // 3. Force Simulation (Limited Ticks)
-    const simulation = (d3 as any).forceSimulation(layoutNodes as any)
+    const simulation = (d3 as any).forceSimulation(allNodes as any)
       .force("x", (d3 as any).forceX((d: any) => d.lane * COL_WIDTH).strength(isHighFidelity ? 0.8 : 1))
       .force("y", (d3 as any).forceY((d: any) => d.depth * ROW_HEIGHT).strength(isHighFidelity ? 0.8 : 0.5))
       .force("collide", (d3 as any).forceCollide((d: any) => d.radius).strength(0.8).iterations(2))
+      .force("link", (d3 as any).forceLink().id((d: any) => d.id).distance(150).strength(0.1))
       .stop();
 
     // Run limited ticks to avoid infinite loops
@@ -139,8 +177,16 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
       if (node.parentEntityId) {
         const parent = layoutNodes.find(n => n.id === node.parentEntityId);
         if (parent) {
-          layoutLinks.push({ source: parent, target: node });
+          layoutLinks.push({ source: parent, target: node, type: 'entity-hierarchy' });
         }
+      }
+    });
+
+    // 4.1 Account Links
+    accountNodes.forEach(accNode => {
+      const parent = layoutNodes.find(n => n.id === accNode.entityId);
+      if (parent) {
+        layoutLinks.push({ source: parent, target: accNode, type: 'entity-account' });
       }
     });
 
@@ -168,8 +214,8 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
     });
     const uniqueLanes = Array.from(lanesByIndex.values()).sort((a, b) => a.index - b.index);
 
-    return { nodes: layoutNodes, links: layoutLinks, intrusionNodes: iNodes, intrusionLinks: iLinks, lanes: uniqueLanes };
-  }, [initialEntities, intrusions, expandedNodeId, isHighFidelity, pinnedNodes]);
+    return { nodes: allNodes, links: layoutLinks, intrusionNodes: iNodes, intrusionLinks: iLinks, lanes: uniqueLanes };
+  }, [initialEntities, accounts, showAccounts, intrusions, expandedNodeId, isHighFidelity, pinnedNodes]);
 
   const jurisdictionCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -267,6 +313,23 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
 
   const JURISDICTION_OPTIONS: JurisdictionType[] = ['Federal (IRS)', 'Article 1 (Statutory)', 'Local/State', 'Article 3 (Private)', 'Ecclesiastical', 'Admiralty/Maritime'];
 
+  const AccountChart = ({ accounts }: { accounts: Account[] }) => {
+    if (accounts.length === 0) return null;
+    const totals = {
+      Asset: accounts.filter(a => a.type === 'Asset').reduce((s, a) => s + a.balance, 0),
+      Liability: accounts.filter(a => a.type === 'Liability').reduce((s, a) => s + a.balance, 0),
+      Equity: accounts.filter(a => a.type === 'Equity').reduce((s, a) => s + a.balance, 0),
+    };
+    const max = Math.max(totals.Asset, totals.Liability, totals.Equity, 1);
+    return (
+      <div className="flex items-end gap-1 h-12 mt-2 bg-white/5 p-2 rounded border border-white/5">
+        <div className="flex-1 bg-emerald-500/50 rounded-t transition-all hover:bg-emerald-400" style={{ height: `${(totals.Asset / max) * 100}%` }} title={`Assets: $${totals.Asset}`} />
+        <div className="flex-1 bg-red-500/50 rounded-t transition-all hover:bg-red-400" style={{ height: `${(totals.Liability / max) * 100}%` }} title={`Liabilities: $${totals.Liability}`} />
+        <div className="flex-1 bg-indigo-500/50 rounded-t transition-all hover:bg-indigo-400" style={{ height: `${(totals.Equity / max) * 100}%` }} title={`Equity: $${totals.Equity}`} />
+      </div>
+    );
+  };
+
   return (
     <div
       ref={containerRef}
@@ -290,6 +353,7 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
             <h3 className="text-white font-bold flex items-center gap-2 text-sm uppercase tracking-widest"><Grid size={16} className="text-indigo-400" /> Lattice View</h3>
             <div className="flex gap-2">
               <button onClick={() => { setImfOverlayMode(!imfOverlayMode); setShowOverlay(false); }} className={`p-1.5 rounded-lg transition-colors ${imfOverlayMode ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'}`} title="IMF Sovereign View"><Globe size={14} /></button>
+              <button onClick={() => setShowAccounts(!showAccounts)} className={`p-1.5 rounded-lg transition-colors ${showAccounts ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'}`} title="Toggle Accounts"><DollarSign size={14} /></button>
               <button onClick={() => { setShowOverlay(!showOverlay); setImfOverlayMode(false); }} className={`p-1.5 rounded-lg transition-colors ${showOverlay ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400'}`} title="Toggle Jurisdiction Scope"><Filter size={14} /></button>
             </div>
           </div>
@@ -329,7 +393,7 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
                 if (source.imfProfile?.dsaStatus === 'Unsustainable') strokeColor = "#ef4444";
                 else if (source.imfProfile?.dsaStatus === 'Sustainable (High Prob)') strokeColor = "#10b981";
               }
-              return <path key={i} d={renderLink(link.source, link.target)} fill="none" stroke={strokeColor} strokeWidth={isHighFidelity ? 3 : 2 / transform.k} strokeDasharray="5,5" className="opacity-50" />;
+              return <path key={i} d={renderLink(link.source, link.target)} fill="none" stroke={strokeColor} strokeWidth={link.type === 'entity-account' ? 1 : isHighFidelity ? 3 : 2 / transform.k} strokeDasharray={link.type === 'entity-account' ? "2,2" : "5,5"} className="opacity-50" />;
             })}
           </g>
           <g>
@@ -340,6 +404,24 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
         </svg>
 
         {nodes.map((node: any) => {
+          if (node.nodeType === 'account') {
+            const acc = node as Account;
+            return (
+              <div key={acc.id} style={{ position: 'absolute', left: node.x, top: node.y, transform: 'translate(-50%, -50%)', width: 150, zIndex: 20 }}
+                className="bg-slate-800 border border-emerald-500/30 rounded-lg p-2 shadow-lg flex flex-col gap-1 overflow-hidden"
+              >
+                <div className="flex justify-between items-center text-[8px] font-bold text-emerald-400 uppercase tracking-tighter">
+                  <span>{acc.type}</span>
+                  <span className="font-mono">{acc.code}</span>
+                </div>
+                <div className="text-[10px] text-white font-bold truncate">{acc.name}</div>
+                <div className="text-[10px] text-emerald-300 font-mono font-bold mt-1 text-right">
+                  ${acc.balance.toLocaleString()}
+                </div>
+              </div>
+            );
+          }
+
           const entity = node as Entity;
           const jurisdiction = getJurisdiction(entity);
           const isFaded = !imfOverlayMode && activeTouchTest && activeTouchTest !== jurisdiction;
@@ -383,7 +465,10 @@ export const FractalViewer: React.FC<Props> = ({ entities: initialEntities, acco
               </div>
               <h3 className="text-sm font-bold text-white mb-1 leading-tight shrink-0">{entity.name}</h3>
               <div className="text-[10px] text-slate-500 font-mono mb-3 shrink-0">ID: {entity.id.slice(0, 8)} • <span className="text-slate-400">{jurisdiction}</span></div>
-              {entityAccounts.length > 0 && (<div className="bg-white/5 rounded p-2 border border-white/5 shrink-0"><div className="flex justify-between items-center text-[10px] text-slate-300"><span>ASSETS</span><span className="font-mono font-bold text-emerald-400">${totalAsset.toLocaleString()}</span></div></div>)}
+
+              <AccountChart accounts={entityAccounts} />
+
+              {entityAccounts.length > 0 && (<div className="mt-3 bg-white/5 rounded p-2 border border-white/5 shrink-0"><div className="flex justify-between items-center text-[10px] text-slate-300"><span>ASSETS</span><span className="font-mono font-bold text-emerald-400">${totalAsset.toLocaleString()}</span></div></div>)}
 
               <div className={`mt-4 pt-4 border-t border-white/10 flex-1 flex flex-col gap-4 overflow-hidden transition-all duration-500 ${isExpanded ? 'opacity-100 max-h-[800px]' : 'opacity-0 max-h-0 hidden'}`}>
                 <div><div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2"><Grid size={10} /> Chart of Accounts</div><div className="bg-slate-950/50 rounded border border-white/5 max-h-32 overflow-y-auto custom-scrollbar"><table className="w-full text-left text-[10px]"><thead className="bg-white/5 text-slate-400 sticky top-0"><tr><th className="p-2 font-medium">Code</th><th className="p-2 font-medium">Name</th><th className="p-2 text-right font-medium">Balance</th></tr></thead><tbody className="divide-y divide-white/5 text-slate-300 font-mono">{entityAccounts.map(acc => (<tr key={acc.id} className="hover:bg-white/5"><td className="p-2 text-slate-500">{acc.code}</td><td className="p-2 truncate max-w-[150px]">{acc.name}</td><td className="p-2 text-right font-bold">${acc.balance.toLocaleString()}</td></tr>))}</tbody></table></div></div>

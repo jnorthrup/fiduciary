@@ -14,15 +14,16 @@ interface Props {
   onSyntheticFuzz: () => void;
   onResumePersistent: () => void;
   onCreditUnionLaunch: () => void;
+  onQuickBooksLaunch: () => void;
   canResume: boolean;
 }
 
 export const LaunchScreen: React.FC<Props> = ({
-  onLaunch, onJimProfile, onSyntheticFuzz, onResumePersistent, onCreditUnionLaunch, canResume
+  onLaunch, onJimProfile, onSyntheticFuzz, onResumePersistent, onCreditUnionLaunch, onQuickBooksLaunch, canResume
 }) => {
   const { wipeSession, importData, signInWithGoogle } = useLedgerStore();
   const [phase, setPhase] = useState<'Strategy' | 'Identity' | 'Booting'>('Strategy');
-  const [activeStrategy, setActiveStrategy] = useState<'Manual' | 'Jim' | 'Fuzz' | 'Resume' | 'CreditUnion' | 'Google' | null>(null);
+  const [activeStrategy, setActiveStrategy] = useState<'Manual' | 'Jim' | 'Fuzz' | 'Resume' | 'CreditUnion' | 'Google' | 'QuickBooks' | null>(null);
 
   // State Inspection
   const [showStateMgr, setShowStateMgr] = useState(false);
@@ -100,6 +101,7 @@ export const LaunchScreen: React.FC<Props> = ({
         else if (activeStrategy === 'Fuzz') onSyntheticFuzz();
         else if (activeStrategy === 'Resume') onResumePersistent();
         else if (activeStrategy === 'CreditUnion') onCreditUnionLaunch();
+        else if (activeStrategy === 'QuickBooks') onQuickBooksLaunch();
         else if (activeStrategy === 'Google') {
           // signInWithGoogle already set the currentUser in store
         }
@@ -109,7 +111,7 @@ export const LaunchScreen: React.FC<Props> = ({
     }
   }, [bootProgress, activeStrategy, onJimProfile, onSyntheticFuzz, onResumePersistent, onCreditUnionLaunch, onLaunch, name, email]);
 
-  const selectStrategy = async (strategy: 'Manual' | 'Jim' | 'Fuzz' | 'Resume' | 'CreditUnion' | 'Google') => {
+  const selectStrategy = async (strategy: 'Manual' | 'Jim' | 'Fuzz' | 'Resume' | 'CreditUnion' | 'Google' | 'QuickBooks') => {
     setActiveStrategy(strategy);
     if (strategy === 'Manual') {
       setPhase('Identity');
@@ -240,6 +242,13 @@ export const LaunchScreen: React.FC<Props> = ({
                 desc="Generate synthetic transactions for testing."
                 onClick={() => selectStrategy('Fuzz')}
                 colorClass="text-amber-400"
+              />
+              <StrategyCard
+                icon={LayoutGrid}
+                title="QuickBooks View"
+                desc="Mobile-optimized accounting layout with QuickBooks flair."
+                onClick={() => selectStrategy('QuickBooks')}
+                colorClass="text-emerald-500"
               />
               <div className="relative group h-full">
                 <StrategyCard
