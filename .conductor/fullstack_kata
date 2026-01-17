@@ -1,0 +1,27 @@
+commit: cac4332
+description: feat: Add development environment and test configuration
+firebase_project: gen-lang-client-0754063985
+firebase_url: https://gen-lang-client-0754063985.web.app
+deployed: 2026-01-17
+replaces: 1e0707b (main_kata)
+
+fullstack_merge: d90230f
+parent_branch: fullstack
+
+build_fixes:
+  - Installed @tailwindcss/postcss and autoprefixer (missing dependencies)
+
+firebase_config:
+  - firebase.json: dist directory, SPA rewrites
+  - .firebaserc: project gen-lang-client-0754063985
+
+build_output:
+  - dist/index.html: 1.43 kB
+  - dist/assets/index.css: 108.61 kB (16.53 kB gzipped)
+  - dist/assets/index.js: 2,570.98 kB (651.87 kB gzipped)
+
+notes:
+  - Fullstack version includes Tailwind CSS integration
+  - PostCSS configuration with @tailwindcss/postcss plugin
+  - Development environment setup (.idx, .vscode configs)
+  - CreditDefenseWizard test suite added
