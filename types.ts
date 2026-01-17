@@ -357,6 +357,8 @@ export interface EscrowAccount {
   closeDate?: string;
 }
 
+export type Priority = 'High' | 'Medium' | 'Low';
+
 export interface TicklerRecord {
   id: string;
   entityId: string;
@@ -364,6 +366,7 @@ export interface TicklerRecord {
   dueDate: string;
   category: 'Accounting' | 'Legal' | 'Asset' | 'Tax';
   frequency: 'Once' | 'Monthly' | 'Quarterly' | 'Annually';
+  priority?: Priority;
   status: 'Pending' | 'Completed' | 'Overdue';
   completedDate?: string;
 }
