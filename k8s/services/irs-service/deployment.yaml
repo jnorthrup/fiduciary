@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: irs-service
+  namespace: fiduciary-system
+  labels:
+    app: irs-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: irs-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: irs-service
+        tier: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3001"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: irs-service
+        image: fiduciary/irs-service:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 3001
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "3001"
+        - name: SERVICE_NAME
+          value: "irs-service"
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: NODE_ENV
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: LOG_LEVEL
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: REDIS_PORT
+        - name: DB_HOST
+          value: "irs-db-postgresql"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "irs_service"
+        - name: DB_USER
+          value: "irs_service"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: IRS_DB_PASSWORD
+        - name: IRS_OAUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: IRS_OAUTH_URL
+        - name: IRS_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: IRS_API_URL
+        - name: IRS_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: IRS_CLIENT_ID
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: JWT_SECRET
+        - name: RABBITMQ_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: RABBITMQ_HOST
+        - name: RABBITMQ_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: RABBITMQ_PORT
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - irs-service
+              topologyKey: kubernetes.io/hostname

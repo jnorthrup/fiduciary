@@ -1,0 +1,22 @@
+{{- range $service, $config := .Values.services }}
+{{- if $config.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $service | replace "Service" "" | lower }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "trust-ledger-system.labels" $ | nindent 4 }}
+    app: {{ $service | replace "Service" "" | lower }}
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: {{ $config.port }}
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: {{ $service | replace "Service" "" | lower }}
+{{- end }}
+{{- end }}

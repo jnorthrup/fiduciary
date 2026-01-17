@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fiduciary-system
+
+resources:
+  - ../thin-demo
+
+images:
+  - name: fiduciary/trust-ledger-server
+    newName: gcr.io/PROJECT_ID_PLACEHOLDER/trust-ledger-server
+    newTag: latest
+
+patches:
+  # GCP Ingress specific configuration (if we were using GCE Ingress)
+  # For now, we keep the nginx ingress or standard load balancer
+  # potentially adding specific annotations for GCP LoadBalancer
+  - target:
+      kind: Service
+      name: api-gateway
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: LoadBalancer

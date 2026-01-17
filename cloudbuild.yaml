@@ -1,0 +1,27 @@
+steps:
+  # 1. Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/trust-ledger-server:$SHORT_SHA', '-t', 'gcr.io/$PROJECT_ID/trust-ledger-server:latest', './server']
+
+  # 2. Push the image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/trust-ledger-server:$SHORT_SHA']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/trust-ledger-server:latest']
+
+  # 3. Deploy to GKE
+  - name: 'gcr.io/cloud-builders/gke-deploy'
+    args:
+      - 'run'
+      - '--filename=k8s/overlays/gcp-demo/'
+      - '--image=gcr.io/$PROJECT_ID/trust-ledger-server:$SHORT_SHA'
+      - '--location=us-central1'
+      - '--cluster=trust-ledger-demo'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+  - 'gcr.io/$PROJECT_ID/trust-ledger-server:$SHORT_SHA'
+  - 'gcr.io/$PROJECT_ID/trust-ledger-server:latest'

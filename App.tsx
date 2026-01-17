@@ -12,10 +12,12 @@ import { UserProfileModal } from './components/modals/UserProfileModal';
 import { TwoFactorAuthModal } from './components/modals/TwoFactorAuthModal';
 import { User } from './types';
 import { ReceiptCaptureWizard } from './components/ReceiptCaptureWizard';
-import { FedGateway } from './components/FedGateway'; // Reusing FedGateway logic via context if needed, or opening Dashboard tab
+import { FedGateway } from './components/FedGateway';
 import { ACHMovementWizard } from './components/ACHMovementWizard';
 import { LLCContractorForm } from './components/forms/LLCContractorForm';
+import { IRIS1099Wizard } from './components/IRIS1099Wizard';
 import { X } from 'lucide-react';
+import { MobileQuickBooksLayout } from './components/layouts/MobileQuickBooksLayout';
 
 const WizardModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => (
   <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -43,7 +45,7 @@ export const App = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
   // Quick Action Modal States
-  const [quickAction, setQuickAction] = useState<'Invoice' | 'Receipt' | 'Payment' | 'Wire' | null>(null);
+  const [quickAction, setQuickAction] = useState<'Invoice' | 'Receipt' | 'Payment' | 'Wire' | '1099' | null>(null);
 
   // Derived state
   const activeEntity = activeEntityId ? store.entities.find((e: any) => e.id === activeEntityId) : null;
@@ -67,49 +69,71 @@ export const App = () => {
   // Quick Action Handlers
   const closeQuickAction = () => setQuickAction(null);
 
-  return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
-      <Sidebar 
+  const isMobileQuickBooks = store.settings.layoutMode === 'MobileQuickBooks';
+
+  const mainContent = (
+    <>
+      {activeEntity ? (
+        <Dashboard 
+          entity={activeEntity} 
+          onOpenApiConsole={() => setShowApiConsole(true)}
+          onEditEntity={setActiveEntityId}
+        />
+      ) : (
+        <SystemOverview 
+          entities={store.entities}
+          accounts={store.accounts}
+          journals={store.journals}
+          wallets={store.wallets}
+          onUpdateEntity={store.updateEntity}
+          onAddEntity={store.addEntity}
+          onDeleteEntity={store.deleteEntity}
+          initialWizard={autoLaunchWizard}
+        />
+      )}
+    </>
+  );
+
+  if (isMobileQuickBooks) {
+    return (
+      <MobileQuickBooksLayout
         activeEntityId={activeEntityId}
         onSelectEntity={setActiveEntityId}
-        onOpenIRM={() => setShowIRM(true)}
-        onOpenSettings={() => setShowSettings(true)}
-        entities={store.entities}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        currentUser={store.currentUser}
-        users={store.users}
-        onAddUser={store.addUser}
-        onUpdateUser={store.updateUser}
-        onDeleteUser={store.deleteUser}
-        onEditUser={setEditingUser}
-        // Quick Actions
-        onQuickInvoice={() => setQuickAction('Invoice')}
-        onQuickReceipt={() => setQuickAction('Receipt')}
-        onQuickPayment={() => setQuickAction('Payment')}
-        onQuickWire={() => setQuickAction('Wire')}
-      />
-
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {activeEntity ? (
-          <Dashboard 
-            entity={activeEntity} 
-            onOpenApiConsole={() => setShowApiConsole(true)}
-            onEditEntity={setActiveEntityId}
-          />
-        ) : (
-          <SystemOverview 
-            entities={store.entities}
-            accounts={store.accounts}
-            journals={store.journals}
-            wallets={store.wallets}
-            onUpdateEntity={store.updateEntity}
-            onAddEntity={store.addEntity}
-            onDeleteEntity={store.deleteEntity}
-            initialWizard={autoLaunchWizard}
+      >
+        {mainContent}
+        {/* Overlays and Modals still need to be rendered */}
+        {showSettings && (
+          <SettingsModal 
+            onClose={() => setShowSettings(false)}
+            onExport={() => JSON.stringify(store, null, 2)}
+            onImport={store.importData}
+            onReset={store.resetData}
           />
         )}
-      </div>
+        {showIRM && (
+          <IRMTreeWidget 
+            isOpen={showIRM}
+            onClose={() => setShowIRM(false)}
+            entities={store.entities}
+            documents={store.documents}
+            onFileAll={() => {}}
+          />
+        )}
+        {editingUser && (
+          <UserProfileModal 
+            user={editingUser}
+            currentUser={store.currentUser}
+            onSave={(u) => { store.updateUser(u); setEditingUser(null); }}
+            onDelete={(id) => { store.deleteUser(id); setEditingUser(null); }}
+            onClose={() => setEditingUser(null)}
+          />
+        )}
+      </MobileQuickBooksLayout>
+    );
+  }
+
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
 
       {/* QUICK ACTION MODALS (Global Context) */}
       {activeEntity && quickAction === 'Receipt' && (
@@ -146,7 +170,7 @@ export const App = () => {
           <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden relative">
                   <button onClick={closeQuickAction} className="absolute top-4 right-4 z-50 p-2 bg-slate-100 rounded-full hover:bg-slate-200"><X/></button>
-                  <LLCContractorForm 
+                  <LLCContractorForm
                       entityId={activeEntity.id}
                       contractors={store.contractors}
                       modules={store.modules}
@@ -165,6 +189,10 @@ export const App = () => {
                   </div>
               </div>
           </div>
+      )}
+
+      {activeEntity && quickAction === '1099' && (
+          <IRIS1099Wizard entityId={activeEntity.id} onClose={closeQuickAction} />
       )}
 
 
