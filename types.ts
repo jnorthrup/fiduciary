@@ -83,6 +83,8 @@ export enum DCFlag {
   Credit = 'Credit'
 }
 
+export type AccountClass = 'Credit' | 'Debit';
+
 export interface Account {
   id: string;
   entityId: string;
@@ -91,7 +93,15 @@ export interface Account {
   type: AccountType;
   normalBalance: DCFlag;
   balance: number;
+  beginningBalance?: number; // Opening balance for accrual accounting
   internalAlias?: string; // e.g. TRUST-TREASURY-001
+  parentAccountId?: string; // For account hierarchy
+  children?: Account[]; // Populated for tree display
+  accountClass: AccountClass; // 'Credit' for Liability/Equity/Income, 'Debit' for Asset/Expense
+  description?: string; // Account description/purpose
+  taxLine?: string; // Tax line mapping (e.g., "IRS Form 1041, Line 9")
+  isActive: boolean; // Soft delete flag
+  createdAt?: string; // Account creation timestamp
   _version: string;
 }
 
@@ -154,7 +164,18 @@ export interface WalletCredential {
 export interface BSORole {
   id: string;
   entityId: string;
-  registrationStatus: 'Active' | 'Pending';
+  registrationStatus: 'Active' | 'Pending' | 'Failed';
+  services: string[];
+  activationCode: string | null;
+  registeredAt: string;
+  lastAuthenticated: string;
+}
+
+export interface BSOErrorDetail {
+  code: string;
+  message: string;
+  resolution: string;
+  category: 'Authentication' | 'Validation' | 'System' | 'Unknown';
 }
 
 export interface BSOSubmission {
@@ -164,6 +185,10 @@ export interface BSOSubmission {
   submissionDate: string;
   status: string;
   batchId: string;
+  accuWageStatus: 'Pass' | 'Errors' | 'Pending' | 'Rejected';
+  errorDetails: BSOErrorDetail[] | null;
+  submittedAt: string;
+  acknowledgedAt: string | null;
 }
 
 export interface Employee {
@@ -303,6 +328,7 @@ export interface FuzzConfig {
 }
 
 export interface SystemSettings {
+  layoutMode?: 'Standard' | 'MobileQuickBooks';
   fuzzing: FuzzConfig;
   network: string;
   firebaseConfig?: {
@@ -772,6 +798,34 @@ export interface CollateralItem {
   status: 'Pledged' | 'Released';
 }
 
+// --- OBLIGATION LAYER ---
+
+export interface Invoice {
+  id: string;
+  entityId: string;
+  vendorId: string; // Link to Contractor/Vendor
+  invoiceNumber: string;
+  issueDate: string;
+  dueDate: string;
+  amount: number;
+  description: string;
+  status: 'Draft' | 'Approved' | 'Paid' | 'Void';
+  items: { description: string; amount: number; accountCode?: string }[];
+  fileUrl?: string;
+  _version: string;
+}
+
+export interface Payable {
+  id: string;
+  entityId: string;
+  invoiceId: string;
+  amountDue: number;
+  dueDate: string;
+  status: 'Open' | 'Scheduled' | 'Paid';
+  priority?: 'High' | 'Normal' | 'Low';
+  _version: string;
+}
+
 // --- SETTLEMENT ARCHITECTURE ---
 
 export enum ExternalRail {
@@ -779,7 +833,15 @@ export enum ExternalRail {
   SPONSORED_ACH = 'SPONSORED_ACH',
   SPONSORED_WIRE = 'SPONSORED_WIRE',
   CHECK_VENDOR = 'CHECK_VENDOR',
-  MANUAL_TENDER = 'MANUAL_TENDER_CERTIFIED_FUNDS'
+  MANUAL_TENDER = 'MANUAL_TENDER_CERTIFIED_FUNDS',
+  ACH = 'ACH'
+}
+
+export interface PayeeBankingDetails {
+  bankName?: string;
+  routingNumber: string;
+  accountNumber: string;
+  accountType: 'Checking' | 'Savings';
 }
 
 export interface SettlementInstruction {
@@ -789,6 +851,7 @@ export interface SettlementInstruction {
   amount: number;
   method: ExternalRail;
   funding_source: string; // Ledger Account ID (Layer 1)
+  payee_banking?: PayeeBankingDetails; // Explicit settlement destination
   supporting_docs: string[];
   approval: {
     required_signers: string[];
@@ -797,4 +860,16 @@ export interface SettlementInstruction {
   status: 'Pending' | 'Authorized' | 'Settled' | 'Failed';
   internal_trace_id: string; // e.g. TRUST-TREASURY-001
   date_created: string;
+}
+
+export interface SettlementConfirmation {
+  id: string;
+  settlementId: string; // Link to Instruction
+  traceNumber: string;
+  effectiveEntryDate: string;
+  status: 'Processed' | 'Returned';
+  returnCode?: string; // e.g. "R01"
+  returnReason?: string;
+  postedAt: string;
+  _version: string;
 }

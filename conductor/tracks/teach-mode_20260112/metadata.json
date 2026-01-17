@@ -1,0 +1,8 @@
+{
+  "track_id": "teach-mode_20260112",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2025-01-12T17:30:00Z",
+  "updated_at": "2025-01-12T17:30:00Z",
+  "description": "Interactive learning overlay system that displays IRS instruction paragraphs on form field hover or validation error, with dual taxonomy (process/topic) and cross-references"
+}

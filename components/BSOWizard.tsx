@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { Entity } from '../types';
-import { 
-  Globe, Landmark, Lock, Building2, MousePointerClick, Database, 
-  Fingerprint, Shield, Sparkles, Lightbulb, PlayCircle, ShieldCheck, 
+import {
+  Globe, Landmark, Lock, Building2, MousePointerClick, Database,
+  Fingerprint, Shield, Sparkles, Lightbulb, PlayCircle, ShieldCheck,
   Terminal, Copy, Check, Info, HelpCircle, CheckCircle2
 } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { FlowLayout } from './shared/FlowLayout';
+import { TIN_PLACEHOLDER, PENDING_STATUS, GEMINI_MODEL } from '../utils/constants';
+import { formatEINOrPending } from '../utils/formatters';
+import { BSO_SAMPLE_DATA } from '../tests/fixtures/sampleData';
+import { CITATIONS } from '../utils/citations';
+import { useBSOStore } from '../services/bsoStore';
 
 interface Props {
   entity: Entity;
@@ -22,12 +27,13 @@ const STEPS = [
 ];
 
 export const BSOWizard: React.FC<Props> = ({ entity, onComplete }) => {
+  const { addRole } = useBSOStore();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
-  
+
   // State
-  const [einQuery, setEinQuery] = useState(entity.einLast4 ? `XX-XXX${entity.einLast4}` : '');
+  const [einQuery, setEinQuery] = useState(formatEINOrPending(entity.einLast4).replace(PENDING_STATUS, ''));
   const [irsRecord, setIrsRecord] = useState<any>(null);
   const [bsoUserId, setBsoUserId] = useState('');
   const [phone, setPhone] = useState('');
@@ -40,28 +46,28 @@ export const BSOWizard: React.FC<Props> = ({ entity, onComplete }) => {
     setLoading(true);
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: `Retrieve official IRS registration for EIN: "${einQuery}". Entity: ${entity.name}. Return JSON with legalName, address, formationDate, tinStatus.`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        legalName: { type: Type.STRING },
-                        address: { type: Type.STRING },
-                        formationDate: { type: Type.STRING },
-                        tinStatus: { type: Type.STRING }
-                    },
-                    required: ["legalName", "address", "formationDate", "tinStatus"]
-                }
-            }
-        });
-        setIrsRecord(JSON.parse(response.text));
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: `Retrieve official IRS registration for EIN: "${einQuery}". Entity: ${entity.name}. Return JSON with legalName, address, formationDate, tinStatus. [Ref: ${CITATIONS.IRS_10_1_1}]`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              legalName: { type: Type.STRING },
+              address: { type: Type.STRING },
+              formationDate: { type: Type.STRING },
+              tinStatus: { type: Type.STRING }
+            },
+            required: ["legalName", "address", "formationDate", "tinStatus"]
+          }
+        }
+      });
+      setIrsRecord(JSON.parse(response.text));
     } catch (err) {
-        console.error("IRS Lookup failed", err);
+      console.error("IRS Lookup failed", err);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -75,8 +81,23 @@ export const BSOWizard: React.FC<Props> = ({ entity, onComplete }) => {
   };
 
   const handleNext = () => {
-    if (currentStep < 5) setCurrentStep(currentStep + 1);
-    else onComplete(bsoUserId);
+    if (currentStep < 5) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      // Create and persist the role
+      const newRole = {
+        id: `BSO-ROLE-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        entityId: entity.id,
+        registrationStatus: 'Active' as const,
+        services: selectedService ? [selectedService === 'SSA' ? 'Wage Reporting' : 'Proxy Entitlement'] : [],
+        activationCode,
+        registeredAt: new Date().toISOString(),
+        lastAuthenticated: new Date().toISOString()
+      };
+
+      addRole(newRole);
+      onComplete(bsoUserId);
+    }
   };
 
   const TutorialPanel = () => (
@@ -86,20 +107,20 @@ export const BSOWizard: React.FC<Props> = ({ entity, onComplete }) => {
       </div>
       <div>
         <h4 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-          <Lightbulb size={16} className="text-amber-500" /> 
+          <Lightbulb size={16} className="text-amber-500" />
           Context Analysis
         </h4>
         <p className="text-xs text-slate-600 leading-relaxed italic">
           "Establishing a secure handshake between Treasury (IRS) and Social Security (SSA) systems."
         </p>
       </div>
-      <button 
+      <button
         onClick={() => {
-            if(currentStep === 1) setEinQuery('XX-XXX9982');
-            if(currentStep === 2) { setBsoUserId('ADMIN_LTD'); setPhone('555-0199'); }
-            if(currentStep === 3) setEmployerFound(true);
-            if(currentStep === 4) setSelectedService('SSA');
-            if(currentStep === 5) setActivationCode('X9A-R21-B01');
+          if (currentStep === 1) setEinQuery(BSO_SAMPLE_DATA.EIN);
+          if (currentStep === 2) { setBsoUserId(BSO_SAMPLE_DATA.USER_ID); setPhone(BSO_SAMPLE_DATA.PHONE); }
+          if (currentStep === 3) setEmployerFound(true);
+          if (currentStep === 4) setSelectedService('SSA');
+          if (currentStep === 5) setActivationCode(BSO_SAMPLE_DATA.ACTIVATION_CODE);
         }}
         className="mt-auto w-full flex items-center justify-center gap-2 p-2 bg-white border border-slate-200 rounded text-xs font-bold text-slate-600 hover:bg-slate-100 shadow-sm"
       >
@@ -135,11 +156,11 @@ export const BSOWizard: React.FC<Props> = ({ entity, onComplete }) => {
             <div className="space-y-4">
               <label className="block text-xs font-bold text-slate-500 uppercase">Enterprise EIN</label>
               <div className="flex gap-2">
-                <input 
+                <input
                   value={einQuery}
                   onChange={e => setEinQuery(e.target.value)}
                   className="flex-1 p-3 border rounded-lg font-mono"
-                  placeholder="XX-XXXXXXX"
+                  placeholder={TIN_PLACEHOLDER}
                 />
                 <button onClick={handleIRSGatewayLookup} className="bg-indigo-600 text-white px-6 rounded-lg font-bold">Verify</button>
               </div>
@@ -188,7 +209,7 @@ export const BSOWizard: React.FC<Props> = ({ entity, onComplete }) => {
               </div>
             </div>
             {!employerFound ? (
-              <button onClick={() => { setLoading(true); setTimeout(() => {setEmployerFound(true); setLoading(false);}, 1000)}} className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold">Search SSA Master File</button>
+              <button onClick={() => { setLoading(true); setTimeout(() => { setEmployerFound(true); setLoading(false); }, 1000) }} className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold">Search SSA Master File</button>
             ) : (
               <div className="bg-white border-2 border-emerald-500 rounded-xl p-6 flex justify-between items-center shadow-sm">
                 <div className="font-bold text-slate-800">{irsRecord?.legalName || entity.name}</div>
@@ -207,7 +228,7 @@ export const BSOWizard: React.FC<Props> = ({ entity, onComplete }) => {
                 <p className="text-sm text-blue-700">Activate specific SSA digital suites.</p>
               </div>
             </div>
-            <div 
+            <div
               onClick={() => setSelectedService('SSA')}
               className={`p-6 rounded-xl border-2 cursor-pointer transition-all ${selectedService === 'SSA' ? 'border-indigo-600 bg-indigo-50 shadow-md' : 'border-slate-100 bg-white'}`}
             >
@@ -229,7 +250,7 @@ export const BSOWizard: React.FC<Props> = ({ entity, onComplete }) => {
               </div>
             </div>
             <div className="relative max-w-xs mx-auto mt-8">
-              <input 
+              <input
                 value={activationCode}
                 onChange={e => setActivationCode(e.target.value.toUpperCase())}
                 className="w-full text-center text-3xl font-mono tracking-[0.4em] p-5 border-2 border-slate-300 rounded-xl outline-none"
