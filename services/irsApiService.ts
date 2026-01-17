@@ -1,6 +1,8 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { ApiChannel, TransmissionLog, SystemStatus, SearchResult, IRSFormType, Entity, ApiSecrets, FuzzConfig, TransmissionStatus, CIRExtractType, DigitalWalletFilter, CIR_CANS } from '../types';
+import { api } from './apiProxy';
+import { IRIS_API_SPEC } from './openApiDefinitions';
 
 // --- FUZZER ENGINE ---
 
@@ -78,8 +80,47 @@ export const getSystemStatus = (): SystemStatus[] => [
   { channel: 'TIN_MATCH', status: 'Maintenance', latency: '-', uptime: '0%' },
 ];
 
-const generateMockXML = (entity: Entity, formType: IRSFormType) => {
+const generateMockXML = (entity: Entity, formType: string) => {
   const timestamp = new Date().toISOString();
+  
+  // Custom Vertex AI Network Socket Header Simulation
+  const socketHeader = `<!-- Vertex Network Socket: v4.2.1 | Latency: 12ms | Compression: GZIP -->`;
+  
+  if (formType === 'CAFR') {
+      return `${socketHeader}
+<CAFR:Report xmlns:CAFR="http://www.gov.uk/cafr/v1">
+    <Header>
+        <EntityID>${entity.id}</EntityID>
+        <ReportPeriod>2024</ReportPeriod>
+        <Standards>GASB</Standards>
+    </Header>
+    <Financials>
+        <TotalAssets>45000000</TotalAssets>
+        <Liabilities>12000000</Liabilities>
+        <NetPosition>33000000</NetPosition>
+    </Financials>
+    <Signatures>
+        <Auditor>Independent Firm LLC</Auditor>
+        <Controller>${entity.name}</Controller>
+    </Signatures>
+</CAFR:Report>`;
+  }
+  
+  if (formType === '1042') {
+      return `${socketHeader}
+<IRIS:Form1042 xmlns:IRIS="http://www.irs.gov/iris/v1">
+    <WithholdingAgent>
+        <EIN>${entity.einLast4 ? 'XX-XXX' + entity.einLast4 : 'PENDING'}</EIN>
+        <Name>${entity.name}</Name>
+        <Chapter3Status>Withholding Foreign Partnership</Chapter3Status>
+    </WithholdingAgent>
+    <Totals>
+        <GrossIncome>150000.00</GrossIncome>
+        <TaxWithheld>45000.00</TaxWithheld>
+    </Totals>
+</IRIS:Form1042>`;
+  }
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <SOAP:Envelope xmlns:SOAP="http://schemas.xmlsoap.org/soap/envelope/" xmlns:efile="http://www.irs.gov/efile">
   <SOAP:Header>
@@ -121,15 +162,14 @@ const generateAckXML = (submissionId: string, status: 'Accepted' | 'Rejected', e
 // Main Simulation Function
 export const simulateTransmission = async (
   entity: Entity, 
-  formType: IRSFormType,
+  formType: string,
   fuzzConfig: FuzzConfig
 ): Promise<TransmissionLog> => {
   const fuzzer = new ProtocolFuzzer(fuzzConfig);
   await fuzzer.injectLatency();
 
-  const channel: ApiChannel = formType === '1041' || formType === '941' ? 'MeF' : 'IRIS';
+  const channel: ApiChannel = formType === 'CAFR' || formType === '1042' || formType.startsWith('1099') ? 'IRIS' : formType === '1041' || formType === '941' ? 'MeF' : 'IRIS';
   
-  // Safely generate submission ID
   const idVal = uuidv4() || ''; 
   const submissionId = idVal.replace(/-/g, '').substring(0, 20);
   
@@ -137,17 +177,59 @@ export const simulateTransmission = async (
   
   let status: 'Accepted' | 'Rejected' = 'Accepted';
   let errorMsg = '';
+  let ackPayload = '';
 
-  if (fuzzer.shouldError()) {
-      status = 'Rejected';
-      const err = fuzzer.getRandomError('MeF');
-      errorMsg = err.message;
-  } else {
-      const isSuccess = Math.random() > 0.05; 
-      if (!isSuccess) {
+  if (channel === 'IRIS') {
+      try {
+          const apiResponse = await api.request(
+              IRIS_API_SPEC,
+              '/v1/submissions',
+              'post',
+              {
+                  transmitterId: 'TCC-GENAI-01',
+                  softwareId: 'TRUST-LEDGER-V1',
+                  formType,
+                  filer: {
+                      ein: entity.einLast4 ? `XX-XXX${entity.einLast4}` : 'PENDING',
+                      name: entity.name
+                  }
+              }
+          );
+          
+          // Use AI decision from proxy
+          status = apiResponse.status === 'Accepted' || apiResponse.status === 'Processing' ? 'Accepted' : 'Rejected';
+          ackPayload = JSON.stringify(apiResponse, null, 2);
+          
+          if (status === 'Rejected') errorMsg = apiResponse.messages?.[0] || 'Unknown API Error';
+
+      } catch (e: any) {
           status = 'Rejected';
-          errorMsg = "Schema Validation Failed: Element 'EIN' is invalid.";
+          errorMsg = e.message;
+          ackPayload = JSON.stringify({ error: e.message });
       }
+  } else {
+      // Existing MeF Logic (Mock)
+      if (fuzzer.shouldError()) {
+          status = 'Rejected';
+          const err = fuzzer.getRandomError('MeF');
+          errorMsg = err.message;
+      } else {
+          const isSuccess = Math.random() > 0.05; 
+          if (!isSuccess) {
+              status = 'Rejected';
+              errorMsg = "Schema Validation Failed: Element 'EIN' is invalid.";
+          }
+      }
+      ackPayload = generateAckXML(submissionId, status, errorMsg);
+  }
+
+  // Handle potential JSON parsing error for ID extraction
+  let finalSubId = submissionId;
+  if (channel === 'IRIS') {
+      try {
+          const jsonAck = JSON.parse(ackPayload);
+          if (jsonAck.receiptId) finalSubId = jsonAck.receiptId;
+      } catch (e) {}
   }
 
   return {
@@ -157,9 +239,9 @@ export const simulateTransmission = async (
     formType,
     entityId: entity.id,
     status: status as TransmissionStatus,
-    submissionId,
+    submissionId: finalSubId,
     xmlPayload: payload,
-    ackPayload: generateAckXML(submissionId, status, errorMsg),
+    ackPayload,
     latencyMs: fuzzConfig.latencyMode === 'Laggy' ? 3500 : 120
   };
 };
@@ -167,7 +249,6 @@ export const simulateTransmission = async (
 export const generateCIRExtract = (extractType: CIRExtractType, filter: DigitalWalletFilter): string => {
     const timestamp = new Date().toISOString();
     const isPayPal = filter === 'PayPal' || filter === 'All';
-    const isAmazon = filter === 'Amazon' || filter === 'All';
     
     let xml = `<?xml version="1.0" encoding="ISO-8859-1"?>
 <CollRpt xsi:schemaLocation="urn:us:gov:treasury CollectionsReport_x.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`;

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ComplianceFiling, Entity, IRSFormType, BSORole, IRSAPICredential, EntityRole, TaxModule } from '../types';
-import { FileSignature, AlertCircle, CheckCircle, Calendar, Plus, Send, RefreshCw, Lock } from 'lucide-react';
+import { FileSignature, AlertCircle, CheckCircle, Calendar, Plus, Send, RefreshCw, Lock, Globe, Building } from 'lucide-react';
 import { AddTaxModuleModal } from './modals/AddTaxModuleModal';
 import { useLedgerStore } from '../services/ledgerService';
 
@@ -12,7 +12,7 @@ interface Props {
   parentFilings?: ComplianceFiling[];
   bsoRoles?: BSORole[];
   irsCreds?: IRSAPICredential[];
-  onCreateFiling: (entityId: string, type: IRSFormType) => void;
+  onCreateFiling: (entityId: string, type: IRSFormType | 'CAFR' | '1042') => void;
   onUpdateStatus: (id: string, status: ComplianceFiling['status'], date?: string) => void;
   onSubmitToApi?: (filingId: string) => Promise<void>;
   onAddModule?: (module: TaxModule) => void;
@@ -45,10 +45,10 @@ export const ComplianceWidget: React.FC<Props> = ({
   };
 
   // Helper to find the relevant open tax module for a form type
-  const getModuleInfo = (formType: IRSFormType) => {
+  const getModuleInfo = (formType: string) => {
     let type: TaxModule['type'] | undefined;
     if (formType === '941' || formType === '940') type = 'PAYROLL';
-    if (formType === '1041') type = 'INCOME';
+    if (formType === '1041' || formType === '1042') type = 'INCOME';
     
     if (!type) return null;
 
@@ -63,17 +63,18 @@ export const ComplianceWidget: React.FC<Props> = ({
       requestAuthorization(() => onSubmitToApi(filingId));
   };
 
-  const renderFormRow = (type: IRSFormType, title: string, desc: string) => {
+  const renderFormRow = (type: IRSFormType | 'CAFR' | '1042', title: string, desc: string, icon: any = FileSignature) => {
     const filing = filings.find(f => f.formType === type);
     const status = filing?.status || 'Not Started';
     const colorClass = getStatusColor(status);
     const module = getModuleInfo(type);
+    const Icon = icon;
 
     return (
       <div className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
         <div className="flex items-start gap-3">
           <div className={`p-2 rounded-lg ${colorClass}`}>
-            <FileSignature className="h-5 w-5" />
+            <Icon className="h-5 w-5" />
           </div>
           <div>
             <h4 className="text-sm font-semibold text-slate-800">{title}</h4>
@@ -170,14 +171,13 @@ export const ComplianceWidget: React.FC<Props> = ({
       <div className="space-y-3">
         {renderFormRow('56', 'Form 56', 'Notice of Fiduciary Relationship')}
         {renderFormRow('2848', 'Form 2848', 'Power of Attorney & Declaration')}
-        {renderFormRow('SSA-89', 'Form SSA-89', 'Auth to Release SSN Verification')}
         
         {/* Trust Specific: Indenture Act */}
         {entity.role === EntityRole.HOLDING_TRUST && (
             <>
-                {renderFormRow('T-1', 'Form T-1', 'Trust Indenture Act Eligibility')}
-                {renderFormRow('W-8BEN', 'Form W-8BEN', 'Cert. of Foreign Status')}
-                {renderFormRow('Trust-Description', 'Trust Description', 'IRM Complex Irrevocable Status')}
+                {renderFormRow('1041', 'Form 1041', 'Income Tax Return for Estates/Trusts')}
+                {renderFormRow('1042', 'Form 1042', 'Foreign Person Withholding (Agent)', Globe)}
+                {renderFormRow('CAFR', 'CAFR', 'Comprehensive Annual Financial Report', Building)}
             </>
         )}
         
@@ -186,6 +186,7 @@ export const ComplianceWidget: React.FC<Props> = ({
           <>
             {renderFormRow('941', 'Form 941', 'Employer Quarterly Federal Tax Return')}
             {renderFormRow('940', 'Form 940', 'Employer Annual Federal Unemployment (FUTA)')}
+            {renderFormRow('CAFR', 'CAFR', 'Comprehensive Annual Financial Report', Building)}
           </>
         )}
       </div>

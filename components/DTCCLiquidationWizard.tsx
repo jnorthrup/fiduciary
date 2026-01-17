@@ -47,9 +47,12 @@ export const DTCCLiquidationWizard: React.FC<Props> = ({
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: `Verify security details and DTCC collateral standards for CUSIP: "${cusip}". 
+            Use Google Search to find real market data.
             Context: Fiduciary entity ${entity.name} is pledging this asset.
-            Provide: Asset Name, Current Market Value (Estimate), Haircut (Margin %) per DTC Section 4 rules, and DTCC eligibility status.`,
+            Provide: Asset Name, Current Market Value (Estimate), Haircut (Margin %) per DTC Section 4 rules, and DTCC eligibility status.
+            If market value is unknown, estimate based on par or recent trading.`,
             config: {
+                tools: [{ googleSearch: {} }],
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
@@ -60,13 +63,17 @@ export const DTCCLiquidationWizard: React.FC<Props> = ({
                         eligible: { type: Type.BOOLEAN },
                         assetClass: { type: Type.STRING }
                     },
-                    required: ["name", "marketValue", "haircut", "eligible"]
+                    required: ["name", "eligible"] // Relaxed requirements
                 }
             }
         });
-        const data = JSON.parse(response.text);
-        setAssetName(data.name);
-        setHaircutData(data);
+        const data = JSON.parse(response.text || '{}');
+        setAssetName(data.name || 'Unknown Asset');
+        setHaircutData({
+            ...data,
+            marketValue: data.marketValue || 0,
+            haircut: data.haircut || 100 // Default to 100% haircut (0 value) if unknown
+        });
         setStep(2);
     } catch (err) {
         console.error("CUSIP Verification failed", err);

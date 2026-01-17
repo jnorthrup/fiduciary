@@ -17,7 +17,6 @@ export const CreditDefenseWizard: React.FC<Props> = ({ entity, onComplete }) => 
   const [activeTab, setActiveTab] = useState<'Dispute' | 'Litigation' | 'Protection' | 'Privacy'>('Dispute');
   const [loading, setLoading] = useState(false);
   const [generatedDoc, setGeneratedDoc] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   
   // Modal State
   const [showCFPBModal, setShowCFPBModal] = useState(false);
@@ -40,10 +39,10 @@ export const CreditDefenseWizard: React.FC<Props> = ({ entity, onComplete }) => 
     setLoading(true);
 
     if (useAI) {
-        const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         try {
             const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-3-flash-preview',
                 contents: `Generate a formal FCRA 609/611 Dispute Letter for an artificial entity (Ens Legis).
                 Entity: ${entity.name}. EIN: ${entity.einLast4 ? 'XX-XXX'+entity.einLast4 : 'Unknown'}.
                 Target Agency: ${agency}.
@@ -65,10 +64,10 @@ export const CreditDefenseWizard: React.FC<Props> = ({ entity, onComplete }) => 
 
   const handleGenerateCCPA = async () => {
     setLoading(true);
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-3-flash-preview',
             contents: `Generate a formal CCPA/CPRA Privacy Rights Request for ${agency} (Data Broker).
             Consumer Entity: ${entity.name}.
             Request Type: ${privacyRequestType} My Personal Information.
@@ -105,29 +104,16 @@ export const CreditDefenseWizard: React.FC<Props> = ({ entity, onComplete }) => 
       });
       setGeneratedDoc('');
       setDisputeItem('');
-      setSuccessMessage('Successfully recorded');
-      setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   const handleCFPBSubmit = (record: CreditDefenseRecord) => {
       onComplete(record);
       setShowCFPBModal(false);
-      setSuccessMessage('Successfully recorded');
-      setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   return (
-    <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 h-full flex flex-col font-sans relative">
+    <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 h-full flex flex-col font-sans">
       
-      {successMessage && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50 animate-in fade-in slide-in-from-top-4">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={18} />
-            <span className="font-bold">{successMessage}</span>
-          </div>
-        </div>
-      )}
-
       {showCFPBModal && (
           <CFPBComplaintModal 
               entity={entity}
