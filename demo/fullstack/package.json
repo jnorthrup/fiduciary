@@ -1,0 +1,8 @@
+{
+  "name": "demo-fullstack",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "npx http-server public -p 8081"
+  }
+}

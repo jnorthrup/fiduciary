@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fullstack Demo</title>
+</head>
+<body>
+  <h1>Fullstack Demo</h1>
+  <p id="status">Checking backend...</p>
+  <script>
+    fetch('http://localhost:8080/health')
+      .then(r => r.json())
+      .then(j => document.getElementById('status').textContent = 'Backend: ' + j.status)
+      .catch(e => document.getElementById('status').textContent = 'Backend unreachable');
+  </script>
+</body>
+</html>
