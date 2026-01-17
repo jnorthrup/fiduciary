@@ -1,0 +1,40 @@
+name: Deploy hello-world to Cloud Run
+
+on:
+  push:
+    branches: [ 'gallant-wozniak' ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Build and push image (server/hello-world)
+        run: |
+          IMAGE=gcr.io/${{ secrets.GCP_PROJECT_ID }}/hello-world:${{ github.sha }}
+          echo "Building image $IMAGE from server/hello-world..."
+          gcloud builds submit server/hello-world --tag "$IMAGE" --timeout=20m
+
+      - name: Deploy to Cloud Run
+        run: |
+          REGION=us-central1
+          SERVICE=hello-world
+          IMAGE=gcr.io/${{ secrets.GCP_PROJECT_ID }}/hello-world:${{ github.sha }}
+          echo "Deploying $IMAGE to Cloud Run $SERVICE in $REGION..."
+          gcloud run deploy "$SERVICE" --image "$IMAGE" --region "$REGION" --platform managed --allow-unauthenticated
+
+      - name: Output service URL
+        run: |
+          gcloud run services describe hello-world --platform managed --region us-central1 --format='value(status.url)'
