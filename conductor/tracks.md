@@ -45,8 +45,14 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-## [~] Track: Event-Driven CI/CD for Ledger PWA (WAL+LSM)
+## [x] Track: Event-Driven CI/CD for Ledger PWA (WAL+LSM)
 *Link: [./conductor/tracks/cid_deploy_20260115/](./conductor/tracks/cid_deploy_20260115/)*
+
+---
+
+## [~] Track: Administrative Process Management
+*Link: [./conductor/tracks/admin_process_20260114/](./conductor/tracks/admin_process_20260114/)*
+*Phase 1 complete, starting Phase 2: Affidavit Generator*
 
 ---
 
