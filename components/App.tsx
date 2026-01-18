@@ -1,20 +1,20 @@
 
 import React, { useState } from 'react';
 import { useLedgerStore } from '../services/ledgerService';
-import { Sidebar } from './components/Sidebar';
-import { LaunchScreen } from './components/LaunchScreen';
-import { SystemOverview } from './components/SystemOverview';
-import { Dashboard } from './components/Dashboard';
-import { SettingsModal } from './components/modals/SettingsModal';
-import { IRSApiConsole } from './components/IRSApiConsole';
-import { IRMTreeWidget } from './components/IRMTreeWidget';
-import { UserProfileModal } from './components/modals/UserProfileModal';
-import { TwoFactorAuthModal } from './components/modals/TwoFactorAuthModal';
-import { User, Entity } from './types';
-import { ReceiptCaptureWizard } from './components/ReceiptCaptureWizard';
-import { FedGateway } from './components/FedGateway'; 
-import { ACHMovementWizard } from './components/ACHMovementWizard';
-import { LLCContractorForm } from './components/forms/LLCContractorForm';
+import { Sidebar } from './Sidebar';
+import { LaunchScreen } from './LaunchScreen';
+import { SystemOverview } from './SystemOverview';
+import { Dashboard } from './Dashboard';
+import { SettingsModal } from './modals/SettingsModal';
+import { IRSApiConsole } from './IRSApiConsole';
+import { IRMTreeWidget } from './IRMTreeWidget';
+import { UserProfileModal } from './modals/UserProfileModal';
+import { TwoFactorAuthModal } from './modals/TwoFactorAuthModal';
+import { User, Entity } from '../types';
+import { ReceiptCaptureWizard } from './ReceiptCaptureWizard';
+import { FedGateway } from './FedGateway'; 
+import { ACHMovementWizard } from './ACHMovementWizard';
+import { LLCContractorForm } from './forms/LLCContractorForm';
 import { X } from 'lucide-react';
 
 const WizardModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => (
