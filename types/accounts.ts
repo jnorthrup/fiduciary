@@ -16,6 +16,8 @@ export enum DCFlag {
   Credit = 'Credit'
 }
 
+export type AccountClass = 'Debit' | 'Credit';
+
 export interface Account {
   id: string;
   entityId: string;
@@ -24,6 +26,12 @@ export interface Account {
   type: AccountType;
   normalBalance: DCFlag;
   balance: number;
+  accountClass?: AccountClass;
+  isActive?: boolean;
+  description?: string;
+  taxLine?: string;
+  parentAccountId?: string;
+  children?: string[];
   internalAlias?: string; // e.g. TRUST-TREASURY-001
   _version: string;
 }

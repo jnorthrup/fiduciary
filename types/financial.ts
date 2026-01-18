@@ -57,7 +57,15 @@ export enum ExternalRail {
   SPONSORED_ACH = 'SPONSORED_ACH',
   SPONSORED_WIRE = 'SPONSORED_WIRE',
   CHECK_VENDOR = 'CHECK_VENDOR',
-  MANUAL_TENDER = 'MANUAL_TENDER_CERTIFIED_FUNDS'
+  MANUAL_TENDER = 'MANUAL_TENDER_CERTIFIED_FUNDS',
+  ACH = 'ACH'
+}
+
+export interface PayeeBankingDetails {
+  bankName?: string;
+  routingNumber: string;
+  accountNumber: string;
+  accountType: 'Checking' | 'Savings';
 }
 
 export interface SettlementInstruction {
@@ -67,6 +75,7 @@ export interface SettlementInstruction {
   amount: number;
   method: ExternalRail;
   funding_source: string;
+  payee_banking?: PayeeBankingDetails;
   supporting_docs: string[];
   approval: {
     required_signers: string[];
@@ -173,4 +182,46 @@ export interface AccordRecord {
     verificationStatus: string;
   };
   status: string;
+}
+
+// --- OBLIGATION LAYER ---
+
+export interface Invoice {
+  id: string;
+  entityId: string;
+  vendorId: string;
+  invoiceNumber: string;
+  issueDate: string;
+  dueDate: string;
+  amount: number;
+  description: string;
+  status: 'Draft' | 'Approved' | 'Paid' | 'Void';
+  items: { description: string; amount: number; accountCode?: string }[];
+  fileUrl?: string;
+  _version: string;
+}
+
+export interface Payable {
+  id: string;
+  entityId: string;
+  invoiceId: string;
+  amountDue: number;
+  dueDate: string;
+  status: 'Open' | 'Scheduled' | 'Paid';
+  priority?: 'High' | 'Normal' | 'Low';
+  _version: string;
+}
+
+export interface SettlementConfirmation {
+  id: string;
+  settlementId: string;
+  traceNumber: string;
+  effectiveEntryDate: string;
+  effectiveDate?: string;
+  status: 'Processed' | 'Returned';
+  returnCode?: string;
+  returnReason?: string;
+  postedAt: string;
+  confirmationTimestamp?: string;
+  _version: string;
 }
