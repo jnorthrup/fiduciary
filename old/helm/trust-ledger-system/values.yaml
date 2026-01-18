@@ -1,0 +1,314 @@
+# Default values for trust-ledger-system
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Image configuration
+images:
+  apiGateway:
+    repository: fiduciary/api-gateway
+    tag: latest
+    pullPolicy: Always
+  irsService:
+    repository: fiduciary/irs-service
+    tag: latest
+    pullPolicy: Always
+  bsoService:
+    repository: fiduciary/bso-service
+    tag: latest
+    pullPolicy: Always
+  ledgerService:
+    repository: fiduciary/ledger-service
+    tag: latest
+    pullPolicy: Always
+  bankingService:
+    repository: fiduciary/banking-service
+    tag: latest
+    pullPolicy: Always
+  authService:
+    repository: fiduciary/auth-service
+    tag: latest
+    pullPolicy: Always
+  auditService:
+    repository: fiduciary/audit-service
+    tag: latest
+    pullPolicy: Always
+  teachModeService:
+    repository: fiduciary/teach-mode-service
+    tag: latest
+    pullPolicy: Always
+
+# Service configuration
+services:
+  apiGateway:
+    enabled: true
+    replicas: 2
+    port: 8080
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+  irsService:
+    enabled: true
+    replicas: 2
+    port: 3001
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+
+  bsoService:
+    enabled: true
+    replicas: 2
+    port: 3002
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+  ledgerService:
+    enabled: true
+    replicas: 2
+    port: 3003
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+
+  bankingService:
+    enabled: true
+    replicas: 2
+    port: 3004
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+  authService:
+    enabled: true
+    replicas: 2
+    port: 3005
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+  auditService:
+    enabled: true
+    replicas: 2
+    port: 3006
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+  teachModeService:
+    enabled: true
+    replicas: 1
+    port: 3007
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "2000m"
+
+# Infrastructure
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: "change-me-in-production"
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+
+rabbitmq:
+  enabled: true
+  auth:
+    username: admin
+    password: "change-me-in-production"
+  persistence:
+    enabled: true
+    size: 2Gi
+
+# Databases
+irs-db:
+  enabled: true
+  auth:
+    database: irs_service
+    username: irs_service
+    password: "change-me-in-production"
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+bso-db:
+  enabled: true
+  auth:
+    database: bso_service
+    username: bso_service
+    password: "change-me-in-production"
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+ledger-db:
+  enabled: true
+  auth:
+    database: ledger_service
+    username: ledger_service
+    password: "change-me-in-production"
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+banking-db:
+  enabled: true
+  auth:
+    database: banking_service
+    username: banking_service
+    password: "change-me-in-production"
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+audit-db:
+  enabled: true
+  auth:
+    database: audit_service
+    username: audit_service
+    password: "change-me-in-production"
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# Observability
+observability:
+  prometheus:
+    enabled: true
+    persistence:
+      enabled: true
+      size: 10Gi
+    retention: 30d
+  grafana:
+    enabled: true
+    adminPassword: "change-me-in-production"
+    persistence:
+      enabled: true
+      size: 2Gi
+
+# Ingress
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: api.fiduciary.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api-gateway
+    - host: grafana.fiduciary.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: grafana
+  tls:
+    - secretName: fiduciary-tls
+      hosts:
+        - api.fiduciary.example.com
+        - grafana.fiduciary.example.com
+
+# Config
+config:
+  nodeEnv: production
+  logLevel: info
+  rateLimitWindowMs: 60000
+  rateLimitMaxRequests: 100
+  irsOauthUrl: https://irs-ui.efile.gov.irs.gov
+  irsApiUrl: https://irs-api.efile.gov.irs.gov
+  bsoBaseUrl: https://www.ssa.gov
+  tellerApiUrl: https://api.teller.io
+  plaidEnv: production
+
+# Secrets (use external secret management in production)
+secrets:
+  jwtSecret: "change-me-in-production"
+  geminiApiKey: "your-gemini-api-key"
+  firebaseProjectId: "your-project-id"
+  tellerApiKey: "your-teller-api-key"
+  plaidClientId: "your-plaid-client-id"
+  plaidSecret: "your-plaid-secret"
+
+# Network policies
+networkPolicies:
+  enabled: true
+
+# Pod disruption budgets
+podDisruptionBudgets:
+  enabled: true
+  minAvailable: 1
+
+# Pod security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
