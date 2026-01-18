@@ -26,11 +26,11 @@ resource "google_service_account" "dispatch_sa" {
   display_name = "Dispatch Service Account"
 }
 
-# Cloud Run Service
+# Cloud Run Service for Fullstack App
 resource "google_cloud_run_v2_service" "default" {
   name     = var.service_name
   location = var.region
-  ingress = "INGRESS_TRAFFIC_INTERNAL_ONLY" # Or ALL if needed for external triggers
+  ingress = "INGRESS_TRAFFIC_ALL" # Public access for UI
 
   template {
     service_account = google_service_account.dispatch_sa.email
@@ -39,6 +39,9 @@ resource "google_cloud_run_v2_service" "default" {
       env {
         name  = "LOG_LEVEL"
         value = "info"
+      }
+      ports {
+        container_port = 3001
       }
     }
   }
@@ -96,4 +99,25 @@ resource "google_cloud_run_service_iam_member" "eventarc_invoker" {
   service  = google_cloud_run_v2_service.default.name
   role     = "roles/run.invoker"
   member   = "serviceAccount:${google_service_account.dispatch_sa.email}"
+}
+
+# Cloud Build Trigger for Fullstack Branch
+resource "google_cloudbuild_trigger" "fullstack_trigger" {
+  name        = "fullstack-deploy"
+  description = "Deploy Fullstack App on push to fullstack branch"
+
+  # Use GitHub connection (requires Cloud Build GitHub App installed on the repo)
+  github {
+    owner = "jnorthrup"
+    name  = "fiduciary"
+    push {
+      branch = "^fullstack$"
+    }
+  }
+
+  filename = "cloudbuild.yaml"
+  
+  substitutions = {
+    _SERVICE_NAME = var.service_name
+  }
 }

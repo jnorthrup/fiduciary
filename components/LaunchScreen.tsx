@@ -103,7 +103,8 @@ export const LaunchScreen: React.FC<Props> = ({
         else if (activeStrategy === 'CreditUnion') onCreditUnionLaunch();
         else if (activeStrategy === 'QuickBooks') onQuickBooksLaunch();
         else if (activeStrategy === 'Google') {
-          // signInWithGoogle already set the currentUser in store
+          // The store is already updated by signInWithGoogle.
+          // App.tsx will re-render and unmount LaunchScreen because store.currentUser.name is set.
         }
         else onLaunch(name, email);
       }, 500);

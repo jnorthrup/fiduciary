@@ -339,26 +339,31 @@ export const useLedgerStore = () => {
 
 export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey?: CryptoKey }> = ({ children, encryptionKey }) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [initialData, setInitialData] = useState<any>(null);
-
-  useEffect(() => {
-    fetchLedgerData(encryptionKey).then(data => {
-      setInitialData(data);
-      setIsLoaded(true);
-    });
-  }, [encryptionKey]);
-
-  if (!isLoaded) return null; // Or show a local loading state
 
   // Consolidated Ledger Database State
-  const [db, setDb] = useState<LedgerDb>(initialData.db);
+  // Consolidated Ledger Database State
+  const [db, setDb] = useState<LedgerDb>(EMPTY_DB);
 
-  // System/UI State
-  const [currentUser, setCurrentUser] = useState<types.User>(initialData.user);
-  const [secrets, setSecrets] = useState<types.ApiSecrets>(initialData.secrets);
-  const [settings, setSettings] = useState<types.SystemSettings>(initialData.settings);
+  const DEFAULT_DEV_USER: types.User = {
+    id: 'dev-auto',
+    name: 'Developer',
+    email: 'dev@local',
+    role: 'Owner' as types.UserRole,
+    avatarInitials: 'DV',
+    lastActive: 'Now',
+    _version: '1'
+  };
 
-  const [apiSystemStatus, setApiSystemStatus] = useState<types.SystemStatus[]>([
+  // System/UI State - Init with Dev User to bypass LaunchScreen immediately
+  const [currentUser, setCurrentUser] = useState<types.User>(DEFAULT_DEV_USER);
+  const [secrets, setSecrets] = useState<types.ApiSecrets>({ irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' });
+  const [settings, setSettings] = useState<types.SystemSettings>({
+    fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' },
+    network: 'Testnet',
+    layoutMode: 'MobileQuickBooks'
+  });
+
+  const [apiSystemStatus] = useState<types.SystemStatus[]>([
     { channel: 'MeF', status: 'Operational', latency: '45ms', uptime: '99.98%' },
     { channel: 'AIR', status: 'Operational', latency: '120ms', uptime: '99.5%' },
     { channel: 'IRIS', status: 'Degraded', latency: '800ms', uptime: '98.2%' },
@@ -366,15 +371,70 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
     { channel: 'FEDNOW', status: 'Operational', latency: '3ms', uptime: '99.99%' },
     { channel: 'TIN_MATCH', status: 'Maintenance', latency: '-', uptime: '0%' },
   ]);
+
   const [searchResults, setSearchResults] = useState<types.SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-
   const [changeGraph, setChangeGraph] = useState<types.ChangeSet[]>([]);
-  const [canResume, setCanResume] = useState(!!initialData.user.name);
+  const [canResume, setCanResume] = useState(false);
   const [isCloudEnabled, setIsCloudEnabled] = useState(false);
   const [is2FAOpen, setIs2FAOpen] = useState(false);
   const [teachModeEnabled, setTeachModeEnabled] = useState(false);
   const [pendingCallback, setPendingCallback] = useState<(() => void) | null>(null);
+
+  useEffect(() => {
+    fetchLedgerData(encryptionKey).then(data => {
+      // SEED DEFAULT ENTITY IF MISSING (QuickBooks Mode)
+      if (data.db.entities.length === 0) {
+        data.db.entities.push({
+          id: 'default-op-co',
+          name: 'Northrup Operating LLC',
+          type: types.EntityType.LLC,
+          role: types.EntityRole.OPERATING_LLC,
+          parentEntityId: null,
+          _version: '1'
+        });
+      }
+      setDb(data.db);
+      // specific logic: if loaded data has a valid user, use it. Otherwise keep default (Dev).
+      if (data.user && data.user.name) {
+        setCurrentUser(data.user);
+        setCanResume(true);
+      }
+      setSecrets(data.secrets);
+      setSettings({
+        ...data.settings,
+        layoutMode: data.settings.layoutMode || 'MobileQuickBooks'
+      });
+      setIsLoaded(true);
+      if (data.user && data.user.name) {
+        setCanResume(true);
+      }
+    }).catch(e => {
+      console.error("Ledger Load Error:", e);
+      setIsLoaded(true);
+    });
+  }, [encryptionKey]);
+
+  const LoadingScreen = () => {
+    return React.createElement('div', {
+      className: "fixed inset-0 flex flex-col items-center justify-center bg-[#0B0F19] text-slate-300"
+    }, [
+      React.createElement('div', {
+        key: 'spinner',
+        className: "w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4"
+      }),
+      React.createElement('h2', {
+        key: 'title',
+        className: "text-xl font-bold tracking-widest text-white uppercase"
+      }, "Initializing Ledger"),
+      React.createElement('p', {
+        key: 'desc',
+        className: "text-xs text-slate-500 mt-2 font-mono"
+      }, "Decrypting Secure Enclave...")
+    ]);
+  };
+
+
 
   // --- Persistence & Sync ---
   const syncDoc = (collectionName: keyof LedgerDb | string, data: any) => {
@@ -506,8 +566,18 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
   const signInWithGoogle = async (): Promise<types.User | null> => {
     const auth = getFirebaseAuth();
     if (!auth) {
-      console.error("Firebase Auth not initialized");
-      return null;
+      const u: types.User = {
+        id: 'mock-123',
+        name: 'James Northrup (Mock)',
+        email: 'james@sovereign-node.local',
+        role: 'Owner' as types.UserRole,
+        avatarInitials: "JN",
+        lastActive: 'Now',
+        _version: '1'
+      };
+      setCurrentUser(u);
+      addItem('users', u);
+      return u;
     }
 
     try {
@@ -602,11 +672,11 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
     updateSecrets: (s) => setSecrets(p => ({ ...p, ...s })), updateSettings: (s) => setSettings(p => ({ ...p, ...s })),
     generateSyntheticData: async () => {
       const mockData = await import('./mockData');
-      setDb({ ...EMPTY_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS });
+      setDb({ ...EMPTY_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS, contractors: mockData.SEED_CONTRACTORS });
     },
     generateSampleEnterprise: async () => {
       const mockData = await import('./mockData');
-      setDb({ ...EMPTY_DB, entities: mockData.JIM_ENTITIES, accounts: mockData.JIM_ACCOUNTS, journals: mockData.JIM_JOURNALS, modules: mockData.JIM_MODULES, filings: mockData.JIM_FILINGS });
+      setDb({ ...EMPTY_DB, entities: mockData.JIM_ENTITIES, accounts: mockData.JIM_ACCOUNTS, journals: mockData.JIM_JOURNALS, modules: mockData.JIM_MODULES, filings: mockData.JIM_FILINGS, contractors: mockData.SEED_CONTRACTORS });
     },
     postJournal,
 
@@ -730,5 +800,6 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
     },
   };
 
+  if (!isLoaded) return React.createElement(LoadingScreen);
   return React.createElement(LedgerContext.Provider, { value: contextValue }, children);
 };

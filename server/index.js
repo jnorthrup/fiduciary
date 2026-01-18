@@ -106,6 +106,9 @@ const verifyFirebaseToken = async (req, res, next) => {
   }
 };
 
+// Serve static files from 'public' directory (built React app)
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Apply auth to ledger/banking routes (preserving bypass for health/iris-oauth)
 const protectedRoutes = ['/api/banking', '/api/audit', '/api/bso'];
 protectedRoutes.forEach(route => {
@@ -150,11 +153,11 @@ app.use('/api/bso', verifyFirebaseToken, bsoRouter);
 // Mount Ledger router
 if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'ledger-service') {
   // For demo, we skip auth on this specific route for easier testing, or use verifyFirebaseToken
-  app.use('/api/ledger', ledgerRouter); 
+  app.use('/api/ledger', ledgerRouter);
 } else if (process.env.SERVICE_NAME === 'api-gateway' && process.env.LEDGER_SERVICE_URL) {
   // Proxy to Ledger Service
-  app.use('/api/ledger', createProxyMiddleware({ 
-    target: process.env.LEDGER_SERVICE_URL, 
+  app.use('/api/ledger', createProxyMiddleware({
+    target: process.env.LEDGER_SERVICE_URL,
     changeOrigin: true,
     pathRewrite: { '^/api/ledger': '/api/ledger' }
   }));
@@ -162,8 +165,8 @@ if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'ledger-service') 
 
 if (process.env.SERVICE_NAME === 'api-gateway' && process.env.AUDIT_SERVICE_URL) {
   // Proxy to Audit Service
-  app.use('/api/audit', createProxyMiddleware({ 
-    target: process.env.AUDIT_SERVICE_URL, 
+  app.use('/api/audit', createProxyMiddleware({
+    target: process.env.AUDIT_SERVICE_URL,
     changeOrigin: true,
     pathRewrite: { '^/api/audit': '/api/audit' }
   }));
@@ -726,6 +729,12 @@ app.get('/api/irs/schemas/:formType', (req, res) => {
   });
 });
 
+// SPA Catch-all: specific API routes above should be hit first.
+// If no API route matched, serve the frontend.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // ============================================================================
 // Error Handler
 // ============================================================================
@@ -748,12 +757,12 @@ const startServer = async () => {
   if (process.env.RABBITMQ_HOST) {
     try {
       await connectBus(process.env.RABBITMQ_HOST, process.env.RABBITMQ_PORT);
-      
+
       // Setup Audit Consumer (if this is the audit service or the monolith)
       if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'audit-service') {
         subscribe('journal.entry_created', async (data) => {
-           logger.info('AUDIT LOG: Journal Entry Created:', data);
-           // In a real implementation, we would write to the audit database here
+          logger.info('AUDIT LOG: Journal Entry Created:', data);
+          // In a real implementation, we would write to the audit database here
         }, 'audit_queue');
       }
     } catch (e) {
