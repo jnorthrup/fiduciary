@@ -182,4 +182,4 @@
 - [x] Task: Comprehensive Testing [6103767]
   - [x] Sub-task: Verify build passes with no regressions
   - [x] Sub-task: Add tests for visual/UX states (animations, transitions)
-- [~] Task: Conductor - User Manual Verification 'Phase 5.1 Visual & UX Overhaul' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Phase 5.1 Visual & UX Overhaul' (Protocol in workflow.md)

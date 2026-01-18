@@ -26,9 +26,9 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Identity & Browser Security' (Protocol in workflow.md)
 
 ## Phase 3: Coordination & Persistence Layer
-- [ ] Task: Coordination (Yjs CRDTs)
-  - [ ] Integrate Yjs for real-time conflict-free document synchronization.
-  - [ ] Map Ledger JSON Graph to Yjs types.
+- [~] Task: Coordination (Yjs CRDTs)
+  - [x] Integrate Yjs for real-time conflict-free document synchronization.
+  - [x] Map Ledger JSON Graph to Yjs types.
 - [ ] Task: Persistence (FoundationDB)
   - [ ] Deploy FoundationDB on GKE (Autopilot-compatible setup).
   - [ ] Implement Persistence Proxy to bridge Yjs updates to FoundationDB transactions.
