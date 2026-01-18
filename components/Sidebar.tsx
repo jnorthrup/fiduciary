@@ -1,15 +1,17 @@
 
 import React, { useState } from 'react';
-import { Building2, ShieldCheck, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock, UserCog, PlusCircle, Receipt, CreditCard, ArrowRightLeft, Landmark } from 'lucide-react';
+import { Building2, ShieldCheck, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock, UserCog, PlusCircle, Receipt, CreditCard, ArrowRightLeft, Landmark, FileText } from 'lucide-react';
 import { Entity, EntityRole, User } from '../types';
 import { TeamManagementModal } from './modals/TeamManagementModal';
-import { UseCaseLogger } from '../services/useCaseLogger'; // Import
+import { UseCaseLogger } from '../services/useCaseLogger';
+
+import { TeachModeToggle } from './teach-mode-toggle';
 
 interface SidebarProps {
   activeEntityId: string | null;
   onSelectEntity: (id: string | null) => void;
   onOpenIRM: () => void;
-  onOpenSettings: () => void; 
+  onOpenSettings: () => void;
   entities: Entity[];
   isOpen: boolean;
   onClose: () => void;
@@ -19,17 +21,21 @@ interface SidebarProps {
   onUpdateUser: (user: User) => void;
   onDeleteUser: (id: string) => void;
   onEditUser: (user: User) => void;
-  // New Quick Actions
+  // Teach Mode
+  onTeachModeChange?: (enabled: boolean) => void;
+  // Quick Actions
   onQuickInvoice: () => void;
   onQuickReceipt: () => void;
   onQuickPayment: () => void;
   onQuickWire: () => void;
+  onQuick1099?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
+export const Sidebar: React.FC<SidebarProps> = ({
     activeEntityId, onSelectEntity, onOpenIRM, onOpenSettings, entities, isOpen, onClose,
     currentUser, users, onAddUser, onUpdateUser, onDeleteUser, onEditUser,
-    onQuickInvoice, onQuickReceipt, onQuickPayment, onQuickWire
+    onTeachModeChange,
+    onQuickInvoice, onQuickReceipt, onQuickPayment, onQuickWire, onQuick1099
 }) => {
   const [showTeamModal, setShowTeamModal] = useState(false);
 
@@ -89,30 +95,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <p className="px-4 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.2em] flex items-center gap-2">
                  Banking Operations
               </p>
-              <NavItem 
-                  label="Create Invoice" 
-                  icon={PlusCircle} 
+              <NavItem
+                  label="Create Invoice"
+                  icon={PlusCircle}
                   color="text-emerald-400"
-                  onClick={onQuickInvoice} 
+                  onClick={onQuickInvoice}
               />
-              <NavItem 
-                  label="Snap Receipt" 
-                  icon={Receipt} 
+              <NavItem
+                  label="Snap Receipt"
+                  icon={Receipt}
                   color="text-blue-400"
-                  onClick={onQuickReceipt} 
+                  onClick={onQuickReceipt}
               />
-              <NavItem 
-                  label="Make Payment" 
-                  icon={CreditCard} 
+              <NavItem
+                  label="Make Payment"
+                  icon={CreditCard}
                   color="text-rose-400"
-                  onClick={onQuickPayment} 
+                  onClick={onQuickPayment}
               />
-              <NavItem 
-                  label="Send Wire" 
-                  icon={ArrowRightLeft} 
+              <NavItem
+                  label="Send Wire"
+                  icon={ArrowRightLeft}
                   color="text-amber-400"
-                  onClick={onQuickWire} 
+                  onClick={onQuickWire}
               />
+              {onQuick1099 && (
+                <NavItem
+                    label="File 1099"
+                    icon={FileText}
+                    color="text-purple-400"
+                    onClick={onQuick1099}
+                />
+              )}
             </div>
           )}
 
@@ -161,6 +175,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
              </div>
           </div>
         </nav>
+
+        {/* Teach Mode Toggle */}
+        <div className="p-4 border-t border-slate-900 bg-slate-950/50">
+           <TeachModeToggle 
+              onChange={onTeachModeChange}
+              className="w-full bg-slate-900/50 border-slate-800" 
+           />
+        </div>
 
         {/* User Profile Hook */}
         <div className="p-4 border-t border-slate-900 bg-slate-950/80">

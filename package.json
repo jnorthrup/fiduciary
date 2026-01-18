@@ -6,24 +6,53 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:server": "vitest --config vitest.server.config.ts",
+    "test:live-portal": "tsx test/irs-portal-live-test.ts",
+    "test:live-api": "tsx test/irs-api-live-test.ts",
+    "lint": "eslint . --max-warnings 0",
+    "api:generate": "openapi-typescript-codegen -i specs/unified-api-openapi.yaml -o generated/api-client -c ApiClient --useOptions",
+    "server:dev": "cd server && npm run dev"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "d3": "7.8.5",
+    "express": "^4.18.2",
+    "fast-xml-parser": "^4.5.1",
+    "firebase": "^12.7.0",
+    "lucide-react": "^0.561.0",
+    "mammoth": "1.6.0",
+    "mermaid": "10.6.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "uuid": "9.0.1",
-    "lucide-react": "^0.561.0",
-    "d3": "7.8.5",
-    "mermaid": "10.6.1",
-    "@google/genai": "^1.34.0",
-    "mammoth": "1.6.0",
     "xlsx": "0.18.5",
-    "firebase": "^12.7.0"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@playwright/test": "^1.57.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/node": "^22.14.0",
+    "@types/supertest": "^6.0.3",
     "@vitejs/plugin-react": "^5.0.0",
+    "@vitest/coverage-v8": "^4.0.16",
+    "@vitest/ui": "^4.0.16",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "globals": "^17.0.0",
+    "jsdom": "^27.4.0",
+    "playwright": "^1.57.0",
+    "supertest": "^7.2.2",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "typescript-eslint": "^8.52.0",
+    "vite": "^6.2.0",
+    "vitest": "^4.0.16"
   }
 }

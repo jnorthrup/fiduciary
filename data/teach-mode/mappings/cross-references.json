@@ -1,0 +1,83 @@
+{
+  "lastUpdated": "2025-01-13",
+  "description": "Cross-reference mappings between IRS 1099 forms and instructions",
+  "crossReferences": {
+    "i1099nec_to_i1099misc": {
+      "source": "i1099nec.pdf",
+      "target": "i1099misc.pdf",
+      "relationships": [
+        {
+          "sourceSection": "Nonemployee Compensation",
+          "targetSection": "Other Income",
+          "description": "Payments that were reported on 1099-MISC box 7 before 2020 are now reported on 1099-NEC",
+          "pdfReference": "i1099nec.pdf#p1.s1.p1"
+        },
+        {
+          "sourceSection": "Filing Requirements",
+          "targetSection": "Filing Requirements",
+          "description": "Both forms use similar filing thresholds and methods",
+          "pdfReference": "i1099gi.pdf#p1.s1.p1"
+        }
+      ]
+    },
+    "i1099misc_to_i1099nec": {
+      "source": "i1099misc.pdf",
+      "target": "i1099nec.pdf",
+      "relationships": [
+        {
+          "sourceSection": "Box 7 - Direct Sales",
+          "targetSection": "Nonemployee Compensation",
+          "description": "Direct sales may be reported on either form depending on business relationship",
+          "pdfReference": "i1099misc.pdf#p2.s1.p2"
+        }
+      ]
+    },
+    "to_general_instructions": {
+      "source": ["i1099nec.pdf", "i1099misc.pdf"],
+      "target": "i1099gi.pdf",
+      "relationships": [
+        {
+          "sourceSection": "TIN Requirements",
+          "targetSection": "Taxpayer Identification Numbers",
+          "description": "General instructions for TIN validation and backup withholding",
+          "pdfReference": "i1099gi.pdf#p1.s3.p1"
+        },
+        {
+          "sourceSection": "Filing Methods",
+          "targetSection": "How to File",
+          "description": "Instructions for electronic filing via FIRE system and paper filing",
+          "pdfReference": "i1099gi.pdf#p2.s1.p1"
+        },
+        {
+          "sourceSection": "Due Dates",
+          "targetSection": "When to File",
+          "description": "Filing due dates and extension information",
+          "pdfReference": "i1099gi.pdf#p3.s1.p1"
+        },
+        {
+          "sourceSection": "Penalties",
+          "targetSection": "Penalties",
+          "description": "Penalties for failure to file correctly or on time",
+          "pdfReference": "i1099gi.pdf#p4.s1.p1"
+        }
+      ]
+    }
+  },
+  "relatedDocuments": {
+    "w9": {
+      "name": "Form W-9",
+      "description": "Request for Taxpayer Identification Number and Certification",
+      "relevance": "Used to collect payee TIN and certification of tax status"
+    },
+    "w8ben": {
+      "name": "Form W-8BEN",
+      "description": "Certificate of Foreign Status of Beneficial Owner for United States Tax Withholding and Reporting",
+      "relevance": "Used for foreign payees to claim exemption from backup withholding"
+    },
+    "1096": {
+      "name": "Form 1096",
+      "description": "Annual Summary and Transmittal of U.S. Information Returns",
+      "relevance": "Summary form required when paper filing 1099 forms"
+    }
+  }
+}
