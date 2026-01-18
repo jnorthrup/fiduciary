@@ -402,6 +402,7 @@ export const SettlementEngine: React.FC<Props> = ({ entity, onClose }) => {
                   <div>Amount: <strong>${amountNum.toLocaleString()}</strong></div>
                 </div>
                 <button
+                  type="button"
                   onClick={handleAuthorize}
                   disabled={isAuthorized}
                   className={`px-4 py-2 rounded text-xs font-bold transition-colors ${
