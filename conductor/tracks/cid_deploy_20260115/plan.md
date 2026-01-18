@@ -29,9 +29,9 @@
 - [x] Task: Coordination (Yjs CRDTs) [eca8547]
   - [x] Integrate Yjs for real-time conflict-free document synchronization.
   - [x] Map Ledger JSON Graph to Yjs types.
-- [~] Task: Persistence (FoundationDB)
-  - [ ] Deploy FoundationDB on GKE (Autopilot-compatible setup).
-  - [ ] Implement Persistence Proxy to bridge Yjs updates to FoundationDB transactions.
+- [x] Task: Persistence (FoundationDB) [1f3f699]
+  - [x] Deploy FoundationDB on GKE (Autopilot-compatible setup).
+  - [x] Implement Persistence Proxy to bridge Yjs updates to FoundationDB transactions.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Coordination & Persistence Layer' (Protocol in workflow.md)
 
 ## Phase 4: CI/CD Pipeline (Cloud Build)
