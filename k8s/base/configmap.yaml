@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: fiduciary-system
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  # Redis Configuration
+  REDIS_HOST: "redis-master"
+  REDIS_PORT: "6379"
+  # RabbitMQ Configuration
+  RABBITMQ_HOST: "rabbitmq"
+  RABBITMQ_PORT: "5672"
+  # Database Configuration (per-service overrides in service-specific configs)
+  DB_SSL_MODE: "require"
+  DB_POOL_MIN: "2"
+  DB_POOL_MAX: "10"
+  # API Timeouts
+  API_TIMEOUT_MS: "30000"
+  # Rate Limiting
+  RATE_LIMIT_WINDOW_MS: "60000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  # IRS IRIS Configuration
+  IRS_OAUTH_URL: "https://irs-ui.efile.gov.irs.gov"
+  IRS_API_URL: "https://irs-api.efile.gov.irs.gov"
+  # BSO Configuration
+  BSO_BASE_URL: "https://www.ssa.gov"
+  # Banking Providers
+  TELLER_API_URL: "https://api.teller.io"
+  PLAID_ENV: "production"
+  # Observability
+  ENABLE_METRICS: "true"
+  ENABLE_TRACING: "true"
+  TRACE_SAMPLING_RATE: "0.1"
+  # Feature Flags
+  FEATURE_BANKING_ENABLED: "true"
+  FEATURE_TEACH_MODE_ENABLED: "true"
+  FEATURE_AUDIT_LOGGING: "true"
