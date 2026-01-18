@@ -1,7 +1,0 @@
-{
-  "name": "Trust Ledger System",
-  "description": "A bank-grade, double-entry ledger system for Trust administration and Operating LLC management, featuring tax module tracking and automated journal entry rules.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
-}

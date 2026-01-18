@@ -1,8 +1,0 @@
-{
-  "track_id": "cid_deploy_20260115",
-  "type": "feature",
-  "status": "new",
-  "created_at": "2025-01-15T12:00:00Z",
-  "updated_at": "2025-01-15T12:00:00Z",
-  "description": "Deploy CID methodology on lambda and event driven k8s - Ledger PWA with WAL+LSM persistence, Redux sync, and adjacent services (MapReduce, AI, APIs, Agents)"
-}
