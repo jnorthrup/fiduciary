@@ -35,12 +35,12 @@
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Coordination & Persistence Layer' (Protocol in workflow.md)
 
 ## Phase 4: CI/CD Pipeline (Cloud Build)
-- [ ] Task: Multi-Stage Build Pipeline
-  - [ ] Configure linting, unit tests (Vitest), and PWA audit (Lighthouse).
-  - [ ] Implement CRDT consistency tests and encryption integrity checks.
-- [ ] Task: Automated Deployment
-  - [ ] Trigger GKE deployments via Cloud Build upon successful builds.
-  - [ ] Implement scale-to-zero validation.
+- [x] Task: Multi-Stage Build Pipeline
+  - [x] Configure linting, unit tests (Vitest), and PWA audit (Lighthouse).
+  - [x] Implement CRDT consistency tests and encryption integrity checks.
+- [~] Task: Automated Deployment
+  - [x] Trigger GKE deployments via Cloud Build upon successful builds.
+  - [x] Implement scale-to-zero validation.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: CI/CD Pipeline' (Protocol in workflow.md)
 
 ## Phase 5: Orchestration & Rollback
