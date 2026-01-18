@@ -12,7 +12,7 @@ variable "region" {
 variable "service_name" {
   description = "The name of the Cloud Run service"
   type        = string
-  default     = "dispatch-service"
+  default     = "trust-ledger-fullstack"
 }
 
 variable "image_url" {

@@ -34,7 +34,16 @@ export const App = () => {
   const store = useLedgerStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeEntityId, setActiveEntityId] = useState<string | null>(null);
+  /* AUTO-SELECT DEFAULT ENTITY (QuickBooks Mode) */
+  React.useEffect(() => {
+    if (!activeEntityId && store.entities.length > 0) {
+      // Prefer Operating LLC, else first
+      const preferred = store.entities.find(e => e.role === 'OPERATING_LLC') || store.entities[0];
+      setActiveEntityId(preferred.id);
+    }
+  }, [store.entities, activeEntityId]);
 
+  // Derived state
   // State for immediate wizard launch
   const [autoLaunchWizard, setAutoLaunchWizard] = useState(false);
 
@@ -138,6 +147,31 @@ export const App = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
+      <Sidebar
+        activeEntityId={activeEntityId}
+        onSelectEntity={setActiveEntityId}
+        onOpenIRM={() => setShowIRM(true)}
+        onOpenSettings={() => setShowSettings(true)}
+        entities={store.entities}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        currentUser={store.currentUser}
+        users={store.users}
+        onAddUser={store.addUser}
+        onUpdateUser={store.updateUser}
+        onDeleteUser={store.deleteUser}
+        onEditUser={setEditingUser}
+        onTeachModeChange={store.setTeachMode}
+        onQuickInvoice={() => setQuickAction('Invoice')}
+        onQuickReceipt={() => setQuickAction('Receipt')}
+        onQuickPayment={() => setQuickAction('Payment')}
+        onQuickWire={() => setQuickAction('Wire')}
+        onQuick1099={() => setQuickAction('1099')}
+      />
+
+      <div className="flex-1 relative flex flex-col h-full overflow-hidden">
+        {mainContent}
+      </div>
 
       {/* QUICK ACTION MODALS (Global Context) */}
       {activeEntity && quickAction === 'Receipt' && (

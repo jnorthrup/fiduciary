@@ -68,6 +68,11 @@ export interface Entity {
     financingAssurances: boolean;
     programStatus: string;
   };
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  phone?: string;
 }
 
 export enum AccountType {
@@ -141,6 +146,14 @@ export interface Contractor {
   name: string;
   tinLast4: string;
   w9OnFile: boolean;
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  phone?: string;
+  email?: string;
+  taxType?: 'Individual' | 'Business';
+  _version: string;
 }
 
 export interface ComplianceFiling {

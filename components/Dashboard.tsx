@@ -117,7 +117,7 @@ interface Props {
 
 export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEntity }) => {
   const store = useLedgerStore();
-  const [activeTab, setActiveTab] = useState('Overview');
+  const [activeTab, setActiveTab] = useState('Financials');
   const [activeWizard, setActiveWizard] = useState<WizardType | null>(null);
 
   const openWizard = (type: WizardType) => setActiveWizard(type);

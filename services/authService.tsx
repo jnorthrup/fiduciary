@@ -67,12 +67,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode, config?: any }>
     }, [config]);
 
     const signIn = async () => {
+        if (!isInitialized) {
+            const mockUser = {
+                uid: 'dev-user-123',
+                displayName: 'Developer',
+                email: 'dev@localhost.local',
+                photoURL: null,
+            } as any;
+
+            setUser(mockUser);
+            const salt = new TextEncoder().encode('ledger-static-salt-' + mockUser.uid.substring(0, 8));
+            const key = await cryptoService.deriveKey(mockUser.uid, salt);
+            setEncryptionKey(key);
+            logger.info("Mock sign-in successful");
+            return;
+        }
+
         const auth = getAuth();
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
     };
 
     const signOut = async () => {
+        if (!isInitialized) {
+            setUser(null);
+            setEncryptionKey(null);
+            return;
+        }
         const auth = getAuth();
         await firebaseSignOut(auth);
     };

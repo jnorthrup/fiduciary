@@ -21,6 +21,11 @@ export const createEntity = (props: Partial<Entity>): Entity => ({
     role: EntityRole.OPERATING_LLC,
     einLast4: "0000",
     parentEntityId: null,
+    streetAddress: "123 Sovereign Way",
+    city: "Cheyenne",
+    state: "WY",
+    zipCode: "82001",
+    phone: "(307) 555-0100",
     _version: GENESIS_HASH,
     ...props
 });
@@ -40,7 +45,12 @@ export const JIM_ENTITIES: Entity[] = [
             arrearsPolicy: 'None',
             financingAssurances: true,
             programStatus: 'On Track'
-        }
+        },
+        streetAddress: "123 Sovereign Way",
+        city: "Cheyenne",
+        state: "WY",
+        zipCode: "82001",
+        phone: "(307) 555-0055"
     }),
     // ECCLESIASTICAL LAYER
     {
@@ -308,16 +318,18 @@ export const JIM_BSO_SUBMISSIONS: BSOSubmission[] = [
 // --- 2. FUZZ / SYNTHETIC DATA (Disjoint) ---
 
 export const FUZZ_ENTITIES: Entity[] = [
-    { id: "FZ-ROOT", name: "Synthetic Operator", type: EntityType.INDIVIDUAL, role: EntityRole.TRUSTEE, parentEntityId: null, _version: GENESIS_HASH },
-    { id: "FZ-CORP", name: "Chaos Corp LLC", type: EntityType.LLC, role: EntityRole.OPERATING_LLC, parentEntityId: "FZ-ROOT", _version: GENESIS_HASH },
-    { id: "FZ-TRUST", name: "Entropy Trust", type: EntityType.TRUST, role: EntityRole.HOLDING_TRUST, parentEntityId: "FZ-ROOT", _version: GENESIS_HASH },
+    { id: "FZ-ROOT", name: "Synthetic Operator", type: EntityType.INDIVIDUAL, role: EntityRole.TRUSTEE, parentEntityId: null, streetAddress: "000 Binary Blvd", city: "Cloud City", state: "WY", zipCode: "82001", phone: "(555) 000-0000", _version: GENESIS_HASH },
+    { id: "FZ-CORP", name: "Chaos Corp LLC", type: EntityType.LLC, role: EntityRole.OPERATING_LLC, parentEntityId: "FZ-ROOT", streetAddress: "1337 Haxor Lane", city: "Sandbox", state: "WY", zipCode: "82001", phone: "(555) 133-7777", _version: GENESIS_HASH },
+    { id: "FZ-TRUST", name: "Entropy Trust", type: EntityType.TRUST, role: EntityRole.HOLDING_TRUST, parentEntityId: "FZ-ROOT", streetAddress: "Void Street", city: "Nowhere", state: "WY", zipCode: "82001", _version: GENESIS_HASH },
     { id: "FZ-VESSEL", name: "SS Random Seed", type: EntityType.VESSEL, role: EntityRole.VESSEL, parentEntityId: "FZ-TRUST", _version: GENESIS_HASH }
 ];
 
 export const FUZZ_ACCOUNTS: Account[] = [
     { id: "FA-01", entityId: "FZ-CORP", code: "101000", name: "Fuzz Cash", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 99999, accountClass: 'Debit', isActive: true, _version: GENESIS_HASH },
     { id: "FA-02", entityId: "FZ-CORP", code: "400000", name: "Noise Revenue", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0, accountClass: 'Credit', isActive: true, _version: GENESIS_HASH },
-    { id: "FA-03", entityId: "FZ-TRUST", code: "300000", name: "Static Corpus", type: AccountType.EQUITY, normalBalance: DCFlag.Credit, balance: 5000, accountClass: 'Credit', isActive: true, _version: GENESIS_HASH }
+    { id: "FA-03", entityId: "FZ-TRUST", code: "300000", name: "Static Corpus", type: AccountType.EQUITY, normalBalance: DCFlag.Credit, balance: 5000, accountClass: 'Credit', isActive: true, _version: GENESIS_HASH },
+    { id: "FA-04", entityId: "FZ-CORP", code: "201000", name: "Synthetic Accounts Payable", type: AccountType.LIABILITY, normalBalance: DCFlag.Credit, balance: 0, accountClass: 'Credit', isActive: true, _version: GENESIS_HASH },
+    { id: "FA-05", entityId: "FZ-CORP", code: "501000", name: "Synthetic Operations", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, accountClass: 'Debit', isActive: true, _version: GENESIS_HASH }
 ];
 
 export const FUZZ_JOURNALS: JournalEntry[] = [
@@ -352,7 +364,11 @@ export const SEED_CREDIT_DEFENSE: CreditDefenseRecord[] = [
     }
 ];
 
-export const SEED_CONTRACTORS: Contractor[] = [];
+export const SEED_CONTRACTORS: Contractor[] = [
+    { id: 'VEND-001', name: 'Global Cloud Systems', taxType: 'Business', tinLast4: '8812', email: 'billing@gcs.io', streetAddress: '404 Server Rd', city: 'Palo Alto', state: 'CA', zipCode: '94301', phone: '(650) 555-0100', w9OnFile: true, _version: '1' },
+    { id: 'VEND-002', name: 'Sovereign Legal Counsel', taxType: 'Business', tinLast4: '2291', email: 'retainer@sov-legal.com', streetAddress: '777 Justice Ln', city: 'Cheyenne', state: 'WY', zipCode: '82001', phone: '(307) 555-0199', w9OnFile: true, _version: '1' },
+    { id: 'VEND-003', name: 'Cheyenne Electric & Gas', taxType: 'Business', tinLast4: '4450', email: 'utilities@ceg.local', streetAddress: '10 Utility Way', city: 'Cheyenne', state: 'WY', zipCode: '82001', phone: '(307) 555-0011', w9OnFile: true, _version: '1' }
+];
 export const SEED_WALLETS: WalletCredential[] = [];
 export const SEED_BSO_ROLES: BSORole[] = JIM_BSO_ROLES;
 export const SEED_BSO_SUBMISSIONS: BSOSubmission[] = JIM_BSO_SUBMISSIONS;
