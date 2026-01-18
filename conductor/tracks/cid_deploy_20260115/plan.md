@@ -38,18 +38,18 @@
 - [x] Task: Multi-Stage Build Pipeline
   - [x] Configure linting, unit tests (Vitest), and PWA audit (Lighthouse).
   - [x] Implement CRDT consistency tests and encryption integrity checks.
-- [~] Task: Automated Deployment
+- [x] Task: Automated Deployment
   - [x] Trigger GKE deployments via Cloud Build upon successful builds.
   - [x] Implement scale-to-zero validation.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: CI/CD Pipeline' (Protocol in workflow.md)
 
 ## Phase 5: Orchestration & Rollback
-- [ ] Task: Cloud Functions Orchestration
-  - [ ] Create `onDeploy` function for health checks.
-  - [ ] Create `onAuthChange` for user storage provisioning.
-- [ ] Task: Automatic Rollback
-  - [ ] Implement Cloud Monitoring alerts for deployment failure.
-  - [ ] Script automatic GKE rollouts to previous stable versions.
+- [x] Task: Cloud Functions Orchestration
+  - [x] Create `onDeploy` function for health checks.
+  - [x] Create `onAuthChange` for user storage provisioning.
+- [x] Task: Automatic Rollback
+  - [x] Implement Cloud Monitoring alerts for deployment failure.
+  - [x] Script automatic GKE rollouts to previous stable versions.
 - [ ] Task: Conductor - User Manual Verification 'Phase 5: Orchestration & Rollback' (Protocol in workflow.md)
 
 ## Phase 6: Verification & End-to-End
