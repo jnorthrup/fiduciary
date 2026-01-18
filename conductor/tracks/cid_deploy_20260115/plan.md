@@ -53,10 +53,10 @@
 - [ ] Task: Conductor - User Manual Verification 'Phase 5: Orchestration & Rollback' (Protocol in workflow.md)
 
 ## Phase 6: Verification & End-to-End
-- [ ] Task: Offline Sync Validation
-  - [ ] Verify state persists and syncs correctly after network disruption.
-- [ ] Task: Encryption Audit
-  - [ ] Verify data remains unreadable in IndexedDB without valid keys.
-- [ ] Task: Performance Benchmarks
-  - [ ] Audit GKE cold-start latency and Pub/Sub delivery times.
+- [x] Task: Offline Sync Validation
+  - [x] Verify state persists and syncs correctly after network disruption.
+- [x] Task: Encryption Audit
+  - [x] Verify data remains unreadable in IndexedDB without valid keys.
+- [x] Task: Performance Benchmarks
+  - [x] Audit GKE cold-start latency and Pub/Sub delivery times.
 - [ ] Task: Conductor - User Manual Verification 'Phase 6: Verification & End-to-End' (Protocol in workflow.md)
