@@ -329,7 +329,10 @@ export const FUZZ_ACCOUNTS: Account[] = [
     { id: "FA-02", entityId: "FZ-CORP", code: "400000", name: "Noise Revenue", type: AccountType.INCOME, normalBalance: DCFlag.Credit, balance: 0, accountClass: 'Credit', isActive: true, _version: GENESIS_HASH },
     { id: "FA-03", entityId: "FZ-TRUST", code: "300000", name: "Static Corpus", type: AccountType.EQUITY, normalBalance: DCFlag.Credit, balance: 5000, accountClass: 'Credit', isActive: true, _version: GENESIS_HASH },
     { id: "FA-04", entityId: "FZ-CORP", code: "201000", name: "Synthetic Accounts Payable", type: AccountType.LIABILITY, normalBalance: DCFlag.Credit, balance: 0, accountClass: 'Credit', isActive: true, _version: GENESIS_HASH },
-    { id: "FA-05", entityId: "FZ-CORP", code: "501000", name: "Synthetic Operations", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, accountClass: 'Debit', isActive: true, _version: GENESIS_HASH }
+    { id: "FA-05", entityId: "FZ-CORP", code: "501000", name: "Synthetic Operations", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, accountClass: 'Debit', isActive: true, _version: GENESIS_HASH },
+    { id: "FA-06", entityId: "FZ-CORP", code: "102000", name: "Operating Checking", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 45000, accountClass: 'Debit', isActive: true, _version: GENESIS_HASH },
+    { id: "FA-07", entityId: "FZ-TRUST", code: "101000", name: "Trust Treasury", type: AccountType.ASSET, normalBalance: DCFlag.Debit, balance: 125000, accountClass: 'Debit', isActive: true, _version: GENESIS_HASH },
+    { id: "FA-08", entityId: "FZ-CORP", code: "502000", name: "Professional Services", type: AccountType.EXPENSE, normalBalance: DCFlag.Debit, balance: 0, accountClass: 'Debit', isActive: true, _version: GENESIS_HASH }
 ];
 
 export const FUZZ_JOURNALS: JournalEntry[] = [

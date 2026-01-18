@@ -30,3 +30,4 @@ test/screenshots/*.png
 test/session-storage/
 playwright-report/
 playwright/.cache/
+.firebase/
