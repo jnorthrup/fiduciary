@@ -1,6 +1,6 @@
+.gcloudignore
 .git
 .gitignore
-
 node_modules
 dist
 generated
@@ -8,3 +8,4 @@ server/node_modules
 .DS_Store
 coverage
 .gemini
+infra/gcp/.terraform
