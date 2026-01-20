@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+
 
 # Editor directories and files
 .vscode/*
@@ -31,3 +34,8 @@ test/session-storage/
 playwright-report/
 playwright/.cache/
 .firebase/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup

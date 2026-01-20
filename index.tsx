@@ -6,6 +6,10 @@ import { LedgerProvider } from './services/ledgerService';
 import { AuthProvider, useAuth } from './services/authService';
 import { Loader2 } from 'lucide-react';
 
+// Environment-based feature flags
+const FIREBASE_ENABLED = import.meta.env.VITE_FIREBASE_ENABLED !== 'false';
+const GMAIL_AUTH_ENABLED = import.meta.env.VITE_GMAIL_AUTH_ENABLED !== 'false';
+
 const LoadingScreen = () => (
   <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#0B0F19] text-slate-300">
     <Loader2 size={48} className="text-indigo-500 animate-spin mb-4" />
@@ -20,6 +24,15 @@ const AuthenticatedApp = () => {
   if (isLoading) return <LoadingScreen />;
 
   if (!user) {
+    // Skip auth screen if Firebase is disabled
+    if (!FIREBASE_ENABLED) {
+      return (
+        <LedgerProvider>
+          <App />
+        </LedgerProvider>
+      );
+    }
+
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#0B0F19] p-4 text-center">
         <div className="max-w-md space-y-8">
@@ -48,8 +61,14 @@ const AuthenticatedApp = () => {
 const container = document.getElementById('root');
 if (container) {
   const root = createRoot(container);
+
+  // Load Firebase config only if enabled
+  const firebaseConfig = FIREBASE_ENABLED
+    ? (import.meta.env.VITE_FIREBASE_CONFIG ? JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG) : undefined)
+    : undefined;
+
   root.render(
-    <AuthProvider>
+    <AuthProvider config={firebaseConfig}>
       <Suspense fallback={<LoadingScreen />}>
         <AuthenticatedApp />
       </Suspense>

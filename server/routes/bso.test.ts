@@ -1,7 +1,44 @@
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
-import app from '../index.js';
+import express from 'express';
+import bsoRouter from './bso.js';
+
+// Mock iris-oauth authenticateToken to bypass Firebase in tests
+vi.mock('./iris-oauth.js', () => ({
+    authenticateToken: (req, res, next) => {
+        req.token = 'test-token';
+        req.tokenData = { userPayload: { sub: 'test-user' }, clientPayload: { iss: 'test-client' } };
+        next();
+    }
+}));
+
+// Mock GCS persistence
+vi.mock('../lib/gcs-persistence.js', () => {
+    const store = new Map();
+    return {
+        default: {
+            saveData: vi.fn(async (uid, component, data) => {
+                store.set(`${uid}:${component}`, JSON.parse(JSON.stringify(data)));
+                return true;
+            }),
+            loadData: vi.fn(async (uid, component) => {
+                return store.get(`${uid}:${component}`) || null;
+            }),
+            ensureBucket: vi.fn(async () => true),
+            listComponents: vi.fn(async (uid) => {
+                return Array.from(store.keys())
+                    .filter(k => k.startsWith(`${uid}:`))
+                    .map(k => k.split(':')[1]);
+            })
+        }
+    };
+});
+
+// Create isolated test app (not the main server which uses verifyFirebaseToken)
+const app = express();
+app.use(express.json());
+app.use('/api/bso', bsoRouter);
 
 describe('BSO Proxy API', () => {
     let authToken = 'test-token'; // Assuming mock auth accepts this

@@ -4,7 +4,7 @@ import { Entity } from '../types';
 import { useLedgerStore } from '../services/ledgerService';
 import {
   LayoutDashboard, TrendingUp, Shield, Database, Building2, Gavel, X,
-  Users, Anchor, Lock, Globe, Scale
+  Users, Anchor, Lock, Globe, Scale, Network
 } from 'lucide-react';
 
 // Components
@@ -113,9 +113,10 @@ interface Props {
   entity: Entity;
   onOpenApiConsole: () => void;
   onEditEntity: (id: string) => void;
+  onOpenGraph: () => void;
 }
 
-export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEntity }) => {
+export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEntity, onOpenGraph }) => {
   const store = useLedgerStore();
   const [activeTab, setActiveTab] = useState('Financials');
   const [activeWizard, setActiveWizard] = useState<WizardType | null>(null);
@@ -325,7 +326,12 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
             <span className="font-mono">EIN: **-***{entity.einLast4 || 'PENDING'}</span>
           </div>
         </div>
-        <button onClick={onOpenApiConsole} className="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded hover:bg-slate-700">API Console</button>
+        <div className="flex items-center gap-2">
+          <button onClick={onOpenGraph} className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs font-bold rounded border border-indigo-200 hover:bg-indigo-100 transition-colors flex items-center gap-2">
+            <Network size={14} /> Topological View
+          </button>
+          <button onClick={onOpenApiConsole} className="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded hover:bg-slate-700">API Console</button>
+        </div>
       </div>
 
       {/* Tabs */}

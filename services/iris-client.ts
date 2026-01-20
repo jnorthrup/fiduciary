@@ -17,13 +17,29 @@ import { v4 as randomUUID } from 'uuid';
 import { XMLParser } from 'fast-xml-parser';
 
 // Browser-compatible crypto signing using Web Crypto API
-const sign = async (
+// In production/browser, this should use window.crypto.subtle
+// For testing/node, we can inject a signer or use a polyfill
+export type SignerFunction = (data: string, privateKey: string) => Promise<Buffer>;
+
+const defaultSigner: SignerFunction = async (
   data: string,
   privateKey: string
 ): Promise<Buffer> => {
-  // For browser compatibility, this needs to be implemented with Web Crypto API
-  // Currently using a placeholder - production should use a proper JWT library
-  throw new Error('JWT signing not implemented for browser. Use server-side proxy or Web Crypto API.');
+  // Try to use Node's crypto if available (for tests/server)
+  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+    try {
+      const crypto = await import('node:crypto');
+      const signParams = crypto.createSign('RSA-SHA256');
+      signParams.update(data);
+      signParams.end();
+      return signParams.sign(privateKey);
+    } catch (e) {
+      console.warn('Node crypto import failed:', e);
+    }
+  }
+
+  // Usage in browser without Web Crypto implementation
+  throw new Error('JWT signing not implemented for browser. Use server-side proxy, Web Crypto API, or provide a custom signer.');
 };
 
 // ============================================================================
@@ -48,6 +64,9 @@ export interface IRISCredentials {
 
   /** Test mode flag */
   testMode?: boolean;
+
+  /** Optional custom signer function */
+  signer?: SignerFunction;
 }
 
 export interface IRISJWTHeader {
@@ -182,7 +201,7 @@ export class IRISClient {
    * @param type - 'client' or 'user'
    * @returns JWT string
    */
-  private generateJWT(type: 'client' | 'user'): string {
+  private async generateJWT(type: 'client' | 'user'): Promise<string> {
     const header: IRISJWTHeader = {
       kid: this.credentials.keyId,
       alg: 'RS256',
@@ -208,9 +227,9 @@ export class IRISClient {
     const signingInput = `${headerB64}.${payloadB64}`;
 
     // Sign with RS256 (RSA-SHA256 with PKCS#1 v1.5 padding)
-    const signature = sign('rsa-sha256', Buffer.from(signingInput), {
-      key: this.credentials.privateKey,
-    }).toString('base64url');
+    const signer = this.credentials.signer || defaultSigner;
+    const signatureBuffer = await signer(signingInput, this.credentials.privateKey);
+    const signature = signatureBuffer.toString('base64url');
 
     return `${signingInput}.${signature}`;
   }
@@ -221,8 +240,8 @@ export class IRISClient {
    * @throws Error if authentication fails
    */
   async authenticate(): Promise<void> {
-    const clientJWT = this.generateJWT('client');
-    const userJWT = this.generateJWT('user');
+    const clientJWT = await this.generateJWT('client');
+    const userJWT = await this.generateJWT('user');
 
     const params = new URLSearchParams({
       grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',

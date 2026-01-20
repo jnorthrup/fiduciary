@@ -11,7 +11,6 @@ import { IRIS1099Wizard } from './IRIS1099Wizard';
 import * as irsApiClient from '../services/irsApiClient';
 import * as secureStorage from '../services/secureStorage';
 import { TCC_PLACEHOLDER } from '../utils/constants';
-
 // Mock IRS API client
 vi.mock('../services/irsApiClient', () => ({
   irsApi: {
@@ -33,6 +32,97 @@ vi.mock('../services/secureStorage', () => ({
   getStoredTCCs: vi.fn(() => []),
   storeBearerToken: vi.fn(),
 }));
+
+// Mock localStorage
+const localStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+};
+global.localStorage = localStorageMock as any;
+
+// Mock useLedgerStore to bypass LedgerProvider loading state
+vi.mock('../services/ledgerService', () => {
+  const setState = vi.fn();
+  const emptyDb = {
+    entities: [],
+    accounts: [],
+    journals: [],
+    wallets: [],
+    users: [],
+    modules: [],
+    filings: [],
+    transmissions: [],
+    documents: [],
+    canalRecords: [],
+    crmPeople: [],
+    escrows: [],
+    ticks: [],
+    fedWires: [],
+    contractors: [],
+    bsoRoles: [],
+    bsoSubmissions: [],
+    irsCreds: [],
+    employees: [],
+    payrollRuns: [],
+    ssaStatements: [],
+    resolutions: [],
+    purchaseContracts: [],
+    creditResolutions: [],
+    creditInstruments: [],
+    closingRecords: [],
+    realEstateAssets: [],
+    collateralPools: [],
+    collateralItems: [],
+    fiduciaryActions: [],
+    resitusRecords: [],
+    trustCertificates: [],
+    giftTaxRecords: [],
+    parcelRecords: [],
+    edgarResearchRecords: [],
+    deploymentPlans: [],
+    taxWorkflowNodes: [],
+    workflowDefinitions: [],
+  };
+  return {
+    useLedgerStore: () => ({
+      ...emptyDb,
+      currentUser: { id: 'dev', name: 'Developer', email: 'dev@local', role: 'Owner' as const, avatarInitials: 'DV', lastActive: 'Now', _version: '1' },
+      secrets: { irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' },
+      settings: {
+        fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' },
+        network: 'Testnet',
+        layoutMode: 'MobileQuickBooks',
+      },
+      apiSystemStatus: [],
+      searchResults: [],
+      isSearching: false,
+      changeGraph: [],
+      canResume: false,
+      isCloudEnabled: false,
+      is2FAOpen: false,
+      teachModeEnabled: false,
+      pendingCallback: null,
+      setCurrentUser: setState,
+      setSecrets: setState,
+      setSettings: setState,
+      setSearchResults: setState,
+      setIsSearching: setState,
+      setChangeGraph: setState,
+      setCanResume: setState,
+      setIsCloudEnabled: setState,
+      setIs2FAOpen: setState,
+      setTeachModeEnabled: setState,
+      setPendingCallback: setState,
+      addItem: vi.fn(),
+      updateItem: vi.fn(),
+      deleteItem: vi.fn(),
+      postJournal: vi.fn(),
+    }),
+    LedgerProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  };
+});
 
 vi.setConfig({ testTimeout: 60000 });
 

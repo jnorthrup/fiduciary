@@ -1,0 +1,339 @@
+
+> trust-ledger-system@0.0.0 test
+> vitest components/IRIS1099Wizard.test.tsx
+
+
+[1m[44m DEV [49m[22m [34mv4.0.16 [39m[90m/Users/jim/work/fiduciary[39m
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mTCC Input Validation[2m > [22m[2mshould call irsApi.setAuth with TCC on authenticate
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mTCC Input Validation[2m > [22m[2mshould call irsApi.setAuth with TCC on authenticate
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mTCC Input Validation[2m > [22m[2mshould call irsApi.setAuth with TCC on authenticate
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mTCC Input Validation[2m > [22m[2mshould call irsApi.setAuth with TCC on authenticate
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mTCC Input Validation[2m > [22m[2mshould call storeTCC when saveCredentials is checked
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mTCC Input Validation[2m > [22m[2mshould call storeTCC when saveCredentials is checked
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mTCC Input Validation[2m > [22m[2mshould call storeTCC when saveCredentials is checked
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mTCC Input Validation[2m > [22m[2mshould call storeTCC when saveCredentials is checked
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mBearer Token Input[2m > [22m[2mshould call irsApi.setAuth with bearer token
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mBearer Token Input[2m > [22m[2mshould call irsApi.setAuth with bearer token
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mBearer Token Input[2m > [22m[2mshould call irsApi.setAuth with bearer token
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mBearer Token Input[2m > [22m[2mshould call irsApi.setAuth with bearer token
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mBearer Token Input[2m > [22m[2mshould call storeBearerToken when saveCredentials is checked
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mBearer Token Input[2m > [22m[2mshould call storeBearerToken when saveCredentials is checked
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mBearer Token Input[2m > [22m[2mshould call storeBearerToken when saveCredentials is checked
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mBearer Token Input[2m > [22m[2mshould call storeBearerToken when saveCredentials is checked
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mSave Credentials Toggle[2m > [22m[2mshould not store credentials when unchecked
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mSave Credentials Toggle[2m > [22m[2mshould not store credentials when unchecked
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mSave Credentials Toggle[2m > [22m[2mshould not store credentials when unchecked
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mSave Credentials Toggle[2m > [22m[2mshould not store credentials when unchecked
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould progress from Auth to Filer step on authentication
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould progress from Auth to Filer step on authentication
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould progress from Auth to Filer step on authentication
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould progress from Auth to Filer step on authentication
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould show Back button after Auth step
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould show Back button after Auth step
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould show Back button after Auth step
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould show Back button after Auth step
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Filer step when EIN is missing
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Filer step when EIN is missing
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Filer step when EIN is missing
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Filer step when EIN is missing
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Filer step when Legal Name is missing
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Filer step when Legal Name is missing
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Filer step when Legal Name is missing
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Filer step when Legal Name is missing
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould enable Continue button on Filer step when all required fields are filled
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould enable Continue button on Filer step when all required fields are filled
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould enable Continue button on Filer step when all required fields are filled
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould enable Continue button on Filer step when all required fields are filled
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould progress from Filer to FormType step on Continue
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould progress from Filer to FormType step on Continue
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould progress from Filer to FormType step on Continue
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould progress from Filer to FormType step on Continue
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Payees step when no payees added
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Payees step when no payees added
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Payees step when no payees added
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould disable Continue button on Payees step when no payees added
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould enable Continue button on Payees step when payees are added
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould enable Continue button on Payees step when payees are added
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould enable Continue button on Payees step when payees are added
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould enable Continue button on Payees step when payees are added
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould show Validate & Submit button on Review step
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould show Validate & Submit button on Review step
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould show Validate & Submit button on Review step
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould show Validate & Submit button on Review step
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould navigate back from Filer to Auth step
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould navigate back from Filer to Auth step
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould navigate back from Filer to Auth step
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould navigate back from Filer to Auth step
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould preserve filer state when navigating back to Auth and returning to Filer
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould preserve filer state when navigating back to Auth and returning to Filer
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould preserve filer state when navigating back to Auth and returning to Filer
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould preserve filer state when navigating back to Auth and returning to Filer
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould preserve filer state when navigating back to Auth and returning to Filer
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould preserve filer state when navigating back to Auth and returning to Filer
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould preserve filer state when navigating back to Auth and returning to Filer
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mWizard Step Navigation[2m > [22m[2mshould preserve filer state when navigating back to Auth and returning to Filer
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould format EIN as user types (XX-XXXXXXX)
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould format EIN as user types (XX-XXXXXXX)
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould format EIN as user types (XX-XXXXXXX)
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould format EIN as user types (XX-XXXXXXX)
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould reject EIN with fewer than 9 digits
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould reject EIN with fewer than 9 digits
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould reject EIN with fewer than 9 digits
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould reject EIN with fewer than 9 digits
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould require state abbreviation (2 characters)
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould require state abbreviation (2 characters)
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould require state abbreviation (2 characters)
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould require state abbreviation (2 characters)
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould uppercase state abbreviation automatically
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould uppercase state abbreviation automatically
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould uppercase state abbreviation automatically
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould uppercase state abbreviation automatically
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould validate ZIP code format
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould validate ZIP code format
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould validate ZIP code format
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould validate ZIP code format
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould accept ZIP+4 format
+[22m[39m[Wizard] Authenticating...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould accept ZIP+4 format
+[22m[39m[Wizard] Health check: { status: [32m'healthy'[39m, service: [32m'IRS IRIS API Proxy'[39m, version: [32m'1.0.0'[39m }
+
+[31mCancelling test run. Press CTRL+c again to exit forcefully.
+[39m
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould accept ZIP+4 format
+[22m[39m[Wizard] Verifying credentials...
+
+[90mstdout[2m | components/IRIS1099Wizard.test.tsx[2m > [22m[2mIRIS1099Wizard - Authentication Step[2m > [22m[2mFiler Form Validation[2m > [22m[2mshould accept ZIP+4 format
+[22m[39m[Wizard] 2FA required: [33mfalse[39m
+[Wizard] Proceeding to Filer step
+
+ [32m✓[39m components/IRIS1099Wizard.test.tsx [2m([22m[2m76 tests[22m[2m)[22m[33m 47748[2mms[22m[39m
+       [33m[2m✓[22m[39m should call irsApi.setAuth with TCC on authenticate [33m 2054[2mms[22m[39m
+       [33m[2m✓[22m[39m should call storeTCC when saveCredentials is checked [33m 2044[2mms[22m[39m
+       [33m[2m✓[22m[39m should call irsApi.setAuth with bearer token [33m 2037[2mms[22m[39m
+       [33m[2m✓[22m[39m should call storeBearerToken when saveCredentials is checked [33m 2035[2mms[22m[39m
+       [33m[2m✓[22m[39m should not store credentials when unchecked [33m 2047[2mms[22m[39m
+       [33m[2m✓[22m[39m should progress from Auth to Filer step on authentication [33m 2046[2mms[22m[39m
+       [33m[2m✓[22m[39m should show Back button after Auth step [33m 2046[2mms[22m[39m
+       [33m[2m✓[22m[39m should disable Continue button on Filer step when EIN is missing [33m 2048[2mms[22m[39m
+       [33m[2m✓[22m[39m should disable Continue button on Filer step when Legal Name is missing [33m 2045[2mms[22m[39m
+       [33m[2m✓[22m[39m should enable Continue button on Filer step when all required fields are filled [33m 2061[2mms[22m[39m
+       [33m[2m✓[22m[39m should progress from Filer to FormType step on Continue [33m 2060[2mms[22m[39m
+       [33m[2m✓[22m[39m should disable Continue button on Payees step when no payees added [33m 2095[2mms[22m[39m
+       [33m[2m✓[22m[39m should enable Continue button on Payees step when payees are added [33m 2081[2mms[22m[39m
+       [33m[2m✓[22m[39m should show Validate & Submit button on Review step [33m 2090[2mms[22m[39m
+       [33m[2m✓[22m[39m should navigate back from Filer to Auth step [33m 2049[2mms[22m[39m
+       [33m[2m✓[22m[39m should preserve filer state when navigating back to Auth and returning to Filer [33m 4085[2mms[22m[39m
+       [33m[2m✓[22m[39m should format EIN as user types (XX-XXXXXXX) [33m 2055[2mms[22m[39m
+       [33m[2m✓[22m[39m should reject EIN with fewer than 9 digits [33m 2055[2mms[22m[39m
+       [33m[2m✓[22m[39m should require state abbreviation (2 characters) [33m 2045[2mms[22m[39m
+       [33m[2m✓[22m[39m should uppercase state abbreviation automatically [33m 2048[2mms[22m[39m
+       [33m[2m✓[22m[39m should validate ZIP code format [33m 2060[2mms[22m[39m
+       [33m[2m✓[22m[39m should accept ZIP+4 format [33m 2047[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m43 passed[39m[22m[90m (76)[39m
+[2m   Start at [22m 20:59:49
+[2m   Duration [22m 48.37s[2m (transform 197ms, setup 64ms, import 236ms, tests 47.75s, environment 224ms)[22m
+
+[1m[41m CANCELLED [49m[22m [31mTest run cancelled. Watching for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m

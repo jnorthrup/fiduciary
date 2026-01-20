@@ -23,6 +23,13 @@ export const isValidSSNFormat = (ssn: string): boolean => {
 };
 
 /**
+ * Validate ZIP code format (5 digits or 5+4)
+ */
+export const isValidZipFormat = (zip: string): boolean => {
+    return /^\d{5}(-\d{4})?$/.test(zip);
+};
+
+/**
  * Determine TIN type from format
  */
 export const getTINType = (tin: string): 'EIN' | 'SSN' | null => {

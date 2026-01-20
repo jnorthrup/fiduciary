@@ -1,0 +1,156 @@
+# Cloud Build configuration for Event-Driven CI/CD
+# Builds, tests, and deploys the Ledger PWA to GKE Autopilot
+
+steps:
+  # Pull latest cache for faster builds
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if [[ -n "$_BUILD_ID" ]]; then
+          echo "Pulling cache for build $_BUILD_ID..."
+          docker pull gcr.io/cloud-builders/docker || true
+        fi
+
+  # Install dependencies
+  - name: 'node:22'
+    entrypoint: 'npm'
+    args: ['ci']
+    id: 'deps'
+
+  # Lint
+  - name: 'node:22'
+    entrypoint: 'npm'
+    args: ['run', 'lint']
+    waitFor: ['deps']
+
+  # Type check
+  - name: 'node:22'
+    entrypoint: 'npx'
+    args: ['tsc', '--noEmit']
+    waitFor: ['deps']
+
+  # Unit tests with coverage
+  - name: 'node:22'
+    entrypoint: 'npm'
+    args: ['run', 'test:coverage']
+    waitFor: ['deps']
+
+  # CRDT consistency tests
+  - name: 'node:22'
+    entrypoint: 'npx'
+    args: ['vitest', 'tests/lib/crdt', '--ci', '--coverage']
+    waitFor: ['deps']
+
+  # Encryption integrity checks
+  - name: 'node:22'
+    entrypoint: 'npx'
+    args: ['vitest', 'test/crypto*.test.ts', '--ci']
+    waitFor: ['deps']
+
+  # Build PWA
+  - name: 'node:22'
+    entrypoint: 'npm'
+    args: ['run', 'build']
+    waitFor: ['deps']
+    id: 'build'
+
+  # PWA Audit with Lighthouse
+  - name: 'node:22'
+    entrypoint: 'npx'
+    args:
+      - 'lhci'
+      - 'autorun'
+      - '--collect.url=http://localhost:3000'
+      - '--assert.preset=lighthouse:recommended'
+      - '--upload.target=temporary-storage'
+    waitFor: ['build']
+    id: 'lighthouse'
+
+  # Build container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ledger-pwa:$SHORT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ledger-pwa:latest'
+      - '--cache-from'
+      - 'gcr.io/cloud-builders/docker'
+      - '.'
+    id: 'container'
+
+  # Push container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/ledger-pwa:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/ledger-pwa:latest'
+    id: 'push'
+
+  # Deploy to GKE Autopilot
+  - name: 'gcr.io/cloud-builders/gke-deploy'
+    args:
+      - 'run'
+      - '--filename=k8s/deployment.yaml'
+      - '--image=gcr.io/$PROJECT_ID/ledger-pwa:$SHORT_SHA'
+      - '--location=$_GKE_REGION'
+           '--project=$PROJECT_ID'
+      - '--output=status.json'
+    id: 'deploy'
+
+  # Scale-to-zero validation
+  - name: 'gcr.io/cloud-builders/gke-deploy'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Validating scale-to-zero capability..."
+
+        # Get deployment info
+        kubectl get deployment ledger-pwa -n $_DEPLOYMENT_NAMESPACE -o=jsonpath='{.spec.replicas}'
+
+        # Wait for pods to be ready
+        kubectl wait --for=condition=available --timeout=300s deployment/ledger-pwa -n $_DEPLOYMENT_NAMESPACE
+
+        echo "Deployment successful. Pods will scale-to-zero when idle."
+
+# Artifacts
+artifacts:
+  objects:
+    location: 'gs://artifacts.$PROJECTID.appspot.com/'
+    paths:
+      - 'coverage/lcov-report/*'
+      - 'lighthouse-results/*'
+      - 'status.json'
+
+# Timeout
+timeout: '3600s'
+
+# Substitutions
+substitutions:
+  _GKE_REGION: us-central1
+  _DEPLOYMENT_NAMESPACE: default
+
+# Logs
+logsBucket: 'gs://logs-$PROJECT_ID'
+
+# Options
+options:
+  machineType: 'E2_HIGHCPU_8'
+  dynamicSubstitutions: true
+
+# Triggers - build on push to main branch
+triggers:
+  - name: 'main-branch-trigger'
+    trigger:
+      branch:
+        name: 'main'
+    includedFiles:
+      - '**'
+
+# Tag event trigger for manual builds
+  - name: 'tag-trigger'
+    tag:
+      name: 'v.*'

@@ -75,20 +75,33 @@ export async function queryPDFContent(
   // Perform semantic search (mock implementation)
   const requestPromise = (async () => {
     // In production, this would call a GenAI service
-    const paragraphs: Array<PDFParagraph & { relevance: number }> = [];
+    let paragraphs: Array<PDFParagraph & { relevance: number }> = [];
+
+    // During tests, we might have a mock search function injected
+    const testMock = (global as any).__TEST_MOCK_SEARCH__;
+    if (testMock) {
+      const mockResult = await testMock(query);
+      paragraphs = mockResult.map((p: PDFParagraph) => ({
+        ...p,
+        relevance: p.relevance ?? 0.9,
+      }));
+    } else {
+      // Default empty mock for production if no actual backend yet
+      paragraphs = [];
+    }
 
     const result: PDFRetrievalResult = {
       paragraphs,
       metadata: {
         queryTime: Date.now() - startTime,
         cacheHit: false,
-        source: 'ai',
+        source: testMock ? 'ai' : 'manual',
       },
     };
 
     // Cache the result (default TTL: 1 hour)
     setCachedParagraph(cacheKey, result, 3600000);
-    
+
     // Clean up pending request
     delete pendingRequests[cacheKey];
 

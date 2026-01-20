@@ -1,90 +1,89 @@
-/**
- * Banking API Routes
- *
- * Express routes for the unified banking API.
- * Provides REST endpoints for multi-bank connectivity.
- */
-
 import express from 'express';
-const router = express.Router();
+import persistence from '../lib/gcs-persistence.js';
 
-// Import banking types (Note: In a real implementation, you'd use a JS-compatible version)
-// For now, we'll create a mock banking facade
+const router = express.Router();
 
 // ============================================================================
 // MOCK BANKING FACADE (Replace with real implementation)
 // ============================================================================
 
 class MockBankingFacade {
-  constructor() {
-    this.accounts = new Map();
-    this.transactions = new Map();
-    this.initializeMockData();
+  async ensureState(uid) {
+    let state = await persistence.loadData(uid, 'banking');
+    if (!state) {
+      state = this.getInitialMockData();
+      await persistence.saveData(uid, 'banking', state);
+    }
+    return state;
   }
 
-  initializeMockData() {
-    // Mock accounts
-    this.accounts.set('acct_1', {
-      id: 'acct_1',
-      provider: 'plaid',
-      type: 'checking',
-      name: 'Primary Checking',
-      displayName: 'Chase Checking - ****1234',
-      currency: 'USD',
-      status: 'active',
-      currentBalance: 15234.56,
-      availableBalance: 14834.56,
-      institutionName: 'Chase Bank',
-      accountNumberMask: '1234',
-      lastSyncedAt: new Date().toISOString(),
-      createdAt: '2024-01-01T00:00:00.000Z',
-      updatedAt: new Date().toISOString(),
-    });
-
-    // Mock transactions
-    const transactions = [
-      {
-        id: 'txn_1',
-        provider: 'plaid',
-        accountId: 'acct_1',
-        amount: -45.67,
-        currency: 'USD',
-        description: 'Starbucks',
-        category: 'Food & Drink',
-        direction: 'debit',
-        status: 'booked',
-        bookedAt: new Date().toISOString(),
-        valueAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
+  getInitialMockData() {
+    return {
+      accounts: {
+        'acct_1': {
+          id: 'acct_1',
+          provider: 'plaid',
+          type: 'checking',
+          name: 'Primary Checking',
+          displayName: 'Chase Checking - ****1234',
+          currency: 'USD',
+          status: 'active',
+          currentBalance: 15234.56,
+          availableBalance: 14834.56,
+          institutionName: 'Chase Bank',
+          accountNumberMask: '1234',
+          lastSyncedAt: new Date().toISOString(),
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: new Date().toISOString(),
+        }
       },
-      {
-        id: 'txn_2',
-        provider: 'plaid',
-        accountId: 'acct_1',
-        amount: -123.45,
-        currency: 'USD',
-        description: 'Amazon.com',
-        category: 'Shopping',
-        direction: 'debit',
-        status: 'booked',
-        bookedAt: new Date(Date.now() - 86400000).toISOString(),
-        valueAt: new Date(Date.now() - 86400000).toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-    ];
-    this.transactions.set('acct_1', transactions);
+      transactions: {
+        'acct_1': [
+          {
+            id: 'txn_1',
+            provider: 'plaid',
+            accountId: 'acct_1',
+            amount: -45.67,
+            currency: 'USD',
+            description: 'Starbucks',
+            category: 'Food & Drink',
+            direction: 'debit',
+            status: 'booked',
+            bookedAt: new Date().toISOString(),
+            valueAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: 'txn_2',
+            provider: 'plaid',
+            accountId: 'acct_1',
+            amount: -123.45,
+            currency: 'USD',
+            description: 'Amazon.com',
+            category: 'Shopping',
+            direction: 'debit',
+            status: 'booked',
+            bookedAt: new Date(Date.now() - 86400000).toISOString(),
+            valueAt: new Date(Date.now() - 86400000).toISOString(),
+            createdAt: new Date().toISOString(),
+          }
+        ]
+      }
+    };
   }
 
-  async listAccounts() {
-    return Array.from(this.accounts.values());
+  async listAccounts(uid) {
+    const state = await this.ensureState(uid);
+    return Object.values(state.accounts);
   }
 
-  async getAccount(accountId) {
-    return this.accounts.get(accountId) || null;
+  async getAccount(uid, accountId) {
+    const state = await this.ensureState(uid);
+    return state.accounts[accountId] || null;
   }
 
-  async getBalance(accountId) {
-    const account = this.accounts.get(accountId);
+  async getBalance(uid, accountId) {
+    const account = await this.getAccount(uid, accountId);
     if (!account) return null;
     return {
       currentBalance: account.currentBalance,
@@ -94,20 +93,50 @@ class MockBankingFacade {
     };
   }
 
-  async listTransactions(accountId) {
-    return this.transactions.get(accountId) || [];
+  async listTransactions(uid, accountId) {
+    const state = await this.ensureState(uid);
+    return state.transactions[accountId] || [];
   }
 
-  async getTransaction(transactionId) {
-    for (const txns of this.transactions.values()) {
+  async getTransaction(uid, transactionId) {
+    const state = await this.ensureState(uid);
+    for (const txns of Object.values(state.transactions)) {
       const txn = txns.find(t => t.id === transactionId);
       if (txn) return txn;
     }
     return null;
   }
 
-  async initiatePayment(request) {
+  async initiatePayment(uid, request) {
     const paymentId = `pay_${Date.now()}`;
+    const state = await this.ensureState(uid);
+
+    // Simulate balance reduction
+    if (state.accounts[request.sourceAccountId]) {
+      state.accounts[request.sourceAccountId].currentBalance -= request.amount;
+      state.accounts[request.sourceAccountId].availableBalance -= request.amount;
+      state.accounts[request.sourceAccountId].updatedAt = new Date().toISOString();
+
+      // Add transaction
+      if (!state.transactions[request.sourceAccountId]) state.transactions[request.sourceAccountId] = [];
+      state.transactions[request.sourceAccountId].unshift({
+        id: `txn_${Date.now()}`,
+        provider: 'internal',
+        accountId: request.sourceAccountId,
+        amount: -request.amount,
+        currency: request.currency,
+        description: request.description || `Payment to ${request.beneficiaryName}`,
+        category: 'Transfer',
+        direction: 'debit',
+        status: 'pending',
+        bookedAt: new Date().toISOString(),
+        valueAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      });
+
+      await persistence.saveData(uid, 'banking', state);
+    }
+
     return {
       paymentId,
       providerPaymentId: paymentId,
@@ -136,28 +165,15 @@ const bankingFacade = new MockBankingFacade();
 // HEALTH ENDPOINTS
 // ============================================================================
 
-/**
- * GET /api/banking/health
- *
- * Check health of all banking providers
- */
 router.get('/health', async (req, res) => {
   try {
     const health = await bankingFacade.checkHealth();
     res.json(health);
   } catch (error) {
-    res.status(500).json({
-      error: 'Health check failed',
-      message: error.message,
-    });
+    res.status(500).json({ error: 'Health check failed', message: error.message });
   }
 });
 
-/**
- * GET /api/banking/providers
- *
- * List available and enabled banking providers
- */
 router.get('/providers', (req, res) => {
   res.json({
     available: ['plaid', 'teller', 'obp', 'fineract', 'mifos', 'coinbase'],
@@ -169,108 +185,67 @@ router.get('/providers', (req, res) => {
 // ACCOUNT ENDPOINTS
 // ============================================================================
 
-/**
- * GET /api/banking/accounts
- *
- * List all accounts from all enabled providers
- */
 router.get('/accounts', async (req, res) => {
   try {
-    const accounts = await bankingFacade.listAccounts();
-    res.json({
-      accounts,
-      count: accounts.length,
-    });
+    const uid = req.user.uid;
+    const accounts = await bankingFacade.listAccounts(uid);
+    res.json({ accounts, count: accounts.length });
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to list accounts',
-      message: error.message,
-    });
+    res.status(500).json({ error: 'Failed to list accounts', message: error.message });
   }
 });
 
-/**
- * GET /api/banking/accounts/:accountId
- *
- * Get details of a specific account
- */
 router.get('/accounts/:accountId', async (req, res) => {
   try {
+    const uid = req.user.uid;
     const { accountId } = req.params;
-    const account = await bankingFacade.getAccount(accountId);
+    const account = await bankingFacade.getAccount(uid, accountId);
 
     if (!account) {
-      return res.status(404).json({
-        error: 'Account not found',
-        accountId,
-      });
+      return res.status(404).json({ error: 'Account not found', accountId });
     }
 
     res.json(account);
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to get account',
-      message: error.message,
-    });
+    res.status(500).json({ error: 'Failed to get account', message: error.message });
   }
 });
 
-/**
- * GET /api/banking/accounts/:accountId/balance
- *
- * Get balance for a specific account
- */
 router.get('/accounts/:accountId/balance', async (req, res) => {
   try {
+    const uid = req.user.uid;
     const { accountId } = req.params;
-    const balance = await bankingFacade.getBalance(accountId);
+    const balance = await bankingFacade.getBalance(uid, accountId);
 
     if (!balance) {
-      return res.status(404).json({
-        error: 'Account not found',
-        accountId,
-      });
+      return res.status(404).json({ error: 'Account not found', accountId });
     }
 
     res.json(balance);
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to get balance',
-      message: error.message,
-    });
+    res.status(500).json({ error: 'Failed to get balance', message: error.message });
   }
 });
 
-/**
- * POST /api/banking/accounts/:accountId/sync
- *
- * Force sync account data from provider
- */
 router.post('/accounts/:accountId/sync', async (req, res) => {
   try {
+    const uid = req.user.uid;
     const { accountId } = req.params;
-    const account = await bankingFacade.getAccount(accountId);
+    const account = await bankingFacade.getAccount(uid, accountId);
 
     if (!account) {
-      return res.status(404).json({
-        error: 'Account not found',
-        accountId,
-      });
+      return res.status(404).json({ error: 'Account not found', accountId });
     }
 
-    // Update lastSyncedAt
     account.lastSyncedAt = new Date().toISOString();
+    // In a real app we'd save the sync state
+    const state = await persistence.loadData(uid, 'banking');
+    state.accounts[accountId] = account;
+    await persistence.saveData(uid, 'banking', state);
 
-    res.json({
-      success: true,
-      account,
-      syncedAt: new Date().toISOString(),
-    });
+    res.json({ success: true, account, syncedAt: new Date().toISOString() });
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to sync account',
-      message: error.message,
-    });
+    res.status(500).json({ error: 'Failed to sync account', message: error.message });
   }
 });
 
@@ -278,46 +253,27 @@ router.post('/accounts/:accountId/sync', async (req, res) => {
 // TRANSACTION ENDPOINTS
 // ============================================================================
 
-/**
- * GET /api/banking/transactions
- *
- * List transactions with optional filters
- *
- * Query params:
- * - accountId: string - Filter by account ID
- * - startDate: string - ISO date string
- * - endDate: string - ISO date string
- * - limit: number - Max results
- * - offset: number - Results offset
- */
 router.get('/transactions', async (req, res) => {
   try {
+    const uid = req.user.uid;
     const { accountId, startDate, endDate, limit, offset } = req.query;
 
     let transactions;
 
     if (accountId) {
-      transactions = await bankingFacade.listTransactions(accountId);
+      transactions = await bankingFacade.listTransactions(uid, accountId);
     } else {
-      // Aggregate from all accounts
+      const state = await bankingFacade.ensureState(uid);
       transactions = [];
-      for (const [acctId, txns] of bankingFacade.transactions) {
+      for (const txns of Object.values(state.transactions)) {
         transactions.push(...txns);
       }
     }
 
-    // Apply date filters
-    if (startDate) {
-      transactions = transactions.filter(t => t.bookedAt >= startDate);
-    }
-    if (endDate) {
-      transactions = transactions.filter(t => t.bookedAt <= endDate);
-    }
-
-    // Sort by date descending
+    if (startDate) transactions = transactions.filter(t => t.bookedAt >= startDate);
+    if (endDate) transactions = transactions.filter(t => t.bookedAt <= endDate);
     transactions.sort((a, b) => new Date(b.bookedAt) - new Date(a.bookedAt));
 
-    // Apply pagination
     const start = offset ? parseInt(offset) : 0;
     const end = limit ? start + parseInt(limit) : transactions.length;
     const paginatedTransactions = transactions.slice(start, end);
@@ -328,60 +284,40 @@ router.get('/transactions', async (req, res) => {
       total: transactions.length,
     });
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to list transactions',
-      message: error.message,
-    });
+    res.status(500).json({ error: 'Failed to list transactions', message: error.message });
   }
 });
 
-/**
- * GET /api/banking/transactions/:transactionId
- *
- * Get details of a specific transaction
- */
 router.get('/transactions/:transactionId', async (req, res) => {
   try {
+    const uid = req.user.uid;
     const { transactionId } = req.params;
-    const transaction = await bankingFacade.getTransaction(transactionId);
+    const transaction = await bankingFacade.getTransaction(uid, transactionId);
 
     if (!transaction) {
-      return res.status(404).json({
-        error: 'Transaction not found',
-        transactionId,
-      });
+      return res.status(404).json({ error: 'Transaction not found', transactionId });
     }
 
     res.json(transaction);
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to get transaction',
-      message: error.message,
-    });
+    res.status(500).json({ error: 'Failed to get transaction', message: error.message });
   }
 });
 
-/**
- * GET /api/banking/accounts/:accountId/transactions
- *
- * List transactions for a specific account
- */
+
 router.get('/accounts/:accountId/transactions', async (req, res) => {
   try {
+    const uid = req.user.uid;
     const { accountId } = req.params;
     const { limit, offset } = req.query;
 
-    const account = await bankingFacade.getAccount(accountId);
+    const account = await bankingFacade.getAccount(uid, accountId);
     if (!account) {
-      return res.status(404).json({
-        error: 'Account not found',
-        accountId,
-      });
+      return res.status(404).json({ error: 'Account not found', accountId });
     }
 
-    let transactions = await bankingFacade.listTransactions(accountId);
+    let transactions = await bankingFacade.listTransactions(uid, accountId);
 
-    // Apply pagination
     const start = offset ? parseInt(offset) : 0;
     const end = limit ? start + parseInt(limit) : transactions.length;
     const paginatedTransactions = transactions.slice(start, end);
@@ -392,10 +328,7 @@ router.get('/accounts/:accountId/transactions', async (req, res) => {
       total: transactions.length,
     });
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to list transactions',
-      message: error.message,
-    });
+    res.status(500).json({ error: 'Failed to list transactions', message: error.message });
   }
 });
 
@@ -403,25 +336,9 @@ router.get('/accounts/:accountId/transactions', async (req, res) => {
 // PAYMENT ENDPOINTS
 // ============================================================================
 
-/**
- * POST /api/banking/payments
- *
- * Initiate a payment
- *
- * Body:
- * {
- *   "sourceAccountId": string,
- *   "beneficiaryName": string,
- *   "beneficiaryAccount": string,
- *   "amount": number,
- *   "currency": string,
- *   "reference": string,
- *   "description": string,
- *   "method": "ach" | "wire" | "sepa" | "fps"
- * }
- */
 router.post('/payments', async (req, res) => {
   try {
+    const uid = req.user.uid;
     const {
       sourceAccountId,
       beneficiaryName,
@@ -433,7 +350,6 @@ router.post('/payments', async (req, res) => {
       method,
     } = req.body;
 
-    // Validate request
     if (!sourceAccountId || !beneficiaryName || !beneficiaryAccount || !amount || !currency) {
       return res.status(400).json({
         error: 'Missing required fields',
@@ -441,15 +357,11 @@ router.post('/payments', async (req, res) => {
       });
     }
 
-    const account = await bankingFacade.getAccount(sourceAccountId);
+    const account = await bankingFacade.getAccount(uid, sourceAccountId);
     if (!account) {
-      return res.status(404).json({
-        error: 'Source account not found',
-        accountId: sourceAccountId,
-      });
+      return res.status(404).json({ error: 'Source account not found', accountId: sourceAccountId });
     }
 
-    // Check sufficient funds
     if (amount > account.availableBalance) {
       return res.status(400).json({
         error: 'Insufficient funds',
@@ -458,7 +370,7 @@ router.post('/payments', async (req, res) => {
       });
     }
 
-    const payment = await bankingFacade.initiatePayment({
+    const payment = await bankingFacade.initiatePayment(uid, {
       sourceAccountId,
       beneficiaryName,
       beneficiaryAccount,
@@ -471,22 +383,12 @@ router.post('/payments', async (req, res) => {
 
     res.status(201).json(payment);
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to initiate payment',
-      message: error.message,
-    });
+    res.status(500).json({ error: 'Failed to initiate payment', message: error.message });
   }
 });
 
-/**
- * GET /api/banking/payments/:paymentId
- *
- * Get payment status
- */
 router.get('/payments/:paymentId', (req, res) => {
-  // Mock implementation
   const { paymentId } = req.params;
-
   res.json({
     paymentId,
     status: 'completed',
@@ -499,14 +401,11 @@ router.get('/payments/:paymentId', (req, res) => {
 // AGGREGATION ENDPOINTS
 // ============================================================================
 
-/**
- * GET /api/banking/summary
- *
- * Get aggregated summary across all accounts
- */
 router.get('/summary', async (req, res) => {
   try {
-    const accounts = await bankingFacade.listAccounts();
+    const uid = req.user.uid;
+    const accounts = await bankingFacade.listAccounts(uid);
+    const state = await bankingFacade.ensureState(uid);
 
     let totalBalance = 0;
     const byCurrency = {};
@@ -516,43 +415,24 @@ router.get('/summary', async (req, res) => {
     for (const account of accounts) {
       const amount = account.currentBalance;
       totalBalance += amount;
-
-      // Group by currency
       byCurrency[account.currency] = (byCurrency[account.currency] || 0) + amount;
-
-      // Group by provider
       byProvider[account.provider] = (byProvider[account.provider] || 0) + amount;
-
-      // Group by type
       byType[account.type] = (byType[account.type] || 0) + amount;
     }
 
-    // Get transaction stats
     let totalTransactions = 0;
-    for (const txns of bankingFacade.transactions.values()) {
+    for (const txns of Object.values(state.transactions)) {
       totalTransactions += txns.length;
     }
 
     res.json({
-      accounts: {
-        total: accounts.length,
-        byType,
-      },
-      balances: {
-        total: totalBalance,
-        byCurrency,
-        byProvider,
-      },
-      transactions: {
-        total: totalTransactions,
-      },
+      accounts: { total: accounts.length, byType },
+      balances: { total: totalBalance, byCurrency, byProvider },
+      transactions: { total: totalTransactions },
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {
-    res.status(500).json({
-      error: 'Failed to generate summary',
-      message: error.message,
-    });
+    res.status(500).json({ error: 'Failed to generate summary', message: error.message });
   }
 });
 

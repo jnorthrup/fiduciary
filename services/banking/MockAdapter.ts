@@ -6,6 +6,15 @@
  */
 
 import { BaseAdapter } from './BaseAdapter';
+import {
+  TransactionType,
+  TransactionDirection,
+  TransactionStatus,
+  AccountStatus,
+  PaymentStatus,
+  BankingProvider,
+  BankingErrorCode,
+} from '../../types/banking';
 import type {
   AdapterCapabilities,
   ProviderHealthStatus,
@@ -15,17 +24,10 @@ import type {
   PaymentInitiationResponse,
   AccountFilters,
   TransactionFilters,
-  BankingProvider,
-  BankingErrorCode,
-  TransactionType,
-  TransactionDirection,
-  TransactionStatus,
-  AccountStatus,
-  PaymentStatus,
 } from '../../types/banking';
 
 export class MockAdapter extends BaseAdapter {
-  readonly provider: BankingProvider = 'plaid' as BankingProvider; // Default to Plaid for mock
+  readonly provider: BankingProvider;
 
   // Mock data storage
   private mockAccounts: Map<string, UnifiedAccount[]> = new Map();
@@ -33,6 +35,7 @@ export class MockAdapter extends BaseAdapter {
 
   constructor(config: any) {
     super(config);
+    this.provider = (config.provider as BankingProvider) || ('plaid' as BankingProvider);
     this.initializeMockData();
   }
 

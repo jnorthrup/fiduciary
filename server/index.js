@@ -14,6 +14,7 @@ import ledgerRouter from './routes/ledger.js';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { connect as connectBus, subscribe } from './lib/event-bus.js';
 import admin from 'firebase-admin';
+import persistence from './lib/gcs-persistence.js';
 
 // Initialize Firebase Admin
 // In production, use GOOGLE_APPLICATION_CREDENTIALS env var
@@ -116,12 +117,9 @@ protectedRoutes.forEach(route => {
   // For simplicity here, we'll just define the middleware and note that routers should use it
 });
 
-// ============================================================================
-// In-Memory Storage
-// ============================================================================
-
-const submissions = new Map();
-const tinValidationCache = new Map();
+// Safe to remove in-memory maps
+// const submissions = new Map();
+// const tinValidationCache = new Map();
 
 // ============================================================================
 // IRS IRIS A2A OAuth Routes (Production API)
@@ -153,7 +151,7 @@ app.use('/api/bso', verifyFirebaseToken, bsoRouter);
 // Mount Ledger router
 if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'ledger-service') {
   // For demo, we skip auth on this specific route for easier testing, or use verifyFirebaseToken
-  app.use('/api/ledger', ledgerRouter);
+  app.use('/api/ledger', verifyFirebaseToken, ledgerRouter);
 } else if (process.env.SERVICE_NAME === 'api-gateway' && process.env.LEDGER_SERVICE_URL) {
   // Proxy to Ledger Service
   app.use('/api/ledger', createProxyMiddleware({
@@ -308,18 +306,9 @@ app.get('/api/health', (req, res) => {
  * POST /api/irs/submissions
  * Submit information return batch
  */
-app.post('/api/irs/submissions', (req, res) => {
+app.post('/api/irs/submissions', verifyFirebaseToken, async (req, res) => {
   try {
-    const authHeader = req.headers['x-irs-tcc'] || req.headers.authorization;
-
-    if (!authHeader) {
-      return res.status(401).json({
-        code: 'AUTH_MISSING_TCC',
-        message: 'Missing authentication credentials',
-        timestamp: new Date().toISOString()
-      });
-    }
-
+    const uid = req.user.uid;
     const submission = req.body;
 
     // Basic validation
@@ -399,8 +388,9 @@ app.post('/api/irs/submissions', (req, res) => {
     // Generate receipt ID
     const receiptId = randomUUID();
 
-    // Store submission
-    submissions.set(receiptId, {
+    // Store submission in GCS
+    const state = await persistence.loadData(uid, 'iris') || { submissions: {}, tinValidationCache: {} };
+    state.submissions[receiptId] = {
       ...submission,
       receiptId,
       status: 'Processing',
@@ -410,7 +400,8 @@ app.post('/api/irs/submissions', (req, res) => {
         errors: [],
         warnings: []
       }
-    });
+    };
+    await persistence.saveData(uid, 'iris', state);
 
     // Return receipt
     res.status(202).json({
@@ -437,10 +428,12 @@ app.post('/api/irs/submissions', (req, res) => {
  * GET /api/irs/submissions/:receiptId/status
  * Get submission status
  */
-app.get('/api/irs/submissions/:receiptId/status', (req, res) => {
+app.get('/api/irs/submissions/:receiptId/status', verifyFirebaseToken, async (req, res) => {
   const { receiptId } = req.params;
+  const uid = req.user.uid;
 
-  const submission = submissions.get(receiptId);
+  const state = await persistence.loadData(uid, 'iris');
+  const submission = state?.submissions?.[receiptId];
 
   if (!submission) {
     return res.status(404).json({
@@ -462,7 +455,9 @@ app.get('/api/irs/submissions/:receiptId/status', (req, res) => {
     completedAt = new Date().toISOString();
     submission.status = status;
     submission.completedAt = completedAt;
-    submissions.set(receiptId, submission);
+
+    state.submissions[receiptId] = submission;
+    await persistence.saveData(uid, 'iris', state);
   }
 
   res.json({
@@ -484,17 +479,20 @@ app.get('/api/irs/submissions/:receiptId/status', (req, res) => {
  * POST /api/irs/tin-validation
  * Interactive TIN matching
  */
-app.post('/api/irs/tin-validation', (req, res) => {
+app.post('/api/irs/tin-validation', verifyFirebaseToken, async (req, res) => {
   try {
+    const uid = req.user.uid;
     const { tin, name, requests } = req.body;
+
+    const state = await persistence.loadData(uid, 'iris') || { submissions: {}, tinValidationCache: {} };
 
     // Single TIN validation
     if (tin && name) {
       const cacheKey = `${tin}-${name}`;
 
       // Check cache
-      if (tinValidationCache.has(cacheKey)) {
-        return res.json(tinValidationCache.get(cacheKey));
+      if (state.tinValidationCache[cacheKey]) {
+        return res.json(state.tinValidationCache[cacheKey]);
       }
 
       // Validate TIN format
@@ -510,7 +508,8 @@ app.post('/api/irs/tin-validation', (req, res) => {
           tin,
           name
         };
-        tinValidationCache.set(cacheKey, result);
+        state.tinValidationCache[cacheKey] = result;
+        await persistence.saveData(uid, 'iris', state);
         return res.json(result);
       }
 
@@ -523,17 +522,20 @@ app.post('/api/irs/tin-validation', (req, res) => {
         name
       };
 
-      tinValidationCache.set(cacheKey, result);
+      state.tinValidationCache[cacheKey] = result;
+      await persistence.saveData(uid, 'iris', state);
       return res.json(result);
     }
 
     // Batch validation
     if (requests && Array.isArray(requests)) {
-      const results = requests.map(({ tin, name }) => {
+      const results = [];
+      for (const { tin, name } of requests) {
         const cacheKey = `${tin}-${name}`;
 
-        if (tinValidationCache.has(cacheKey)) {
-          return tinValidationCache.get(cacheKey);
+        if (state.tinValidationCache[cacheKey]) {
+          results.push(state.tinValidationCache[cacheKey]);
+          continue;
         }
 
         const result = {
@@ -544,9 +546,11 @@ app.post('/api/irs/tin-validation', (req, res) => {
           name
         };
 
-        tinValidationCache.set(cacheKey, result);
-        return result;
-      });
+        state.tinValidationCache[cacheKey] = result;
+        results.push(result);
+      }
+
+      await persistence.saveData(uid, 'iris', state);
 
       return res.json({
         results,
@@ -770,7 +774,13 @@ const startServer = async () => {
     }
   }
 
-  app.listen(PORT, () => {
+  app.listen(PORT, async () => {
+    try {
+      await persistence.ensureBucket();
+      logger.info("GCS bucket verified");
+    } catch (e) {
+      logger.error("Failed to verify GCS bucket:", e.message);
+    }
     logger.info(`IRS IRIS A2A API Server running on http://localhost:${PORT}`);
     logger.info(`OAuth: http://localhost:${PORT}/api/iris/auth/oauth/v2/token`);
     logger.info(`Demo JWT Gen: http://localhost:${PORT}/api/iris/demo/authenticate`);

@@ -100,8 +100,8 @@ describe('IRISClient', () => {
   });
 
   describe('JWT Generation', () => {
-    it('should generate client JWT with correct claims', () => {
-      const clientJWT = (client as any).generateJWT('client');
+    it('should generate client JWT with correct claims', async () => {
+      const clientJWT = await (client as any).generateJWT('client');
 
       expect(clientJWT).toBeDefined();
       expect(typeof clientJWT).toBe('string');
@@ -113,15 +113,15 @@ describe('IRISClient', () => {
       expect(signature).toBeDefined();
     });
 
-    it('should generate user JWT with correct subject', () => {
-      const userJWT = (client as any).generateJWT('user');
+    it('should generate user JWT with correct subject', async () => {
+      const userJWT = await (client as any).generateJWT('user');
 
       expect(userJWT).toBeDefined();
       expect(typeof userJWT).toBe('string');
     });
 
-    it('should include correct header fields', () => {
-      const clientJWT = (client as any).generateJWT('client');
+    it('should include correct header fields', async () => {
+      const clientJWT = await (client as any).generateJWT('client');
       const [headerB64] = clientJWT.split('.');
       const header = JSON.parse(Buffer.from(headerB64, 'base64url').toString());
 
@@ -129,8 +129,8 @@ describe('IRISClient', () => {
       expect(header.kid).toBe(mockCredentials.keyId);
     });
 
-    it('should include correct payload fields for client JWT', () => {
-      const clientJWT = (client as any).generateJWT('client');
+    it('should include correct payload fields for client JWT', async () => {
+      const clientJWT = await (client as any).generateJWT('client');
       const [, payloadB64] = clientJWT.split('.');
       const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
 
@@ -147,8 +147,8 @@ describe('IRISClient', () => {
       expect(expDiff).toBe(15 * 60); // 15 minutes
     });
 
-    it('should include correct payload fields for user JWT', () => {
-      const userJWT = (client as any).generateJWT('user');
+    it('should include correct payload fields for user JWT', async () => {
+      const userJWT = await (client as any).generateJWT('user');
       const [, payloadB64] = userJWT.split('.');
       const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
 
@@ -156,9 +156,9 @@ describe('IRISClient', () => {
       expect(payload.sub).toBe(mockCredentials.userId);
     });
 
-    it('should generate unique JTI for each JWT', () => {
-      const jwt1 = (client as any).generateJWT('client');
-      const jwt2 = (client as any).generateJWT('client');
+    it('should generate unique JTI for each JWT', async () => {
+      const jwt1 = await (client as any).generateJWT('client');
+      const jwt2 = await (client as any).generateJWT('client');
 
       const [, payload1B64] = jwt1.split('.');
       const [, payload2B64] = jwt2.split('.');

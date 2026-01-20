@@ -39,9 +39,13 @@ export const App = () => {
     if (!activeEntityId && store.entities.length > 0) {
       // Prefer Operating LLC, else first
       const preferred = store.entities.find(e => e.role === 'OPERATING_LLC') || store.entities[0];
+      // Only auto-select if we haven't explicitly navigated to null (this is a simple heuristic, 
+      // ideally we'd track 'initialLoad' separately, but this is a quick fix to allow Global Overview)
+      // Actually, simply removing activeEntityId from deps means it runs when store.entities loads,
+      // but won't re-run when we actively set it to null.
       setActiveEntityId(preferred.id);
     }
-  }, [store.entities, activeEntityId]);
+  }, [store.entities]);
 
   // Derived state
   // State for immediate wizard launch
@@ -112,6 +116,8 @@ export const App = () => {
       <MobileQuickBooksLayout
         activeEntityId={activeEntityId}
         onSelectEntity={setActiveEntityId}
+        onQuickAction={(action) => setQuickAction(action as any)}
+        onOpenSettings={() => setShowSettings(true)}
       >
         {mainContent}
         {/* Overlays and Modals still need to be rendered */}

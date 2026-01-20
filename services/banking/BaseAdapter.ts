@@ -85,7 +85,7 @@ export abstract class BaseAdapter implements IBankingAdapter {
   }
 
   async listAccounts(filters?: AccountFilters): Promise<UnifiedAccount[]> {
-    const cacheKey = this.getCacheKey('accounts', filters);
+    const cacheKey = this.getCacheKey('accounts', filters || {});
 
     return this.getCachedOrExecute(
       cacheKey,

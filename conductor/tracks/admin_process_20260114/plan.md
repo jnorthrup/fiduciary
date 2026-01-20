@@ -57,33 +57,33 @@
 ## Phase 2: Affidavit Generator
 
 ### 2.1 Template System
-- [ ] Task: Create affidavit template engine
-  - [ ] Sub-task: Write failing tests for loadTemplate(template_name)
-  - [ ] Sub-task: Implement template loader with variable substitution
-  - [ ] Sub-task: Write failing tests for renderTemplate(template, variables)
-  - [ ] Sub-task: Implement template rendering with safe escaping
-- [ ] Task: Build predefined template library
-  - [ ] Sub-task: Write failing tests for OC10CapacityTemplate
-  - [ ] Sub-task: Implement OC-10 capacity affidavit template
-  - [ ] Sub-task: Write failing tests for OriginalIssuerTemplate
-  - [ ] Sub-task: Implement original issuer affidavit template
-  - [ ] Sub-task: Write failing tests for UsuryAssignmentTemplate
-  - [ ] Sub-task: Implement usury assignment affidavit template
+- [x] Task: Create affidavit template engine
+  - [x] Sub-task: Write failing tests for loadTemplate(template_name)
+  - [x] Sub-task: Implement template loader with variable substitution
+  - [x] Sub-task: Write failing tests for renderTemplate(template, variables)
+  - [x] Sub-task: Implement template rendering with safe escaping
+- [x] Task: Build predefined template library
+  - [x] Sub-task: Write failing tests for OC10CapacityTemplate
+  - [x] Sub-task: Implement OC-10 capacity affidavit template
+  - [x] Sub-task: Write failing tests for OriginalIssuerTemplate
+  - [x] Sub-task: Implement original issuer affidavit template
+  - [x] Sub-task: Write failing tests for UsuryAssignmentTemplate
+  - [x] Sub-task: Implement usury assignment affidavit template
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.1 Template System' (Protocol in workflow.md)
 
 ### 2.2 Affidavit Editor UI
-- [ ] Task: Build affidavit editor component
-  - [ ] Sub-task: Write failing tests for AffidavitEditor component
-  - [ ] Sub-task: Implement rich text editor with citation insertion
-  - [ ] Sub-task: Write failing tests for CitationPicker component
-  - [ ] Sub-task: Implement citation picker with statute/case search
-  - [ ] Sub-task: Write failing tests for PreviewPane component
-  - [ ] Sub-task: Implement live preview with notary seal placeholder
-- [ ] Task: Add validation and feedback
-  - [ ] Sub-task: Write failing tests for affidavit completeness validation
-  - [ ] Sub-task: Implement validation (affiant info, claims, notary section)
-  - [ ] Sub-task: Write failing tests for legal basis requirement check
-  - [ ] Sub-task: Implement citation requirement validator
+- [x] Task: Build affidavit editor component
+  - [x] Sub-task: Write failing tests for AffidavitEditor component
+  - [x] Sub-task: Implement rich text editor with citation insertion
+  - [x] Sub-task: Write failing tests for CitationPicker component
+  - [x] Sub-task: Implement citation picker with statute/case search
+  - [x] Sub-task: Write failing tests for PreviewPane component
+  - [x] Sub-task: Implement live preview with notary seal placeholder
+- [x] Task: Add validation and feedback
+  - [x] Sub-task: Write failing tests for affidavit completeness validation
+  - [x] Sub-task: Implement validation (affiant info, claims, notary section)
+  - [x] Sub-task: Write failing tests for legal basis requirement check
+  - [x] Sub-task: Implement citation requirement validator
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.2 Affidavit Editor UI' (Protocol in workflow.md)
 
 ### 2.3 Export & Formatting

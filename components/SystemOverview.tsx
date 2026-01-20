@@ -8,11 +8,13 @@ import { StreamWave } from './StreamWave';
 import { UseCaseLogViewer } from './UseCaseLogViewer';
 import { CreditUnionWizard } from './CreditUnionWizard';
 import { AccountFuzzer } from './AccountFuzzer';
+import { GmailIntegrationDemo } from './gmail-integration-demo';
+import { useGmailOAuth } from '../hooks/useGmailOAuth';
 import { useLedgerStore } from '../services/ledgerService';
 import {
     Activity, Network, LayoutGrid, Globe, PanelLeftClose,
     PanelLeftOpen, ShieldCheck, Cpu, Terminal, Landmark,
-    X, Scale, Building2, ChevronRight, PlayCircle, Zap
+    X, Scale, Building2, ChevronRight, PlayCircle, Zap, Maximize2
 } from 'lucide-react';
 
 interface Props {
@@ -24,6 +26,7 @@ interface Props {
     onAddEntity: (parentId: string, type: EntityType, role: EntityRole) => Promise<Entity>;
     onDeleteEntity: (id: string) => void;
     initialWizard?: boolean;
+    onOpenGraph?: () => void;
 }
 
 export const SystemOverview: React.FC<Props> = ({
@@ -34,7 +37,8 @@ export const SystemOverview: React.FC<Props> = ({
     onUpdateEntity,
     onAddEntity,
     onDeleteEntity,
-    initialWizard = false
+    initialWizard = false,
+    onOpenGraph
 }) => {
     const { generateSyntheticData, changeGraph, generateSampleEnterprise } = useLedgerStore();
     const [viewMode, setViewMode] = useState<'structure' | 'fractal'>('fractal');
@@ -42,6 +46,7 @@ export const SystemOverview: React.FC<Props> = ({
     const [showStream, setShowStream] = useState(false);
     const [showLogs, setShowLogs] = useState(false);
     const [showFuzzer, setShowFuzzer] = useState(false);
+    const [showGmail, setShowGmail] = useState(false);
     const [showCreditUnionWizard, setShowCreditUnionWizard] = useState(initialWizard);
 
     const totalAssets = accounts.filter(a => a.type === 'Asset').reduce((sum, a) => sum + a.balance, 0);
@@ -53,40 +58,35 @@ export const SystemOverview: React.FC<Props> = ({
         if (initialWizard) setShowCreditUnionWizard(true);
     }, [initialWizard]);
 
+    const { isConnected, connect, profile, isLoading: gmailLoading } = useGmailOAuth({
+        clientId: import.meta.env.VITE_GMAIL_CLIENT_ID || '',
+        scopes: ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send']
+    });
+
     return (
         <div className="flex flex-col h-full bg-[#f8fafc] relative overflow-hidden font-sans">
+            {/* ... existing modals ... */}
 
-            {/* Credit Union Wizard Modal Overlay */}
-            {showCreditUnionWizard && (
+            {/* Gmail Integration Modal */}
+            {showGmail && (
                 <div className="fixed inset-0 z-[200] bg-[#0f172a]/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-7xl h-[90vh] overflow-hidden relative border border-slate-700 flex flex-col">
-                        <div className="bg-[#0f172a] text-white p-4 flex justify-between items-center border-b border-slate-800 shrink-0">
-                            <div className="flex items-center gap-3">
-                                <Landmark className="text-emerald-400" />
-                                <span className="font-bold tracking-widest uppercase text-sm">NCUA Charter Protocol</span>
-                            </div>
-                            <button onClick={() => setShowCreditUnionWizard(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white">
+                    <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-y-auto relative border border-slate-700 flex flex-col p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Globe className="text-red-500" /> Gmail Integration
+                            </h2>
+                            <button onClick={() => setShowGmail(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white">
                                 <X size={20} />
                             </button>
                         </div>
-                        <div className="flex-1 overflow-hidden relative">
-                            <CreditUnionWizard parentEntity={null} onClose={() => setShowCreditUnionWizard(false)} />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Account Fuzzer Simulator Modal */}
-            {showFuzzer && (
-                <div className="fixed inset-0 z-[200] bg-[#0f172a]/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl h-[70vh] overflow-hidden relative border border-slate-700 flex flex-col">
-                        <AccountFuzzer onClose={() => setShowFuzzer(false)} />
+                        <GmailIntegrationDemo />
                     </div>
                 </div>
             )}
 
             {/* System Header */}
             <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shrink-0 shadow-sm z-20">
+                {/* ... Left side title ... */}
                 <div className="flex items-center gap-4">
                     <div className="p-2 bg-indigo-600 rounded-lg text-white">
                         <Globe size={20} />
@@ -137,6 +137,13 @@ export const SystemOverview: React.FC<Props> = ({
                     )}
 
                     <button
+                        onClick={onOpenGraph}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-900/20"
+                    >
+                        <Maximize2 size={14} /> Full Lattice
+                    </button>
+
+                    <button
                         onClick={() => setShowStream(!showStream)}
                         className={`p-2 rounded-lg border transition-all ${showStream ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-200 text-slate-400 hover:text-slate-600'}`}
                         title="Toggle Ledger Stream"
@@ -156,6 +163,18 @@ export const SystemOverview: React.FC<Props> = ({
                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-all shadow-sm"
                     >
                         <Zap size={14} /> Fuzzer
+                    </button>
+
+                    <button
+                        onClick={() => isConnected ? setShowGmail(true) : connect()}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all shadow-sm delay-75 ${isConnected
+                            ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600'
+                            }`}
+                        title={isConnected ? `Connected as ${profile?.emailAddress || 'User'}` : "Sign in with Gmail"}
+                    >
+                        <Globe size={14} />
+                        {gmailLoading ? '...' : (isConnected ? (profile?.emailAddress?.split('@')[0] || 'Gmail') : 'Sync Gmail')}
                     </button>
                 </div>
             </div>
@@ -279,19 +298,21 @@ export const SystemOverview: React.FC<Props> = ({
                 )}
             </div>
 
-            {editingEntityId && editingEntity && (
-                <EntityCRUDModal
-                    entity={editingEntity}
-                    onSave={(id, updates) => {
-                        onUpdateEntity(id, updates);
-                        setEditingEntityId(null);
-                    }}
-                    onClose={() => setEditingEntityId(null)}
-                />
-            )}
+            {
+                editingEntityId && editingEntity && (
+                    <EntityCRUDModal
+                        entity={editingEntity}
+                        onSave={(id, updates) => {
+                            onUpdateEntity(id, updates);
+                            setEditingEntityId(null);
+                        }}
+                        onClose={() => setEditingEntityId(null)}
+                    />
+                )
+            }
 
             {showLogs && <UseCaseLogViewer onClose={() => setShowLogs(false)} />}
-        </div>
+        </div >
     );
 };
 

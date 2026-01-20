@@ -266,6 +266,7 @@ type LedgerContextType = LedgerDb & {
   updateSettings: (updates: Partial<types.SystemSettings>) => void;
   generateSyntheticData: () => void;
   generateSampleEnterprise: () => void;
+  toggleLayoutMode: () => void;
   postJournal: (entityId: string, date: string, memo: string, type: string, lines: any[]) => void;
 
   // Generic Setters
@@ -677,6 +678,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
     generateSampleEnterprise: async () => {
       const mockData = await import('./mockData');
       setDb({ ...EMPTY_DB, entities: mockData.JIM_ENTITIES, accounts: mockData.JIM_ACCOUNTS, journals: mockData.JIM_JOURNALS, modules: mockData.JIM_MODULES, filings: mockData.JIM_FILINGS, contractors: mockData.SEED_CONTRACTORS });
+    },
+    toggleLayoutMode: () => {
+      setSettings(prev => ({
+        ...prev,
+        layoutMode: prev.layoutMode === 'MobileQuickBooks' ? 'Standard' : 'MobileQuickBooks'
+      }));
     },
     postJournal,
 

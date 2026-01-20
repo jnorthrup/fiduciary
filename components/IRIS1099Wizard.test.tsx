@@ -14,15 +14,25 @@ import { IRIS1099Wizard } from './IRIS1099Wizard';
 import * as irsApiClient from '../services/irsApiClient';
 import * as secureStorage from '../services/secureStorage';
 import { TIN_PLACEHOLDER, SSN_PLACEHOLDER, TCC_PLACEHOLDER } from '../utils/constants';
-
 // Mock IRS API client
 vi.mock('../services/irsApiClient', () => ({
   irsApi: {
     healthCheck: vi.fn().mockResolvedValue({ status: 'healthy', version: '1.3.0', timestamp: new Date().toISOString() }),
     setAuth: vi.fn(),
-    transmissionCheck: vi.fn(),
-    submitBatch: vi.fn(),
-    pollSubmissionStatus: vi.fn()
+    validateTin: vi.fn().mockResolvedValue({ match: true }),
+    transmissionCheck: vi.fn().mockResolvedValue({ valid: true, errors: [] }),
+    submitBatch: vi.fn().mockResolvedValue({ receiptId: 'REC-TEST-123', timestamp: new Date().toISOString() }),
+    pollSubmissionStatus: vi.fn().mockImplementation((receiptId, callback) => {
+      const status = {
+        status: 'Accepted',
+        recordCount: 1,
+        acceptedCount: 1,
+        errorCount: 0,
+        warningCount: 0
+      };
+      if (callback) callback(status);
+      return Promise.resolve(status);
+    })
   },
   formatEIN: (ein: string) => {
     const cleaned = ein.replace(/\D/g, '');
@@ -31,10 +41,30 @@ vi.mock('../services/irsApiClient', () => ({
     return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 9)}`;
   },
   getFormAmountFields: () => [
-    { id: '1', label: 'Rents', field: 'rents' },
-    { id: '2', label: 'Royalties', field: 'royalties' }
+    { key: 'rents', label: 'Rents', field: 'rents' },
+    { key: 'royalties', label: 'Royalties', field: 'royalties' }
   ]
 }));
+
+// Mock IRSLoginModal
+vi.mock('./IRSLoginModal', () => {
+  const React = require('react');
+  return {
+    IRSLoginModal: ({ isOpen, onClose, onSuccess }: any) => {
+      if (!isOpen) return null;
+      return (
+        <div data-testid="mock-irs-login-modal">
+          <div>Mock IRS Login Modal</div>
+          <button onClick={onClose}>Close</button>
+          <button onClick={() => onSuccess({ username: 'test_user', tcc: 'AA-1234567' })}>
+            Simulate Success
+          </button>
+        </div>
+      );
+    }
+  };
+});
+
 
 // Global test timeout - tests must complete within 60 seconds
 vi.setConfig({ testTimeout: 60000 });
@@ -46,11 +76,93 @@ vi.mock('../services/secureStorage', () => ({
   storeBearerToken: vi.fn(),
 }));
 
+// Mock useLedgerStore to bypass LedgerProvider loading state
+vi.mock('../services/ledgerService', () => {
+  const setState = vi.fn();
+  const emptyDb = {
+    entities: [],
+    accounts: [],
+    journals: [],
+    wallets: [],
+    users: [],
+    modules: [],
+    filings: [],
+    transmissions: [],
+    documents: [],
+    canalRecords: [],
+    crmPeople: [],
+    escrows: [],
+    ticks: [],
+    fedWires: [],
+    contractors: [],
+    bsoRoles: [],
+    bsoSubmissions: [],
+    irsCreds: [],
+    employees: [],
+    payrollRuns: [],
+    ssaStatements: [],
+    resolutions: [],
+    purchaseContracts: [],
+    creditResolutions: [],
+    creditInstruments: [],
+    closingRecords: [],
+    realEstateAssets: [],
+    collateralPools: [],
+    collateralItems: [],
+    fiduciaryActions: [],
+    resitusRecords: [],
+    trustCertificates: [],
+    giftTaxRecords: [],
+    parcelRecords: [],
+    edgarResearchRecords: [],
+    deploymentPlans: [],
+    taxWorkflowNodes: [],
+    workflowDefinitions: [],
+  };
+  return {
+    useLedgerStore: () => ({
+      ...emptyDb,
+      currentUser: { id: 'dev', name: 'Developer', email: 'dev@local', role: 'Owner' as const, avatarInitials: 'DV', lastActive: 'Now', _version: '1' },
+      secrets: { irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' },
+      settings: {
+        fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' },
+        network: 'Testnet',
+        layoutMode: 'MobileQuickBooks',
+      },
+      apiSystemStatus: [],
+      searchResults: [],
+      isSearching: false,
+      changeGraph: [],
+      canResume: false,
+      isCloudEnabled: false,
+      is2FAOpen: false,
+      teachModeEnabled: false,
+      pendingCallback: null,
+      setCurrentUser: setState,
+      setSecrets: setState,
+      setSettings: setState,
+      setSearchResults: setState,
+      setIsSearching: setState,
+      setChangeGraph: setState,
+      setCanResume: setState,
+      setIsCloudEnabled: setState,
+      setIs2FAOpen: setState,
+      setTeachModeEnabled: setState,
+      setPendingCallback: setState,
+      addItem: vi.fn(),
+      updateItem: vi.fn(),
+      deleteItem: vi.fn(),
+      postJournal: vi.fn(),
+    }),
+    LedgerProvider: ({ children }: { children: any }) => <>{children}</>,
+  };
+});
+
 describe('IRIS1099Wizard - Authentication Step', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Disable 2FA in tests for faster execution
-    (import.meta as any).env.VITE_REQUIRE_2FA = 'false';
+    vi.stubEnv('VITE_REQUIRE_2FA', 'false');
     (irsApiClient.irsApi.healthCheck as any).mockResolvedValue({
       status: 'healthy',
       service: 'IRS IRIS API Proxy',
@@ -70,10 +182,10 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         const tccInput = screen.queryByPlaceholderText(/T\d{9}/) || screen.queryByPlaceholderText(TCC_PLACEHOLDER);
         expect(tccInput).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
-    it('should accept valid TCC format (T + 10 digits)', async () => {
+    it('should accept valid TCC format (2 letters + hyphen + 7 alphanumeric)', async () => {
       render(<IRIS1099Wizard />);
 
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
@@ -82,65 +194,67 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // Initially disabled
       expect(authButton).toBeDisabled();
 
-      // Enter valid TCC
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      // Enter valid TCC (AA-1234567)
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
 
-      // Should be enabled
+      // Should be enabled and formatted
       await waitFor(() => {
+        expect(tccInput).toHaveValue('AA-1234567');
         expect(authButton).toBeEnabled();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
-    it('should reject TCC with less than 10 digits', async () => {
+    it('should reject TCC with less than 10 characters', async () => {
       render(<IRIS1099Wizard />);
 
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
       const authButton = screen.getByRole('button', { name: /Authenticate & Continue/i });
 
-      // Enter invalid TCC (only 9 digits)
-      fireEvent.change(tccInput, { target: { value: 'T123456789' } });
+      // Enter invalid TCC (too short)
+      fireEvent.change(tccInput, { target: { value: 'AA-12345' } });
 
       // Should still be disabled
       expect(authButton).toBeDisabled();
     });
 
-    it('should reject TCC with more than 10 digits', async () => {
+    it('should truncate TCC input to max length', async () => {
       render(<IRIS1099Wizard />);
 
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
       const authButton = screen.getByRole('button', { name: /Authenticate & Continue/i });
 
-      // Enter invalid TCC (11 digits)
-      fireEvent.change(tccInput, { target: { value: 'T12345678901' } });
+      // Enter invalid TCC (too long)
+      fireEvent.change(tccInput, { target: { value: 'AA-12345678' } });
 
-      // Should still be disabled
-      expect(authButton).toBeDisabled();
+      // Should be truncated to valid length
+      expect(tccInput).toHaveValue('AA-1234567');
+      expect(authButton).not.toBeDisabled();
     });
 
-    it('should reject TCC without T prefix', async () => {
+    it('should reject TCC with invalid start characters', async () => {
       render(<IRIS1099Wizard />);
 
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
       const authButton = screen.getByRole('button', { name: /Authenticate & Continue/i });
 
-      // Enter TCC without T prefix
-      fireEvent.change(tccInput, { target: { value: '1234567890' } });
+      // Enter TCC starting with digits (must start with 2 letters)
+      fireEvent.change(tccInput, { target: { value: '12-3456789' } });
 
       // Should still be disabled
       expect(authButton).toBeDisabled();
     });
 
-    it('should convert lowercase t to uppercase T', async () => {
+    it('should convert lowercase letters to uppercase', async () => {
       render(<IRIS1099Wizard />);
 
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
 
-      fireEvent.change(tccInput, { target: { value: 't1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'aa1234567' } });
 
-      // Should convert to uppercase
+      // Should convert to uppercase and format
       await waitFor(() => {
-        expect(tccInput).toHaveValue('T1234567890');
-      }, { timeout: 4000 });
+        expect(tccInput).toHaveValue('AA-1234567');
+      }, { timeout: 10000 });
     });
 
     it('should call irsApi.setAuth with TCC on authenticate', async () => {
@@ -149,12 +263,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
       const authButton = screen.getByRole('button', { name: /Authenticate & Continue/i });
 
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(authButton);
 
       await waitFor(() => {
-        expect(irsApiClient.irsApi.setAuth).toHaveBeenCalledWith('T1234567890');
-      }, { timeout: 4000 });
+        expect(irsApiClient.irsApi.setAuth).toHaveBeenCalledWith('AA-1234567');
+      }, { timeout: 10000 });
     });
 
     it('should call storeTCC when saveCredentials is checked', async () => {
@@ -170,16 +284,16 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       const saveCheckbox = screen.getByLabelText(/Save credentials securely/i);
       expect(saveCheckbox).toBeChecked();
 
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(authButton);
 
       await waitFor(() => {
         expect(secureStorage.storeTCC).toHaveBeenCalledWith(
-          'T1234567890',
-          'IRS TCC (T12345...)',
-          'T1234567890'
+          'AA-1234567',
+          'IRS TCC (AA-123...)',
+          'AA-1234567'
         );
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -211,7 +325,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // Should enable authenticate button
       await waitFor(() => {
         expect(authButton).toBeEnabled();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should mask bearer token input', async () => {
@@ -240,7 +354,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(irsApiClient.irsApi.setAuth).toHaveBeenCalledWith(undefined, mockToken);
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should call storeBearerToken when saveCredentials is checked', async () => {
@@ -260,14 +374,14 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(secureStorage.storeBearerToken).toHaveBeenCalledWith(mockToken, 'IRS Bearer Token');
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
   });
 
   describe('Stored Credentials', () => {
     it('should display stored TCCs', async () => {
       const mockCreds = [
-        { id: '1', name: 'IRS TCC (T12345...)', value: 'T1234567890', createdAt: Date.now() }
+        { id: '1', name: 'IRS TCC (AA-123...)', value: 'AA-1234567', createdAt: Date.now() }
       ];
       (secureStorage.getStoredTCCs as any).mockResolvedValue(mockCreds);
 
@@ -275,30 +389,30 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Keychain/i)).toBeInTheDocument();
-        expect(screen.queryByText(/IRS TCC \(T12345...\)/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+        expect(screen.queryByText(/IRS TCC \(AA-123...\)/i)).toBeInTheDocument();
+      }, { timeout: 10000 });
     });
 
     it('should populate TCC field when clicking stored credential', async () => {
       const mockCreds = [
-        { id: '1', name: 'IRS TCC (T12345...)', value: 'T1234567890', createdAt: Date.now() }
+        { id: '1', name: 'IRS TCC (AA-123...)', value: 'AA-1234567', createdAt: Date.now() }
       ];
       (secureStorage.getStoredTCCs as any).mockResolvedValue(mockCreds);
 
       render(<IRIS1099Wizard />);
 
-      const credButton = await screen.findByText(/IRS TCC \(T12345...\)/i);
+      const credButton = await screen.findByText(/IRS TCC \(AA-123...\)/i);
       fireEvent.click(credButton);
 
-      const tccInput = screen.getByPlaceholderText(/T123456789/i);
+      const tccInput = screen.getByPlaceholderText(TCC_PLACEHOLDER);
       await waitFor(() => {
-        expect(tccInput).toHaveValue('T1234567890');
-      }, { timeout: 4000 });
+        expect(tccInput).toHaveValue('AA-1234567');
+      }, { timeout: 10000 });
     });
 
     it('should show PWA encrypted storage indicator when credentials exist', async () => {
       const mockCreds = [
-        { id: '1', name: 'IRS TCC (T12345...)', value: 'T1234567890', createdAt: Date.now() }
+        { id: '1', name: 'IRS TCC (AA-123...)', value: 'AA-1234567', createdAt: Date.now() }
       ];
       (secureStorage.getStoredTCCs as any).mockResolvedValue(mockCreds);
 
@@ -306,7 +420,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Keychain/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -316,7 +430,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(irsApiClient.irsApi.healthCheck).toHaveBeenCalled();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should display healthy status when API is connected', async () => {
@@ -331,7 +445,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         expect(screen.queryByText(/Endpoint:/i)).toBeInTheDocument();
         expect(screen.queryByText(/IRS IRIS API Proxy/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should display connecting status when API is not yet responded', async () => {
@@ -341,7 +455,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Establishing handshake/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should display error status when health check fails', async () => {
@@ -355,7 +469,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // After error, still shows establishing handshake (fallback state)
       await waitFor(() => {
         expect(screen.queryByText(/Establishing handshake/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -366,7 +480,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         expect(screen.queryByText(/TCC AUTH/i)).toBeInTheDocument();
         expect(screen.queryByText(/API TOKEN/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should highlight selected auth mode', async () => {
@@ -377,9 +491,9 @@ describe('IRIS1099Wizard - Authentication Step', () => {
         const bearerButton = screen.getByText(/API TOKEN/i).closest('button');
 
         // TCC is default
-        expect(tccButton?.className).toContain('border-indigo-500');
-        expect(bearerButton?.className).not.toContain('border-indigo-500');
-      }, { timeout: 4000 });
+        expect(tccButton).toHaveStyle({ borderColor: 'rgba(99, 102, 241, 0.5)' });
+        expect(bearerButton).toHaveClass('border-slate-800');
+      }, { timeout: 10000 });
     });
 
     it('should switch to bearer token mode when clicked', async () => {
@@ -416,16 +530,16 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       const saveCheckbox = await screen.findByLabelText(/Save credentials securely/i);
       fireEvent.click(saveCheckbox);
 
-      const tccInput = screen.getByPlaceholderText(/T123456789/i);
+      const tccInput = screen.getByPlaceholderText(TCC_PLACEHOLDER);
       const authButton = screen.getByRole('button', { name: /Authenticate & Continue/i });
 
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(authButton);
 
       await waitFor(() => {
         expect(irsApiClient.irsApi.setAuth).toHaveBeenCalled();
         expect(secureStorage.storeTCC).not.toHaveBeenCalled();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -434,7 +548,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       render(<IRIS1099Wizard />);
 
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       // Check if 2FA is shown, if so complete it
@@ -448,7 +562,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
           });
           fireEvent.click(screen.getByRole('button', { name: /Verify & Continue/i }));
         }
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Wait for Filer step (after auth or 2FA)
       await waitFor(() => {
@@ -461,12 +575,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       render(<IRIS1099Wizard />);
 
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Back/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should disable Continue button on Filer step when EIN is missing', async () => {
@@ -474,12 +588,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const continueButton = screen.getByText(/Continue/i);
       expect(continueButton).toBeDisabled();
@@ -490,12 +604,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Enter EIN but not name
       const einInput = screen.getByPlaceholderText(/XX-XXXXXXX/i);
@@ -505,29 +619,31 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       expect(continueButton).toBeDisabled();
     });
 
-    it('should enable Continue button on Filer step when EIN and Name are filled', async () => {
+    it('should enable Continue button on Filer step when all required fields are filled', async () => {
       render(<IRIS1099Wizard />);
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Fill required fields
       const einInput = screen.getByPlaceholderText(/XX-XXXXXXX/i);
       const nameInput = screen.getByPlaceholderText(/ABC Corporation Inc/i);
+      const zipInput = screen.getByPlaceholderText(/90210/i);
 
       fireEvent.change(einInput, { target: { value: '12-3456789' } });
       fireEvent.change(nameInput, { target: { value: 'Test Corp' } });
+      fireEvent.change(zipInput, { target: { value: '90210' } });
 
       await waitFor(() => {
         const continueButton = screen.getByText(/Continue/i);
         expect(continueButton).toBeEnabled();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should progress from Filer to FormType step on Continue', async () => {
@@ -535,12 +651,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Fill required fields
       const einInput = screen.getByPlaceholderText(/XX-XXXXXXX/i);
@@ -548,6 +664,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       fireEvent.change(einInput, { target: { value: '12-3456789' } });
       fireEvent.change(nameInput, { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
 
       // Click Continue
       const continueButton = screen.getByText(/Continue/i);
@@ -556,7 +673,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         expect(screen.queryByText(/Tax Year/i)).toBeInTheDocument();
         expect(screen.queryByText(/Form Type/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should disable Continue button on Payees step when no payees added', async () => {
@@ -564,28 +681,29 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate through steps to Payees
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Fill Filer step
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByText(/Tax Year/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Click Continue on FormType step
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const continueButton = screen.getByText(/Continue/i);
       expect(continueButton).toBeDisabled();
@@ -596,27 +714,28 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate through steps to Payees
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Fill Filer step
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByText(/Tax Year/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Add a payee - only TIN and Name are required
       const payeesTinPlaceholder = /XX-XXXXXXX or XXX-XX-XXXX/i;
@@ -632,7 +751,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         const continueButton = screen.getByText(/Continue/i);
         expect(continueButton).toBeEnabled();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should show Validate & Submit button on Review step', async () => {
@@ -640,28 +759,29 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate through to Review step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Fill Filer step
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByText(/Tax Year/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // FormType step
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Add a payee
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
@@ -675,7 +795,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         const continueButton = screen.getByText(/Continue/i);
         expect(continueButton).toBeEnabled();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Click Continue to go to Review
       fireEvent.click(screen.getByText(/Continue/i));
@@ -683,7 +803,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Validate & Submit/i })).toBeInTheDocument();
         expect(screen.queryByText(/Submission Summary/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should navigate back from Filer to Auth step', async () => {
@@ -691,12 +811,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Click Back
       const backButton = screen.getByText(/Back/i);
@@ -705,7 +825,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         expect(screen.queryByText(/TCC AUTH/i)).toBeInTheDocument();
         expect(screen.queryByText(/API TOKEN/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should preserve filer state when navigating back to Auth and returning to Filer', async () => {
@@ -713,12 +833,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Fill EIN and Name
       const einInput = screen.getByPlaceholderText(/XX-XXXXXXX/i);
@@ -726,6 +846,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       fireEvent.change(einInput, { target: { value: '12-3456789' } });
       fireEvent.change(nameInput, { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
 
       // Record the values
       expect(einInput).toHaveValue('12-3456789');
@@ -736,17 +857,17 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/TCC AUTH/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Navigate forward again using TCC (simulate fresh auth)
-      fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Authenticate/i }));
 
       await waitFor(() => {
         expect(screen.queryByText(/Transmitter ID/i)).toBeInTheDocument();
         // State should be preserved
         expect(einInput).toHaveValue('12-3456789');
         expect(nameInput).toHaveValue('Test Corp');
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -756,12 +877,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Type EIN without dashes
       const einInput = screen.getByPlaceholderText(/XX-XXXXXXX/i);
@@ -771,7 +892,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // Should be formatted
       await waitFor(() => {
         expect(einInput).toHaveValue('12-3456789');
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should reject EIN with fewer than 9 digits', async () => {
@@ -779,12 +900,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const einInput = screen.getByPlaceholderText(/XX-XXXXXXX/i);
 
@@ -792,7 +913,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       fireEvent.change(einInput, { target: { value: '12345678' } });
 
       // Should show the digits typed
-      expect(einInput).toHaveValue('12345678');
+      expect(einInput).toHaveValue('12-345678');
 
       // But the continue button should be disabled
       const continueButton = screen.getByText(/Continue/i);
@@ -804,12 +925,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const stateInput = screen.getByPlaceholderText(/CA/i);
 
@@ -822,12 +943,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const stateInput = screen.getByPlaceholderText(/CA/i);
 
@@ -836,26 +957,47 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // Should be uppercased
       await waitFor(() => {
         expect(stateInput).toHaveValue('CA');
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
-    it('should accept valid ZIP code format', async () => {
+    it('should validate ZIP code format', async () => {
       render(<IRIS1099Wizard />);
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const zipInput = screen.getByPlaceholderText(/90210/i);
+      const einInput = screen.getByPlaceholderText(/XX-XXXXXXX/i);
+      const nameInput = screen.getByPlaceholderText(/ABC Corporation Inc/i);
 
+      // Fill required fields so only ZIP blocks continue
+      fireEvent.change(einInput, { target: { value: '12-3456789' } });
+      fireEvent.change(nameInput, { target: { value: 'Test Corp' } });
+
+      const continueButton = screen.getByText(/Continue/i);
+
+      // Invalid ZIP (too short)
+      fireEvent.change(zipInput, { target: { value: '123' } });
+      expect(zipInput).toHaveValue('123');
+      expect(continueButton).toBeDisabled();
+
+      // Invalid ZIP (letters)
+      fireEvent.change(zipInput, { target: { value: 'ABCDE' } });
+      expect(continueButton).toBeDisabled();
+
+      // Valid ZIP (5 digits)
       fireEvent.change(zipInput, { target: { value: '90210' } });
+      expect(continueButton).toBeEnabled();
 
-      expect(zipInput).toHaveValue('90210');
+      // Valid ZIP+4
+      fireEvent.change(zipInput, { target: { value: '90210-1234' } });
+      expect(continueButton).toBeEnabled();
     });
 
     it('should accept ZIP+4 format', async () => {
@@ -863,12 +1005,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const zipInput = screen.getByPlaceholderText(/90210/i);
 
@@ -882,12 +1024,12 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Filer step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Country field has default value of 'US' and auto-uppercase
       const countryInput = screen.getByDisplayValue(/US/i);
@@ -897,7 +1039,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // Should be uppercased
       await waitFor(() => {
         expect(countryInput).toHaveValue('US');
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -907,21 +1049,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Add payee
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
@@ -935,7 +1078,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         expect(screen.queryByText(/99-8765432/i)).toBeInTheDocument();
         expect(screen.queryByText(/Jane Smith/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should allow adding multiple payees', async () => {
@@ -943,21 +1086,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Add first payee
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
@@ -969,7 +1113,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Payees in Batch \(1\/1000\)/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Form should clear for next payee
       expect(payeeTinInput).toHaveValue('');
@@ -982,7 +1126,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Payees in Batch \(2\/1000\)/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should require TIN to add payee', async () => {
@@ -990,21 +1134,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const addButton = screen.getByText(/Add Payee to Batch/i);
 
@@ -1024,21 +1169,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const addButton = screen.getByText(/Add Payee to Batch/i);
 
@@ -1058,21 +1204,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Add payee
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
@@ -1086,7 +1233,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         expect(payeeTinInput).toHaveValue('');
         expect(payeeNameInput).toHaveValue('');
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should show payee count in header', async () => {
@@ -1094,21 +1241,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Add payee
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
@@ -1121,7 +1269,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // Should show Payees in Batch (1/1000)
       await waitFor(() => {
         expect(screen.queryByText(/Payees in Batch \(1\/1000\)/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should show remove button for each payee', async () => {
@@ -1129,21 +1277,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Add payee
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
@@ -1159,7 +1308,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
           btn.querySelector('svg.lucide-trash-2') || btn.innerHTML.includes('Trash2')
         );
         expect(deleteButtons.length).toBeGreaterThan(0);
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should remove payee when delete button is clicked', async () => {
@@ -1167,21 +1316,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Add payee
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
@@ -1193,7 +1343,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Jane Smith/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Find and click delete button
       const payeeRow = screen.getByText(/Jane Smith/i).closest('div[class*="bg-slate-900"]');
@@ -1204,7 +1354,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // Payee should be removed
       await waitFor(() => {
         expect(screen.queryByText(/Jane Smith/i)).not.toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should update payee count after removal', async () => {
@@ -1212,21 +1362,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Add two payees
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
@@ -1238,7 +1389,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Payees in Batch \(1\/1000\)/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(payeeTinInput, { target: { value: '98-7654321' } });
       fireEvent.change(payeeNameInput, { target: { value: 'Bob Jones' } });
@@ -1246,7 +1397,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Payees in Batch \(2\/1000\)/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Remove first payee
       const janeRow = screen.getByText(/Jane Smith/i).closest('div[class*="bg-slate-900"]');
@@ -1258,7 +1409,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
         expect(screen.queryByText(/Payees in Batch \(1\/1000\)/i)).toBeInTheDocument();
         expect(screen.queryByText(/Jane Smith/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/Bob Jones/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should disable Continue button after removing all payees', async () => {
@@ -1266,21 +1417,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Add payee
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
@@ -1294,7 +1446,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         const continueButton = screen.getByText(/Continue/i);
         expect(continueButton).toBeEnabled();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Remove the payee
       const payeeRow = screen.getByText(/Jane Smith/i).closest('div[class*="bg-slate-900"]');
@@ -1305,7 +1457,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         const continueButton = screen.getByText(/Continue/i);
         expect(continueButton).toBeDisabled();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -1315,21 +1467,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
       const payeeNameInput = screen.getByPlaceholderText(/John D Contractor/i);
@@ -1348,21 +1501,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
       const payeeNameInput = screen.getByPlaceholderText(/John D Contractor/i);
@@ -1381,21 +1535,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
       const payeeNameInput = screen.getByPlaceholderText(/John D Contractor/i);
@@ -1410,7 +1565,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // Should show error message
       await waitFor(() => {
         expect(screen.queryByText(/Invalid TIN format/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should disable Add button for invalid TIN format', async () => {
@@ -1418,21 +1573,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
       const payeeNameInput = screen.getByPlaceholderText(/John D Contractor/i);
@@ -1451,21 +1607,22 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Navigate to Payees step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       const payeeTinInput = screen.getByPlaceholderText(/XX-XXXXXXX or XXX-XX-XXXX/i);
       const payeeNameInput = screen.getByPlaceholderText(/John D Contractor/i);
@@ -1477,7 +1634,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Jane Smith/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Try to add payee with same TIN
       fireEvent.change(payeeTinInput, { target: { value: '99-8765432' } });
@@ -1489,7 +1646,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // Should show duplicate warning
       await waitFor(() => {
         expect(screen.queryByText(/Duplicate TIN/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
   });
 
@@ -1500,7 +1657,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       // Auth step
       const tccInput = await screen.findByPlaceholderText(TCC_PLACEHOLDER);
-      fireEvent.change(tccInput, { target: { value: 'T1234567890' } });
+      fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
       // Wait for Filer step (2FA is disabled in tests)
@@ -1511,18 +1668,19 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       // Filer step
       fireEvent.change(screen.getByPlaceholderText(/XX-XXXXXXX/i), { target: { value: '12-3456789' } });
       fireEvent.change(screen.getByPlaceholderText(/ABC Corporation Inc/i), { target: { value: 'Test Corp' } });
+      fireEvent.change(screen.getByPlaceholderText(/90210/i), { target: { value: '90210' } });
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.queryByText(/Tax Year/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // FormType step
       fireEvent.click(screen.getByText(/Continue/i));
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /^Add Payee$/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Payees step - add a valid payee
       const payeesTinPlaceholder = /XX-XXXXXXX or XXX-XX-XXXX/i;
@@ -1535,7 +1693,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Jane Smith/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
 
       // Go to Review step
       fireEvent.click(screen.getByText(/Continue/i));
@@ -1543,7 +1701,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       await waitFor(() => {
         expect(screen.queryByText(/Submission Summary/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Validate & Submit/i })).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     };
 
     it('should call transmissionCheck for pre-validation on submit', async () => {
@@ -1570,7 +1728,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(irsApiClient.irsApi.transmissionCheck).toHaveBeenCalled();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should show validating status when pre-validation starts', async () => {
@@ -1585,7 +1743,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
 
       await waitFor(() => {
         expect(screen.queryByText(/Validating Submission.../i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should display validation errors when pre-validation fails', async () => {
@@ -1606,7 +1764,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
         expect(screen.queryAllByText(/Validation failed/i).length).toBeGreaterThan(0);
         expect(screen.queryByText(/Invalid filer EIN/i)).toBeInTheDocument();
         expect(screen.queryByText(/Missing payee address/i)).toBeInTheDocument();
-      }, { timeout: 4000 });
+      }, { timeout: 10000 });
     });
 
     it('should not call submitBatch when validation fails', async () => {

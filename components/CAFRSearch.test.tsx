@@ -300,7 +300,7 @@ describe('CAFRSearch Component', () => {
     it('should show loading indicator during search', async () => {
       // Make search hang to see loading state
       (cafrApiClient.cafrApi.search as any).mockImplementation(
-        () => new Promise(() => {})
+        () => new Promise(() => { })
       );
 
       render(<CAFRSearch />);
@@ -315,7 +315,7 @@ describe('CAFRSearch Component', () => {
 
     it('should disable search button during loading', async () => {
       (cafrApiClient.cafrApi.search as any).mockImplementation(
-        () => new Promise(() => {})
+        () => new Promise(() => { })
       );
 
       render(<CAFRSearch />);
@@ -419,6 +419,7 @@ describe('CAFRSearch Component', () => {
         page: 1,
         pageSize: 20
       });
+      (cafrApiClient.cafrApi.getPdfUrl as any).mockResolvedValue('https://example.com/cafr.pdf');
 
       render(<CAFRSearch onSelectDocument={mockOnSelect} />);
 
@@ -432,6 +433,11 @@ describe('CAFRSearch Component', () => {
       fireEvent.click(screen.getByText('City of Test'));
 
       expect(mockOnSelect).toHaveBeenCalledWith(mockDocument);
+
+      // Wait for async CAFRViewer updates to complete
+      await waitFor(() => {
+        expect(cafrApiClient.cafrApi.getPdfUrl).toHaveBeenCalledWith('cafr-001');
+      });
     });
   });
 });

@@ -45,6 +45,7 @@ export interface SystemSettings {
   fuzzing: FuzzConfig;
   network: string;
   firebaseConfig?: FirebaseConfig;
+  layoutMode?: 'Standard' | 'MobileQuickBooks';
 }
 
 export interface ChangeSet {

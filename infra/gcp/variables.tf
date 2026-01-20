@@ -19,5 +19,17 @@ variable "image_url" {
   description = "The container image URL for the dispatch service"
   type        = string
   # Default placeholder - needs to be built and pushed
-  default     = "gcr.io/google-samples/hello-app:1.0" 
+  default     = "gcr.io/google-samples/hello-app:1.0"
+}
+
+variable "enable_gcs_hosting" {
+  description = "Enable GCS static hosting (replaces Firebase)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_cloud_cdn" {
+  description = "Enable Cloud CDN for GCS bucket"
+  type        = bool
+  default     = true
 }

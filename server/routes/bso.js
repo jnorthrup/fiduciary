@@ -2,6 +2,7 @@
 import express from 'express';
 import { randomUUID } from 'crypto';
 import { authenticateToken } from './iris-oauth.js';
+import persistence from '../lib/gcs-persistence.js';
 
 const router = express.Router();
 
@@ -11,25 +12,30 @@ const bsoAuth = (req, res, next) => {
     if (authHeader === 'Bearer test-token') {
         req.token = 'test-token';
         req.tokenData = { userPayload: { sub: 'test-user' }, clientPayload: { iss: 'test-client' } };
+        req.user = { uid: 'test-user' }; // Added for GCS partitioning
         return next();
     }
     return authenticateToken(req, res, next);
 };
 
-// Mock storage for BSO state on server-side (per session/lifetime of process)
-const bsoSubmissions = new Map();
-
 /**
  * POST /api/bso/register
  * Step 1 of BSO enrollment - register new user
  */
-router.post('/register', bsoAuth, (req, res) => {
+router.post('/register', bsoAuth, async (req, res) => {
     try {
         const { username, email, password, securityQuestions } = req.body;
+        const uid = req.user.uid;
         const bsoMode = process.env.BSO_MODE || 'mock';
 
         if (bsoMode === 'mock') {
             const userId = `BSO-USER-${randomUUID().slice(0, 8).toUpperCase()}`;
+
+            // Save registration state
+            const state = await persistence.loadData(uid, 'bso') || { submissions: {}, registrations: [] };
+            state.registrations.push({ userId, username, email, status: 'Active', createdAt: new Date().toISOString() });
+            await persistence.saveData(uid, 'bso', state);
+
             return res.json({
                 userId,
                 status: 'Active',
@@ -50,9 +56,10 @@ router.post('/register', bsoAuth, (req, res) => {
  * POST /api/bso/w2/submit
  * Upload and submit EFW2 format W-2 file
  */
-router.post('/w2/submit', bsoAuth, (req, res) => {
+router.post('/w2/submit', bsoAuth, async (req, res) => {
     try {
         const { ein, taxYear } = req.body;
+        const uid = req.user.uid;
         const bsoMode = process.env.BSO_MODE || 'mock';
 
         if (bsoMode === 'mock') {
@@ -67,7 +74,9 @@ router.post('/w2/submit', bsoAuth, (req, res) => {
                 updatedAt: new Date().toISOString()
             };
 
-            bsoSubmissions.set(batchId, submission);
+            const state = await persistence.loadData(uid, 'bso') || { submissions: {}, registrations: [] };
+            state.submissions[batchId] = submission;
+            await persistence.saveData(uid, 'bso', state);
 
             return res.json({
                 batchId,
@@ -87,13 +96,16 @@ router.post('/w2/submit', bsoAuth, (req, res) => {
  * GET /api/bso/submissions/:batchId
  * Retrieve AccuWage validation results
  */
-router.get('/submissions/:batchId', bsoAuth, (req, res) => {
+router.get('/submissions/:batchId', bsoAuth, async (req, res) => {
     try {
         const { batchId } = req.params;
+        const uid = req.user.uid;
         const bsoMode = process.env.BSO_MODE || 'mock';
 
         if (bsoMode === 'mock') {
-            const submission = bsoSubmissions.get(batchId);
+            const state = await persistence.loadData(uid, 'bso');
+            const submission = state?.submissions?.[batchId];
+
             if (!submission) {
                 return res.status(404).json({ error: 'not_found', message: 'Batch ID not found' });
             }
@@ -104,7 +116,9 @@ router.get('/submissions/:batchId', bsoAuth, (req, res) => {
                 submission.status = 'Pass';
                 submission.accuWageStatus = 'Pass';
                 submission.updatedAt = new Date().toISOString();
-                bsoSubmissions.set(batchId, submission);
+
+                state.submissions[batchId] = submission;
+                await persistence.saveData(uid, 'bso', state);
             }
 
             return res.json(submission);

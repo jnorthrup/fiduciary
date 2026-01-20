@@ -13,7 +13,7 @@ import {
   RefreshCcw, Info
 } from 'lucide-react';
 import { useLedgerStore } from '../services/ledgerService';
-import { isValidTINFormat } from '../utils/validation';
+import { isValidTINFormat, isValidZipFormat } from '../utils/validation';
 import { TIN_PLACEHOLDER, SSN_PLACEHOLDER, TCC_PLACEHOLDER, REGEX_TCC } from '../utils/constants';
 import {
   irsApi,
@@ -263,7 +263,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
   };
 
   const formatTCCInput = (value: string): string => {
-    const clean = value.replace(/[^A-Z0-9]/g, '').toUpperCase();
+    const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (clean.length <= 2) return clean;
     return `${clean.slice(0, 2)}-${clean.slice(2, 9)}`;
   };
@@ -284,7 +284,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
       }
       setApiHealth(health);
       setConnectionCheckState('valid');
-      await new Promise(r => setTimeout(r, 500)); // Brief delay for success animation
+      await new Promise(r => setTimeout(r, (import.meta as any).env.MODE === 'test' ? 0 : 500)); // Brief delay for success animation
     } catch (e: any) {
       console.log('[Wizard] Auth error:', e);
       setConnectionCheckState('invalid');
@@ -295,7 +295,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
 
     // Simulate credential verification/handshake
     console.log('[Wizard] Verifying credentials...');
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, (import.meta as any).env.MODE === 'test' ? 0 : 1500));
 
     if (tcc) {
       await irsApi.setAuth(tcc);
@@ -318,7 +318,8 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
 
     // Check if 2FA is required for this account
     // In production, this would be determined by the API response
-    const requires2FA = (import.meta as any).env.VITE_REQUIRE_2FA !== 'false';
+    const requires2FA = (import.meta as any).env.VITE_REQUIRE_2FA !== 'false' &&
+      (typeof process !== 'undefined' ? process.env.VITE_REQUIRE_2FA !== 'false' : true);
     console.log('[Wizard] 2FA required:', requires2FA);
 
     if (requires2FA) {
@@ -388,7 +389,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
     setTwoFAError(null);
 
     // Simulate verification
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, (import.meta as any).env.MODE === 'test' ? 0 : 1500));
 
     // Validate 2FA code (6 digits)
     if (twoFACode.length !== 6 || !/^\d+$/.test(twoFACode)) {
@@ -1957,7 +1958,7 @@ export const IRIS1099Wizard: React.FC<Props> = ({ entityId, onClose }) => {
               <button
                 onClick={() => setCurrentStep(steps[currentStepIndex + 1])}
                 disabled={
-                  (currentStep === 'Filer' && (!filer.ein || !filer.name)) ||
+                  (currentStep === 'Filer' && (!filer.ein || !filer.name || !isValidZipFormat(filer.address.zipCode))) ||
                   (currentStep === 'Payees' && payees.length === 0)
                 }
                 className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg flex items-center gap-2"
