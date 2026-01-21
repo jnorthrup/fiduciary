@@ -1,6 +1,5 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { logger } from './logger';
 
 /**
  * The API Proxy acts as a middleware between the Frontend calls and the "Real World".
@@ -19,12 +18,12 @@ export class ApiProxy {
    * strictly adhering to the provided OpenAPI definition.
    */
   async request(
-    spec: any,
-    path: string,
-    method: 'get' | 'post',
+    spec: any, 
+    path: string, 
+    method: 'get' | 'post', 
     params: Record<string, any>
   ): Promise<any> {
-
+    
     // 1. Extract the Schema for the expected response
     const endpointDef = spec.paths[path]?.[method];
     if (!endpointDef) throw new Error(`404: Endpoint ${method.toUpperCase()} ${path} not found in spec.`);
@@ -57,7 +56,7 @@ export class ApiProxy {
     // or we map them dynamically. For simplicity/robustness, we pass the raw schema 
     // structure to Gemini via the system prompt and ask for JSON, then parse it. 
     // However, using responseSchema is safer for structure.
-
+    
     const geminiSchema = this.mapOpenApiToGemini(successSchema);
 
     try {
@@ -73,11 +72,11 @@ export class ApiProxy {
 
       const rawText = response.text;
       if (!rawText) throw new Error("500: Empty response from API backend.");
-
+      
       return JSON.parse(rawText);
 
     } catch (e: any) {
-      logger.error("API Proxy Error:", e);
+      console.error("API Proxy Error:", e);
       throw new Error(`502: Bad Gateway - ${e.message}`);
     }
   }

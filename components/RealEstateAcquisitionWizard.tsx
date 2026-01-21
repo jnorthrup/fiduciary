@@ -245,7 +245,7 @@ export const RealEstateAcquisitionWizard: React.FC<Props> = ({ entity, onClose }
                         <Shield size={20} className="text-indigo-600 mt-1" />
                         <div>
                             <h3 className="font-bold text-indigo-900 text-sm">Instrument Creation</h3>
-                            <p className="text-xs text-indigo-800">Generate the Secured Installment Note. Status will move from Issued {`->`} Presented {`->`} Accepted.</p>
+                            <p className="text-xs text-indigo-800">Generate the Secured Installment Note. Status will move from Issued -> Presented -> Accepted.</p>
                         </div>
                     </div>
 

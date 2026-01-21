@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { Entity, TicklerRecord } from '../types';
+import { Entity, TicklerRecord, Priority } from '../types';
 import { 
   CheckSquare, Plus, Clock, AlertTriangle, CheckCircle2, 
   Calendar, Briefcase, Scale, Calculator, Search, Trash2,
-  ChevronRight, Filter, Bookmark, Bell, Zap, MoreVertical
+  ChevronRight, Filter, Bookmark, Bell, Zap, MoreVertical, Flag
 } from 'lucide-react';
 
 interface Props {
@@ -21,8 +21,23 @@ export const TicklerManager: React.FC<Props> = ({ entity, ticks, onAddTick, onUp
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
   const [newCategory, setNewCategory] = useState<'Accounting' | 'Legal' | 'Asset' | 'Tax'>('Accounting');
   const [newFreq, setNewFreq] = useState<'Once' | 'Monthly' | 'Quarterly' | 'Annually'>('Once');
+  const [newPriority, setNewPriority] = useState<Priority>('Medium');
 
-  const entityTicks = ticks.filter(t => t.entityId === entity.id && (activeTab === 'All' || t.category === activeTab));
+  const entityTicks = ticks
+    .filter(t => t.entityId === entity.id && (activeTab === 'All' || t.category === activeTab))
+    .sort((a, b) => {
+        // Sort by Status (Pending first)
+        if (a.status !== b.status) return a.status === 'Completed' ? 1 : -1;
+        
+        // Sort by Priority (High > Medium > Low)
+        const pWeight = { High: 3, Medium: 2, Low: 1, undefined: 1 };
+        const pA = pWeight[a.priority || 'Medium'] || 1;
+        const pB = pWeight[b.priority || 'Medium'] || 1;
+        if (pA !== pB) return pB - pA;
+
+        // Sort by Date
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
   
   const pendingCount = entityTicks.filter(t => t.status === 'Pending').length;
   const overdueCount = entityTicks.filter(t => t.status === 'Overdue').length;
@@ -36,6 +51,7 @@ export const TicklerManager: React.FC<Props> = ({ entity, ticks, onAddTick, onUp
       dueDate: newDate,
       category: newCategory,
       frequency: newFreq,
+      priority: newPriority,
       status: 'Pending'
     });
     setNewTitle('');
@@ -59,6 +75,14 @@ export const TicklerManager: React.FC<Props> = ({ entity, ticks, onAddTick, onUp
       case 'Tax': return <Bookmark size={14} className="text-rose-500" />;
       default: return <Bell size={14} className="text-slate-400" />;
     }
+  };
+
+  const getPriorityColor = (p?: Priority) => {
+      switch(p) {
+          case 'High': return 'text-red-600 bg-red-50 border-red-100';
+          case 'Low': return 'text-blue-600 bg-blue-50 border-blue-100';
+          default: return 'text-amber-600 bg-amber-50 border-amber-100';
+      }
   };
 
   return (
@@ -130,8 +154,8 @@ export const TicklerManager: React.FC<Props> = ({ entity, ticks, onAddTick, onUp
                       <h3 className="text-sm font-bold text-indigo-900 flex items-center gap-2"><Zap size={14}/> Define Administrative Tick</h3>
                       <button onClick={() => setShowAdd(false)} className="text-indigo-400 hover:text-indigo-600"><Trash2 size={16}/></button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                      <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                      <div className="lg:col-span-2">
                           <label className="block text-[10px] font-bold text-indigo-400 uppercase mb-1">Task Title</label>
                           <input 
                             value={newTitle}
@@ -162,12 +186,26 @@ export const TicklerManager: React.FC<Props> = ({ entity, ticks, onAddTick, onUp
                               <option>Tax</option>
                           </select>
                       </div>
-                      <button 
-                        onClick={handleAdd}
-                        className="bg-indigo-600 text-white font-bold py-2 rounded text-sm hover:bg-indigo-700 shadow-md"
-                      >
-                          Add to Queue
-                      </button>
+                      <div>
+                          <label className="block text-[10px] font-bold text-indigo-400 uppercase mb-1">Priority</label>
+                          <select 
+                            value={newPriority}
+                            onChange={e => setNewPriority(e.target.value as Priority)}
+                            className="w-full bg-white border border-indigo-200 rounded p-2 text-sm outline-none"
+                          >
+                              <option value="High">High</option>
+                              <option value="Medium">Medium</option>
+                              <option value="Low">Low</option>
+                          </select>
+                      </div>
+                      <div className="lg:col-span-5 flex justify-end mt-2">
+                        <button 
+                            onClick={handleAdd}
+                            className="bg-indigo-600 text-white font-bold py-2 px-6 rounded text-sm hover:bg-indigo-700 shadow-md"
+                        >
+                            Add to Queue
+                        </button>
+                      </div>
                   </div>
               </div>
           )}
@@ -198,6 +236,11 @@ export const TicklerManager: React.FC<Props> = ({ entity, ticks, onAddTick, onUp
                                   {getCategoryIcon(tick.category)}
                                   <h4 className={`font-bold text-sm ${tick.status === 'Completed' ? 'line-through text-slate-400' : 'text-slate-800'}`}>{tick.title}</h4>
                                   <span className="text-[9px] font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 uppercase">{tick.frequency}</span>
+                                  {tick.priority && (
+                                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1 ${getPriorityColor(tick.priority)}`}>
+                                          <Flag size={8} fill="currentColor" /> {tick.priority}
+                                      </span>
+                                  )}
                               </div>
                               <div className="flex items-center gap-3 mt-1 text-[10px] font-mono">
                                   <span className={isOverdue ? 'text-rose-500 font-bold' : 'text-slate-400'}>
@@ -233,7 +276,7 @@ export const TicklerManager: React.FC<Props> = ({ entity, ticks, onAddTick, onUp
               <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div> AUDIT_DAEMON: ACTIVE</span>
               <span className="flex items-center gap-1.5">QUEUE_HEALTH: STABLE</span>
           </div>
-          <span>Ref: TICKLER-SERVICE-4.0</span>
+          <span>Ref: TICKLER-SERVICE-4.1</span>
       </div>
     </div>
   );
