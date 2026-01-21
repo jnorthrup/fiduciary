@@ -277,7 +277,7 @@ type LedgerContextType = LedgerDb & {
   generateSyntheticData?: () => void;  // Demo only (DEV mode)
   generateSampleEnterprise?: () => void;  // Demo only (DEV mode)
   toggleLayoutMode: () => void;
-  postJournal: (entityId: string, date: string, memo: string, type: string, lines: any[]) => void;
+  postJournal: (entityId: string, date: string, memo: string, type: string, lines: any[]) => { success: boolean; errors: Array<{ field: string; message: string }> };
 
   // Generic Setters
   addCanalRecord: (r: types.CanalRecord) => void;
@@ -470,21 +470,106 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
   };
 
   // --- Specialized Actions ---
-  const postJournal = (entityId: string, date: string, memo: string, type: string, lines: any[]) => {
-    const entry: types.JournalEntry = { id: uuidv4(), entityId, date, memo, type, lines: lines.map(l => ({ ...l, id: uuidv4() })), locked: true, _version: '1' };
+  const postJournal = (entityId: string, date: string, memo: string, type: string, lines: any[]): { success: boolean; errors: Array<{ field: string; message: string }> } => {
+    const errors: Array<{ field: string; message: string }> = [];
+    const entityAccounts = db.accounts.filter(a => a.entityId === entityId);
+
+    // Step 1: Validate all accounts exist and are active
+    const resolvedLines: Array<{ line: any; account: types.Account }> = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const account = entityAccounts.find(a =>
+        (line.accountId && a.id === line.accountId) ||
+        (line.accountCode && a.code === line.accountCode)
+      );
+
+      if (!account) {
+        errors.push({
+          field: `lines[${i}]`,
+          message: `Account not found: ${line.accountCode || line.accountId}`
+        });
+        continue;
+      }
+
+      if (!account.isActive) {
+        errors.push({
+          field: `lines[${i}]`,
+          message: `Account ${account.code} is inactive`
+        });
+        continue;
+      }
+
+      resolvedLines.push({ line, account });
+    }
+
+    // Step 2: Validate debits equal credits
+    let totalDebits = 0;
+    let totalCredits = 0;
+    resolvedLines.forEach(({ line }) => {
+      if (line.dc === types.DCFlag.Debit) {
+        totalDebits += line.amount;
+      } else {
+        totalCredits += line.amount;
+      }
+    });
+
+    if (Math.abs(totalDebits - totalCredits) > 0.01) {
+      errors.push({
+        field: 'lines',
+        message: `Journal entry must balance: Debits (${totalDebits.toFixed(2)}) ≠ Credits (${totalCredits.toFixed(2)})`
+      });
+    }
+
+    // If validation errors, return early
+    if (errors.length > 0) {
+      return { success: false, errors };
+    }
+
+    // Step 3: Create journal entry with resolved account IDs
+    const entry: types.JournalEntry = {
+      id: uuidv4(),
+      entityId,
+      date,
+      memo,
+      type,
+      lines: resolvedLines.map(({ line, account }) => ({
+        ...line,
+        id: uuidv4(),
+        accountId: account.id,
+        accountCode: account.code,
+        accountName: account.name
+      })),
+      locked: true,
+      _version: '1'
+    };
     addItem('journals', entry);
 
-    // Optimistic Account Balance Update
+    // Step 4: Update account balances atomically
+    const balanceUpdates = new Map<string, number>();
+    resolvedLines.forEach(({ line, account }) => {
+      // Calculate balance change based on account type and debit/credit
+      // Debit accounts (Asset, Expense): Debit increases, Credit decreases
+      // Credit accounts (Liability, Equity, Income): Credit increases, Debit decreases
+      const isDebitAccount = account.type === 'Asset' || account.type === 'Expense';
+      const change = isDebitAccount
+        ? (line.dc === types.DCFlag.Debit ? line.amount : -line.amount)
+        : (line.dc === types.DCFlag.Credit ? line.amount : -line.amount);
+
+      const currentChange = balanceUpdates.get(account.id) || 0;
+      balanceUpdates.set(account.id, currentChange + change);
+    });
+
+    // Apply balance updates
     const newAccounts = db.accounts.map(acc => {
-      const relLines = entry.lines.filter(l => l.accountCode === acc.code || l.accountId === acc.id);
-      if (relLines.length === 0) return acc;
-      let change = 0;
-      relLines.forEach(l => change += (acc.type === 'Asset' || acc.type === 'Expense') ? (l.dc === types.DCFlag.Debit ? l.amount : -l.amount) : (l.dc === types.DCFlag.Credit ? l.amount : -l.amount));
+      const change = balanceUpdates.get(acc.id);
+      if (change === undefined) return acc;
       const updatedAcc = { ...acc, balance: acc.balance + change };
       syncDoc('accounts', updatedAcc);
       return updatedAcc;
     });
     setDb(prev => ({ ...prev, accounts: newAccounts }));
+
+    return { success: true, errors: [] };
   };
 
   const addEntity = async (parentId: string, type: types.EntityType, role: types.EntityRole, nameOverride?: string) => {
