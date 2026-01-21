@@ -23,3 +23,19 @@ dist-ssr
 *.sln
 *.sw?
 infra/gcp/.terraform
+
+# Build outputs (generated at deploy time)
+server/public/
+html/assets/
+
+# Test artifacts
+test-results/
+test-artifacts/
+test_failure_log.txt
+test_output.txt
+test_report_*.txt
+test_result_*.txt
+coverage/
+
+# Large generated files
+*.map
