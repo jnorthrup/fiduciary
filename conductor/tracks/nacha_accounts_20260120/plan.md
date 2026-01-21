@@ -44,9 +44,9 @@
   - [x] Sub-task: Routing number validation (ABA checksum) [2b19aec]
   - [x] Sub-task: Amount and field length validation [2b19aec]
   - [x] Sub-task: SEC code compliance check [7bdb739]
-- [ ] Task: Export functionality
-  - [ ] Sub-task: Generate downloadable .ACH file
-  - [ ] Sub-task: Store submission to GCS with traceability
+- [x] Task: Export functionality [2434c52]
+  - [x] Sub-task: Generate downloadable .ACH file [2b19aec]
+  - [x] Sub-task: Store submission to GCS with traceability [2434c52]
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.2 Validation'
 
 ---
