@@ -1,8 +1,8 @@
 
 import React from 'react';
 import {
-    X, FileText, Receipt, CreditCard, Send,
-    ArrowUpRight, ArrowDownLeft, FileCheck
+    X, FileText, Receipt, Send,
+    ArrowUpRight, FileCheck, Scale
 } from 'lucide-react';
 
 interface QuickActionSheetProps {
@@ -22,9 +22,9 @@ export const QuickActionSheet: React.FC<QuickActionSheetProps> = ({
         { id: 'Invoice', label: 'Invoice', icon: FileText, color: 'bg-green-100 text-green-700' },
         { id: 'Receipt', label: 'Expense / Receipt', icon: Receipt, color: 'bg-orange-100 text-orange-700' },
         { id: 'Payment', label: 'Bank Payment', icon: ArrowUpRight, color: 'bg-blue-100 text-blue-700' },
-        { id: 'Deposit', label: 'Bank Deposit', icon: ArrowDownLeft, color: 'bg-emerald-100 text-emerald-700' },
-        { id: 'Journal', label: 'Journal Entry', icon: FileCheck, color: 'bg-purple-100 text-purple-700' },
         { id: 'Wire', label: 'Wire Transfer', icon: Send, color: 'bg-indigo-100 text-indigo-700' },
+        { id: '1099', label: '1099 Filing', icon: FileCheck, color: 'bg-purple-100 text-purple-700' },
+        { id: 'Journal', label: 'Journal Entry', icon: Scale, color: 'bg-slate-100 text-slate-700' },
     ];
 
     return (

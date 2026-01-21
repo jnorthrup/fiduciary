@@ -19,6 +19,10 @@ import {
   getDefaultNormalBalance,
   validateAccountInput,
   validateAccountUpdate,
+  fetchNext,
+  fetchPrevious,
+  type Cursor,
+  type PaginationResult,
   type CreateAccountInput,
   type UpdateAccountInput,
   type AccountFilters
@@ -361,6 +365,27 @@ describe('accountService', () => {
       expect(results[0].code).toBe('1000');
     });
 
+    it('filters by parentAccountId (null for top-level)', () => {
+      const parent = createTestAccount({ id: 'p1', code: '1000', name: 'Parent', parentAccountId: null });
+      const child = createTestAccount({ id: 'c1', code: '1010', name: 'Child', parentAccountId: 'p1' });
+      existingAccounts.push(parent, child);
+
+      const topLevel = getAccounts({ parentAccountId: null }, existingAccounts);
+      expect(topLevel.some(a => a.id === 'p1')).toBe(true);
+      expect(topLevel.some(a => a.id === 'c1')).toBe(false);
+    });
+
+    it('filters by parentAccountId (specific parent)', () => {
+      const parent = createTestAccount({ id: 'p1', code: '1000', name: 'Parent' });
+      const child1 = createTestAccount({ id: 'c1', code: '1010', name: 'Child 1', parentAccountId: 'p1' });
+      const child2 = createTestAccount({ id: 'c2', code: '1020', name: 'Child 2', parentAccountId: 'p1' });
+      existingAccounts.push(parent, child1, child2);
+
+      const children = getAccounts({ parentAccountId: 'p1' }, existingAccounts);
+      expect(children.length).toBe(2);
+      expect(children.every(a => a.parentAccountId === 'p1')).toBe(true);
+    });
+
     it('gets credit accounts', () => {
       const credits = getCreditAccounts(testEntityId, existingAccounts);
       expect(credits.length).toBe(3); // Liability, Equity, Income
@@ -399,6 +424,318 @@ describe('accountService', () => {
       const hierarchy = getAccountHierarchy(testEntityId, existingAccounts);
 
       expect(hierarchy[0].children?.length).toBe(1);
+    });
+  });
+
+  describe('Cursor-Based Pagination', () => {
+    beforeEach(() => {
+      // Create 25 accounts for pagination testing
+      for (let i = 1; i <= 25; i++) {
+        existingAccounts.push(createTestAccount({
+          id: `acc-${i}`,
+          code: `${1000 + i}`,
+          name: `Account ${i}`,
+          type: AccountType.ASSET,
+        }));
+      }
+    });
+
+    describe('Cursor Types', () => {
+      it('creates a valid cursor from account', () => {
+        const account = existingAccounts[0];
+        const cursor = {
+          id: account.id,
+          code: account.code,
+          createdAt: account.createdAt
+        };
+        expect(cursor).toBeDefined();
+        expect(cursor.id).toBe(account.id);
+      });
+
+      it('serializes cursor to string', () => {
+        const cursor = {
+          id: 'acc-1',
+          code: '1001',
+          createdAt: '2026-01-20T00:00:00.000Z'
+        };
+        const serialized = JSON.stringify(cursor);
+        expect(serialized).toContain('acc-1');
+        expect(serialized).toContain('1001');
+      });
+
+      it('deserializes cursor from string', () => {
+        const cursorObj = {
+          id: 'acc-1',
+          code: '1001',
+          createdAt: '2026-01-20T00:00:00.000Z'
+        };
+        const serialized = JSON.stringify(cursorObj);
+        const deserialized = JSON.parse(serialized);
+        expect(deserialized.id).toBe('acc-1');
+        expect(deserialized.code).toBe('1001');
+      });
+    });
+
+    describe('fetchNext', () => {
+      it('returns first page when no cursor provided', () => {
+        const result = fetchNext(null, 10, existingAccounts);
+        expect(result.data).toHaveLength(10);
+        expect(result.hasNext).toBe(true);
+        expect(result.hasPrevious).toBe(false);
+        expect(result.nextCursor).toBeDefined();
+      });
+
+      it('returns next page using cursor', () => {
+        const firstPage = fetchNext(null, 10, existingAccounts);
+        const secondPage = fetchNext(firstPage.nextCursor, 10, existingAccounts);
+
+        expect(secondPage.data).toHaveLength(10);
+        expect(secondPage.hasNext).toBe(true);
+        expect(secondPage.hasPrevious).toBe(true);
+        expect(secondPage.previousCursor).toBeDefined();
+
+        // Verify accounts are different
+        const firstIds = firstPage.data.map(a => a.id);
+        const secondIds = secondPage.data.map(a => a.id);
+        const intersection = firstIds.filter(id => secondIds.includes(id));
+        expect(intersection).toHaveLength(0);
+      });
+
+      it('returns empty nextCursor on last page', () => {
+        const page1 = fetchNext(null, 10, existingAccounts);
+        const page2 = fetchNext(page1.nextCursor, 10, existingAccounts);
+        const page3 = fetchNext(page2.nextCursor, 10, existingAccounts);
+
+        expect(page3.data).toHaveLength(5); // Remaining accounts
+        expect(page3.hasNext).toBe(false);
+        expect(page3.nextCursor).toBeNull();
+      });
+
+      it('respects limit parameter', () => {
+        const result = fetchNext(null, 5, existingAccounts);
+        expect(result.data).toHaveLength(5);
+      });
+
+      it('filters by entityId when provided', () => {
+        const otherEntityAccounts = [
+          createTestAccount({ id: 'other-1', code: '9999', entityId: 'other-entity' }),
+        ];
+        const allAccounts = [...existingAccounts, ...otherEntityAccounts];
+
+        const result = fetchNext(null, 10, allAccounts, { entityId: testEntityId });
+        expect(result.data).toHaveLength(10);
+        expect(result.data.every(a => a.entityId === testEntityId)).toBe(true);
+      });
+
+      it('filters by accountClass when provided', () => {
+        // Mix of debit and credit accounts
+        const mixed: Account[] = [];
+        for (let i = 1; i <= 10; i++) {
+          mixed.push(createTestAccount({
+            id: `debit-${i}`,
+            code: `${1000 + i}`,
+            type: AccountType.ASSET // Debit
+          }));
+          mixed.push(createTestAccount({
+            id: `credit-${i}`,
+            code: `${2000 + i}`,
+            type: AccountType.LIABILITY // Credit
+          }));
+        }
+
+        const result = fetchNext(null, 5, mixed, { accountClass: 'Debit' });
+        expect(result.data).toHaveLength(5);
+        expect(result.data.every(a => a.accountClass === 'Debit')).toBe(true);
+      });
+
+      it('filters by isActive when provided', () => {
+        const withInactive = [...existingAccounts];
+        withInactive[0].isActive = false;
+        withInactive[5].isActive = false;
+
+        const result = fetchNext(null, 10, withInactive, { isActive: true });
+        expect(result.data).toHaveLength(10);
+        expect(result.data.every(a => a.isActive === true)).toBe(true);
+        expect(result.data.some(a => a.id === withInactive[0].id)).toBe(false);
+      });
+    });
+
+    describe('fetchPrevious', () => {
+      it('returns previous page using cursor', () => {
+        const page1 = fetchNext(null, 10, existingAccounts);
+        const page2 = fetchNext(page1.nextCursor, 10, existingAccounts);
+        const page1Again = fetchPrevious(page2.previousCursor, 10, existingAccounts);
+
+        expect(page1Again.data).toHaveLength(10);
+        expect(page1Again.data.map(a => a.id)).toEqual(page1.data.map(a => a.id));
+        expect(page1Again.hasNext).toBe(true);
+        expect(page1Again.hasPrevious).toBe(false);
+      });
+
+      it('navigates back through multiple pages', () => {
+        const page1 = fetchNext(null, 10, existingAccounts);
+        const page2 = fetchNext(page1.nextCursor, 10, existingAccounts);
+        const page3 = fetchNext(page2.nextCursor, 10, existingAccounts);
+
+        // Go back to page 2
+        const backTo2 = fetchPrevious(page3.previousCursor, 10, existingAccounts);
+        expect(backTo2.data.map(a => a.id)).toEqual(page2.data.map(a => a.id));
+
+        // Go back to page 1
+        const backTo1 = fetchPrevious(backTo2.previousCursor, 10, existingAccounts);
+        expect(backTo1.data.map(a => a.id)).toEqual(page1.data.map(a => a.id));
+        expect(backTo1.hasPrevious).toBe(false);
+      });
+
+      it('returns empty previousCursor on first page', () => {
+        const page1 = fetchNext(null, 10, existingAccounts);
+        expect(page1.hasPrevious).toBe(false);
+        expect(page1.previousCursor).toBeNull();
+      });
+
+      it('respects limit parameter', () => {
+        const page1 = fetchNext(null, 10, existingAccounts);
+        const page2 = fetchNext(page1.nextCursor, 10, existingAccounts);
+
+        // Fetch only 5 from page2 going back
+        // page2.previousCursor points to the last item of page1 (acc-10)
+        // With limit=5, we should get 5 items ending at that cursor
+        const partial = fetchPrevious(page2.previousCursor, 5, existingAccounts);
+        expect(partial.data).toHaveLength(5);
+        expect(partial.data.map(a => a.id)).toEqual(page1.data.slice(5, 10).map(a => a.id));
+      });
+    });
+
+    describe('PaginationResult', () => {
+      it('contains all required fields', () => {
+        const result = fetchNext(null, 10, existingAccounts);
+
+        expect(result).toHaveProperty('data');
+        expect(result).toHaveProperty('nextCursor');
+        expect(result).toHaveProperty('previousCursor');
+        expect(result).toHaveProperty('hasNext');
+        expect(result).toHaveProperty('hasPrevious');
+        expect(result).toHaveProperty('totalCount');
+      });
+
+      it('calculates totalCount correctly', () => {
+        const result = fetchNext(null, 10, existingAccounts);
+        expect(result.totalCount).toBe(25);
+      });
+
+      it('sets hasNext/hasPrevious flags correctly', () => {
+        const page1 = fetchNext(null, 10, existingAccounts);
+        expect(page1.hasNext).toBe(true);
+        expect(page1.hasPrevious).toBe(false);
+
+        const page2 = fetchNext(page1.nextCursor, 10, existingAccounts);
+        expect(page2.hasNext).toBe(true);
+        expect(page2.hasPrevious).toBe(true);
+
+        const page3 = fetchNext(page2.nextCursor, 10, existingAccounts);
+        expect(page3.hasNext).toBe(false);
+        expect(page3.hasPrevious).toBe(true);
+      });
+    });
+
+    describe('Edge Cases', () => {
+      it('handles empty dataset', () => {
+        const result = fetchNext(null, 10, []);
+        expect(result.data).toHaveLength(0);
+        expect(result.hasNext).toBe(false);
+        expect(result.hasPrevious).toBe(false);
+        expect(result.totalCount).toBe(0);
+      });
+
+      it('handles empty dataset with fetchPrevious', () => {
+        const result = fetchPrevious(null, 10, []);
+        expect(result.data).toHaveLength(0);
+        expect(result.hasNext).toBe(false);
+        expect(result.hasPrevious).toBe(false);
+        expect(result.totalCount).toBe(0);
+      });
+
+      it('handles limit larger than dataset', () => {
+        const result = fetchNext(null, 100, existingAccounts);
+        expect(result.data).toHaveLength(25);
+        expect(result.hasNext).toBe(false);
+        expect(result.hasPrevious).toBe(false);
+      });
+
+      it('handles limit of 1', () => {
+        const result = fetchNext(null, 1, existingAccounts);
+        expect(result.data).toHaveLength(1);
+        expect(result.hasNext).toBe(true);
+      });
+
+      it('handles invalid cursor gracefully in fetchNext', () => {
+        const result = fetchNext('invalid-cursor', 10, existingAccounts);
+        expect(result.data).toBeDefined();
+        // Should fall back to first page
+        expect(result.data.length).toBeGreaterThan(0);
+      });
+
+      it('handles invalid cursor gracefully in fetchPrevious', () => {
+        const result = fetchPrevious('invalid-cursor', 10, existingAccounts);
+        expect(result.data).toBeDefined();
+        // Should fall back to last page
+        expect(result.data.length).toBeGreaterThan(0);
+      });
+
+      it('handles corrupted cursor in fetchNext', () => {
+        // Create a cursor pointing to non-existent account
+        const fakeCursor = Buffer.from(JSON.stringify({
+          id: 'non-existent-id',
+          code: '99999',
+          createdAt: '2026-01-20T00:00:00.000Z'
+        })).toString('base64');
+
+        const result = fetchNext(fakeCursor, 10, existingAccounts);
+        // Should fall back to first page
+        expect(result.data.length).toBe(10);
+      });
+
+      it('handles corrupted cursor in fetchPrevious', () => {
+        // Create a cursor pointing to non-existent account
+        const fakeCursor = Buffer.from(JSON.stringify({
+          id: 'non-existent-id',
+          code: '99999',
+          createdAt: '2026-01-20T00:00:00.000Z'
+        })).toString('base64');
+
+        const result = fetchPrevious(fakeCursor, 10, existingAccounts);
+        // Should fall back to last page
+        expect(result.data.length).toBeGreaterThan(0);
+      });
+
+      it('maintains sort order across pages', () => {
+        const page1 = fetchNext(null, 10, existingAccounts);
+        const page2 = fetchNext(page1.nextCursor, 10, existingAccounts);
+        const page3 = fetchNext(page2.nextCursor, 10, existingAccounts);
+
+        const allAccounts = [...page1.data, ...page2.data, ...page3.data];
+
+        // Verify sorted by code
+        for (let i = 1; i < allAccounts.length; i++) {
+          expect(allAccounts[i].code >= allAccounts[i - 1].code).toBe(true);
+        }
+      });
+
+      it('sorts by name when codes are equal', () => {
+        // Create accounts with same code but different names
+        const sameCode: Account[] = [
+          createTestAccount({ id: '1', code: '1000', name: 'Zebra' }),
+          createTestAccount({ id: '2', code: '1000', name: 'Apple' }),
+          createTestAccount({ id: '3', code: '1000', name: 'Beta' }),
+        ];
+
+        const result = fetchNext(null, 10, sameCode);
+
+        // Should be sorted by name when codes are equal
+        expect(result.data[0].name).toBe('Apple');
+        expect(result.data[1].name).toBe('Beta');
+        expect(result.data[2].name).toBe('Zebra');
+      });
     });
   });
 

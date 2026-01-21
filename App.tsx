@@ -64,23 +64,28 @@ export const App = () => {
   const activeEntity = activeEntityId ? store.entities.find((e: any) => e.id === activeEntityId) : null;
 
   if (!store.currentUser.name) {
-    return (
-      <LaunchScreen
-        onLaunch={store.setInitialOwner}
-        onJimProfile={store.loadJimProfile}
-        onSyntheticFuzz={store.loadSyntheticFuzz}
-        onResumePersistent={store.resumePersistent}
-        onCreditUnionLaunch={() => {
-          store.setInitialOwner("System Administrator", "admin@example.com");
-          setAutoLaunchWizard(true);
-        }}
-        onQuickBooksLaunch={() => {
-          store.setInitialOwner("QuickBooks Mobile", "qb-mobile@intuit.local");
-          store.updateSettings({ layoutMode: 'MobileQuickBooks' });
-        }}
-        canResume={store.canResume}
-      />
-    );
+    // Build props - include demo handlers only in DEV mode
+    const launchScreenProps: any = {
+      onLaunch: store.setInitialOwner,
+      onResumePersistent: store.resumePersistent,
+      canResume: store.canResume
+    };
+
+    // Add demo handlers only in development
+    if (import.meta.env.DEV) {
+      launchScreenProps.onJimProfile = store.loadJimProfile;
+      launchScreenProps.onSyntheticFuzz = store.loadSyntheticFuzz;
+      launchScreenProps.onCreditUnionLaunch = () => {
+        store.setInitialOwner("System Administrator", "admin@example.com");
+        setAutoLaunchWizard(true);
+      };
+      launchScreenProps.onQuickBooksLaunch = () => {
+        store.setInitialOwner("QuickBooks Mobile", "qb-mobile@intuit.local");
+        store.updateSettings({ layoutMode: 'MobileQuickBooks' });
+      };
+    }
+
+    return <LaunchScreen {...launchScreenProps} />;
   }
 
   // Quick Action Handlers

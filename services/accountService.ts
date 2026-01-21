@@ -42,6 +42,34 @@ export interface AccountFilters {
   searchTerm?: string; // Search code or name
 }
 
+/**
+ * Cursor for pagination - contains position markers
+ */
+export interface Cursor {
+  id: string;
+  code: string;
+  createdAt: string;
+}
+
+/**
+ * Result of pagination operation
+ */
+export interface PaginationResult<T> {
+  data: T[];
+  nextCursor: string | null;
+  previousCursor: string | null;
+  hasNext: boolean;
+  hasPrevious: boolean;
+  totalCount: number;
+}
+
+/**
+ * Extended filters for pagination
+ */
+export interface PaginationFilters extends AccountFilters {
+  limit?: number;
+}
+
 // ============================================================================
 // ACCOUNT CLASS DETERMINATION
 // ============================================================================
@@ -455,4 +483,228 @@ export function getAccountTotals(
   const netWorth = breakdown[types.AccountType.ASSET] - breakdown[types.AccountType.LIABILITY];
 
   return { debitTotal, creditTotal, netWorth, breakdown };
+}
+
+// ============================================================================
+// CURSOR-BASED PAGINATION
+// ============================================================================
+
+/**
+ * Creates a cursor from an account
+ */
+function createCursor(account: types.Account): string {
+  const cursor: Cursor = {
+    id: account.id,
+    code: account.code,
+    createdAt: account.createdAt || new Date().toISOString()
+  };
+  return Buffer.from(JSON.stringify(cursor)).toString('base64');
+}
+
+/**
+ * Parses a cursor string
+ */
+function parseCursor(cursorString: string | null): Cursor | null {
+  if (!cursorString) return null;
+
+  try {
+    const decoded = Buffer.from(cursorString, 'base64').toString('utf-8');
+    return JSON.parse(decoded) as Cursor;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sorts accounts by code, then name (consistent sort order)
+ */
+function sortAccounts(accounts: types.Account[]): types.Account[] {
+  return [...accounts].sort((a, b) => {
+    const codeCompare = a.code.localeCompare(b.code);
+    if (codeCompare !== 0) return codeCompare;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+/**
+ * Fetches the next page of accounts using cursor-based pagination
+ *
+ * @param cursor - Base64-encoded cursor string, or null for first page
+ * @param limit - Number of items per page
+ * @param accounts - Full list of accounts to paginate
+ * @param filters - Optional filters to apply
+ * @returns PaginationResult with data and navigation cursors
+ */
+export function fetchNext(
+  cursor: string | null,
+  limit: number,
+  accounts: types.Account[],
+  filters?: AccountFilters
+): PaginationResult<types.Account> {
+  // Apply filters
+  let filtered = filters ? getAccounts(filters, accounts) : [...accounts];
+
+  // Sort for consistent pagination
+  filtered = sortAccounts(filtered);
+
+  const totalCount = filtered.length;
+
+  // Handle empty result
+  if (filtered.length === 0) {
+    return {
+      data: [],
+      nextCursor: null,
+      previousCursor: null,
+      hasNext: false,
+      hasPrevious: false,
+      totalCount: 0
+    };
+  }
+
+  // Find starting position from cursor
+  let startIndex = 0;
+  const parsedCursor = parseCursor(cursor);
+
+  if (parsedCursor) {
+    startIndex = filtered.findIndex(
+      a => a.id === parsedCursor.id ||
+           (a.code === parsedCursor.code && a.createdAt === parsedCursor.createdAt)
+    );
+
+    // If cursor not found, start from beginning (graceful degradation)
+    if (startIndex === -1) {
+      startIndex = 0;
+    } else {
+      // Start after the cursor position
+      startIndex += 1;
+    }
+  }
+
+  // Validate limit
+  const safeLimit = Math.max(1, Math.min(limit, 100)); // Max 100 per page
+
+  // Slice data
+  const endIndex = startIndex + safeLimit;
+  const data = filtered.slice(startIndex, endIndex);
+
+  // Create cursors
+  const hasNext = endIndex < filtered.length;
+  const hasPrevious = startIndex > 0;
+
+  let nextCursor: string | null = null;
+  let previousCursor: string | null = null;
+
+  if (hasNext && data.length > 0) {
+    const lastAccount = data[data.length - 1];
+    nextCursor = createCursor(lastAccount);
+  }
+
+  if (hasPrevious && filtered.length > 0) {
+    // For previous cursor, point to the item before start
+    const previousIndex = Math.max(0, startIndex - 1);
+    const previousAccount = filtered[previousIndex];
+    previousCursor = createCursor(previousAccount);
+  }
+
+  return {
+    data,
+    nextCursor,
+    previousCursor,
+    hasNext,
+    hasPrevious,
+    totalCount
+  };
+}
+
+/**
+ * Fetches the previous page of accounts using cursor-based pagination
+ *
+ * The cursor from fetchNext's previousCursor points to an item that should
+ * be included as the LAST item of the previous page.
+ *
+ * @param cursor - Base64-encoded cursor string from previousCursor
+ * @param limit - Number of items per page
+ * @param accounts - Full list of accounts to paginate
+ * @param filters - Optional filters to apply
+ * @returns PaginationResult with data and navigation cursors
+ */
+export function fetchPrevious(
+  cursor: string | null,
+  limit: number,
+  accounts: types.Account[],
+  filters?: AccountFilters
+): PaginationResult<types.Account> {
+  // Apply filters
+  let filtered = filters ? getAccounts(filters, accounts) : [...accounts];
+
+  // Sort for consistent pagination
+  filtered = sortAccounts(filtered);
+
+  const totalCount = filtered.length;
+
+  // Handle empty result
+  if (filtered.length === 0) {
+    return {
+      data: [],
+      nextCursor: null,
+      previousCursor: null,
+      hasNext: false,
+      hasPrevious: false,
+      totalCount: 0
+    };
+  }
+
+  // Find the cursor position - this is the item that should be LAST on this page
+  const parsedCursor = parseCursor(cursor);
+  let endIndex = filtered.length - 1; // Default to last item
+
+  if (parsedCursor) {
+    endIndex = filtered.findIndex(
+      a => a.id === parsedCursor.id ||
+           (a.code === parsedCursor.code && a.createdAt === parsedCursor.createdAt)
+    );
+
+    // If cursor not found, start from end (graceful degradation)
+    if (endIndex === -1) {
+      endIndex = filtered.length - 1;
+    }
+  }
+
+  // Validate limit
+  const safeLimit = Math.max(1, Math.min(limit, 100)); // Max 100 per page
+
+  // Calculate range: endIndex is INCLUSIVE (the cursor item is last on page)
+  const startIndex = Math.max(0, endIndex - safeLimit + 1);
+
+  const data = filtered.slice(startIndex, endIndex + 1);
+
+  // Create cursors
+  const hasNext = endIndex < filtered.length - 1;
+  const hasPrevious = startIndex > 0;
+
+  let nextCursor: string | null = null;
+  let previousCursor: string | null = null;
+
+  if (hasNext && filtered.length > 0) {
+    // Next cursor points to the item after this page (for going forward again)
+    const nextIndex = endIndex + 1;
+    const nextAccount = filtered[nextIndex];
+    nextCursor = createCursor(nextAccount);
+  }
+
+  if (hasPrevious && data.length > 0) {
+    // Previous cursor points to the item before this page
+    const previousIndex = startIndex - 1;
+    const previousAccount = filtered[previousIndex];
+    previousCursor = createCursor(previousAccount);
+  }
+
+  return {
+    data,
+    nextCursor,
+    previousCursor,
+    hasNext,
+    hasPrevious,
+    totalCount
+  };
 }

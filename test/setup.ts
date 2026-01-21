@@ -46,3 +46,6 @@ const localStorageMock = (function () {
 
 Object.defineProperty(global, 'localStorage', { value: localStorageMock, writable: true, configurable: true });
 Object.defineProperty(global, 'sessionStorage', { value: localStorageMock, writable: true, configurable: true });
+
+// Mock scrollIntoView for elements
+Element.prototype.scrollIntoView = vi.fn();

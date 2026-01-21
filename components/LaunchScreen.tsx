@@ -10,11 +10,11 @@ import { useLedgerStore } from '../services/ledgerService';
 
 interface Props {
   onLaunch: (name: string, email: string) => void;
-  onJimProfile: () => void;
-  onSyntheticFuzz: () => void;
+  onJimProfile?: () => void;  // Demo only (DEV mode)
+  onSyntheticFuzz?: () => void;  // Demo only (DEV mode)
   onResumePersistent: () => void;
-  onCreditUnionLaunch: () => void;
-  onQuickBooksLaunch: () => void;
+  onCreditUnionLaunch?: () => void;  // Demo only (DEV mode)
+  onQuickBooksLaunch?: () => void;  // Demo only (DEV mode)
   canResume: boolean;
 }
 
@@ -97,11 +97,11 @@ export const LaunchScreen: React.FC<Props> = ({
   useEffect(() => {
     if (bootProgress >= 100) {
       const timer = setTimeout(() => {
-        if (activeStrategy === 'Jim') onJimProfile();
-        else if (activeStrategy === 'Fuzz') onSyntheticFuzz();
+        if (activeStrategy === 'Jim') onJimProfile?.();
+        else if (activeStrategy === 'Fuzz') onSyntheticFuzz?.();
         else if (activeStrategy === 'Resume') onResumePersistent();
-        else if (activeStrategy === 'CreditUnion') onCreditUnionLaunch();
-        else if (activeStrategy === 'QuickBooks') onQuickBooksLaunch();
+        else if (activeStrategy === 'CreditUnion') onCreditUnionLaunch?.();
+        else if (activeStrategy === 'QuickBooks') onQuickBooksLaunch?.();
         else if (activeStrategy === 'Google') {
           // The store is already updated by signInWithGoogle.
           // App.tsx will re-render and unmount LaunchScreen because store.currentUser.name is set.
@@ -110,7 +110,7 @@ export const LaunchScreen: React.FC<Props> = ({
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [bootProgress, activeStrategy, onJimProfile, onSyntheticFuzz, onResumePersistent, onCreditUnionLaunch, onLaunch, name, email]);
+  }, [bootProgress, activeStrategy, onJimProfile, onSyntheticFuzz, onResumePersistent, onCreditUnionLaunch, onQuickBooksLaunch, onLaunch, name, email]);
 
   const selectStrategy = async (strategy: 'Manual' | 'Jim' | 'Fuzz' | 'Resume' | 'CreditUnion' | 'Google' | 'QuickBooks') => {
     setActiveStrategy(strategy);
@@ -124,6 +124,11 @@ export const LaunchScreen: React.FC<Props> = ({
         setActiveStrategy(null);
       }
     } else {
+      // Demo strategies - only available if handlers are provided
+      if (strategy === 'Jim' && !onJimProfile) return;
+      if (strategy === 'Fuzz' && !onSyntheticFuzz) return;
+      if (strategy === 'CreditUnion' && !onCreditUnionLaunch) return;
+      if (strategy === 'QuickBooks' && !onQuickBooksLaunch) return;
       setPhase('Booting');
     }
   };
@@ -230,27 +235,34 @@ export const LaunchScreen: React.FC<Props> = ({
                 onClick={() => selectStrategy('Manual')}
                 colorClass="text-emerald-400"
               />
-              <StrategyCard
-                icon={User}
-                title="Jim's Profile"
-                desc="Load saved profile for John Doe"
-                onClick={() => selectStrategy('Jim')}
-                colorClass="text-blue-400"
-              />
-              <StrategyCard
-                icon={Sparkles}
-                title="Demo Data"
-                desc="Generate synthetic transactions for testing."
-                onClick={() => selectStrategy('Fuzz')}
-                colorClass="text-amber-400"
-              />
-              <StrategyCard
-                icon={LayoutGrid}
-                title="QuickBooks View"
-                desc="Mobile-optimized accounting layout with QuickBooks flair."
-                onClick={() => selectStrategy('QuickBooks')}
-                colorClass="text-emerald-500"
-              />
+              {/* Demo options - only available in development mode */}
+              {import.meta.env.DEV && onJimProfile && (
+                <StrategyCard
+                  icon={User}
+                  title="Jim's Profile"
+                  desc="Load saved profile for John Doe"
+                  onClick={() => selectStrategy('Jim')}
+                  colorClass="text-blue-400"
+                />
+              )}
+              {import.meta.env.DEV && onSyntheticFuzz && (
+                <StrategyCard
+                  icon={Sparkles}
+                  title="Demo Data"
+                  desc="Generate synthetic transactions for testing."
+                  onClick={() => selectStrategy('Fuzz')}
+                  colorClass="text-amber-400"
+                />
+              )}
+              {import.meta.env.DEV && onQuickBooksLaunch && (
+                <StrategyCard
+                  icon={LayoutGrid}
+                  title="QuickBooks View"
+                  desc="Mobile-optimized accounting layout with QuickBooks flair."
+                  onClick={() => selectStrategy('QuickBooks')}
+                  colorClass="text-emerald-500"
+                />
+              )}
               <div className="relative group h-full">
                 <StrategyCard
                   icon={History}
@@ -314,20 +326,23 @@ export const LaunchScreen: React.FC<Props> = ({
             )}
 
             <div className="mt-8 pt-8 border-t border-slate-800 flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
-              <button
-                onClick={() => selectStrategy('CreditUnion')}
-                className="group relative flex items-center gap-4 bg-gradient-to-r from-slate-900 to-indigo-950 border border-indigo-500/30 px-8 py-4 rounded-xl hover:border-indigo-400 hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4)] transition-all overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="p-2 bg-indigo-50 rounded-lg text-white group-hover:scale-110 transition-transform">
-                  <Landmark size={24} />
-                </div>
-                <div className="text-left">
-                  <div className="text-sm font-bold text-white tracking-wide group-hover:text-indigo-200 transition-colors">NCUA Charter Protocol</div>
-                  <div className="text-[10px] text-indigo-400 font-mono tracking-wider">LAUNCH CREDIT UNION WIZARD</div>
-                </div>
-                <ArrowRight className="text-indigo-500 group-hover:translate-x-1 transition-transform" />
-              </button>
+              {/* NCUA Charter Protocol - Demo only (DEV mode) */}
+              {import.meta.env.DEV && onCreditUnionLaunch && (
+                <button
+                  onClick={() => selectStrategy('CreditUnion')}
+                  className="group relative flex items-center gap-4 bg-gradient-to-r from-slate-900 to-indigo-950 border border-indigo-500/30 px-8 py-4 rounded-xl hover:border-indigo-400 hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4)] transition-all overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="p-2 bg-indigo-50 rounded-lg text-white group-hover:scale-110 transition-transform">
+                    <Landmark size={24} />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-bold text-white tracking-wide group-hover:text-indigo-200 transition-colors">NCUA Charter Protocol</div>
+                    <div className="text-[10px] text-indigo-400 font-mono tracking-wider">LAUNCH CREDIT UNION WIZARD</div>
+                  </div>
+                  <ArrowRight className="text-indigo-500 group-hover:translate-x-1 transition-transform" />
+                </button>
+              )}
             </div>
           </>
         )}

@@ -10,9 +10,9 @@
   - [x] Sub-task: Implement inline row editing with validation
   - [x] Sub-task: Write failing tests for mobile swipe gestures
   - [x] Sub-task: Implement touch handlers for swipe left/right actions [69/71 tests - 2 test design issues noted]
-- [ ] Task: Integrate with existing ledger store
+- [x] Task: Integrate with existing ledger store
   - [x] Sub-task: Add cursor-based pagination to accountService [66/66 tests passing]
-  - [x] Sub-task: Wire AccountTable to useLedgerStore [store integrated, test mocks need refactoring]
+  - [x] Sub-task: Wire AccountTable to useLedgerStore [store integrated, test mocks properly refactored]
 - [ ] Task: Conductor - User Manual Verification 'Phase 1.1 Account Table'
 
 ### 1.2 Navigation State Management
@@ -54,17 +54,17 @@
 ## Phase 3: GCS WAL + Redux Timeseries [P1]
 
 ### 3.1 Write-Ahead Log Extension
-- [ ] Task: Extend gcs-persistence.js for append-only log
-  - [ ] Sub-task: Implement appendAction(uid, component, action)
-  - [ ] Sub-task: Implement replayActions(uid, component, reducer)
-  - [ ] Sub-task: Add compactWal for snapshot + archive
+- [x] Task: Extend gcs-persistence.js for append-only log
+  - [x] Sub-task: Implement appendAction(uid, component, action) [f0c080c]
+  - [x] Sub-task: Implement replayActions(uid, component, reducer) [4c28f02]
+  - [x] Sub-task: Add compactWal for snapshot + archive [4c28f02]
 - [ ] Task: Conductor - User Manual Verification 'Phase 3.1 WAL'
 
 ### 3.2 Redux-Style Reducer
-- [ ] Task: Create walReducer.ts
-  - [ ] Sub-task: Define LedgerAction union type
-  - [ ] Sub-task: Implement ledgerReducer with immutable updates
-  - [ ] Sub-task: Add action serialization/deserialization
+- [x] Task: Create walReducer.ts
+  - [x] Sub-task: Define LedgerAction union type
+  - [x] Sub-task: Implement ledgerReducer with immutable updates
+  - [x] Sub-task: Add action serialization/deserialization
 - [ ] Task: Conductor - User Manual Verification 'Phase 3.2 Reducer'
 
 ---
@@ -72,14 +72,14 @@
 ## Phase 4: Lattice-Based Graph & Blackboard [P1]
 
 ### 4.1 Blackboard Architecture
-- [ ] Task: Create BlackboardArchitecture.ts
-  - [ ] Sub-task: Define BlackboardNode interface
-  - [ ] Sub-task: Implement Blackboard class with pub/sub
-  - [ ] Sub-task: Add dependency resolution for node hydration
-- [ ] Task: Define use-case data channels
-  - [ ] Sub-task: Account channel (depends on Entity)
-  - [ ] Sub-task: Transaction channel (depends on Account)
-  - [ ] Sub-task: Submission channel (depends on Transaction + Bank)
+- [x] Task: Create BlackboardArchitecture.ts
+  - [x] Sub-task: Define BlackboardNode interface [23f80b7]
+  - [x] Sub-task: Implement Blackboard class with pub/sub [23f80b7]
+  - [x] Sub-task: Add dependency resolution for node hydration [23f80b7]
+- [x] Task: Define use-case data channels
+  - [x] Sub-task: Account channel (depends on Entity) [28a21e9]
+  - [x] Sub-task: Transaction channel (depends on Account) [28a21e9]
+  - [x] Sub-task: Submission channel (depends on Transaction + Bank) [28a21e9]
 - [ ] Task: Conductor - User Manual Verification 'Phase 4.1 Blackboard'
 
 ---
@@ -87,12 +87,12 @@
 ## Phase 5: Gmail Identity Integration [P0]
 
 ### 5.1 Identity Binding
-- [ ] Task: Add identity-to-storage binding
-  - [ ] Sub-task: Add getUserIdentity() to GmailOAuthService
-  - [ ] Sub-task: Add getStoragePrefix() for GCS path resolution
-- [ ] Task: Gate persistence routes
-  - [ ] Sub-task: Verify JWT on all /api/ledger/* routes
-  - [ ] Sub-task: Extract UID from token for GCS path
+- [x] Task: Add identity-to-storage binding
+  - [x] Sub-task: Add getUserIdentity() to GmailOAuthService [eac5045]
+  - [x] Sub-task: Add getStoragePrefix() for GCS path resolution [eac5045]
+- [x] Task: Gate persistence routes
+  - [x] Sub-task: Verify JWT on all /api/ledger/* routes [already implemented]
+  - [x] Sub-task: Extract UID from token for GCS path [already implemented]
 - [ ] Task: Conductor - User Manual Verification 'Phase 5.1 Identity'
 
 ---
