@@ -338,6 +338,18 @@ type LedgerContextType = LedgerDb & {
   updatePayable: (p: types.Payable) => void;
   addSettlementConfirmation: (c: types.SettlementConfirmation) => void;
   processSettlementReturn: (settlementId: string, returnCode: string, reason: string) => void;
+
+  // Account Navigation State (Phase 1.2)
+  cursorIndex: number;
+  selectedAccountId: string | null;
+  setCursorIndex: (index: number) => void;
+  setSelectedAccountId: (id: string | null) => void;
+  paginationCursor: string | null;
+  setPaginationCursor: (cursor: string | null) => void;
+  paginationLimit: number;
+  setPaginationLimit: (limit: number) => void;
+  fetchNextAccountsPage: () => void;
+  fetchPreviousAccountsPage: () => void;
 };
 
 const LedgerContext = createContext<LedgerContextType | undefined>(undefined);
@@ -391,6 +403,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
   const [is2FAOpen, setIs2FAOpen] = useState(false);
   const [teachModeEnabled, setTeachModeEnabled] = useState(false);
   const [pendingCallback, setPendingCallback] = useState<(() => void) | null>(null);
+
+  // Account Navigation State (Phase 1.2)
+  const [cursorIndex, setCursorIndex] = useState(0);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [paginationCursor, setPaginationCursor] = useState<string | null>(null);
+  const [paginationLimit] = useState(50); // Default page size
 
   useEffect(() => {
     fetchLedgerData(encryptionKey).then(data => {
@@ -905,6 +923,30 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
       // Logic: If returned, the obligation is still present.
       // We need to find the payable linked to this settlement (if any linking existed, but SettlementInstruction currently doesn't link back effectively without searching).
       // For now, we assume manual intervention is required to re-schedule.
+    },
+
+    // Account Navigation State (Phase 1.2)
+    cursorIndex,
+    selectedAccountId,
+    setCursorIndex,
+    setSelectedAccountId,
+    paginationCursor,
+    setPaginationCursor: (cursor: string | null) => setPaginationCursor(cursor),
+    paginationLimit,
+    setPaginationLimit: (limit: number) => { /* Limit is currently fixed at 50 */ },
+    fetchNextAccountsPage: () => {
+      // Get next page using cursor-based pagination from accountService
+      const result = accountService.fetchNext(paginationCursor, paginationLimit, db.accounts);
+      if (result.nextCursor) {
+        setPaginationCursor(result.nextCursor);
+      }
+    },
+    fetchPreviousAccountsPage: () => {
+      // Get previous page using cursor-based pagination from accountService
+      const result = accountService.fetchPrevious(paginationCursor, paginationLimit, db.accounts);
+      if (result.previousCursor) {
+        setPaginationCursor(result.previousCursor);
+      }
     },
   };
 
