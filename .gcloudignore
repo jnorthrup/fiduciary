@@ -1,11 +1,6 @@
-.gcloudignore
-.git
-.gitignore
-node_modules
-dist
-generated
-server/node_modules
-.DS_Store
-coverage
-.gemini
-infra/gcp/.terraform
+.git/
+node_modules/
+dist/
+test-results/
+test-artifacts/
+server/node_modules/
