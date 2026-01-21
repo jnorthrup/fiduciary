@@ -83,16 +83,26 @@ class GCSPersistence {
     /**
      * Append an action to the WAL for a specific user and component.
      * Actions are stored in JSONL (newline-delimited JSON) format.
-     * 
+     *
+     * Path format: gs://<bucket>/users/<uid>/wal/<component>/<YYYY-MM-DD>/actions.jsonl
+     *
      * @param {string} uid - User OID
      * @param {string} component - Component name (e.g., 'ledger')
      * @param {Object} action - Action object with type, payload, timestamp
+     * @returns {Promise<{ success: boolean; path?: string; error?: string }>}
      */
     async appendAction(uid, component, action) {
-        const fileName = `${uid}/${component}/wal.jsonl`;
+        // Generate date-based directory for daily partitioning
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const fileName = `users/${uid}/wal/${component}/${today}/actions.jsonl`;
         const file = this.bucket.file(fileName);
 
-        const actionLine = JSON.stringify(action) + '\n';
+        // Inject timestamp if not present
+        const actionWithTimestamp = action.timestamp
+            ? action
+            : { ...action, timestamp: new Date().toISOString() };
+
+        const actionLine = JSON.stringify(actionWithTimestamp) + '\n';
 
         try {
             // Check if file exists
@@ -117,9 +127,10 @@ class GCSPersistence {
             }
 
             console.info(`Appended action to ${fileName}`);
+            return { success: true, path: fileName };
         } catch (error) {
             console.error(`Error appending action to ${fileName}:`, error.message);
-            throw error;
+            return { success: false, error: error.message };
         }
     }
 

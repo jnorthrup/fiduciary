@@ -97,28 +97,72 @@ describe('GCSPersistence', () => {
         };
 
         describe('appendAction', () => {
-            it('should create new WAL file if none exists', async () => {
+            it('should create new WAL file with spec-compliant path structure', async () => {
                 mockFile.exists.mockResolvedValueOnce([false]);
 
-                await persistence.appendAction('test-uid', 'ledger', testAction);
+                const result = await persistence.appendAction('test-uid', 'ledger', testAction);
 
-                expect(mockBucket.file).toHaveBeenCalledWith('test-uid/ledger/wal.jsonl');
+                // Verify path format: gs://<bucket>/users/<uid>/wal/<component>/<YYYY-MM-DD>/actions.jsonl
+                const expectedPathPattern = /^users\/test-uid\/wal\/ledger\/\d{4}-\d{2}-\d{2}\/actions\.jsonl$/;
+                expect(mockBucket.file).toHaveBeenCalledWith(expect.stringMatching(expectedPathPattern));
                 expect(mockFile.save).toHaveBeenCalledWith(
-                    JSON.stringify(testAction) + '\n',
+                    expect.stringContaining('"type":"ACCOUNT_CREATE"'),
                     expect.objectContaining({ contentType: 'application/x-ndjson' })
                 );
+                expect(result.success).toBe(true);
+                expect(result.path).toMatch(expectedPathPattern);
             });
 
-            it('should append to existing WAL file', async () => {
+            it('should append to existing WAL file with spec-compliant path', async () => {
                 const existingContent = '{"type":"EXISTING","timestamp":"2026-01-19T10:00:00Z"}\n';
                 mockFile.exists.mockResolvedValueOnce([true]);
                 mockFile.download.mockResolvedValueOnce([Buffer.from(existingContent)]);
 
-                await persistence.appendAction('test-uid', 'ledger', testAction);
+                const result = await persistence.appendAction('test-uid', 'ledger', testAction);
+
+                const expectedPathPattern = /^users\/test-uid\/wal\/ledger\/\d{4}-\d{2}-\d{2}\/actions\.jsonl$/;
+                expect(result.success).toBe(true);
+                expect(result.path).toMatch(expectedPathPattern);
 
                 const [savedContent] = mockFile.save.mock.calls[0];
                 expect(savedContent).toContain(existingContent);
                 expect(savedContent).toContain(JSON.stringify(testAction));
+            });
+
+            it('should inject timestamp into action object if not present', async () => {
+                mockFile.exists.mockResolvedValueOnce([false]);
+                const actionWithoutTimestamp = {
+                    type: 'TEST_ACTION',
+                    payload: { data: 'test' }
+                };
+
+                await persistence.appendAction('test-uid', 'ledger', actionWithoutTimestamp);
+
+                const [savedContent] = mockFile.save.mock.calls[0];
+                const savedAction = JSON.parse(savedContent.trim());
+                expect(savedAction.timestamp).toBeDefined();
+                expect(savedAction.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+            });
+
+            it('should preserve existing timestamp in action object', async () => {
+                mockFile.exists.mockResolvedValueOnce([false]);
+                const existingTimestamp = '2026-01-20T10:00:00Z';
+
+                await persistence.appendAction('test-uid', 'ledger', testAction);
+
+                const [savedContent] = mockFile.save.mock.calls[0];
+                const savedAction = JSON.parse(savedContent.trim());
+                expect(savedAction.timestamp).toBe(existingTimestamp);
+            });
+
+            it('should return error object on failure', async () => {
+                mockFile.exists.mockRejectedValueOnce(new Error('Storage unavailable'));
+
+                const result = await persistence.appendAction('test-uid', 'ledger', testAction);
+
+                expect(result.success).toBe(false);
+                expect(result.error).toBeDefined();
+                expect(result.path).toBeUndefined();
             });
         });
 
