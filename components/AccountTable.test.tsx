@@ -124,7 +124,7 @@ describe('AccountTable', () => {
             expect(rows[0]).toHaveClass('bg-indigo-50');
         });
 
-        it('moves cursor down with ArrowDown', () => {
+        it('navigates to next row using arrow down key', () => {
             render(<AccountTable entityId="entity-1" />);
 
             const container = screen.getByRole('grid');
@@ -135,7 +135,7 @@ describe('AccountTable', () => {
             expect(rows[1]).toHaveClass('bg-indigo-50');
         });
 
-        it('moves cursor up with ArrowUp', () => {
+        it('navigates to previous row using arrow up key', () => {
             render(<AccountTable entityId="entity-1" />);
 
             const container = screen.getByRole('grid');
@@ -161,7 +161,7 @@ describe('AccountTable', () => {
             expect(onSelect).not.toHaveBeenCalled();
         });
 
-        it('enters edit mode with E key', () => {
+        it('opens edit mode when user presses E key', () => {
             render(<AccountTable entityId="entity-1" />);
 
             const container = screen.getByRole('grid');
@@ -185,7 +185,7 @@ describe('AccountTable', () => {
             expect(screen.queryByPlaceholderText('Account Name')).not.toBeInTheDocument();
         });
 
-        it('does not go negative on ArrowUp at top', () => {
+        it('stays on first row when pressing arrow up at top', () => {
             render(<AccountTable entityId="entity-1" />);
 
             const container = screen.getByRole('grid');
@@ -249,7 +249,7 @@ describe('AccountTable', () => {
 
     describe('Inline Editing Validation', () => {
         describe('Required Field Validation', () => {
-            it('should not save when account name is empty', () => {
+            it('rejects empty account names', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -272,7 +272,7 @@ describe('AccountTable', () => {
                 expect(screen.getByPlaceholderText('Account Name')).toBeInTheDocument();
             });
 
-            it('should not save when account name is only whitespace', () => {
+            it('rejects whitespace-only account names', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -295,7 +295,7 @@ describe('AccountTable', () => {
                 expect(screen.getByPlaceholderText('Account Name')).toBeInTheDocument();
             });
 
-            it('should display validation error for empty name', () => {
+            it('displays validation error when account name is empty', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -315,7 +315,7 @@ describe('AccountTable', () => {
                 expect(screen.getByText(/account name is required/i)).toBeInTheDocument();
             });
 
-            it('should display validation error for whitespace-only name', () => {
+            it('displays validation error when account name is whitespace only', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -337,7 +337,7 @@ describe('AccountTable', () => {
         });
 
         describe('Length Validation', () => {
-            it('should not save when name exceeds maximum length (100 characters)', () => {
+            it('rejects account names exceeding 100 characters', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -361,7 +361,7 @@ describe('AccountTable', () => {
                 expect(screen.getByPlaceholderText('Account Name')).toBeInTheDocument();
             });
 
-            it('should display validation error when name exceeds maximum length', () => {
+            it('displays validation error when account name exceeds 100 characters', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -382,7 +382,7 @@ describe('AccountTable', () => {
                 expect(screen.getByText(/account name must be 100 characters or less/i)).toBeInTheDocument();
             });
 
-            it('should not save when description exceeds maximum length (500 characters)', () => {
+            it('rejects descriptions exceeding 500 characters', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -406,7 +406,7 @@ describe('AccountTable', () => {
                 expect(screen.getByPlaceholderText('Description (optional)')).toBeInTheDocument();
             });
 
-            it('should display validation error when description exceeds maximum length', () => {
+            it('displays validation error when description exceeds 500 characters', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -429,7 +429,7 @@ describe('AccountTable', () => {
         });
 
         describe('Format Validation', () => {
-            it('should not save when name contains invalid special characters', () => {
+            it('rejects account names containing invalid special characters', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -452,7 +452,7 @@ describe('AccountTable', () => {
                 expect(screen.getByPlaceholderText('Account Name')).toBeInTheDocument();
             });
 
-            it('should display validation error for invalid characters in name', () => {
+            it('displays validation error for invalid characters in account name', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -472,7 +472,7 @@ describe('AccountTable', () => {
                 expect(screen.getByText(/account name contains invalid characters/i)).toBeInTheDocument();
             });
 
-            it('should allow valid name with letters, numbers, spaces, and basic punctuation', () => {
+            it('accepts valid account names with letters, numbers, spaces, and basic punctuation', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -497,7 +497,7 @@ describe('AccountTable', () => {
         });
 
         describe('Save Behavior with Validation', () => {
-            it('should trim whitespace from name before validation', () => {
+            it('trims leading and trailing whitespace from account name before saving', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -520,7 +520,7 @@ describe('AccountTable', () => {
                 }));
             });
 
-            it('should clear validation errors when canceling edit mode', () => {
+            it('clears validation errors when user cancels edit mode', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -547,7 +547,7 @@ describe('AccountTable', () => {
                 expect(screen.queryByText(/account name is required/i)).not.toBeInTheDocument();
             });
 
-            it('should not call updateAccount when pressing Enter with invalid data', () => {
+            it('prevents saving when user presses Enter with invalid data', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -571,7 +571,7 @@ describe('AccountTable', () => {
         });
 
         describe('Cancel Behavior with Validation', () => {
-            it('should discard changes and close edit mode when canceling with invalid data', () => {
+            it('discards changes and closes edit mode when user cancels with invalid data', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -597,7 +597,7 @@ describe('AccountTable', () => {
                 expect(mockUpdateAccount).not.toHaveBeenCalled();
             });
 
-            it('should discard changes and close edit mode when pressing Escape with invalid data', () => {
+            it('discards changes and closes edit mode when user presses Escape with invalid data', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -636,7 +636,7 @@ describe('AccountTable', () => {
         });
 
         describe('Swipe Gesture Detection - Threshold', () => {
-            it('detects left swipe when delta exceeds negative threshold (30px)', () => {
+            it('detects left swipe gesture when movement exceeds 30px threshold', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -660,7 +660,7 @@ describe('AccountTable', () => {
                 expect(cashRow).toHaveAttribute('aria-selected', 'true');
             });
 
-            it('does not detect left swipe when delta is below threshold (29px)', () => {
+            it('ignores left swipe when movement is below 30px threshold', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -681,7 +681,7 @@ describe('AccountTable', () => {
                 expect(cashRow).not.toHaveAttribute('aria-selected', 'true');
             });
 
-            it('detects right swipe when delta exceeds positive threshold (30px)', () => {
+            it('detects right swipe gesture when movement exceeds 30px threshold', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -703,7 +703,7 @@ describe('AccountTable', () => {
                 expect(screen.getByPlaceholderText('Account Name')).toBeInTheDocument();
             });
 
-            it('does not detect right swipe when delta is below threshold (29px)', () => {
+            it('ignores right swipe when movement is below 30px threshold', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -724,7 +724,7 @@ describe('AccountTable', () => {
                 expect(screen.queryByPlaceholderText('Account Name')).not.toBeInTheDocument();
             });
 
-            it('requires minimum horizontal movement for swipe detection', () => {
+            it('requires minimum horizontal movement to detect swipe gesture', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -748,7 +748,7 @@ describe('AccountTable', () => {
         });
 
         describe('Swipe Gesture Actions', () => {
-            it('triggers edit mode on swipe right', () => {
+            it('opens edit mode when user swipes right on row', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -768,7 +768,7 @@ describe('AccountTable', () => {
                 expect(screen.getByPlaceholderText('Description (optional)')).toBeInTheDocument();
             });
 
-            it('shows action buttons on swipe left', () => {
+            it('displays action buttons when user swipes left on row', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -790,7 +790,7 @@ describe('AccountTable', () => {
                 expect(screen.getByRole('button', { name: /delete account/i })).toBeInTheDocument();
             });
 
-            it('pre-populates edit form with current account data on swipe right', () => {
+            it('pre-populates edit form with current account data when user swipes right', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -809,7 +809,7 @@ describe('AccountTable', () => {
                 expect(nameInput.value).toBe('Cash');
             });
 
-            it('allows editing from action button after swipe left', () => {
+            it('allows editing when user taps edit button after swiping left', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -833,7 +833,7 @@ describe('AccountTable', () => {
                 expect(screen.getByPlaceholderText('Account Name')).toBeInTheDocument();
             });
 
-            it('allows deleting from action button after swipe left', () => {
+            it('deletes account when user taps delete button after swiping left', () => {
                 // Mock window.confirm
                 global.confirm = vi.fn(() => true);
 
@@ -861,7 +861,7 @@ describe('AccountTable', () => {
                 expect(mockDeleteAccount).toHaveBeenCalledWith('acc-1');
             });
 
-            it('cancels delete when confirm is cancelled', () => {
+            it('cancels delete when user dismisses confirmation dialog', () => {
                 // Mock window.confirm to return false
                 global.confirm = vi.fn(() => false);
 
@@ -919,7 +919,7 @@ describe('AccountTable', () => {
                 expect(payableRow).not.toHaveAttribute('aria-selected', 'true');
             });
 
-            it('does not trigger swipe when touch moves to different row during gesture', () => {
+            it('ignores swipe gesture when touch moves to different row', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -949,7 +949,7 @@ describe('AccountTable', () => {
         });
 
         describe('Swipe Visual Feedback', () => {
-            it('applies translate transform during swipe', () => {
+            it('applies visual transform during swipe gesture', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -971,7 +971,7 @@ describe('AccountTable', () => {
                 // This test will need refinement to actually check computed style
             });
 
-            it('clamps swipe offset to maximum of 80px', () => {
+            it('limits swipe offset visual feedback to maximum 80px', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -993,7 +993,7 @@ describe('AccountTable', () => {
         });
 
         describe('Swipe Edge Cases', () => {
-            it('handles touch end without any movement', () => {
+            it('handles touch end without movement gracefully', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -1009,7 +1009,7 @@ describe('AccountTable', () => {
                 expect(screen.queryByPlaceholderText('Account Name')).not.toBeInTheDocument();
             });
 
-            it('handles touch move without touch start', () => {
+            it('handles touch move without prior touch start gracefully', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -1025,7 +1025,7 @@ describe('AccountTable', () => {
                 expect(cashRow).toBeInTheDocument();
             });
 
-            it('resets swipe state after gesture completes', () => {
+            it('resets swipe state after gesture completes to allow subsequent swipes', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -1059,7 +1059,7 @@ describe('AccountTable', () => {
                 expect(screen.getByPlaceholderText('Account Name')).toBeInTheDocument();
             });
 
-            it('ignores vertical swipes (should only respond to horizontal movement)', () => {
+            it('ignores vertical swipe gestures and only responds to horizontal movement', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -1110,7 +1110,7 @@ describe('AccountTable', () => {
                 expect(cashRow).toHaveAttribute('aria-selected', 'true');
             });
 
-            it('ignores slow movement even with sufficient distance', () => {
+            it('requires sufficient velocity for swipe detection when distance is short', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const cashRow = screen.getByText('Cash').closest('[role="row"]')!;
@@ -1134,7 +1134,7 @@ describe('AccountTable', () => {
         });
 
         describe('Configurable Swipe Actions', () => {
-            it('supports configurable left swipe action (not hardcoded to delete)', () => {
+            it('allows configuring left swipe action instead of hardcoded behavior', () => {
                 // Test expects ability to configure what left swipe does
                 // Current implementation hardcodes left=select, right=edit
                 // This test FAILS because configurable actions are not implemented
@@ -1157,7 +1157,7 @@ describe('AccountTable', () => {
                 expect(onSwipeLeft).toHaveBeenCalledWith('acc-1');
             });
 
-            it('supports configurable right swipe action (not hardcoded to edit)', () => {
+            it('allows configuring right swipe action instead of hardcoded edit mode', () => {
                 const onSwipeRight = vi.fn();
                 render(<AccountTable entityId="entity-1" onSwipeRightAction={onSwipeRight} />);
 
@@ -1198,7 +1198,7 @@ describe('AccountTable', () => {
 
     describe('Spec-Compliant Keyboard Navigation', () => {
         describe('Arrow Keys (up/down/left/right) for cell navigation', () => {
-            it('moves cursor left with ArrowLeft between cells in a row', () => {
+            it('navigates to previous cell using arrow left key', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1215,7 +1215,7 @@ describe('AccountTable', () => {
                 expect(cells[0]).toHaveFocus();
             });
 
-            it('moves cursor right with ArrowRight between cells in a row', () => {
+            it('navigates to next cell using arrow right key', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1226,7 +1226,7 @@ describe('AccountTable', () => {
                 expect(cells[1]).toHaveFocus();
             });
 
-            it('wraps to previous row when ArrowLeft from first column', () => {
+            it('wraps to previous row when pressing arrow left from first column', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1241,7 +1241,7 @@ describe('AccountTable', () => {
                 expect(rows[0]).toHaveAttribute('aria-selected', 'true');
             });
 
-            it('wraps to next row when ArrowRight from last column', () => {
+            it('wraps to next row when pressing arrow right from last column', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1255,7 +1255,7 @@ describe('AccountTable', () => {
                 expect(rows[1]).toHaveAttribute('aria-selected', 'true');
             });
 
-            it('does not wrap beyond top row with ArrowLeft', () => {
+            it('stays on first row when pressing arrow left at boundary', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1269,7 +1269,7 @@ describe('AccountTable', () => {
                 expect(rows[0]).toHaveAttribute('aria-selected', 'true');
             });
 
-            it('does not wrap beyond bottom row with ArrowRight', () => {
+            it('stays on last row when pressing arrow right at boundary', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1288,7 +1288,7 @@ describe('AccountTable', () => {
         });
 
         describe('Enter key to activate inline editing', () => {
-            it('enters inline editing mode when Enter is pressed on a cell', () => {
+            it('opens inline editing mode when user presses Enter on cell', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1301,7 +1301,7 @@ describe('AccountTable', () => {
                 expect(screen.getByPlaceholderText('Description (optional)')).toBeInTheDocument();
             });
 
-            it('focuses the first editable field when Enter activates edit mode', () => {
+            it('focuses first editable field when Enter activates edit mode', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1311,7 +1311,7 @@ describe('AccountTable', () => {
                 expect(nameInput).toHaveFocus();
             });
 
-            it('saves changes when Enter is pressed in edit mode', () => {
+            it('saves changes when user presses Enter in edit mode', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1334,7 +1334,7 @@ describe('AccountTable', () => {
         });
 
         describe('Escape key to cancel editing', () => {
-            it('cancels inline editing when Escape is pressed', () => {
+            it('cancels inline editing when user presses Escape', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1350,7 +1350,7 @@ describe('AccountTable', () => {
                 expect(screen.queryByPlaceholderText('Account Name')).not.toBeInTheDocument();
             });
 
-            it('discards unsaved changes when Escape is pressed', () => {
+            it('discards unsaved changes when user presses Escape', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1372,7 +1372,7 @@ describe('AccountTable', () => {
                 expect(screen.getByText('Cash')).toBeInTheDocument();
             });
 
-            it('returns focus to the cell after canceling with Escape', () => {
+            it('returns focus to cell after canceling with Escape', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1389,7 +1389,7 @@ describe('AccountTable', () => {
         });
 
         describe('Tab key for sequential field navigation', () => {
-            it('moves focus to next field when Tab is pressed in edit mode', () => {
+            it('moves focus to next field when user presses Tab in edit mode', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1406,7 +1406,7 @@ describe('AccountTable', () => {
                 expect(descInput).toHaveFocus();
             });
 
-            it('moves focus to previous field when Shift+Tab is pressed in edit mode', () => {
+            it('moves focus to previous field when user presses Shift+Tab in edit mode', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1427,7 +1427,7 @@ describe('AccountTable', () => {
                 expect(nameInput).toHaveFocus();
             });
 
-            it('cycles to Save button when Tab from last field', () => {
+            it('cycles focus to Save button when user presses Tab from last field', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1444,7 +1444,7 @@ describe('AccountTable', () => {
                 expect(saveButton).toHaveFocus();
             });
 
-            it('cycles to first field when Tab from Cancel button', () => {
+            it('cycles focus to first field when user presses Tab from Cancel button', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
@@ -1461,7 +1461,7 @@ describe('AccountTable', () => {
                 expect(nameInput).toHaveFocus();
             });
 
-            it('navigates to next row when Tab pressed outside edit mode', () => {
+            it('navigates to next row when user presses Tab outside edit mode', () => {
                 render(<AccountTable entityId="entity-1" />);
 
                 const container = screen.getByRole('grid');
