@@ -1,11 +1,16 @@
 openapi: 3.1.0
 info:
-  title: LAS Trust ERP API
+  title: LAS Trust ERP API3
   version: 0.1.0
   description: >
     Ledger-first Trust ERP with settlement orchestration via escrow/sponsored rails.
 servers:
   - url: https://api.example.com
+
+x-google-backend:
+  address: https://trust-ledger-fullstack-388611398406.us-central1.run.app
+  path_translation: APPEND_PATH_TO_ADDRESS
+
 security:
   - bearerAuth: []
 
@@ -43,26 +48,38 @@ paths:
       tags: [Trusts]
       summary: List trusts (caller scope)
       operationId: listTrusts
+      description: |
+        Mobile-first paginated list of trusts for the authenticated user.
+        Supports cursor-based infinite scroll and sparse fieldsets.
       parameters:
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
-        - in: query
-          name: offset
-          schema: { type: integer, minimum: 0, default: 0 }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Fields"
+        - $ref: "#/components/parameters/IfNoneMatch"
       responses:
         "200":
           description: OK
+          headers:
+            ETag:
+              description: Entity tag for cache validation
+              schema: { type: string }
+            X-Total-Count:
+              description: Total items (optional, may be omitted for performance)
+              schema: { type: integer }
           content:
             application/json:
               schema:
                 type: object
+                required: [items, pagination]
                 properties:
                   items:
                     type: array
                     items: { $ref: "#/components/schemas/Trust" }
-                  limit: { type: integer }
-                  offset: { type: integer }
+                  pagination:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "304":
+          description: Not Modified (cache hit via If-None-Match)
 
   /trusts/{trustId}:
     get:
@@ -117,19 +134,33 @@ paths:
       tags: [Trustees]
       summary: List trustees for a trust
       operationId: listTrustees
+      description: Mobile-first paginated list of trustees/signatories.
       parameters:
         - $ref: "#/components/parameters/TrustId"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Fields"
+        - $ref: "#/components/parameters/IfNoneMatch"
       responses:
         "200":
           description: OK
+          headers:
+            ETag:
+              schema: { type: string }
           content:
             application/json:
               schema:
                 type: object
+                required: [items, pagination]
                 properties:
                   items:
                     type: array
                     items: { $ref: "#/components/schemas/Trustee" }
+                  pagination:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "304":
+          description: Not Modified
 
   /trustees/{trusteeId}:
     patch:
@@ -155,19 +186,33 @@ paths:
       tags: [Ledger]
       summary: List chart of accounts for a trust
       operationId: listAccounts
+      description: Mobile-first paginated chart of accounts with cursor support.
       parameters:
         - $ref: "#/components/parameters/TrustIdQuery"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Fields"
+        - $ref: "#/components/parameters/IfNoneMatch"
       responses:
         "200":
           description: OK
+          headers:
+            ETag:
+              schema: { type: string }
           content:
             application/json:
               schema:
                 type: object
+                required: [items, pagination]
                 properties:
                   items:
                     type: array
                     items: { $ref: "#/components/schemas/Account" }
+                  pagination:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "304":
+          description: Not Modified
     post:
       tags: [Ledger]
       summary: Create an account
@@ -279,22 +324,36 @@ paths:
       tags: [Assets]
       summary: List assets
       operationId: listAssets
+      description: Mobile-first paginated list of trust assets with category filter.
       parameters:
         - $ref: "#/components/parameters/TrustIdQuery"
         - in: query
           name: category
           schema: { $ref: "#/components/schemas/AssetCategory" }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Fields"
+        - $ref: "#/components/parameters/IfNoneMatch"
       responses:
         "200":
           description: OK
+          headers:
+            ETag:
+              schema: { type: string }
           content:
             application/json:
               schema:
                 type: object
+                required: [items, pagination]
                 properties:
                   items:
                     type: array
                     items: { $ref: "#/components/schemas/Asset" }
+                  pagination:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "304":
+          description: Not Modified
 
   /assets/{assetId}:
     get:
@@ -635,33 +694,54 @@ paths:
       tags: [Audit]
       summary: List audit events
       operationId: listAuditEvents
+      description: |
+        Mobile-first paginated audit trail with filtering.
+        Supports high-volume event streams with cursor pagination.
       parameters:
         - in: query
           name: trustId
           schema: { type: string, format: uuid }
         - in: query
           name: entityType
+          description: Filter by entity type (e.g., trust, asset, payment)
           schema: { type: string }
         - in: query
           name: entityId
+          description: Filter by specific entity ID
           schema: { type: string }
         - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+          name: action
+          description: Filter by action type (e.g., create, update, approve)
+          schema: { type: string }
         - in: query
-          name: offset
-          schema: { type: integer, minimum: 0, default: 0 }
+          name: since
+          description: Filter events after this timestamp (ISO8601)
+          schema: { type: string, format: date-time }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/IfNoneMatch"
       responses:
         "200":
           description: OK
+          headers:
+            ETag:
+              schema: { type: string }
+            X-Total-Count:
+              schema: { type: integer }
           content:
             application/json:
               schema:
                 type: object
+                required: [items, pagination]
                 properties:
                   items:
                     type: array
                     items: { $ref: "#/components/schemas/AuditEvent" }
+                  pagination:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "304":
+          description: Not Modified
 
 components:
   securitySchemes:
@@ -671,6 +751,38 @@ components:
       bearerFormat: JWT
 
   parameters:
+    # ==========================================================================
+    # Mobile-First Pagination Parameters
+    # ==========================================================================
+    Cursor:
+      in: query
+      name: cursor
+      description: Opaque cursor for infinite scroll pagination (base64 encoded)
+      schema: { type: string }
+    Limit:
+      in: query
+      name: limit
+      description: Maximum items to return (mobile default 20, max 100)
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Sort:
+      in: query
+      name: sort
+      description: "Sort order: field:asc or field:desc (e.g., createdAt:desc)"
+      schema: { type: string, default: "createdAt:desc" }
+    Fields:
+      in: query
+      name: fields
+      description: Comma-separated field names for sparse fieldsets (mobile optimization)
+      schema: { type: string, example: "id,name,amount,status" }
+    IfNoneMatch:
+      in: header
+      name: If-None-Match
+      description: ETag from previous response for cache validation
+      schema: { type: string }
+
+    # ==========================================================================
+    # Entity ID Parameters
+    # ==========================================================================
     TrustId:
       in: path
       name: trustId
@@ -718,6 +830,35 @@ components:
       schema: { type: string, format: uuid }
 
   schemas:
+    # ==========================================================================
+    # Mobile-First Pagination Response
+    # ==========================================================================
+    PaginationMeta:
+      type: object
+      description: Cursor-based pagination metadata for mobile infinite scroll
+      required: [hasMore]
+      properties:
+        cursor:
+          type: string
+          nullable: true
+          description: Cursor for next page (null if no more data)
+        hasMore:
+          type: boolean
+          description: Whether more items exist beyond this page
+        total:
+          type: integer
+          nullable: true
+          description: Total count (optional, expensive for large datasets)
+        limit:
+          type: integer
+          description: Items per page
+        sort:
+          type: string
+          description: Applied sort order
+
+    # ==========================================================================
+    # Entity Schemas
+    # ==========================================================================
     TrustCreate:
       type: object
       required: [legalNameFull, dateOfTrust, ein, situsState]

@@ -236,15 +236,6 @@ export const LaunchScreen: React.FC<Props> = ({
                 colorClass="text-emerald-400"
               />
               {/* Demo options - only available in development mode */}
-              {import.meta.env.DEV && onJimProfile && (
-                <StrategyCard
-                  icon={User}
-                  title="Jim's Profile"
-                  desc="Load saved profile for James R. Northrup Jr."
-                  onClick={() => selectStrategy('Jim')}
-                  colorClass="text-blue-400"
-                />
-              )}
               {import.meta.env.DEV && onSyntheticFuzz && (
                 <StrategyCard
                   icon={Sparkles}

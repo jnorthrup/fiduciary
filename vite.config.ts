@@ -27,19 +27,57 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       }
     },
-    // Build optimizations
+    // Build optimizations - aggressive tree-shaking
     build: {
       minify: 'terser',
       sourcemap: dev,
+      terserOptions: {
+        compress: {
+          drop_console: !dev,
+          drop_debugger: !dev,
+          pure_funcs: dev ? [] : ['console.log', 'console.debug'],
+        },
+      },
       rollupOptions: {
         output: {
-          manualChunks: {
-            // Separate vendor chunks for better caching
-            'react-vendor': ['react', 'react-dom'],
-            'ui-vendor': ['lucide-react'],
+          manualChunks: (id) => {
+            // React ecosystem
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('react-router') || id.includes('react-hook-form')) {
+              return 'react-vendor';
+            }
+            // UI libraries
+            if (id.includes('lucide-react') || id.includes('clsx') || id.includes('tailwind-merge') || id.includes('class-variance-authority')) {
+              return 'ui-vendor';
+            }
+            // Heavy data processing (lazy load)
+            if (id.includes('d3') || id.includes('d3-')) {
+              return 'charts-vendor';
+            }
+            if (id.includes('xlsx')) {
+              return 'xlsx-vendor';
+            }
+            if (id.includes('mammoth')) {
+              return 'docs-vendor';
+            }
+            if (id.includes('mermaid')) {
+              return 'diagrams-vendor';
+            }
+            // Firebase (lazy load)
+            if (id.includes('firebase') || id.includes('@firebase')) {
+              return 'firebase-vendor';
+            }
+            // AI/GenAI
+            if (id.includes('@google/generat') || id.includes('genai')) {
+              return 'ai-vendor';
+            }
+            // Utilities
+            if (id.includes('date-fns') || id.includes('uuid') || id.includes('zod')) {
+              return 'utils-vendor';
+            }
           }
         }
-      }
+      },
+      chunkSizeWarningLimit: 600,
     }
   };
 });

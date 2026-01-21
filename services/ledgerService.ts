@@ -216,7 +216,7 @@ type LedgerContextType = LedgerDb & {
   verify2FA: (code: string) => boolean;
   cancel2FA: () => void;
   setInitialOwner: (name: string, email: string) => void;
-  loadJimProfile?: () => void;  // Demo only (DEV mode)
+
   loadSyntheticFuzz?: () => void;  // Demo only (DEV mode)
   resumePersistent: () => void;
   wipeSession: () => void;
@@ -378,7 +378,9 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
   };
 
   // System/UI State - Init with Dev User to bypass LaunchScreen immediately
-  const [currentUser, setCurrentUser] = useState<types.User>(DEFAULT_DEV_USER);
+  const [currentUser, setCurrentUser] = useState<types.User>(
+    import.meta.env.DEV ? DEFAULT_DEV_USER : ({} as types.User)
+  );
   const [secrets, setSecrets] = useState<types.ApiSecrets>({ irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' });
   const [settings, setSettings] = useState<types.SystemSettings>({
     fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' },
@@ -682,10 +684,10 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
     if (!auth) {
       const u: types.User = {
         id: 'mock-123',
-        name: 'James Northrup (Mock)',
-        email: 'james@sovereign-node.local',
+        name: 'Mock User',
+        email: 'mock@local.dev',
         role: 'Owner' as types.UserRole,
-        avatarInitials: "JN",
+        avatarInitials: "MU",
         lastActive: 'Now',
         _version: '1'
       };
@@ -737,20 +739,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
     wipeSession: () => { localStorage.removeItem(STORAGE_KEY); resetData(); setCanResume(false); },
     // Demo functions - only available in development mode
     ...(import.meta.env.DEV ? {
-      loadJimProfile: async () => {
-        const mockData = await import('./mockData');
-        setDb({
-          ...EMPTY_DB,
-          entities: mockData.JIM_ENTITIES,
-          accounts: mockData.JIM_ACCOUNTS,
-          journals: mockData.JIM_JOURNALS,
-          modules: mockData.JIM_MODULES,
-          filings: mockData.JIM_FILINGS,
-          transmissions: mockData.JIM_TRANSMISSIONS
-        });
-        const u = { id: uuidv4(), name: "James R. Northrup Jr.", email: "james@sovereign-node.local", role: 'Owner' as types.UserRole, avatarInitials: "JN", lastActive: 'Now', _version: '1' };
-        setCurrentUser(u); addItem('users', u);
-      },
+
       loadSyntheticFuzz: async () => {
         const mockData = await import('./mockData');
         setDb({ ...EMPTY_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS });

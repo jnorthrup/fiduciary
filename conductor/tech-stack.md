@@ -1,4 +1,6 @@
-# Technology Stack
+# Technology Stack (Serverless Cloud Run)
+
+**Updated: 2026-01-21** - Repurposed for 100% serverless architecture
 
 ## Frontend
 
@@ -7,54 +9,84 @@
 | Framework | React | 19.2.3 | UI framework |
 | Language | TypeScript | 5.8.2 | Type-safe development |
 | Build Tool | Vite | 6.2.0 | Fast dev server & bundler |
-| State Management | Yjs + Redux | - | CRDT-based shared state, UI state |
+| State Management | Redux | - | Client-side state |
 | Styling | Tailwind CSS | CDN | Utility-first CSS |
 | Icons | Lucide React | 0.561.0 | Icon library |
 | Data Viz | D3.js | 7.8.5 | Charts, graphs |
 | Diagrams | Mermaid | 10.6.1 | Flowcharts, diagrams |
 | Documents | Mammoth | 1.6.0 | Word (.docx) parsing |
 | Spreadsheets | XLSX | 0.18.5 | Excel processing |
-| Auth | Firebase Auth / OIDC | 12.7.0 | Authentication |
-| Database | Firebase Firestore | 12.7.0 | Cloud database |
+| Auth | Firebase Auth SDK | 12.7.0 | Google OAuth login |
 | AI | Google GenAI | 1.34.0 | Gemini API integration |
-| Encryption | Web Crypto API | - | Client-side IndexedDB encryption |
 
 ## Backend
 
-| Component | Technology | Version | Purpose |
-|-----------|-----------|---------|---------|
-| Runtime | Node.js | - | Server runtime |
-| Framework | Express | 4.18.2 | API server |
-| Persistence | RocksDB | - | High-performance KV/Graph storage |
-| API Layer | IRS IRIS A2A | 1.3.0 | Tax filing API proxy |
-| AI | Google GenAI | 1.34.0 | Intelligent validation |
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| Runtime | Node.js 20 | Server runtime |
+| Framework | Express 4.18 | API server |
+| Hosting | **Cloud Run** | Serverless container (scale to zero) |
+| Auth | Firebase Admin SDK | Token verification |
+| Persistence | **GCS JSON** | Per-user state storage |
+| WAL | **GCS Append** | Write-ahead log |
+| API Gateway | **Cloud Endpoints** | OpenAPI routing |
+
+## Storage Architecture (Per-User ACL)
+
+| Tier | Storage | Path Pattern |
+|------|---------|--------------|
+| State | GCS JSON | `users/{uid}/state.json` |
+| WAL | GCS Append | `users/{uid}/wal/{timestamp}.json` |
+| Documents | GCS Objects | `users/{uid}/docs/{docId}` |
 
 ## APIs & Integrations
 
-| Service | Purpose |
-|---------|---------|
-| IRS IRIS A2A | 1099, W-2 information return filing |
-| IRS MeF | Modernized e-File |
-| BSO | Business Services Online (W-2) |
-| SEC EDGAR | Corporate filings research |
-| MSRB EMMA | Municipal securities data |
-| National GIS Parcel | Property/parcel lookup |
-| FedLine Gateway | Federal Reserve wire transfers |
+| Service | Purpose | Status |
+|---------|---------|--------|
+| IRS IRIS A2A | 1099, W-2 information return filing | Active |
+| NACHA | ACH file generation | Active |
+| Plaid | Bank account validation | Mock (prod credentials pending) |
+| Gemini | AI document analysis | Active |
+| ~~IRS MeF~~ | ~~Modernized e-File~~ | Retired |
+| ~~BSO~~ | ~~Business Services Online~~ | Retired |
+| ~~SEC EDGAR~~ | ~~Corporate filings research~~ | Retired |
+| ~~MSRB EMMA~~ | ~~Municipal securities data~~ | Retired |
+| ~~FedLine~~ | ~~Federal Reserve wire~~ | Retired |
 
-## Development Tools
+## Deployment (Single Target)
 
-| Tool | Purpose |
-|------|---------|
-| Git | Version control |
-| npm | Package management |
-| TypeScript Compiler | Type checking |
-| ESLint (planned) | Linting |
-| Vitest (planned) | Testing |
+| Environment | Type | URL |
+|-------------|------|-----|
+| Local Dev | Vite | http://localhost:3000 |
+| Local API | Express | http://localhost:3001 |
+| **Production** | **Cloud Run** | https://trust-ledger-fullstack-388611398406.us-central1.run.app |
 
-## Deployment
+## Retired Technologies
 
-| Environment | URL |
-|-------------|-----|
-| Local Frontend | http://localhost:3000 |
-| Local API | http://localhost:3001 |
-| Production (planned) | TBD |
+| Technology | Reason |
+|------------|--------|
+| Kubernetes/GKE | Complexity - Cloud Run is simpler |
+| Docker (manual) | Cloud Run uses buildpacks |
+| Helm | No K8s |
+| FoundationDB | GCS JSON is sufficient |
+| RocksDB | GCS JSON is sufficient |
+| Yjs/CRDTs | Single-user, no real-time collab needed |
+| Firebase Hosting | Cloud Run serves static + API |
+| GCS Static Hosting | Cloud Run serves static + API |
+
+## Environment Variables (Production)
+
+See `.env.production` for full configuration with sections:
+- `GOOGLE_AUTH`: Firebase/Gmail OAuth
+- `GCP_CORE`: Project settings
+- `GCS_STORAGE`: Bucket configuration
+- `GEMINI_AI`: AI features
+- `IRS_IRIS`: Tax filing credentials
+- `KEYSTORE`: JWT signing
+- `NETWORK`: URL and CORS
+
+## Deploy Command
+
+```bash
+./deploy-production.sh
+```

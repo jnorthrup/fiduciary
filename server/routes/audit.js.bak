@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { listAuditEvents } from '../services/auditService.js';
+import { listAuditEvents } from '../../services/auditService.ts';
 import { authenticateToken } from './iris-oauth.js';
 
 const router = express.Router();

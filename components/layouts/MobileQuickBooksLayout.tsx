@@ -287,7 +287,7 @@ export const MobileQuickBooksLayout: React.FC<MobileQuickBooksLayoutProps> = ({
 
             <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">System v4.2.0</span>
-              <button className="text-xs font-bold text-red-600 hover:text-red-700">Sign Out</button>
+              <button onClick={() => { store.wipeSession(); window.location.reload(); }} className="text-xs font-bold text-red-600 hover:text-red-700">Sign Out</button>
             </div>
           </aside>
         </div>

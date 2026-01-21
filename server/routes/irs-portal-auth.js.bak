@@ -8,7 +8,7 @@
 
 import express from 'express';
 import { randomUUID } from 'crypto';
-import { IRSPortalClient } from '../services/iris-portal-client.js';
+import { IRSPortalClient } from '../../services/iris-portal-client.js';
 
 const router = express.Router();
 

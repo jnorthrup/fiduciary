@@ -79,30 +79,31 @@ The Trust Ledger System provides a unified platform that:
 ### Frontend
 - **Framework**: React 19.2.3 with TypeScript
 - **Build**: Vite 6.2.0
-- **State**: Custom context-based ledger store
+- **State**: Redux (client-side)
 - **UI**: Tailwind CSS with custom components
 - **Icons**: Lucide React
 - **Visualization**: D3.js, Mermaid diagrams
+- **Auth**: Firebase Auth SDK (Google OAuth)
 
-### Backend
-- **API**: Node.js/Express server (migrating to Domain-Driven Modular Architecture)
-- **IRS Integration**: IRIS A2A API proxy with OpenAPI 3.1 spec
-- **Settlement**: Agnostic Rail Adapter pattern (ODFI/ACH, Wire, Check, Stripe)
-- **Core Modules**:
-  - **Ledger**: Double-entry system of record
-  - **Rail**: Bank feed and reconciliation
-  - **Vault**: Asset tracking
-  - **Notes**: Instrument issuance and amortization
-  - **Claims**: Identity and claims registry
-  - **Compliance**: Rule engine and audit packs
-  - **Charts**: Cross-module analytics
-- **AI**: Google GenAI (Gemini 2.5 Flash/Pro)
-- **Database**: Firebase Firestore (planned for persistence)
+### Backend (Serverless)
+- **Runtime**: Node.js 20 / Express
+- **Hosting**: Cloud Run (scale to zero)
+- **Auth**: Firebase Admin SDK (token verification)
+- **Persistence**: GCS JSON (`users/{uid}/state.json`)
+- **WAL**: GCS Append-only (`users/{uid}/wal/`)
+- **API Gateway**: Cloud Endpoints (OpenAPI routing)
+- **AI**: Google GenAI (Gemini 2.5 Flash)
 
-### Deployment
-- **Development**: Vite dev server (localhost:3000)
-- **API Server**: Express (localhost:3001)
-- **Hosting**: AI Studio compatible
+### Core Modules
+- **Ledger**: Double-entry system of record
+- **NACHA**: ACH file generation (94-char format)
+- **Settlement**: Payment order state machine
+
+### Deployment (Single Target)
+- **Development**: Vite (localhost:3000) + Express (localhost:3001)
+- **Production**: Cloud Run
+- **URL**: https://trust-ledger-fullstack-388611398406.us-central1.run.app
+- **Deploy**: `./deploy-production.sh`
 
 ## Product Goals
 

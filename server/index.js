@@ -11,27 +11,44 @@ import auditRouter from './routes/audit.js';
 import bankingRouter from './routes/banking.js';
 import bsoRouter from './routes/bso.js';
 import ledgerRouter from './routes/ledger.js';
+import settlementRouter from './routes/settlement.js';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { connect as connectBus, subscribe } from './lib/event-bus.js';
 import admin from 'firebase-admin';
 import persistence from './lib/gcs-persistence.js';
+import config from './config/env-config.js';
 
-// Initialize Firebase Admin
-// In production, use GOOGLE_APPLICATION_CREDENTIALS env var
-if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-  try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    logger.info("Firebase Admin initialized");
-  } catch (e) {
-    logger.error("Failed to initialize Firebase Admin:", e.message);
+// =============================================================================
+// Firebase Admin Initialization (using config module)
+// =============================================================================
+const initFirebase = () => {
+  const { GOOGLE_AUTH } = config;
+
+  if (GOOGLE_AUTH.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      const serviceAccount = typeof GOOGLE_AUTH.FIREBASE_SERVICE_ACCOUNT === 'string'
+        ? JSON.parse(GOOGLE_AUTH.FIREBASE_SERVICE_ACCOUNT)
+        : GOOGLE_AUTH.FIREBASE_SERVICE_ACCOUNT;
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      console.info("[GOOGLE_AUTH] Firebase Admin initialized with service account");
+    } catch (e) {
+      console.error("[GOOGLE_AUTH] Failed to parse FIREBASE_SERVICE_ACCOUNT:", e.message);
+      // Fall through to ADC
+      admin.initializeApp();
+      console.info("[GOOGLE_AUTH] Firebase Admin initialized with Application Default Credentials");
+    }
+  } else {
+    // Fallback to Application Default Credentials (ADC)
+    // In Cloud Run, this uses the service account attached to the revision
+    admin.initializeApp();
+    console.info("[GOOGLE_AUTH] Firebase Admin initialized with Application Default Credentials");
   }
-} else {
-  // Fallback for local development if UID is provided
-  admin.initializeApp();
-}
+};
+
+// Initialize Firebase
+initFirebase();
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -147,6 +164,9 @@ app.use('/api/banking', verifyFirebaseToken, bankingRouter);
 
 // Mount BSO router at /api/bso
 app.use('/api/bso', verifyFirebaseToken, bsoRouter);
+
+// Mount Settlement router (Payment Orders)
+app.use('/api/settlement', verifyFirebaseToken, settlementRouter);
 
 // Mount Ledger router
 if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'ledger-service') {
