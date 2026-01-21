@@ -1,5 +1,6 @@
 import { Storage } from '@google-cloud/storage';
 import path from 'path';
+import crypto from 'crypto';
 
 class GCSPersistence {
     constructor() {
@@ -285,6 +286,143 @@ class GCSPersistence {
         } catch (error) {
             console.error(`Error getting WAL stats for ${uid}/${component}:`, error.message);
             return { entryCount: 0, sizeBytes: 0, hasSnapshot: false };
+        }
+    }
+
+    /**
+     * Save NACHA submission with traceability metadata
+     *
+     * @param {string} uid - User OID
+     * @param {Object} submission - NACHA submission data
+     * @param {string} submission.fileContent - NACHA file content (Base64 encoded)
+     * @param {string} submission.filename - Original filename
+     * @param {number} submission.batchCount - Number of batches
+     * @param {number} submission.entryCount - Number of entries
+     * @param {number} submission.totalDebit - Total debit amount in cents
+     * @param {number} submission.totalCredit - Total credit amount in cents
+     * @param {string} submission.hash - Entry hash
+     * @returns {Promise<{submissionId: string, checksum: string, timestamp: string}>}
+     */
+    async saveNachaSubmission(uid, submission) {
+        const timestamp = new Date().toISOString();
+        const submissionId = `nacha-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
+
+        // Calculate SHA-256 checksum of file content
+        const checksum = crypto.createHash('sha256')
+            .update(submission.fileContent, 'base64')
+            .digest('hex');
+
+        // Metadata for traceability
+        const metadata = {
+            submissionId,
+            uid,
+            filename: submission.filename,
+            timestamp,
+            checksum,
+            batchCount: submission.batchCount,
+            entryCount: submission.entryCount,
+            totalDebit: submission.totalDebit,
+            totalCredit: submission.totalCredit,
+            hash: submission.hash,
+        };
+
+        // Store submission file with metadata
+        const fileName = `${uid}/nacha/submissions/${submissionId}.ach`;
+        const file = this.bucket.file(fileName);
+
+        // Decode Base64 and save
+        const fileBuffer = Buffer.from(submission.fileContent, 'base64');
+
+        await file.save(fileBuffer, {
+            contentType: 'text/plain',
+            metadata: {
+                ...metadata,
+                contentType: 'application/nacha',
+            },
+            resumable: false,
+        });
+
+        console.info(`Saved NACHA submission ${submissionId} to GCS`);
+
+        return {
+            submissionId,
+            checksum,
+            timestamp,
+        };
+    }
+
+    /**
+     * List NACHA submissions for a user
+     *
+     * @param {string} uid - User OID
+     * @returns {Promise<Array<{submissionId: string, filename: string, timestamp: string, checksum: string}>>}
+     */
+    async listNachaSubmissions(uid) {
+        const prefix = `${uid}/nacha/submissions/`;
+
+        try {
+            const [files] = await this.bucket.getFiles({ prefix });
+
+            const submissions = await Promise.all(
+                files.map(async (file) => {
+                    const [metadata] = await file.getMetadata();
+                    return {
+                        submissionId: metadata.name.split('/').pop().replace('.ach', ''),
+                        filename: metadata.metadata?.filename || 'unknown.ach',
+                        timestamp: metadata.metadata?.timestamp || file.timeCreated,
+                        checksum: metadata.metadata?.checksum || '',
+                        batchCount: metadata.metadata?.batchCount || 0,
+                        entryCount: metadata.metadata?.entryCount || 0,
+                        totalDebit: metadata.metadata?.totalDebit || 0,
+                        totalCredit: metadata.metadata?.totalCredit || 0,
+                    };
+                })
+            );
+
+            // Sort by timestamp descending
+            return submissions.sort((a, b) =>
+                new Date(b.timestamp) - new Date(a.timestamp)
+            );
+        } catch (error) {
+            console.error(`Error listing NACHA submissions for ${uid}:`, error.message);
+            return [];
+        }
+    }
+
+    /**
+     * Get a specific NACHA submission file
+     *
+     * @param {string} uid - User OID
+     * @param {string} submissionId - Submission ID
+     * @returns {Promise<{content: string, metadata: Object}|null>}
+     */
+    async getNachaSubmission(uid, submissionId) {
+        const fileName = `${uid}/nacha/submissions/${submissionId}.ach`;
+        const file = this.bucket.file(fileName);
+
+        try {
+            const [exists] = await file.exists();
+            if (!exists) return null;
+
+            const [content] = await file.download();
+            const [metadata] = await file.getMetadata();
+
+            return {
+                content: content.toString('base64'),
+                metadata: {
+                    submissionId,
+                    filename: metadata.metadata?.filename,
+                    timestamp: metadata.metadata?.timestamp,
+                    checksum: metadata.metadata?.checksum,
+                    batchCount: metadata.metadata?.batchCount,
+                    entryCount: metadata.metadata?.entryCount,
+                    totalDebit: metadata.metadata?.totalDebit,
+                    totalCredit: metadata.metadata?.totalCredit,
+                },
+            };
+        } catch (error) {
+            console.error(`Error getting NACHA submission ${submissionId}:`, error.message);
+            return null;
         }
     }
 }

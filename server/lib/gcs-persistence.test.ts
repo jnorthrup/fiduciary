@@ -275,5 +275,171 @@ describe('GCSPersistence', () => {
             });
         });
     });
+
+    // =========================================================================
+    // NACHA Submission Tests
+    // =========================================================================
+
+    describe('NACHA Submissions', () => {
+        describe('saveNachaSubmission', () => {
+            it('should save NACHA submission with traceability metadata', async () => {
+                const submission = {
+                    fileContent: Buffer.from('101 021000021...').toString('base64'),
+                    filename: 'ACH_TEST_20260120.ach',
+                    batchCount: 1,
+                    entryCount: 5,
+                    totalDebit: 500000,
+                    totalCredit: 500000,
+                    hash: '12345678',
+                };
+
+                const result = await persistence.saveNachaSubmission('test-uid', submission);
+
+                expect(result.submissionId).toMatch(/^nacha-\d+-[a-f0-9]{16}$/);
+                expect(result.checksum).toMatch(/^[a-f0-9]{64}$/);
+                expect(result.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+
+                expect(mockBucket.file).toHaveBeenCalledWith(
+                    expect.stringMatching(/^test-uid\/nacha\/submissions\/nacha-/)
+                );
+                expect(mockFile.save).toHaveBeenCalledWith(
+                    expect.any(Buffer),
+                    expect.objectContaining({
+                        contentType: 'text/plain',
+                        metadata: expect.objectContaining({
+                            submissionId: expect.any(String),
+                            uid: 'test-uid',
+                            filename: 'ACH_TEST_20260120.ach',
+                            batchCount: 1,
+                            entryCount: 5,
+                            totalDebit: 500000,
+                            totalCredit: 500000,
+                            hash: '12345678',
+                        }),
+                    })
+                );
+            });
+
+            it('should calculate SHA-256 checksum of file content', async () => {
+                const content = '101 021000021 021000021 260120A094101FEDERAL RESERVE';
+                const submission = {
+                    fileContent: Buffer.from(content).toString('base64'),
+                    filename: 'test.ach',
+                    batchCount: 1,
+                    entryCount: 1,
+                    totalDebit: 100,
+                    totalCredit: 100,
+                    hash: '87654321',
+                };
+
+                const result = await persistence.saveNachaSubmission('test-uid', submission);
+
+                // Verify checksum is SHA-256 format (64 hex chars)
+                expect(result.checksum).toMatch(/^[a-f0-9]{64}$/);
+                // Verify checksum is deterministic
+                const result2 = await persistence.saveNachaSubmission('test-uid', submission);
+                expect(result.checksum).toBe(result2.checksum);
+            });
+        });
+
+        describe('listNachaSubmissions', () => {
+            it('should list NACHA submissions for a user', async () => {
+                const mockFile1 = {
+                    getMetadata: vi.fn().mockResolvedValue([
+                        {
+                            name: 'test-uid/nacha/submissions/nacha-1-abc.ach',
+                            metadata: {
+                                filename: 'ACH_TEST.ach',
+                                timestamp: '2026-01-20T10:00:00Z',
+                                checksum: 'abc123',
+                                batchCount: 2,
+                                entryCount: 10,
+                                totalDebit: 100000,
+                                totalCredit: 100000,
+                            },
+                        },
+                    ]),
+                };
+                const mockFile2 = {
+                    getMetadata: vi.fn().mockResolvedValue([
+                        {
+                            name: 'test-uid/nacha/submissions/nacha-2-def.ach',
+                            metadata: {
+                                filename: 'ACH_PAYROLL.ach',
+                                timestamp: '2026-01-19T10:00:00Z',
+                                checksum: 'def456',
+                                batchCount: 1,
+                                entryCount: 5,
+                                totalDebit: 50000,
+                                totalCredit: 50000,
+                            },
+                        },
+                    ]),
+                };
+
+                const mockFiles = [
+                    { ...mockFile1, name: 'test-uid/nacha/submissions/nacha-1-abc.ach', timeCreated: '2026-01-20T10:00:00Z' },
+                    { ...mockFile2, name: 'test-uid/nacha/submissions/nacha-2-def.ach', timeCreated: '2026-01-19T10:00:00Z' },
+                ];
+
+                mockBucket.getFiles.mockResolvedValueOnce([mockFiles]);
+
+                const submissions = await persistence.listNachaSubmissions('test-uid');
+
+                expect(submissions).toHaveLength(2);
+                expect(submissions[0].submissionId).toBe('nacha-1-abc'); // 2026-01-20 (later)
+                expect(submissions[1].submissionId).toBe('nacha-2-def'); // 2026-01-19 (earlier)
+                // Should be sorted by timestamp descending (later first)
+                expect(new Date(submissions[0].timestamp).getTime()).toBeGreaterThan(
+                    new Date(submissions[1].timestamp).getTime()
+                );
+            });
+
+            it('should handle empty submission list', async () => {
+                mockBucket.getFiles.mockResolvedValueOnce([[]]);
+
+                const submissions = await persistence.listNachaSubmissions('empty-uid');
+
+                expect(submissions).toEqual([]);
+            });
+        });
+
+        describe('getNachaSubmission', () => {
+            it('should get a specific NACHA submission', async () => {
+                const content = '101 021000021...';
+                mockFile.exists.mockResolvedValueOnce([true]);
+                mockFile.download.mockResolvedValueOnce([Buffer.from(content)]);
+                mockFile.getMetadata.mockResolvedValueOnce([
+                    {
+                        name: 'test-uid/nacha/submissions/nacha-1-abc.ach',
+                        metadata: {
+                            filename: 'TEST.ach',
+                            timestamp: '2026-01-20T10:00:00Z',
+                            checksum: 'abc123',
+                            batchCount: 1,
+                            entryCount: 5,
+                            totalDebit: 50000,
+                            totalCredit: 50000,
+                        },
+                    },
+                ]);
+
+                const result = await persistence.getNachaSubmission('test-uid', 'nacha-1-abc');
+
+                expect(result).not.toBeNull();
+                expect(result.content).toBe(Buffer.from(content).toString('base64'));
+                expect(result.metadata.filename).toBe('TEST.ach');
+                expect(result.metadata.checksum).toBe('abc123');
+            });
+
+            it('should return null for non-existent submission', async () => {
+                mockFile.exists.mockResolvedValueOnce([false]);
+
+                const result = await persistence.getNachaSubmission('test-uid', 'nacha-missing');
+
+                expect(result).toBeNull();
+            });
+        });
+    });
 });
 
