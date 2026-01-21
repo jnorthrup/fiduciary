@@ -148,8 +148,18 @@ async function fetchLedgerData(key?: CryptoKey): Promise<{ db: LedgerDb, user: t
     }
   }
 
-  // 2. Fallback to Dynamic Import of Mock Data
-  // This simulates a network request and keeps initial bundle size smaller
+  // 2. Production: Return empty DB (no mock data seeding)
+  // Development: Load mock data for demo purposes
+  if (!import.meta.env.DEV) {
+    return {
+      db: EMPTY_DB,
+      user: {} as types.User,
+      secrets: { irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' },
+      settings: { fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' }, network: 'Mainnet' }
+    };
+  }
+
+  // DEV ONLY: Fallback to Dynamic Import of Mock Data
   await new Promise(resolve => setTimeout(resolve, 800)); // Artificial delay to show Suspense
   const mockData = await import('./mockData');
 
@@ -206,8 +216,8 @@ type LedgerContextType = LedgerDb & {
   verify2FA: (code: string) => boolean;
   cancel2FA: () => void;
   setInitialOwner: (name: string, email: string) => void;
-  loadJimProfile: () => void;
-  loadSyntheticFuzz: () => void;
+  loadJimProfile?: () => void;  // Demo only (DEV mode)
+  loadSyntheticFuzz?: () => void;  // Demo only (DEV mode)
   resumePersistent: () => void;
   wipeSession: () => void;
 
@@ -264,8 +274,8 @@ type LedgerContextType = LedgerDb & {
   resetData: () => void;
   updateSecrets: (updates: Partial<types.ApiSecrets>) => void;
   updateSettings: (updates: Partial<types.SystemSettings>) => void;
-  generateSyntheticData: () => void;
-  generateSampleEnterprise: () => void;
+  generateSyntheticData?: () => void;  // Demo only (DEV mode)
+  generateSampleEnterprise?: () => void;  // Demo only (DEV mode)
   toggleLayoutMode: () => void;
   postJournal: (entityId: string, date: string, memo: string, type: string, lines: any[]) => void;
 
@@ -620,28 +630,31 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
       const u = { id: uuidv4(), name, email, role: 'Owner' as types.UserRole, avatarInitials: name.substring(0, 2).toUpperCase(), lastActive: 'Now', _version: '1' };
       setCurrentUser(u); addItem('users', u);
     },
-    loadJimProfile: async () => {
-      const mockData = await import('./mockData');
-      setDb({
-        ...EMPTY_DB,
-        entities: mockData.JIM_ENTITIES,
-        accounts: mockData.JIM_ACCOUNTS,
-        journals: mockData.JIM_JOURNALS,
-        modules: mockData.JIM_MODULES,
-        filings: mockData.JIM_FILINGS,
-        transmissions: mockData.JIM_TRANSMISSIONS
-      });
-      const u = { id: uuidv4(), name: "John Doe", email: "james@localhost.local", role: 'Owner' as types.UserRole, avatarInitials: "JN", lastActive: 'Now', _version: '1' };
-      setCurrentUser(u); addItem('users', u);
-    },
-    loadSyntheticFuzz: async () => {
-      const mockData = await import('./mockData');
-      setDb({ ...EMPTY_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS });
-      const u = { id: uuidv4(), name: "Synthetic Operator", email: "ai@fuzznet.local", role: 'Owner' as types.UserRole, avatarInitials: "AI", lastActive: 'Now', _version: '1' };
-      setCurrentUser(u); addItem('users', u);
-    },
     resumePersistent: () => { const s = localStorage.getItem(STORAGE_KEY); if (s) importData(s); },
     wipeSession: () => { localStorage.removeItem(STORAGE_KEY); resetData(); setCanResume(false); },
+    // Demo functions - only available in development mode
+    ...(import.meta.env.DEV ? {
+      loadJimProfile: async () => {
+        const mockData = await import('./mockData');
+        setDb({
+          ...EMPTY_DB,
+          entities: mockData.JIM_ENTITIES,
+          accounts: mockData.JIM_ACCOUNTS,
+          journals: mockData.JIM_JOURNALS,
+          modules: mockData.JIM_MODULES,
+          filings: mockData.JIM_FILINGS,
+          transmissions: mockData.JIM_TRANSMISSIONS
+        });
+        const u = { id: uuidv4(), name: "John Doe", email: "james@localhost.local", role: 'Owner' as types.UserRole, avatarInitials: "JN", lastActive: 'Now', _version: '1' };
+        setCurrentUser(u); addItem('users', u);
+      },
+      loadSyntheticFuzz: async () => {
+        const mockData = await import('./mockData');
+        setDb({ ...EMPTY_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS });
+        const u = { id: uuidv4(), name: "Synthetic Operator", email: "ai@fuzznet.local", role: 'Owner' as types.UserRole, avatarInitials: "AI", lastActive: 'Now', _version: '1' };
+        setCurrentUser(u); addItem('users', u);
+      }
+    } : {}),
 
     // CRUD Map
     addUser: (u) => addItem('users', u), updateUser: (u) => updateItem('users', u), deleteUser: (id) => deleteItem('users', id),
@@ -671,14 +684,17 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
       } catch (e) { setSearchResults(await searchIRSManual(q)); } finally { setIsSearching(false); }
     },
     updateSecrets: (s) => setSecrets(p => ({ ...p, ...s })), updateSettings: (s) => setSettings(p => ({ ...p, ...s })),
-    generateSyntheticData: async () => {
-      const mockData = await import('./mockData');
-      setDb({ ...EMPTY_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS, contractors: mockData.SEED_CONTRACTORS });
-    },
-    generateSampleEnterprise: async () => {
-      const mockData = await import('./mockData');
-      setDb({ ...EMPTY_DB, entities: mockData.JIM_ENTITIES, accounts: mockData.JIM_ACCOUNTS, journals: mockData.JIM_JOURNALS, modules: mockData.JIM_MODULES, filings: mockData.JIM_FILINGS, contractors: mockData.SEED_CONTRACTORS });
-    },
+    // Demo functions - only available in development mode
+    ...(import.meta.env.DEV ? {
+      generateSyntheticData: async () => {
+        const mockData = await import('./mockData');
+        setDb({ ...EMPTY_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS, contractors: mockData.SEED_CONTRACTORS });
+      },
+      generateSampleEnterprise: async () => {
+        const mockData = await import('./mockData');
+        setDb({ ...EMPTY_DB, entities: mockData.JIM_ENTITIES, accounts: mockData.JIM_ACCOUNTS, journals: mockData.JIM_JOURNALS, modules: mockData.JIM_MODULES, filings: mockData.JIM_FILINGS, contractors: mockData.SEED_CONTRACTORS });
+      }
+    } : {}),
     toggleLayoutMode: () => {
       setSettings(prev => ({
         ...prev,
