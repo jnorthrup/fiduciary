@@ -26,17 +26,17 @@
 ## Phase 2: NACHA File Generation Service [P0 - Immediate]
 
 ### 2.1 NACHA Record Types
-- [ ] Task: Implement NACHA file format (94-char fixed width)
-  - [ ] Sub-task: Write failing tests for File Header (Record Type 1)
-  - [ ] Sub-task: Implement File Header generation
-  - [ ] Sub-task: Write failing tests for Batch Header (Record Type 5)
-  - [ ] Sub-task: Implement Batch Header generation
-  - [ ] Sub-task: Write failing tests for Entry Detail (Record Type 6)
-  - [ ] Sub-task: Implement Entry Detail generation
-  - [ ] Sub-task: Write failing tests for Batch Control (Record Type 8)
-  - [ ] Sub-task: Implement Batch Control with hash calculation
-  - [ ] Sub-task: Write failing tests for File Control (Record Type 9)
-  - [ ] Sub-task: Implement File Control with totals
+- [x] Task: Implement NACHA file format (94-char fixed width) [2b19aec]
+  - [x] Sub-task: Write failing tests for File Header (Record Type 1) [2b19aec]
+  - [x] Sub-task: Implement File Header generation [2b19aec]
+  - [x] Sub-task: Write failing tests for Batch Header (Record Type 5) [2b19aec]
+  - [x] Sub-task: Implement Batch Header generation [2b19aec]
+  - [x] Sub-task: Write failing tests for Entry Detail (Record Type 6) [2b19aec]
+  - [x] Sub-task: Implement Entry Detail generation [2b19aec]
+  - [x] Sub-task: Write failing tests for Batch Control (Record Type 8) [2b19aec]
+  - [x] Sub-task: Implement Batch Control with hash calculation [2b19aec]
+  - [x] Sub-task: Write failing tests for File Control (Record Type 9) [2b19aec]
+  - [x] Sub-task: Implement File Control with totals [2b19aec]
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.1 NACHA Records'
 
 ### 2.2 Validation & Export
