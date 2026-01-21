@@ -40,10 +40,10 @@
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.1 NACHA Records'
 
 ### 2.2 Validation & Export
-- [ ] Task: NACHA validation per operating rules
-  - [ ] Sub-task: Routing number validation (ABA checksum)
-  - [ ] Sub-task: Amount and field length validation
-  - [ ] Sub-task: SEC code compliance check
+- [x] Task: NACHA validation per operating rules [7bdb739]
+  - [x] Sub-task: Routing number validation (ABA checksum) [2b19aec]
+  - [x] Sub-task: Amount and field length validation [2b19aec]
+  - [x] Sub-task: SEC code compliance check [7bdb739]
 - [ ] Task: Export functionality
   - [ ] Sub-task: Generate downloadable .ACH file
   - [ ] Sub-task: Store submission to GCS with traceability
