@@ -14,6 +14,7 @@ import {
     validateNachaFile,
     validateACHEntry,
     validateRoutingNumber,
+    validateSECCode,
     calculateRoutingCheckDigit,
     parseNachaFile,
     type NachaFile,
@@ -76,6 +77,24 @@ describe('nachaService', () => {
             expect(calculateRoutingCheckDigit('02100002')).toBe(1);
             // 121042882: check digit should be 2
             expect(calculateRoutingCheckDigit('12104288')).toBe(2);
+        });
+    });
+
+    describe('SEC Code Validation', () => {
+        it('accepts valid SEC codes', () => {
+            expect(validateSECCode('PPD')).toBe(true);  // Prearranged Payment and Deposit
+            expect(validateSECCode('CCD')).toBe(true);  // Cash Concentration and Disbursement
+            expect(validateSECCode('WEB')).toBe(true);  // Internet-initiated entries
+            expect(validateSECCode('TEL')).toBe(true);  // Telephone-initiated entries
+            expect(validateSECCode('CTX')).toBe(true);  // Corporate Trade Exchange
+            expect(validateSECCode('IAT')).toBe(true);  // International ACH Transaction
+        });
+
+        it('rejects invalid SEC codes', () => {
+            expect(validateSECCode('XXX')).toBe(false);  // Not a valid SEC code
+            expect(validateSECCode('ABC')).toBe(false);  // Not a valid SEC code
+            expect(validateSECCode('')).toBe(false);     // Empty string
+            expect(validateSECCode('ppd')).toBe(false);  // Wrong case (case-sensitive)
         });
     });
 

@@ -122,6 +122,17 @@ export function validateRoutingNumber(routingNumber: string): boolean {
 }
 
 /**
+ * Validate SEC code for NACHA compliance
+ * PPD: Prearranged Payment and Deposit (consumer credits)
+ * CCD: Cash Concentration and Disbursement (B2B)
+ * WEB: Internet-initiated entries (authorized debits)
+ */
+export function validateSECCode(secCode: string): boolean {
+    const validSECCodes: SECCode[] = ['PPD', 'CCD', 'WEB', 'TEL', 'CTX', 'IAT'];
+    return validSECCodes.includes(secCode as SECCode);
+}
+
+/**
  * Calculate Entry Hash for batch/file control records
  * Sum of first 8 digits of routing numbers, mod 10^10
  */
