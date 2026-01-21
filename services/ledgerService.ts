@@ -418,7 +418,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
       if (data.db.entities.length === 0) {
         data.db.entities.push({
           id: 'default-op-co',
-          name: 'Northrup Operating LLC',
+          name: 'Standard Operating LLC',
           type: types.EntityType.LLC,
           role: types.EntityRole.OPERATING_LLC,
           parentEntityId: null,

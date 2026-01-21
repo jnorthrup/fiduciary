@@ -62,6 +62,12 @@ export default defineConfig(({ mode }) => {
             if (id.includes('mermaid')) {
               return 'diagrams-vendor';
             }
+            if (id.includes('fast-xml-parser')) {
+              return 'xml-vendor';
+            }
+            if (id.includes('yjs') || id.includes('y-indexeddb')) {
+              return 'collab-vendor';
+            }
             // Firebase (lazy load)
             if (id.includes('firebase') || id.includes('@firebase')) {
               return 'firebase-vendor';

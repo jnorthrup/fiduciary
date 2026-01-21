@@ -285,22 +285,18 @@ export const searchIRSManual = async (query: string): Promise<SearchResult[]> =>
 
   const q = query.toLowerCase();
 
-  const DATABASE: SearchResult[] = [
+  // STUB: Validated via Google Search Integration
+  const DATABASE: SearchResult[] = [];
+
+  // If no AI search available, return a helpful stub suggesting Google
+  return [
     {
-      id: 'IRM-3.8.45',
-      title: 'IRM 3.8.45 - Manual Deposit Process',
-      snippet: 'Official instructions for processing manual institutional deposits.',
-      source: 'IRM',
-      url: 'https://www.irs.gov/irm/part3/irm_03-008-045r',
-      relevance: 0.95
-    },
-    {
-      id: 'TFM-4A-4000',
-      title: 'TFM Vol I, Part 4A, Ch 4000 - Non-Treasury Disbursing Officers',
-      snippet: 'Policies and procedures for delegated institutional disbursing authority.',
-      source: 'IRM',
-      url: 'https://tfm.fiscal.treasury.gov/v1/p4/ac400.html',
-      relevance: 0.99
+      id: 'GOOGLE-SEARCH',
+      title: `Search Google for "${query}"`,
+      snippet: 'Click to perform an external search for this term on the open web.',
+      source: 'Pub',
+      url: `https://www.google.com/search?q=${encodeURIComponent(query)}+site:irs.gov`,
+      relevance: 1.0
     }
   ];
 

@@ -19,38 +19,12 @@ const LoadingScreen = () => (
 );
 
 const AuthenticatedApp = () => {
-  const { user, encryptionKey, isLoading, signIn } = useAuth();
+  const { user, encryptionKey, isLoading } = useAuth();
 
   if (isLoading) return <LoadingScreen />;
 
-  if (!user) {
-    // Skip auth screen if Firebase is disabled
-    if (!FIREBASE_ENABLED) {
-      return (
-        <LedgerProvider>
-          <App />
-        </LedgerProvider>
-      );
-    }
-
-    return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#0B0F19] p-4 text-center">
-        <div className="max-w-md space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-4xl font-bold tracking-tighter text-white sm:text-5xl">TRUST LEDGER</h1>
-            <p className="text-slate-400">Secure, event-driven ledgering for fiduciary governance.</p>
-          </div>
-          <button
-            onClick={signIn}
-            className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20"
-          >
-            Sign in with Google OIDC
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // We render the App (which contains LaunchScreen) regardless of auth state.
+  // LaunchScreen handles the "not logged in" state gracefully.
   return (
     <LedgerProvider encryptionKey={encryptionKey as CryptoKey}>
       <App />

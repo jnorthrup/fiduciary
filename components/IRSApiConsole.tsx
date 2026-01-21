@@ -118,7 +118,7 @@ export const IRSApiConsole: React.FC<Props> = ({
             { msg: "Handshake Established: TLS 1.3 / AES-256-GCM", delay: 1200 },
             { msg: "Redirecting to ID.me Federation Node...", delay: 1500 },
             { msg: "Biometric Challenge: RETINA_SCAN_SIMULATED [PASS]", delay: 2000 },
-            { msg: "Authenticating 'James R. Northrup Jr.'...", delay: 1000 },
+            { msg: "Authenticating 'James R. Standard Jr.'...", delay: 1000 },
             { msg: "Accessing e-Services Business Dashboard...", delay: 1500 },
             { msg: "Querying Entity List...", delay: 800 },
             { msg: "Entity Found: 'Rogue Roots Trust' (EIN **-***9982)", delay: 1200 },
