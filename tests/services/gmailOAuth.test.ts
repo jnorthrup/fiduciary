@@ -310,3 +310,118 @@ describe('GmailClient', () => {
     });
   });
 });
+
+describe('GmailOAuthService - Identity Binding', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessionStorage.clear();
+  });
+
+  describe('getUserIdentity', () => {
+    it('should extract uid from valid JWT token', async () => {
+      const { GmailOAuthService } = await import('../../services/gmailOAuth');
+
+      const service = new GmailOAuthService({
+        client_id: 'test-client-id',
+        scope: [],
+      });
+
+      // Valid JWT structure with sub claim
+      const validToken = buildJWT({ sub: 'user-123', email: 'test@example.com' });
+      const uid = service.getUserIdentity(validToken);
+
+      expect(uid).toBe('user-123');
+    });
+
+    it('should return null for malformed token', async () => {
+      const { GmailOAuthService } = await import('../../services/gmailOAuth');
+
+      const service = new GmailOAuthService({
+        client_id: 'test-client-id',
+        scope: [],
+      });
+
+      const uid = service.getUserIdentity('not-a-jwt');
+      expect(uid).toBeNull();
+    });
+
+    it('should return null for token without sub claim', async () => {
+      const { GmailOAuthService } = await import('../../services/gmailOAuth');
+
+      const service = new GmailOAuthService({
+        client_id: 'test-client-id',
+        scope: [],
+      });
+
+      const tokenWithoutSub = buildJWT({ email: 'test@example.com' });
+      const uid = service.getUserIdentity(tokenWithoutSub);
+
+      expect(uid).toBeNull();
+    });
+
+    it('should return null for empty token', async () => {
+      const { GmailOAuthService } = await import('../../services/gmailOAuth');
+
+      const service = new GmailOAuthService({
+        client_id: 'test-client-id',
+        scope: [],
+      });
+
+      expect(service.getUserIdentity('')).toBeNull();
+    });
+  });
+
+  describe('getStoragePrefix', () => {
+    it('should generate correct GCS path prefix', async () => {
+      const { GmailOAuthService } = await import('../../services/gmailOAuth');
+
+      const service = new GmailOAuthService({
+        client_id: 'test-client-id',
+        scope: [],
+      });
+
+      const prefix = service.getStoragePrefix('user-123');
+      expect(prefix).toBe('users/user-123/');
+    });
+
+    it('should handle uid with special characters', async () => {
+      const { GmailOAuthService } = await import('../../services/gmailOAuth');
+
+      const service = new GmailOAuthService({
+        client_id: 'test-client-id',
+        scope: [],
+      });
+
+      const prefix = service.getStoragePrefix('user-with-dashes_123');
+      expect(prefix).toBe('users/user-with-dashes_123/');
+    });
+
+    it('should handle empty uid', async () => {
+      const { GmailOAuthService } = await import('../../services/gmailOAuth');
+
+      const service = new GmailOAuthService({
+        client_id: 'test-client-id',
+        scope: [],
+      });
+
+      const prefix = service.getStoragePrefix('');
+      expect(prefix).toBe('users//');
+    });
+  });
+});
+
+// Helper to build a minimal JWT for testing
+function buildJWT(payload: Record<string, any>): string {
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const encodedHeader = base64UrlEncode(JSON.stringify(header));
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const signature = 'signature'; // Not validated in tests
+  return `${encodedHeader}.${encodedPayload}.${signature}`;
+}
+
+function base64UrlEncode(str: string): string {
+  return btoa(str)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}

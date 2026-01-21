@@ -173,6 +173,43 @@ export class GmailOAuthService {
   }
 
   /**
+   * Extract user identity (UID) from Gmail OAuth token
+   * Parses JWT and returns 'sub' claim
+   * @param token - OAuth access token (JWT)
+   * @returns User ID (sub claim) or null if invalid
+   */
+  getUserIdentity(token: string): string | null {
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return null;
+      }
+
+      const payload = parts[1];
+      const decoded = JSON.parse(
+        atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+      );
+
+      return decoded.sub || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Generate GCS storage path prefix for a user
+   * @param uid - User identifier
+   * @returns GCS path prefix (e.g., "users/123/")
+   */
+  getStoragePrefix(uid: string): string {
+    return `users/${uid}/`;
+  }
+
+  /**
    * Get authorization code (for server-side flow)
    */
   async getAuthorizationCode(): Promise<string> {
