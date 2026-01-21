@@ -18,7 +18,7 @@
 ### 1.2 Navigation State Management
 - [x] Task: Add selection/cursor state to ledger store [b1fa611]
   - [x] Sub-task: Add selectedAccountId and cursorIndex to store
-  - [ ] Sub-task: Implement keyboard event handlers at container level
+  - [x] Sub-task: Implement keyboard event handlers at container level [2b19aec]
 - [ ] Task: Conductor - User Manual Verification 'Phase 1.2 Navigation State'
 
 ---
