@@ -6,6 +6,7 @@ const { mockFile, mockBucket, mockStorageInstance } = vi.hoisted(() => {
         download: vi.fn(),
         exists: vi.fn(),
         getMetadata: vi.fn(),
+        delete: vi.fn(),
     };
     const bucket = {
         file: vi.fn(() => file),
@@ -39,6 +40,7 @@ describe('GCSPersistence', () => {
         mockFile.download.mockResolvedValue([Buffer.from('{"test": "data"}')]);
         mockFile.exists.mockResolvedValue([true]);
         mockFile.getMetadata.mockResolvedValue([{ size: '1024' }]);
+        mockFile.delete.mockResolvedValue(true);
         mockBucket.exists.mockResolvedValue([true]);
         mockBucket.getFiles.mockResolvedValue([[{ name: 'uid/ledger.json' }]]);
         mockStorageInstance.createBucket.mockResolvedValue([mockBucket]);
@@ -102,7 +104,7 @@ describe('GCSPersistence', () => {
 
                 const result = await persistence.appendAction('test-uid', 'ledger', testAction);
 
-                // Verify path format: gs://<bucket>/users/<uid>/wal/<component>/<YYYY-MM-DD>/actions.jsonl
+                // Verify path format: users/<uid>/wal/<component>/<YYYY-MM-DD>/actions.jsonl
                 const expectedPathPattern = /^users\/test-uid\/wal\/ledger\/\d{4}-\d{2}-\d{2}\/actions\.jsonl$/;
                 expect(mockBucket.file).toHaveBeenCalledWith(expect.stringMatching(expectedPathPattern));
                 expect(mockFile.save).toHaveBeenCalledWith(
@@ -167,17 +169,29 @@ describe('GCSPersistence', () => {
         });
 
         describe('replayActions', () => {
-            it('should replay actions from WAL', async () => {
-                const walContent = [
-                    '{"type":"ACCOUNT_CREATE","payload":{"id":"acc-001"},"timestamp":"2026-01-20T10:00:00Z"}',
-                    '{"type":"ACCOUNT_UPDATE","payload":{"id":"acc-001","changes":{"balance":100}},"timestamp":"2026-01-20T10:01:00Z"}',
-                ].join('\n');
+            it('should replay actions from date-partitioned WAL files and return { state, actionsCount }', async () => {
+                const walContent1 = Buffer.from([
+                    '{"type":"ACCOUNT_CREATE","payload":{"id":"acc-001"},"timestamp":"2026-01-19T10:00:00Z"}',
+                    '{"type":"ACCOUNT_UPDATE","payload":{"id":"acc-001","changes":{"balance":100}},"timestamp":"2026-01-19T11:00:00Z"}',
+                ].join('\n'));
 
-                // Mock snapshot doesn't exist
-                mockFile.exists
-                    .mockResolvedValueOnce([false])  // snapshot
-                    .mockResolvedValueOnce([true]);  // WAL
-                mockFile.download.mockResolvedValueOnce([Buffer.from(walContent)]);
+                const walContent2 = Buffer.from([
+                    '{"type":"ACCOUNT_CREATE","payload":{"id":"acc-002"},"timestamp":"2026-01-20T10:00:00Z"}',
+                ].join('\n'));
+
+                const mockWalFile1 = {
+                    name: 'users/test-uid/wal/ledger/2026-01-19/actions.jsonl',
+                    download: vi.fn().mockResolvedValue([walContent1]),
+                };
+                const mockWalFile2 = {
+                    name: 'users/test-uid/wal/ledger/2026-01-20/actions.jsonl',
+                    download: vi.fn().mockResolvedValue([walContent2]),
+                };
+
+                // Mock no snapshots, multiple WAL files
+                mockBucket.getFiles
+                    .mockResolvedValueOnce([[]])  // no snapshots
+                    .mockResolvedValueOnce([[mockWalFile1, mockWalFile2]]); // WAL files
 
                 const mockReducer = vi.fn((state, action) => ({
                     ...state,
@@ -186,42 +200,53 @@ describe('GCSPersistence', () => {
 
                 const result = await persistence.replayActions('test-uid', 'ledger', mockReducer, {});
 
-                expect(mockReducer).toHaveBeenCalledTimes(2);
-                expect(result.actionCount).toBe(2);
+                expect(mockReducer).toHaveBeenCalledTimes(3);
+                expect(result.state.actionCount).toBe(3);
+                expect(result.actionsCount).toBe(3);
+                expect(result.error).toBeUndefined();
             });
 
-            it('should load snapshot before replaying WAL', async () => {
+            it('should load latest snapshot before replaying WAL files', async () => {
                 const snapshotData = {
                     state: { accounts: [{ id: 'acc-001' }], version: 10 },
                     version: 10,
                 };
 
-                // Mock snapshot exists
-                mockFile.exists
-                    .mockResolvedValueOnce([true])   // snapshot
-                    .mockResolvedValueOnce([false]); // WAL
-                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(snapshotData))]);
+                const mockSnapshotFile = {
+                    name: 'users/test-uid/snapshots/ledger/2026-01-20T10-00-00-000Z.json',
+                    download: vi.fn().mockResolvedValue([Buffer.from(JSON.stringify(snapshotData))]),
+                };
+
+                // Mock snapshot exists, no WAL files
+                mockBucket.getFiles
+                    .mockResolvedValueOnce([[mockSnapshotFile]])  // snapshots
+                    .mockResolvedValueOnce([[]]); // no WAL files
 
                 const mockReducer = vi.fn((state) => state);
 
                 const result = await persistence.replayActions('test-uid', 'ledger', mockReducer, {});
 
-                expect(result.accounts).toHaveLength(1);
-                expect(result.version).toBe(10);
+                expect(result.state.accounts).toHaveLength(1);
+                expect(result.state.version).toBe(10);
+                expect(result.actionsCount).toBe(0);
                 expect(mockReducer).not.toHaveBeenCalled(); // No WAL to replay
             });
 
             it('should handle malformed WAL entries gracefully', async () => {
-                const walContent = [
+                const walContent = Buffer.from([
                     '{"type":"VALID","timestamp":"2026-01-20T10:00:00Z"}',
                     'this is not valid json',
                     '{"type":"ALSO_VALID","timestamp":"2026-01-20T10:02:00Z"}',
-                ].join('\n');
+                ].join('\n'));
 
-                mockFile.exists
-                    .mockResolvedValueOnce([false])  // snapshot
-                    .mockResolvedValueOnce([true]);  // WAL
-                mockFile.download.mockResolvedValueOnce([Buffer.from(walContent)]);
+                const mockWalFile = {
+                    name: 'users/test-uid/wal/ledger/2026-01-20/actions.jsonl',
+                    download: vi.fn().mockResolvedValue([walContent]),
+                };
+
+                mockBucket.getFiles
+                    .mockResolvedValueOnce([[]])  // no snapshots
+                    .mockResolvedValueOnce([[mockWalFile]]); // WAL files
 
                 const mockReducer = vi.fn((state, action) => ({
                     ...state,
@@ -232,46 +257,53 @@ describe('GCSPersistence', () => {
 
                 // Only 2 valid actions should be processed
                 expect(mockReducer).toHaveBeenCalledTimes(2);
-                expect(result.count).toBe(2);
+                expect(result.state.count).toBe(2);
+                expect(result.actionsCount).toBe(2);
+            });
+
+            it('should return error object on failure', async () => {
+                mockBucket.getFiles.mockRejectedValueOnce(new Error('Storage unavailable'));
+
+                const mockReducer = vi.fn((state) => state);
+                const result = await persistence.replayActions('test-uid', 'ledger', mockReducer, {});
+
+                expect(result.error).toBeDefined();
+                expect(result.error).toBe('Storage unavailable');
+                expect(result.actionsCount).toBe(0);
             });
         });
 
         describe('compactWal', () => {
-            it('should save snapshot and archive WAL', async () => {
+            it('should save snapshot with spec-compliant path and delete WAL files', async () => {
                 const currentState = { accounts: [{ id: 'acc-001' }], version: 50 };
-                const walContent = 'existing wal content';
 
-                mockFile.exists.mockResolvedValueOnce([true]); // WAL exists
-                mockFile.download.mockResolvedValueOnce([Buffer.from(walContent)]);
+                const mockWalFile = {
+                    name: 'users/test-uid/wal/ledger/2026-01-20/actions.jsonl',
+                    delete: vi.fn().mockResolvedValue(true),
+                };
+
+                mockBucket.getFiles.mockResolvedValueOnce([[mockWalFile]]);
 
                 const result = await persistence.compactWal('test-uid', 'ledger', currentState);
 
-                // Should save snapshot
+                // Should save snapshot at spec-compliant path
                 expect(mockFile.save).toHaveBeenCalledWith(
                     expect.stringContaining('"version": 50'),
                     expect.objectContaining({ contentType: 'application/json' })
                 );
 
-                // Should archive WAL
-                expect(mockFile.save).toHaveBeenCalledWith(
-                    Buffer.from(walContent),
-                    expect.objectContaining({ contentType: 'application/x-ndjson' })
-                );
+                // Should delete WAL files
+                expect(mockWalFile.delete).toHaveBeenCalled();
 
-                // Should clear active WAL
-                expect(mockFile.save).toHaveBeenCalledWith(
-                    '',
-                    expect.objectContaining({ contentType: 'application/x-ndjson' })
-                );
-
-                expect(result.archived).toBe(true);
+                // Should return snapshot path and version
+                expect(result.snapshotPath).toMatch(/^users\/test-uid\/snapshots\/ledger\//);
                 expect(result.snapshotVersion).toBe(50);
             });
 
-            it('should handle case when no WAL exists', async () => {
+            it('should handle case when no WAL files exist', async () => {
                 const currentState = { version: 10 };
 
-                mockFile.exists.mockResolvedValueOnce([false]); // WAL doesn't exist
+                mockBucket.getFiles.mockResolvedValueOnce([[]]); // No WAL files
 
                 const result = await persistence.compactWal('test-uid', 'ledger', currentState);
 
@@ -281,35 +313,56 @@ describe('GCSPersistence', () => {
                     expect.any(Object)
                 );
 
-                expect(result.archived).toBe(false);
+                // Should not attempt deletion
+                expect(mockFile.delete).not.toHaveBeenCalled();
+
+                expect(result.snapshotPath).toBeDefined();
+                expect(result.snapshotVersion).toBe(10);
             });
         });
 
         describe('getWalStats', () => {
-            it('should return WAL statistics', async () => {
-                const walContent = [
+            it('should return WAL statistics from spec-compliant paths', async () => {
+                const walContent1 = Buffer.from([
                     '{"type":"ACTION_1"}',
                     '{"type":"ACTION_2"}',
-                    '{"type":"ACTION_3"}',
-                ].join('\n');
+                ].join('\n'));
 
-                mockFile.exists
-                    .mockResolvedValueOnce([true])  // WAL
-                    .mockResolvedValueOnce([true]); // snapshot
-                mockFile.getMetadata.mockResolvedValueOnce([{ size: '512' }]);
-                mockFile.download.mockResolvedValueOnce([Buffer.from(walContent)]);
+                const walContent2 = Buffer.from([
+                    '{"type":"ACTION_3"}',
+                ].join('\n'));
+
+                const mockWalFile1 = {
+                    name: 'users/test-uid/wal/ledger/2026-01-19/actions.jsonl',
+                    download: vi.fn().mockResolvedValue([walContent1]),
+                    getMetadata: vi.fn().mockResolvedValue([{ size: '256' }]),
+                };
+
+                const mockWalFile2 = {
+                    name: 'users/test-uid/wal/ledger/2026-01-20/actions.jsonl',
+                    download: vi.fn().mockResolvedValue([walContent2]),
+                    getMetadata: vi.fn().mockResolvedValue([{ size: '128' }]),
+                };
+
+                const mockSnapshotFile = {
+                    name: 'users/test-uid/snapshots/ledger/2026-01-20T10-00-00Z.json',
+                };
+
+                mockBucket.getFiles
+                    .mockResolvedValueOnce([[mockSnapshotFile]])  // snapshots
+                    .mockResolvedValueOnce([[mockWalFile1, mockWalFile2]]); // WAL files
 
                 const stats = await persistence.getWalStats('test-uid', 'ledger');
 
                 expect(stats.entryCount).toBe(3);
-                expect(stats.sizeBytes).toBe(512);
+                expect(stats.sizeBytes).toBe(384); // 256 + 128
                 expect(stats.hasSnapshot).toBe(true);
             });
 
-            it('should return zeros when no WAL exists', async () => {
-                mockFile.exists
-                    .mockResolvedValueOnce([false])  // WAL
-                    .mockResolvedValueOnce([false]); // snapshot
+            it('should return zeros when no WAL files exist', async () => {
+                mockBucket.getFiles
+                    .mockResolvedValueOnce([[]])  // no snapshots
+                    .mockResolvedValueOnce([[]]); // no WAL files
 
                 const stats = await persistence.getWalStats('test-uid', 'ledger');
 
@@ -486,4 +539,3 @@ describe('GCSPersistence', () => {
         });
     });
 });
-

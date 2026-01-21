@@ -136,89 +136,107 @@ class GCSPersistence {
 
     /**
      * Replay all actions from the WAL to rebuild state.
-     * 
+     * Reads all date-partitioned WAL files sorted chronologically.
+     *
      * @param {string} uid - User OID
      * @param {string} component - Component name
      * @param {Function} reducer - Reducer function (state, action) => newState
      * @param {Object} initialState - Starting state for replay
-     * @returns {Promise<Object>} Final state after replay
+     * @returns {Promise<{ state: Object; actionsCount: number; error?: string }>}
      */
     async replayActions(uid, component, reducer, initialState = {}) {
-        const walFileName = `${uid}/${component}/wal.jsonl`;
-        const snapshotFileName = `${uid}/${component}/snapshot.json`;
+        const snapshotPrefix = `users/${uid}/snapshots/${component}/`;
+        const walPrefix = `users/${uid}/wal/${component}/`;
 
         let state = { ...initialState };
+        let actionsCount = 0;
+        let error = null;
 
         try {
             // First, try to load the latest snapshot
-            const snapshotFile = this.bucket.file(snapshotFileName);
-            const [snapshotExists] = await snapshotFile.exists();
+            const [snapshotFiles] = await this.bucket.getFiles({
+                prefix: snapshotPrefix
+            });
 
-            if (snapshotExists) {
-                const [snapshotContent] = await snapshotFile.download();
+            // Sort snapshots by timestamp descending (most recent first)
+            const sortedSnapshots = snapshotFiles
+                .filter(f => f.name.endsWith('.json'))
+                .sort((a, b) => b.name.localeCompare(a.name));
+
+            if (sortedSnapshots.length > 0) {
+                const latestSnapshot = sortedSnapshots[0];
+                const [snapshotContent] = await latestSnapshot.download();
                 const snapshot = JSON.parse(snapshotContent.toString());
                 state = snapshot.state;
                 console.info(`Loaded snapshot for ${component} at version ${snapshot.version}`);
             }
 
-            // Then, replay any WAL entries after the snapshot
-            const walFile = this.bucket.file(walFileName);
-            const [walExists] = await walFile.exists();
+            // Then, replay all WAL entries across all date partitions
+            const [walFiles] = await this.bucket.getFiles({
+                prefix: walPrefix
+            });
 
-            if (walExists) {
-                const [walContent] = await walFile.download();
-                const lines = walContent.toString().split('\n').filter(line => line.trim());
+            // Sort WAL files by date (ascending for chronological replay)
+            const sortedWalFiles = walFiles
+                .filter(f => f.name.endsWith('/actions.jsonl'))
+                .sort((a, b) => a.name.localeCompare(b.name));
 
-                let appliedCount = 0;
-                for (const line of lines) {
-                    try {
-                        const action = JSON.parse(line);
+            for (const walFile of sortedWalFiles) {
+                try {
+                    const [walContent] = await walFile.download();
+                    const lines = walContent.toString().split('\n').filter(line => line.trim());
 
-                        // Skip actions already included in snapshot (by version)
-                        if (state.version && action.version && action.version <= state.version) {
-                            continue;
+                    for (const line of lines) {
+                        try {
+                            const action = JSON.parse(line);
+
+                            // Skip actions already included in snapshot (by version)
+                            if (state.version && action.version && action.version <= state.version) {
+                                continue;
+                            }
+
+                            state = reducer(state, action);
+                            actionsCount++;
+                        } catch (parseError) {
+                            console.warn(`Skipping malformed WAL entry: ${line.substring(0, 50)}...`);
                         }
-
-                        state = reducer(state, action);
-                        appliedCount++;
-                    } catch (parseError) {
-                        console.warn(`Skipping malformed WAL entry: ${line.substring(0, 50)}...`);
                     }
+                } catch (readError) {
+                    console.warn(`Error reading WAL file ${walFile.name}:`, readError.message);
                 }
-
-                console.info(`Replayed ${appliedCount} actions from WAL for ${component}`);
             }
 
-            return state;
-        } catch (error) {
-            console.error(`Error replaying actions for ${uid}/${component}:`, error.message);
-            return state;
+            console.info(`Replayed ${actionsCount} actions from ${sortedWalFiles.length} WAL files for ${component}`);
+
+            return { state, actionsCount };
+        } catch (err) {
+            error = err.message;
+            console.error(`Error replaying actions for ${uid}/${component}:`, err.message);
+            return { state, actionsCount, error };
         }
     }
 
     /**
-     * Compact the WAL by saving current state as snapshot and archiving old WAL.
-     * 
+     * Compact the WAL by saving current state as snapshot.
+     * Snapshot path: users/<uid>/snapshots/<component>/<timestamp>.json
+     *
      * @param {string} uid - User OID
      * @param {string} component - Component name
      * @param {Object} currentState - Current state to snapshot
-     * @returns {Promise<{archived: boolean, snapshotVersion: number}>}
+     * @returns {Promise<{ snapshotPath: string; snapshotVersion: number }>}
      */
     async compactWal(uid, component, currentState) {
-        const walFileName = `${uid}/${component}/wal.jsonl`;
-        const snapshotFileName = `${uid}/${component}/snapshot.json`;
-        const archivePrefix = `${uid}/${component}/archive/`;
+        const snapshotPrefix = `users/${uid}/snapshots/${component}/`;
+        const walPrefix = `users/${uid}/wal/${component}/`;
 
         try {
-            const walFile = this.bucket.file(walFileName);
-            const [walExists] = await walFile.exists();
-
-            // Generate archive timestamp
-            const archiveTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            // Generate timestamp for snapshot filename
+            const snapshotTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const snapshotVersion = currentState.version || Date.now();
 
-            // Save current state as snapshot
-            const snapshotFile = this.bucket.file(snapshotFileName);
+            // Save current state as snapshot with timestamp in filename
+            const snapshotPath = `${snapshotPrefix}${snapshotTimestamp}.json`;
+            const snapshotFile = this.bucket.file(snapshotPath);
             const snapshotData = {
                 state: currentState,
                 version: snapshotVersion,
@@ -230,30 +248,18 @@ class GCSPersistence {
                 resumable: false,
             });
 
-            console.info(`Saved snapshot for ${component} at version ${snapshotVersion}`);
+            console.info(`Saved snapshot for ${component} at version ${snapshotVersion} to ${snapshotPath}`);
 
-            // Archive existing WAL if it exists
-            if (walExists) {
-                const archiveFileName = `${archivePrefix}wal-${archiveTimestamp}.jsonl`;
-                const archiveFile = this.bucket.file(archiveFileName);
+            // Get all WAL files for this component
+            const [walFiles] = await this.bucket.getFiles({ prefix: walPrefix });
 
-                // Copy WAL to archive
-                const [walContent] = await walFile.download();
-                await archiveFile.save(walContent, {
-                    contentType: 'application/x-ndjson',
-                    resumable: false,
-                });
-
-                // Clear the active WAL
-                await walFile.save('', {
-                    contentType: 'application/x-ndjson',
-                    resumable: false,
-                });
-
-                console.info(`Archived WAL to ${archiveFileName}`);
+            // Archive (delete) all processed WAL files
+            for (const walFile of walFiles.filter(f => f.name.endsWith('/actions.jsonl'))) {
+                await walFile.delete();
+                console.info(`Archived (deleted) WAL file ${walFile.name}`);
             }
 
-            return { archived: walExists, snapshotVersion };
+            return { snapshotPath, snapshotVersion };
         } catch (error) {
             console.error(`Error compacting WAL for ${uid}/${component}:`, error.message);
             throw error;
@@ -262,37 +268,39 @@ class GCSPersistence {
 
     /**
      * Get WAL statistics for a specific user and component.
-     * 
+     *
      * @param {string} uid - User OID
      * @param {string} component - Component name
      * @returns {Promise<{entryCount: number, sizeBytes: number, hasSnapshot: boolean}>}
      */
     async getWalStats(uid, component) {
-        const walFileName = `${uid}/${component}/wal.jsonl`;
-        const snapshotFileName = `${uid}/${component}/snapshot.json`;
+        const snapshotPrefix = `users/${uid}/snapshots/${component}/`;
+        const walPrefix = `users/${uid}/wal/${component}/`;
 
         try {
-            const walFile = this.bucket.file(walFileName);
-            const snapshotFile = this.bucket.file(snapshotFileName);
+            // Check for snapshots
+            const [snapshotFiles] = await this.bucket.getFiles({ prefix: snapshotPrefix });
+            const hasSnapshot = snapshotFiles.some(f => f.name.endsWith('.json'));
 
-            const [walExists] = await walFile.exists();
-            const [snapshotExists] = await snapshotFile.exists();
+            // Get all WAL files
+            const [walFiles] = await this.bucket.getFiles({ prefix: walPrefix });
+            const actionFiles = walFiles.filter(f => f.name.endsWith('/actions.jsonl'));
 
             let entryCount = 0;
             let sizeBytes = 0;
 
-            if (walExists) {
+            for (const walFile of actionFiles) {
                 const [metadata] = await walFile.getMetadata();
-                sizeBytes = parseInt(metadata.size || '0', 10);
+                sizeBytes += parseInt(metadata.size || '0', 10);
 
                 const [content] = await walFile.download();
-                entryCount = content.toString().split('\n').filter(line => line.trim()).length;
+                entryCount += content.toString().split('\n').filter(line => line.trim()).length;
             }
 
             return {
                 entryCount,
                 sizeBytes,
-                hasSnapshot: snapshotExists,
+                hasSnapshot,
             };
         } catch (error) {
             console.error(`Error getting WAL stats for ${uid}/${component}:`, error.message);
