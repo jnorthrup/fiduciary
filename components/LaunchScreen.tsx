@@ -240,7 +240,7 @@ export const LaunchScreen: React.FC<Props> = ({
                 <StrategyCard
                   icon={User}
                   title="Jim's Profile"
-                  desc="Load saved profile for John Doe"
+                  desc="Load saved profile for James R. Northrup Jr."
                   onClick={() => selectStrategy('Jim')}
                   colorClass="text-blue-400"
                 />

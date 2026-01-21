@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode, config?: any }>
             const mockUser = {
                 uid: 'dev-user-123',
                 displayName: 'Developer',
-                email: 'dev@localhost.local',
+                email: 'dev@sovereign-node.local',
                 photoURL: null,
             } as any;
 

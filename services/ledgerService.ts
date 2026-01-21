@@ -682,8 +682,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
     if (!auth) {
       const u: types.User = {
         id: 'mock-123',
-        name: 'John Doe (Mock)',
-        email: 'james@localhost.local',
+        name: 'James Northrup (Mock)',
+        email: 'james@sovereign-node.local',
         role: 'Owner' as types.UserRole,
         avatarInitials: "JN",
         lastActive: 'Now',
@@ -748,7 +748,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
           filings: mockData.JIM_FILINGS,
           transmissions: mockData.JIM_TRANSMISSIONS
         });
-        const u = { id: uuidv4(), name: "John Doe", email: "james@localhost.local", role: 'Owner' as types.UserRole, avatarInitials: "JN", lastActive: 'Now', _version: '1' };
+        const u = { id: uuidv4(), name: "James R. Northrup Jr.", email: "james@sovereign-node.local", role: 'Owner' as types.UserRole, avatarInitials: "JN", lastActive: 'Now', _version: '1' };
         setCurrentUser(u); addItem('users', u);
       },
       loadSyntheticFuzz: async () => {

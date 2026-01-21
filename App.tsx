@@ -76,7 +76,7 @@ export const App = () => {
       launchScreenProps.onJimProfile = store.loadJimProfile;
       launchScreenProps.onSyntheticFuzz = store.loadSyntheticFuzz;
       launchScreenProps.onCreditUnionLaunch = () => {
-        store.setInitialOwner("System Administrator", "admin@example.com");
+        store.setInitialOwner("System Administrator", "admin@charter.net");
         setAutoLaunchWizard(true);
       };
       launchScreenProps.onQuickBooksLaunch = () => {

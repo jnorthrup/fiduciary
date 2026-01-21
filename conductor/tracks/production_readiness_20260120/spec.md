@@ -8,7 +8,7 @@ This track addresses critical production readiness issues: (1) remove demo code 
 
 ### Issue 1: Demo Code in Production
 The deployed production app exposes demo features through LaunchScreen.tsx:
-- "Jim's Profile" - Loads specific user's data (John Doe)
+- "Jim's Profile" - Loads specific user's data (James R. Northrup Jr.)
 - "Demo Data" - Generates synthetic test transactions (loadSyntheticFuzz)
 - "QuickBooks View" - Demo layout mode
 - "NCUA Charter Protocol" - Credit union wizard demo

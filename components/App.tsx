@@ -54,7 +54,7 @@ export const App = () => {
         onSyntheticFuzz={store.loadSyntheticFuzz}
         onResumePersistent={store.resumePersistent}
         onCreditUnionLaunch={() => {
-          store.setInitialOwner("System Administrator", "admin@example.com");
+          store.setInitialOwner("System Administrator", "admin@charter.net");
           setAutoLaunchWizard(true);
         }}
         canResume={store.canResume}

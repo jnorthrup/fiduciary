@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Delta Trust ERP API
+  title: LAS Trust ERP API
   version: 0.1.0
   description: >
     Ledger-first Trust ERP with settlement orchestration via escrow/sponsored rails.
