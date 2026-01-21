@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { LedgerProvider } from './services/ledgerService';
 import { AuthProvider, useAuth } from './services/authService';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Loader2 } from 'lucide-react';
 
 // Environment-based feature flags
@@ -42,10 +43,12 @@ if (container) {
     : undefined;
 
   root.render(
-    <AuthProvider config={firebaseConfig}>
-      <Suspense fallback={<LoadingScreen />}>
-        <AuthenticatedApp />
-      </Suspense>
-    </AuthProvider>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GMAIL_CLIENT_ID}>
+      <AuthProvider config={firebaseConfig}>
+        <Suspense fallback={<LoadingScreen />}>
+          <AuthenticatedApp />
+        </Suspense>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }

@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import { useGoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
 import {
   ShieldCheck, Rocket, User, History, Sparkles,
   Plus, ArrowRight, Fingerprint, Lock, Activity,
@@ -112,17 +114,32 @@ export const LaunchScreen: React.FC<Props> = ({
     }
   }, [bootProgress, activeStrategy, onJimProfile, onSyntheticFuzz, onResumePersistent, onCreditUnionLaunch, onQuickBooksLaunch, onLaunch, name, email]);
 
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setPhase('Booting');
+        // Fetch Real Profile
+        const userInfo = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+
+        // Pass Real Profile to Store
+        const user = await signInWithGoogle(userInfo.data);
+        if (!user) setActiveStrategy(null);
+      } catch (error) {
+        console.error("Google Profile Fetch Failed", error);
+        setActiveStrategy(null);
+      }
+    },
+    onError: () => setActiveStrategy(null)
+  });
+
   const selectStrategy = async (strategy: 'Manual' | 'Jim' | 'Fuzz' | 'Resume' | 'CreditUnion' | 'Google' | 'QuickBooks') => {
     setActiveStrategy(strategy);
     if (strategy === 'Manual') {
       setPhase('Identity');
     } else if (strategy === 'Google') {
-      const user = await signInWithGoogle();
-      if (user) {
-        setPhase('Booting');
-      } else {
-        setActiveStrategy(null);
-      }
+      googleLogin(); // Trigger Real OAuth
     } else {
       // Demo strategies - only available if handlers are provided
       if (strategy === 'Jim' && !onJimProfile) return;
@@ -228,13 +245,16 @@ export const LaunchScreen: React.FC<Props> = ({
                 onClick={() => selectStrategy('Google')}
                 colorClass="text-red-400"
               />
-              <StrategyCard
-                icon={Plus}
-                title="New Account"
-                desc="Establish a new secure identity and root ledger."
-                onClick={() => selectStrategy('Manual')}
-                colorClass="text-emerald-400"
-              />
+              {/* Only show "New Account" (Manual) if no session exists. If session exists, user should Resume or Reset. */}
+              {!canResume && (
+                <StrategyCard
+                  icon={Plus}
+                  title="New Account"
+                  desc="Establish a new secure identity and root ledger."
+                  onClick={() => selectStrategy('Manual')}
+                  colorClass="text-emerald-400"
+                />
+              )}
               {/* Demo options - only available in development mode */}
               {import.meta.env.DEV && onSyntheticFuzz && (
                 <StrategyCard
@@ -310,7 +330,7 @@ export const LaunchScreen: React.FC<Props> = ({
                     <input type="file" accept=".json" onChange={handleFileImport} className="hidden" />
                   </label>
                   <button onClick={wipeSession} className="flex-1 py-3 bg-red-900/30 border border-red-900 hover:bg-red-900/50 rounded-lg font-bold text-red-400 flex items-center justify-center gap-2 transition-colors">
-                    <Trash2 size={16} /> Wipe Data
+                    <Trash2 size={16} /> Factory Reset
                   </button>
                 </div>
               </div>

@@ -1,108 +1,127 @@
 #!/bin/bash
 # =============================================================================
-# Production Deployment - Cloud Run Only
+# Production Deployment via Cloud Build (Git-Synced)
 # =============================================================================
-# Single deployment target: Cloud Run (API + Frontend)
+# 1. Pushes changes to GitHub
+# 2. Triggers remote Cloud Build (saves bandwidth)
+# 3. Deploys to Cloud Run
 # =============================================================================
 
 set -euo pipefail
 
 # Configuration
-export GCP_PROJECT_ID="${GCP_PROJECT_ID:-gen-lang-client-0754063985}"
-export GCP_REGION="${GCP_REGION:-us-central1}"
-export SERVICE_NAME="${SERVICE_NAME:-trust-ledger-fullstack}"
+export PROJECT_ID="fiduciary-prod"
+export SERVICE_NAME="trust-ledger-fullstack"
+export REGION="us-central1"
+export IMAGE_NAME="gcr.io/$PROJECT_ID/$SERVICE_NAME"
 
 echo "=== DEPLOYMENT: $SERVICE_NAME ==="
-echo "Project: $GCP_PROJECT_ID"
-echo "Region:  $GCP_REGION"
+echo "Project: $PROJECT_ID"
+echo "Region:  $REGION"
 
-# Build frontend
+# -----------------------------------------------------------------------------
+# 1. Git Sync
+# -----------------------------------------------------------------------------
 echo ""
-echo "Building frontend..."
-VITE_FIREBASE_ENABLED=true \
-VITE_GMAIL_AUTH_ENABLED=true \
-VITE_IRS_API_URL=/api \
-VITE_DEMO_MODE=false \
-npm run build
+echo ">>> 1. Syncing with GitHub..."
 
-# Copy to server
-rm -rf server/public
-cp -r dist server/public
+# Add all changes
+git add .
 
-# Deploy to Cloud Run
+# Commit (allow empty if no changes)
+git commit -m "Deploy: $(date '+%Y-%m-%d %H:%M:%S')" || echo "No new changes to commit."
+
+# Push to Main
+git push origin main
+echo "✓ Code synced to remote repository."
+
+# -----------------------------------------------------------------------------
+# 2. Prepare Build Configuration
+# -----------------------------------------------------------------------------
 echo ""
-echo "Deploying to Cloud Run..."
-gcloud run deploy "$SERVICE_NAME" \
-  --source ./server \
-  --project "$GCP_PROJECT_ID" \
-  --region "$GCP_REGION" \
-  --platform managed \
-  --allow-unauthenticated \
-  --memory 512Mi \
-  --set-env-vars "NODE_ENV=production"
+echo ">>> 2. Configuring Remote Build..."
 
-# Print URL
-echo ""
-echo "=== DEPLOYED ==="
-gcloud run services describe "$SERVICE_NAME" \
-  --project "$GCP_PROJECT_ID" \
-  --region "$GCP_REGION" \
-  --format='value(status.url)'
-
-cat >/tmp/deploy-flowchart.md <<EOF
-```mermaid
-
-flowchart TB
-    subgraph Client["Browser Client"]
-        React["React App<br/>(Redux Store)"]
-        Firebase["Firebase Auth SDK"]
-    end
-
-    subgraph Google["Google Identity Platform"]
-        OAuth["Google OAuth 2.0"]
-        IAM["Cloud IAM"]
-    end
-
-    subgraph Serverless["100% Serverless - Scale to Zero"]
-        subgraph Gateway["API Gateway"]
-            APIGW["API Gateway<br/>(OpenAPI Spec)"]
-        end
-        
-        subgraph Compute["Cloud Run"]
-            CR["trust-ledger-fullstack<br/>(Express API)"]
-        end
-    end
-
-    subgraph Storage["Per-User Storage (ACL-Protected)"]
-        subgraph GCS["Cloud Storage"]
-            Redux["Redux State<br/>gs://project/users/{uid}/state.json"]
-            WAL["Write-Ahead Log<br/>gs://project/users/{uid}/wal/"]
-            Docs["Documents<br/>gs://project/users/{uid}/docs/"]
-        end
-    end
-
-    %% Auth Flow
-    React -->|"1. Login"| Firebase
-    Firebase -->|"2. Google Sign-In"| OAuth
-    OAuth -->|"3. ID Token"| Firebase
-    Firebase -->|"4. ID Token"| React
-
-    %% API Flow
-    React -->|"5. API Request<br/>+ Bearer Token"| APIGW
-    APIGW -->|"6. Validate Token"| IAM
-    IAM -->|"7. User Identity"| APIGW
-    APIGW -->|"8. Route Request"| CR
-
-    %% Storage Flow
-    CR -->|"9. Load/Save State<br/>(user-scoped path)"| Redux
-    CR -->|"10. Append Events"| WAL
-    CR -->|"11. Store Files"| Docs
-
-    %% Direct Storage (Optional)
-    React -.->|"Signed URL Upload<br/>(optional)"| Docs
-
-    style Client fill:#e1f5fe
-    style Serverless fill:#e8f5e9
-    style Storage fill:#fff3e0
-    style Google fill:#fce4ec
+# Create Root .gcloudignore to prevent uploading node_modules/dist
+cat > .gcloudignore <<EOF
+.git/
+node_modules/
+dist/
+test-results/
+test-artifacts/
+server/node_modules/
 EOF
+
+# Create cloudbuild.yaml
+cat > cloudbuild.yaml <<EOF
+steps:
+  # 1. Install & Build Frontend
+  - name: 'node:20-alpine'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        npm ci
+        export VITE_FIREBASE_ENABLED=true
+        export VITE_GMAIL_AUTH_ENABLED=true
+        export VITE_IRS_API_URL=/api
+        export VITE_DEMO_MODE=false
+        npm run build
+
+  # 2. Prepare Server Directory
+  - name: 'alpine'
+    script: |
+      rm -rf server/public
+      mkdir -p server/public
+      cp -r dist/* server/public/
+
+  # 3. Build & Publish Container (Cloud Native Buildpacks)
+  #    "We are serverless" -> No Dockerfile required.
+  - name: 'gcr.io/k8s-skaffold/pack'
+    entrypoint: 'pack'
+    args:
+      - 'build'
+      - '$IMAGE_NAME'
+      - '--builder=gcr.io/buildpacks/builder:v1'
+      - '--path=./server'
+      - '--publish'
+
+  # 4. Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '$SERVICE_NAME'
+      - '--image'
+      - '$IMAGE_NAME'
+      - '--region'
+      - '$REGION'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '512Mi'
+      - '--set-env-vars'
+      - 'NODE_ENV=production'
+
+images:
+  - '$IMAGE_NAME'
+EOF
+
+# -----------------------------------------------------------------------------
+# 3. Trigger Remote Build
+# -----------------------------------------------------------------------------
+echo ""
+echo ">>> 3. Submitting Build to Cloud Build..."
+echo "    (Source will be uploaded minus ignored files)"
+echo "    (Build happens remotely)"
+
+gcloud builds submit --project "$PROJECT_ID" --config cloudbuild.yaml .
+
+echo ""
+echo "=== DEPLOYMENT COMPLETE ==="
+echo "Service URL:"
+gcloud run services describe "$SERVICE_NAME" \
+  --project "$PROJECT_ID" \
+  --region "$REGION" \
+  --format='value(status.url)'

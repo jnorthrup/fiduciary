@@ -17,4 +17,5 @@ export interface User {
   department?: string;
   phoneNumber?: string;
   isPrivate?: boolean;
+  profileImage?: string;
 }

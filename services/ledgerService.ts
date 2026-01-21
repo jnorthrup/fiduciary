@@ -4,10 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 import * as types from '../types';
 import { simulateTransmission, searchIRSManual } from './irsApiService';
 import { UseCaseLogger } from './useCaseLogger';
+import { logger } from './logger';
 import { GoogleGenAI } from "@google/genai";
-import { initFirebase, getDb, batchUpload, getFirebaseAuth } from './firebase';
-import { collection, onSnapshot, setDoc, doc } from 'firebase/firestore';
-import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
 import { cryptoService } from './cryptoService';
 import * as accountService from './accountService';
 
@@ -210,7 +208,7 @@ type LedgerContextType = LedgerDb & {
   // Methods
   setTeachModeEnabled: (enabled: boolean) => void;
   connectToFirebase: (config: any) => Promise<boolean>;
-  signInWithGoogle: () => Promise<types.User | null>;
+  signInWithGoogle: (profileData?: any) => Promise<types.User | null>;
   pushLocalToCloud: () => Promise<void>;
   requestAuthorization: (callback: () => void) => void;
   verify2FA: (code: string) => boolean;
@@ -469,10 +467,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
 
   // --- Persistence & Sync ---
   const syncDoc = (collectionName: keyof LedgerDb | string, data: any) => {
-    if (isCloudEnabled) {
-      const fb = getDb();
-      if (fb && data.id) setDoc(doc(fb, collectionName, data.id), data).catch(console.error);
-    }
+    // Stubbed (Non-goal)
   };
 
   const addItem = (key: keyof LedgerDb, item: any) => {
@@ -660,64 +655,49 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
   };
 
   const connectToFirebase = async (config: any): Promise<boolean> => {
-    const success = initFirebase(config);
-    if (success) {
-      setIsCloudEnabled(true);
-      setSettings(prev => ({ ...prev, firebaseConfig: config }));
-
-      // Setup Listeners
-      const fb = getDb();
-      if (fb) {
-        ['entities', 'accounts', 'journals'].forEach(col => {
-          onSnapshot(collection(fb, col), (snap) => {
-            const items = snap.docs.map(d => d.data());
-            if (items.length > 0) setDb(prev => ({ ...prev, [col]: items }));
-          });
-        });
-      }
-    }
-    return success;
+    // Firebase is a non-goal. Stubbed.
+    return false;
   };
 
-  const signInWithGoogle = async (): Promise<types.User | null> => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
-      const u: types.User = {
-        id: 'mock-123',
-        name: 'Mock User',
-        email: 'mock@local.dev',
+  const signInWithGoogle = async (profileData?: any): Promise<types.User | null> => {
+    // If profile data is provided (from real Google Auth), use it
+    if (profileData) {
+      const user: types.User = {
+        id: profileData.sub || uuidv4(),
+        name: profileData.name || profileData.email || 'Google User',
+        email: profileData.email || 'no-email@google.com',
         role: 'Owner' as types.UserRole,
-        avatarInitials: "MU",
+        avatarInitials: ((profileData.given_name?.[0] || '') + (profileData.family_name?.[0] || '')).toUpperCase() || 'GU',
         lastActive: 'Now',
-        _version: '1'
-      };
-      setCurrentUser(u);
-      addItem('users', u);
-      return u;
-    }
-
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      const u: types.User = {
-        id: user.uid,
-        name: user.displayName || 'Google User',
-        email: user.email || '',
-        role: 'Owner' as types.UserRole,
-        avatarInitials: (user.displayName || 'GU').substring(0, 2).toUpperCase(),
-        lastActive: 'Now',
-        _version: '1'
+        _version: '1',
+        profileImage: profileData.picture
+        // Store the key ID or similar if needed for crypto later, but for now this is identity
       };
 
-      setCurrentUser(u);
-      addItem('users', u);
-      return u;
-    } catch (e) {
-      console.error("Google Sign-In failed", e);
-      return null;
+      setCurrentUser(user);
+      addItem('users', user);
+      logger.info("Google Sign-In Successful", { uid: user.id, email: user.email });
+
+      // Update secrets with any relevant info if available, or just log
+      return user;
     }
+
+    // Fallback: Direct Environment Auth (No Firebase/Google Data)
+    // Only used if signInWithGoogle is called without args (e.g. dev bypass)
+    const envUser: types.User = {
+      id: 'auth-env-standard',
+      name: 'James R. Standard Jr.',
+      email: 'admin@trust-ledger.system',
+      role: 'Owner' as types.UserRole,
+      avatarInitials: 'JS',
+      lastActive: 'Now',
+      _version: '1'
+    };
+
+    setCurrentUser(envUser);
+    addItem('users', envUser);
+    logger.info("Environment Sign-In Successful (Mock)", { uid: envUser.id });
+    return envUser;
   };
 
   const contextValue: LedgerContextType = {
@@ -725,9 +705,9 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
     currentUser, apiSystemStatus, searchResults, isSearching, secrets, settings, changeGraph, canResume, isCloudEnabled, is2FAOpen,
     teachModeEnabled,
     setTeachModeEnabled,
-    connectToFirebase,
+    connectToFirebase: async () => false, // Stubbed (Non-goal)
     signInWithGoogle,
-    pushLocalToCloud: async () => { if (isCloudEnabled) { await batchUpload('entities', db.entities); await batchUpload('accounts', db.accounts); await batchUpload('journals', db.journals); } },
+    pushLocalToCloud: async () => { /* Stubbed (Non-goal) */ },
     requestAuthorization: (cb) => { setPendingCallback(() => cb); setIs2FAOpen(true); },
     verify2FA: (code) => { if (code.length === 6 && !isNaN(Number(code))) { pendingCallback?.(); setIs2FAOpen(false); return true; } return false; },
     cancel2FA: () => { setIs2FAOpen(false); setPendingCallback(null); },
@@ -736,7 +716,21 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
       setCurrentUser(u); addItem('users', u);
     },
     resumePersistent: () => { const s = localStorage.getItem(STORAGE_KEY); if (s) importData(s); },
-    wipeSession: () => { localStorage.removeItem(STORAGE_KEY); resetData(); setCanResume(false); },
+    wipeSession: () => {
+      // 1. Clear Persistence
+      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.clear(); // Clears all session data including OAuth tokens
+
+      // 2. Reset Internal State
+      resetData();
+      setCanResume(false);
+
+      // 3. Log Action
+      // We use the existing logger, but wrapped to match signature/style if needed
+      // Assuming logger.info exists, using console as fallback if needed or just logging to internal log
+      console.warn("Factory Reset Executed - Profile/Buckets Abandoned");
+      UseCaseLogger.log("SYSTEM", "Factory Reset Executed - Profile/Buckets Abandoned");
+    },
     // Demo functions - only available in development mode
     ...(import.meta.env.DEV ? {
 

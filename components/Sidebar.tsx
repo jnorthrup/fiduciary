@@ -168,8 +168,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             disabled={!currentUser.name}
             className={`flex items-center gap-3 w-full p-2.5 rounded-xl transition-all group border border-transparent ${currentUser.name ? 'hover:bg-slate-900 hover:border-slate-800' : 'opacity-50 cursor-not-allowed'}`}
           >
-            <div className="h-10 w-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-bold text-white group-hover:border-indigo-500 transition-colors">
-              {currentUser.avatarInitials}
+            <div className="h-10 w-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center font-bold text-white group-hover:border-indigo-500 transition-colors overflow-hidden">
+              {currentUser.profileImage ? (
+                <img src={currentUser.profileImage} alt={currentUser.name} className="w-full h-full object-cover" />
+              ) : (
+                currentUser.avatarInitials
+              )}
             </div>
             <div className="text-left flex-1 min-w-0">
               <p className="text-sm font-bold text-white truncate">{currentUser.name || 'Nameless Owner'}</p>
