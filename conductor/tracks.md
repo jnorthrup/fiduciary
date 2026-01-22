@@ -11,6 +11,13 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
+## [PLANNING] Track: LAS Trust ERP Validation
+
+*Link: [./conductor/tracks/las_trust_erp_20260121/](./conductor/tracks/las_trust_erp_20260121/)*
+*OpenAPI spec validation, Cloud Function scaffolding, and settlement orchestration*
+
+---
+
 ## [ACTIVE] Track: Full Ledgering - Credit & Debit Account CRUD
 
 *Link: [./conductor/tracks/ledger_20260114/](./conductor/tracks/ledger_20260114/)*
