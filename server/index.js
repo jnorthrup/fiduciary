@@ -12,6 +12,7 @@ import bankingRouter from './routes/banking.js';
 import bsoRouter from './routes/bso.js';
 import ledgerRouter from './routes/ledger.js';
 import settlementRouter from './routes/settlement.js';
+import trustsRouter from './routes/trusts.js';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { connect as connectBus, subscribe } from './lib/event-bus.js';
 import admin from 'firebase-admin';
@@ -167,6 +168,9 @@ app.use('/api/bso', verifyFirebaseToken, bsoRouter);
 
 // Mount Settlement router (Payment Orders)
 app.use('/api/settlement', verifyFirebaseToken, settlementRouter);
+
+// Mount Trusts router (LAS Trust ERP)
+app.use('/api/trusts', verifyFirebaseToken, trustsRouter);
 
 // Mount Ledger router
 if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'ledger-service') {

@@ -25,25 +25,6 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
-## [ACTIVE] Track: Production Readiness
-
-*Link: [./conductor/tracks/production_readiness_20260120/](./conductor/tracks/production_readiness_20260120/)*
-*Demo code removal, Plaid integration, production deployment*
-
----
-
-## [COMPLETE] Track: ACH Settlement Logic
-
-*Link: [./conductor/tracks/ach_settlement_20260112/](./conductor/tracks/ach_settlement_20260112/)*
-
----
-
-## [COMPLETE] Track: CI/CD Pipeline
-
-*Link: [./conductor/tracks/cid_deploy_20260115/](./conductor/tracks/cid_deploy_20260115/)*
-
----
-
 ## [~] Track: Use Case Correctness & Test Adjustments
 
 *Link: [./conductor/tracks/test_correctness_20260121/](./conductor/tracks/test_correctness_20260121/)*
@@ -51,10 +32,23 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
-## [RETIRED] Incomplete Tracks
+## [ ] Track: JSONL LSM Persistence Layer
 
-The following tracks are retired incomplete to focus on core NACHA + ledger functionality:
+*Link: [./conductor/tracks/jsonl_lsm_persistence_20260121/](./conductor/tracks/jsonl_lsm_persistence_20260121/)*
+*LSM-tree with JSONL WAL, configurable threshold, MapReduce-compatible streaming*
 
+---
+
+## [ARCHIVED] Completed & Retired Tracks
+
+Stored in `conductor/tracks/.archive/` for reference:
+
+**Completed:**
+- ACH Settlement Logic (ach_settlement_20260112)
+- CI/CD Pipeline (cid_deploy_20260115)
+- Production Readiness (production_readiness_20260120)
+
+**Retired (incomplete):**
 - 1099 IRS CAFR Proficiency (1099_20260111)
 - Teach Mode Paragraph Activation (teach-mode_20260112)
 - Disjoint Backlog (disjoint_backlog_20260113)
@@ -62,3 +56,7 @@ The following tracks are retired incomplete to focus on core NACHA + ledger func
 - BSO Implementation (bso_phase1_20260114)
 - Mobile QuickBooks Layout (mobile_quickbooks_layout_20260115)
 - Settlement Architecture Rail Adapters (settlement_architecture_20260115)
+- Audit (audit_20260115)
+- Long Horizon Adapters (long_horizon_adapters_20260121)
+- QuickBooks Toggle (quickbooks_toggle_20260119)
+- Specialization (specialization_20260113)

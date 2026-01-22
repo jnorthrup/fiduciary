@@ -225,10 +225,11 @@ describe('Dashboard Component', () => {
         expect(screen.getByTestId('1099-wizard')).toBeInTheDocument();
       });
 
-      // Close wizard
-      const closeButton = screen.getByRole('button').querySelector('svg');
+      // Close wizard - find the modal close button (contains X icon)
+      const allButtons = screen.getAllByRole('button');
+      const closeButton = allButtons.find(btn => btn.querySelector('svg.lucide-x') || btn.querySelector('[data-testid="close-modal"]'));
       if (closeButton) {
-        fireEvent.click(closeButton.parentElement as Element);
+        fireEvent.click(closeButton);
 
         await waitFor(() => {
           expect(screen.queryByTestId('1099-wizard')).not.toBeInTheDocument();

@@ -1,0 +1,403 @@
+openapi: 3.1.0
+info:
+  title: LAS Trust ERP API (Simplified)
+  version: 0.2.0
+  description: >
+    Streamlined Ledger-first Trust ERP focused on high-velocity Conveyance and Transactions.
+     Removed intermediate approval steps and ancillary scheduling logic.
+servers:
+  - url: https://api.trustledger.systems
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Trusts
+  - name: Ledger
+  - name: Assets
+  - name: Settlement
+
+paths:
+  # ==========================================
+  # Trusts (Core Identity)
+  # ==========================================
+  /trusts:
+    post:
+      tags: [Trusts]
+      summary: Create trust
+      operationId: createTrust
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrustCreate" }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Trust" }
+    get:
+      tags: [Trusts]
+      operationId: listTrusts
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Trust" }
+
+  /trusts/{trustId}:
+    get:
+      tags: [Trusts]
+      operationId: getTrust
+      parameters:
+        - $ref: "#/components/parameters/TrustId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Trust" }
+    patch:
+      tags: [Trusts]
+      summary: Update trust
+      operationId: updateTrust
+      parameters:
+        - $ref: "#/components/parameters/TrustId"
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrustUpdate" }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Trust" }
+
+  /trusts/{trustId}/trustees:
+    post:
+      tags: [Trusts]
+      summary: Add trustee
+      operationId: addTrustee
+      parameters:
+        - $ref: "#/components/parameters/TrustId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrusteeCreate" }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Trustee" }
+    get:
+      tags: [Trusts]
+      summary: List trustees
+      operationId: listTrustees
+      parameters:
+        - $ref: "#/components/parameters/TrustId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Trustee" }
+
+  /trusts/trustees/{trusteeId}:
+    patch:
+      tags: [Trusts]
+      summary: Update trustee
+      operationId: updateTrustee
+      parameters:
+        - $ref: "#/components/parameters/TrusteeId"
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrusteeUpdate" }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Trustee" }
+
+  # ==========================================
+  # Ledger (The Truth)
+  # ==========================================
+  /ledger/accounts:
+    get:
+      tags: [Ledger]
+      summary: Chart of Accounts
+      operationId: listAccounts
+      parameters:
+        - $ref: "#/components/parameters/TrustIdQuery"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Account" }
+    post:
+      tags: [Ledger]
+      summary: Add Account
+      operationId: createAccount
+      parameters:
+        - $ref: "#/components/parameters/TrustIdQuery"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccountCreate" }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+
+  /ledger/journal-entries:
+    post:
+      tags: [Ledger]
+      summary: Create Journal Entry (Draft)
+      operationId: createJournalEntry
+      parameters:
+        - $ref: "#/components/parameters/TrustIdQuery"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/JournalEntryCreate" }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JournalEntry" }
+
+  /ledger/journal-entries/{jeId}/post:
+    post:
+      tags: [Ledger]
+      summary: Post Journal Entry (Finalize)
+      description: Skips "Approval" step. Directly posts if valid.
+      operationId: postJournalEntry
+      parameters:
+        - $ref: "#/components/parameters/JournalEntryId"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JournalEntry" }
+
+  # ==========================================
+  # Assets (Simplified)
+  # ==========================================
+  /assets:
+    post:
+      tags: [Assets]
+      operationId: createAsset
+      parameters:
+        - $ref: "#/components/parameters/TrustIdQuery"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssetCreate" }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Asset" }
+    get:
+      tags: [Assets]
+      operationId: listAssets
+      parameters:
+        - $ref: "#/components/parameters/TrustIdQuery"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Asset" }
+
+  # ==========================================
+  # Settlement / Conveyance (High Velocity)
+  # ==========================================
+  /settlement/payment-orders:
+    post:
+      tags: [Settlement]
+      summary: Create Payment Order
+      operationId: createPaymentOrder
+      parameters:
+        - $ref: "#/components/parameters/TrustIdQuery"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentOrderCreate" }
+      responses:
+        "201":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentOrder" }
+
+  /settlement/payment-orders/{paymentOrderId}/execute:
+    post:
+      tags: [Settlement]
+      summary: Execute Payment Order
+      description: Combined Dispatch/Execute step. Signals money has moved.
+      operationId: executePaymentOrder
+      parameters:
+        - $ref: "#/components/parameters/PaymentOrderId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExecutionConfirmRequest" }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentOrder" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TrustId: { in: path, name: trustId, required: true, schema: { type: string, format: uuid } }
+    TrustIdQuery: { in: query, name: trustId, required: true, schema: { type: string, format: uuid } }
+    JournalEntryId: { in: path, name: jeId, required: true, schema: { type: string, format: uuid } }
+    PaymentOrderId: { in: path, name: paymentOrderId, required: true, schema: { type: string, format: uuid } }
+    TrusteeId: { in: path, name: trusteeId, required: true, schema: { type: string, format: uuid } }
+
+  schemas:
+    # --- Ledger Schemas ---
+    Account:
+      type: object
+      properties:
+        accountId: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        type: { type: string, enum: [asset, liability, equity, income, expense] }
+        balance: { type: number }
+    AccountCreate:
+      type: object
+      required: [code, name, type]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        type: { type: string, enum: [asset, liability, equity, income, expense] }
+
+    JournalEntry:
+      type: object
+      properties:
+        jeId: { type: string, format: uuid }
+        status: { type: string, enum: [draft, posted, voided] }
+        date: { type: string, format: date }
+        lines:
+          type: array
+          items:
+            type: object
+            properties:
+              accountId: { type: string }
+              debit: { type: number }
+              credit: { type: number }
+    JournalEntryCreate:
+      type: object
+      required: [date, lines]
+      properties:
+        date: { type: string, format: date }
+        memo: { type: string }
+        lines:
+          type: array
+          items:
+            type: object
+            required: [accountId]
+            properties:
+              accountId: { type: string }
+              debit: { type: number }
+              credit: { type: number }
+
+    # --- Trusts ---
+    Trust:
+      type: object
+      properties:
+        trustId: { type: string, format: uuid }
+        legalName: { type: string }
+        ein: { type: string }
+    TrustCreate:
+      type: object
+      required: [legalName]
+      properties:
+        legalName: { type: string }
+        ein: { type: string }
+        dateOfTrust: { type: string, format: date }
+        situsState: { type: string }
+        mailingAddress: { type: string }
+    TrustUpdate:
+      type: object
+      properties:
+        mailingAddress: { type: string }
+        status: { type: string, enum: [active, inactive] }
+
+    Trustee:
+      type: object
+      properties:
+        trusteeId: { type: string, format: uuid }
+        fullName: { type: string }
+        role: { type: string, enum: [co_trustee, authorized_signatory] }
+        independentSigningAuthority: { type: boolean }
+        status: { type: string, enum: [active, inactive] }
+    TrusteeCreate:
+      type: object
+      required: [fullName, role]
+      properties:
+        fullName: { type: string }
+        role: { type: string, enum: [co_trustee, authorized_signatory] }
+        independentSigningAuthority: { type: boolean }
+    TrusteeUpdate:
+      type: object
+      properties:
+        role: { type: string, enum: [co_trustee, authorized_signatory] }
+        independentSigningAuthority: { type: boolean }
+        status: { type: string, enum: [active, inactive] }
+
+    # --- Assets (Simplified) ---
+    AssetCreate:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string }
+        type: { type: string, enum: [RealProperty, PersonalProperty] }
+        value: { type: number }
+    Asset:
+      allOf:
+        - $ref: "#/components/schemas/AssetCreate"
+        - type: object
+          properties:
+            assetId: { type: string, format: uuid }
+
+    # --- Settlement ---
+    PaymentOrderCreate:
+      type: object
+      required: [amount, payee]
+      properties:
+        amount: { type: number }
+        payee: { type: string }
+        method: { type: string, enum: [WIRE, ACH, CHECK, LEDGER_ONLY] }
+    PaymentOrder:
+      allOf:
+        - $ref: "#/components/schemas/PaymentOrderCreate"
+        - type: object
+          properties:
+            paymentOrderId: { type: string, format: uuid }
+            status: { type: string, enum: [created, executed, failed] }
+    
+    ExecutionConfirmRequest:
+      type: object
+      properties:
+        transactionRef: { type: string }
+        executedAt: { type: string, format: date-time }

@@ -5,7 +5,7 @@ import express from 'express';
 import auditRouter from './audit.js';
 
 // Mock dependencies
-vi.mock('../../services/auditService.ts', () => ({
+vi.mock('../services/auditService.js', () => ({
     listAuditEvents: vi.fn(() => ({
         items: [
             {

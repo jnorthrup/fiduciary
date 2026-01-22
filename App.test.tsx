@@ -48,22 +48,21 @@ vi.mock('./services/ledgerService', () => ({
   useLedgerStore: () => storeState,
 }));
 
-const mockComponent = (testId: string) => () => <div data-testid={testId}></div>;
-
-vi.mock('./components/LaunchScreen', () => ({ LaunchScreen: mockComponent('launch-screen') }));
-vi.mock('./components/Sidebar', () => ({ Sidebar: mockComponent('sidebar') }));
-vi.mock('./components/SystemOverview', () => ({ SystemOverview: mockComponent('system-overview') }));
-vi.mock('./components/Dashboard', () => ({ Dashboard: mockComponent('dashboard') }));
-vi.mock('./components/modals/SettingsModal', () => ({ SettingsModal: mockComponent('settings-modal') }));
-vi.mock('./components/IRSApiConsole', () => ({ IRSApiConsole: mockComponent('irs-console') }));
-vi.mock('./components/IRMTreeWidget', () => ({ IRMTreeWidget: mockComponent('irm-tree') }));
-vi.mock('./components/modals/UserProfileModal', () => ({ UserProfileModal: mockComponent('user-modal') }));
-vi.mock('./components/modals/TwoFactorAuthModal', () => ({ TwoFactorAuthModal: mockComponent('twofactor-modal') }));
-vi.mock('./components/ReceiptCaptureWizard', () => ({ ReceiptCaptureWizard: mockComponent('receipt-wizard') }));
-vi.mock('./components/FedGateway', () => ({ FedGateway: mockComponent('fed-gateway') }));
-vi.mock('./components/ACHMovementWizard', () => ({ ACHMovementWizard: mockComponent('ach-wizard') }));
-vi.mock('./components/forms/LLCContractorForm', () => ({ LLCContractorForm: mockComponent('llc-form') }));
-vi.mock('./components/IRIS1099Wizard', () => ({ IRIS1099Wizard: mockComponent('iris-wizard') }));
+// Use inline factory functions to avoid hoisting issues with vi.mock
+vi.mock('./components/LaunchScreen', () => ({ LaunchScreen: () => <div data-testid="launch-screen"></div> }));
+vi.mock('./components/Sidebar', () => ({ Sidebar: () => <div data-testid="sidebar"></div> }));
+vi.mock('./components/SystemOverview', () => ({ SystemOverview: () => <div data-testid="system-overview"></div> }));
+vi.mock('./components/Dashboard', () => ({ Dashboard: () => <div data-testid="dashboard"></div> }));
+vi.mock('./components/modals/SettingsModal', () => ({ SettingsModal: () => <div data-testid="settings-modal"></div> }));
+vi.mock('./components/IRSApiConsole', () => ({ IRSApiConsole: () => <div data-testid="irs-console"></div> }));
+vi.mock('./components/IRMTreeWidget', () => ({ IRMTreeWidget: () => <div data-testid="irm-tree"></div> }));
+vi.mock('./components/modals/UserProfileModal', () => ({ UserProfileModal: () => <div data-testid="user-modal"></div> }));
+vi.mock('./components/modals/TwoFactorAuthModal', () => ({ TwoFactorAuthModal: () => <div data-testid="twofactor-modal"></div> }));
+vi.mock('./components/ReceiptCaptureWizard', () => ({ ReceiptCaptureWizard: () => <div data-testid="receipt-wizard"></div> }));
+vi.mock('./components/FedGateway', () => ({ FedGateway: () => <div data-testid="fed-gateway"></div> }));
+vi.mock('./components/ACHMovementWizard', () => ({ ACHMovementWizard: () => <div data-testid="ach-wizard"></div> }));
+vi.mock('./components/forms/LLCContractorForm', () => ({ LLCContractorForm: () => <div data-testid="llc-form"></div> }));
+vi.mock('./components/IRIS1099Wizard', () => ({ IRIS1099Wizard: () => <div data-testid="iris-wizard"></div> }));
 vi.mock('./components/layouts/MobileQuickBooksLayout', () => ({ MobileQuickBooksLayout: ({ children }: any) => <div data-testid="mobile-layout">{children}</div> }));
 
 describe('App', () => {

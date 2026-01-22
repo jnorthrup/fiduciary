@@ -14,7 +14,7 @@ import express from 'express';
 import cors from 'cors';
 
 // Test server port (different from dev server)
-const TEST_PORT = 30102;
+const TEST_PORT = 30103;
 
 describe('Submission Validation', () => {
   let server: Server;
@@ -144,8 +144,10 @@ describe('Submission Validation', () => {
     server = createServer(app).listen(TEST_PORT);
   });
 
-  afterAll((done) => {
-    server.close(done);
+  afterAll(() => {
+    return new Promise<void>((resolve) => {
+      server.close(() => resolve());
+    });
   });
 
   describe('Authentication Validation', () => {

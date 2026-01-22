@@ -11,12 +11,34 @@
 
 import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
 import { createServer, type Server } from 'http';
-import { request as httpRequest } from 'node:http';
+import { request as httpRequest, type RequestOptions, IncomingMessage } from 'node:http';
 import express from 'express';
 import cors from 'cors';
 
 // Test server port (different from dev server)
 const TEST_PORT = 30102;
+
+// Helper to make HTTP requests with promises (replaces deprecated done() callbacks)
+function makeRequest(options: RequestOptions, body?: string): Promise<{ data: string; statusCode: number }> {
+  return new Promise((resolve, reject) => {
+    const req = httpRequest(options, (res: IncomingMessage) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        resolve({ data, statusCode: res.statusCode! });
+      });
+    });
+
+    req.on('error', reject);
+
+    if (body) {
+      req.write(body);
+    }
+    req.end();
+  });
+}
 
 describe('Express Server (index.js)', () => {
   let server: Server;
@@ -367,7 +389,7 @@ describe('Express Server (index.js)', () => {
   });
 
   describe('Health Check Endpoints', () => {
-    it('should return healthy status from /api/health', (done) => {
+    it('should return healthy status from /api/health', async () => {
       const options = {
         hostname: 'localhost',
         port: TEST_PORT,
@@ -375,28 +397,14 @@ describe('Express Server (index.js)', () => {
         method: 'GET',
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(response.status).toBe('healthy');
-          expect(response.services.irs).toBe('operational');
-          expect(res.statusCode).toBe(200);
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.end();
+      const { data, statusCode } = await makeRequest(options);
+      const response = JSON.parse(data);
+      expect(response.status).toBe('healthy');
+      expect(response.services.irs).toBe('operational');
+      expect(statusCode).toBe(200);
     });
 
-    it('should return IRS health status from /api/irs/health', (done) => {
+    it('should return IRS health status from /api/irs/health', async () => {
       const options = {
         hostname: 'localhost',
         port: TEST_PORT,
@@ -404,28 +412,14 @@ describe('Express Server (index.js)', () => {
         method: 'GET',
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(response.service).toBe('IRS IRIS A2A API Server');
-          expect(response.version).toBe('2.0.0');
-          expect(res.statusCode).toBe(200);
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.end();
+      const { data, statusCode } = await makeRequest(options);
+      const response = JSON.parse(data);
+      expect(response.service).toBe('IRS IRIS A2A API Server');
+      expect(response.version).toBe('2.0.0');
+      expect(statusCode).toBe(200);
     });
 
-    it('should return API information from /api', (done) => {
+    it('should return API information from /api', async () => {
       const options = {
         hostname: 'localhost',
         port: TEST_PORT,
@@ -433,30 +427,16 @@ describe('Express Server (index.js)', () => {
         method: 'GET',
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(response.name).toBe('Trust Ledger System API');
-          expect(response.endpoints).toBeDefined();
-          expect(res.statusCode).toBe(200);
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.end();
+      const { data, statusCode } = await makeRequest(options);
+      const response = JSON.parse(data);
+      expect(response.name).toBe('Trust Ledger System API');
+      expect(response.endpoints).toBeDefined();
+      expect(statusCode).toBe(200);
     });
   });
 
   describe('Submission Endpoints', () => {
-    it('should accept valid submission with authentication', (done) => {
+    it('should accept valid submission with authentication', async () => {
       const postData = JSON.stringify({
         transmitterId: '1234567890',
         filer: { ein: '12-3456789' },
@@ -477,29 +457,14 @@ describe('Express Server (index.js)', () => {
         },
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(res.statusCode).toBe(202);
-          expect(response.status).toBe('Received');
-          expect(response.receiptId).toBeDefined();
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.write(postData);
-      req.end();
+      const { data, statusCode } = await makeRequest(options, postData);
+      const response = JSON.parse(data);
+      expect(statusCode).toBe(202);
+      expect(response.status).toBe('Received');
+      expect(response.receiptId).toBeDefined();
     });
 
-    it('should return 401 for submission without authentication', (done) => {
+    it('should return 401 for submission without authentication', async () => {
       const postData = JSON.stringify({
         transmitterId: '1234567890',
         filer: { ein: '12-3456789' },
@@ -517,28 +482,13 @@ describe('Express Server (index.js)', () => {
         },
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(res.statusCode).toBe(401);
-          expect(response.code).toBe('AUTH_MISSING_TCC');
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.write(postData);
-      req.end();
+      const { data, statusCode } = await makeRequest(options, postData);
+      const response = JSON.parse(data);
+      expect(statusCode).toBe(401);
+      expect(response.code).toBe('AUTH_MISSING_TCC');
     });
 
-    it('should validate EIN format', (done) => {
+    it('should validate EIN format', async () => {
       const postData = JSON.stringify({
         transmitterId: '1234567890',
         filer: { ein: 'invalid' },
@@ -557,29 +507,14 @@ describe('Express Server (index.js)', () => {
         },
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(res.statusCode).toBe(400);
-          expect(response.code).toBe('VALIDATION_ERROR');
-          expect(response.errors.some((e: any) => e.code === 'INVALID_EIN_FORMAT')).toBe(true);
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.write(postData);
-      req.end();
+      const { data, statusCode } = await makeRequest(options, postData);
+      const response = JSON.parse(data);
+      expect(statusCode).toBe(400);
+      expect(response.code).toBe('VALIDATION_ERROR');
+      expect(response.errors.some((e: any) => e.code === 'INVALID_EIN_FORMAT')).toBe(true);
     });
 
-    it('should enforce payee limit of 1000', (done) => {
+    it('should enforce payee limit of 1000', async () => {
       const payees = Array.from({ length: 1001 }, (_, i) => ({
         tin: '12-3456789',
         name: `Payee ${i}`,
@@ -603,30 +538,15 @@ describe('Express Server (index.js)', () => {
         },
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(res.statusCode).toBe(400);
-          expect(response.errors.some((e: any) => e.code === 'BATCH_TOO_LARGE')).toBe(true);
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.write(postData);
-      req.end();
+      const { data, statusCode } = await makeRequest(options, postData);
+      const response = JSON.parse(data);
+      expect(statusCode).toBe(400);
+      expect(response.errors.some((e: any) => e.code === 'BATCH_TOO_LARGE')).toBe(true);
     });
   });
 
   describe('TIN Validation Endpoint', () => {
-    it('should validate valid EIN format', (done) => {
+    it('should validate valid EIN format', async () => {
       const postData = JSON.stringify({
         tin: '12-3456789',
         name: 'Test Entity',
@@ -643,28 +563,13 @@ describe('Express Server (index.js)', () => {
         },
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(response.code).toBe(0);
-          expect(response.match).toBe(true);
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.write(postData);
-      req.end();
+      const { data } = await makeRequest(options, postData);
+      const response = JSON.parse(data);
+      expect(response.code).toBe(0);
+      expect(response.match).toBe(true);
     });
 
-    it('should reject invalid TIN format', (done) => {
+    it('should reject invalid TIN format', async () => {
       const postData = JSON.stringify({
         tin: 'invalid',
         name: 'Test Entity',
@@ -681,30 +586,15 @@ describe('Express Server (index.js)', () => {
         },
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(response.code).toBe(2);
-          expect(response.match).toBe(false);
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.write(postData);
-      req.end();
+      const { data } = await makeRequest(options, postData);
+      const response = JSON.parse(data);
+      expect(response.code).toBe(2);
+      expect(response.match).toBe(false);
     });
   });
 
   describe('Form Schema Endpoint', () => {
-    it('should return schema for valid form type', (done) => {
+    it('should return schema for valid form type', async () => {
       const options = {
         hostname: 'localhost',
         port: TEST_PORT,
@@ -712,27 +602,13 @@ describe('Express Server (index.js)', () => {
         method: 'GET',
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(response.title).toBe('Form 1099-NEC');
-          expect(res.statusCode).toBe(200);
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.end();
+      const { data, statusCode } = await makeRequest(options);
+      const response = JSON.parse(data);
+      expect(response.title).toBe('Form 1099-NEC');
+      expect(statusCode).toBe(200);
     });
 
-    it('should return 404 for invalid form type', (done) => {
+    it('should return 404 for invalid form type', async () => {
       const options = {
         hostname: 'localhost',
         port: TEST_PORT,
@@ -740,29 +616,15 @@ describe('Express Server (index.js)', () => {
         method: 'GET',
       };
 
-      const req = httpRequest(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(data);
-          expect(response.code).toBe('FORM_NOT_FOUND');
-          expect(res.statusCode).toBe(404);
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.end();
+      const { data, statusCode } = await makeRequest(options);
+      const response = JSON.parse(data);
+      expect(response.code).toBe('FORM_NOT_FOUND');
+      expect(statusCode).toBe(404);
     });
   });
 
   describe('Request Logging', () => {
-    it('should log requests with masked credentials', (done) => {
+    it('should log requests with masked credentials', async () => {
       const options = {
         hostname: 'localhost',
         port: TEST_PORT,
@@ -774,27 +636,16 @@ describe('Express Server (index.js)', () => {
         },
       };
 
-      const req = httpRequest(options, (res) => {
-        res.on('data', () => {});
-        res.on('end', () => {
-          expect(logger.info).toHaveBeenCalledWith(
-            expect.stringContaining('GET /api/health')
-          );
-          expect(logger.info).toHaveBeenCalledWith(
-            expect.stringContaining('TCC: ****6789')
-          );
-          expect(logger.info).toHaveBeenCalledWith(
-            expect.stringContaining('Auth: Bearer ****')
-          );
-          done();
-        });
-      });
-
-      req.on('error', (err) => {
-        done(err);
-      });
-
-      req.end();
+      await makeRequest(options);
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('GET /api/health')
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('TCC: ****6789')
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('Auth: Bearer ****')
+      );
     });
   });
 });

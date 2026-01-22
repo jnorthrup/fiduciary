@@ -104,106 +104,61 @@ describe('Settlement API (settlement.js)', () => {
         });
     };
 
-    describe('Payment Order State Machine', () => {
+    describe('Payment Order State Machine (Simplified)', () => {
 
-        it('should create a payment order in INITIATED state', async () => {
+        it('should create a payment order in CREATED state', async () => {
             const payload = {
-                payableId: 'pay-123',
+                payee: 'Payee Name',
                 amount: 5000,
-                method: 'SPONSORED_ACH',
-                fundingSourceType: 'clearing_agent'
+                method: 'ACH'
             };
 
             const { status, body } = await post('/payment-orders', payload);
             expect(status).toBe(201);
-            expect(body.status).toBe('initiated');
+            expect(body.status).toBe('created');
             expect(body.paymentOrderId).toBeDefined();
             expect(mockStore.paymentOrders[body.paymentOrderId]).toBeDefined();
         });
 
-        it('should approve an INITIATED order', async () => {
+        it('should execute a CREATED order', async () => {
             // Setup: Create order manually in store
             const orderId = 'order-1';
             mockStore.paymentOrders[orderId] = {
                 paymentOrderId: orderId,
-                status: 'initiated',
+                status: 'created',
                 history: [],
             };
 
-            const { status, body } = await post(`/payment-orders/${orderId}/approve`, {
-                reason: 'Looks good',
-                mfaVerified: true
-            });
-
-            expect(status).toBe(200);
-            expect(body.status).toBe('approved');
-            expect(body.approvalDetails.reason).toBe('Looks good');
-        });
-
-        it('should NOT approve if missing mfaVerified', async () => {
-            const orderId = 'order-1';
-            mockStore.paymentOrders[orderId] = { paymentOrderId: orderId, status: 'initiated', history: [] };
-
-            const { status } = await post(`/payment-orders/${orderId}/approve`, { reason: 'No MFA' });
-            expect(status).toBe(400); // Validation error
-        });
-
-        it('should dispatch an APPROVED order', async () => {
-            const orderId = 'order-2';
-            mockStore.paymentOrders[orderId] = { paymentOrderId: orderId, status: 'approved', history: [] };
-
-            const { status, body } = await post(`/payment-orders/${orderId}/dispatch`, {
-                adapterConfig: { destination: 'bank-x' }
-            });
-
-            expect(status).toBe(200);
-            expect(body.status).toBe('dispatched');
-        });
-
-        it('should NOT dispatch an INITIATED order (skip approval)', async () => {
-            const orderId = 'order-3';
-            mockStore.paymentOrders[orderId] = { paymentOrderId: orderId, status: 'initiated', history: [] };
-
-            const { status, body } = await post(`/payment-orders/${orderId}/dispatch`, {});
-            expect(status).toBe(409); // Conflict / Invalid Transition
-            expect(body.message).toContain('Cannot transition');
-        });
-
-        it('should execute a DISPATCHED order', async () => {
-            const orderId = 'order-4';
-            mockStore.paymentOrders[orderId] = { paymentOrderId: orderId, status: 'dispatched', history: [] };
-
-            const { status, body } = await post(`/payment-orders/${orderId}/mark-executed`, {
+            const { status, body } = await post(`/payment-orders/${orderId}/execute`, {
+                transactionRef: 'ref-123',
                 executedAt: new Date().toISOString()
             });
 
             expect(status).toBe(200);
             expect(body.status).toBe('executed');
+            expect(body.executionDetails.transactionRef).toBe('ref-123');
         });
 
-        it('should reconcile an EXECUTED order', async () => {
-            const orderId = 'order-5';
+        it('should NOT execute an FAILED order', async () => {
+            const orderId = 'order-2';
+            mockStore.paymentOrders[orderId] = { paymentOrderId: orderId, status: 'failed', history: [] };
+
+            const { status, body } = await post(`/payment-orders/${orderId}/execute`, {
+                transactionRef: 'ref-bad'
+            });
+            expect(status).toBe(409); // Conflict
+            expect(body.message).toContain('failed state');
+        });
+
+        it('should be idempotent for EXECUTED order', async () => {
+            const orderId = 'order-3';
             mockStore.paymentOrders[orderId] = { paymentOrderId: orderId, status: 'executed', history: [] };
 
-            const { status, body } = await post(`/payment-orders/${orderId}/reconcile`, {
-                reconciledAt: new Date().toISOString()
+            const { status, body } = await post(`/payment-orders/${orderId}/execute`, {
+                transactionRef: 'ref-dup'
             });
-
             expect(status).toBe(200);
-            expect(body.status).toBe('reconciled');
-        });
-
-        it('should prevent invalid backward transitions (Reconciled -> Approved)', async () => {
-            const orderId = 'order-6';
-            mockStore.paymentOrders[orderId] = { paymentOrderId: orderId, status: 'reconciled', history: [] };
-
-            const { status, body } = await post(`/payment-orders/${orderId}/approve`, {
-                reason: 'Hacking attempt',
-                mfaVerified: true
-            });
-
-            expect(status).toBe(409);
-            expect(body.message).toContain('Cannot transition');
+            expect(body.status).toBe('executed');
         });
     });
 });

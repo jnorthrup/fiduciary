@@ -20,24 +20,24 @@ Implementation and validation of the [LAS Trust ERP OpenAPI Spec](../tmp/las-tru
 
 ## Phase 1: API Scaffolding & Validation Layer
 
-- [ ] **OpenAPI Spec Finalization**: Move spec from `tmp/` to `docs/openapi/` and finalize version 0.1.0
-- [ ] **Type Generation**: Generate TypeScript interfaces from OpenAPI spec
+- [x] **OpenAPI Spec Finalization**: Move spec from `tmp/` to `docs/openapi/` and finalize version 0.2.0 (Simplified)
+- [x] **Type Generation**: Generate TypeScript interfaces from OpenAPI spec
 - [ ] **Validation Middleware**: Implement request/response validation against the spec
-- [ ] **Mock Server**: detailed mock implementation for all endpoints (Trusts, Ledger, Settlement)
+- [x] **Trust Routes**: Create/Get/Update/List Trusts + Trustee management [implemented in server/routes/trusts.js]
 
 ## Phase 2: Core Domain Implementation (Cloud Functions)
 
 ### Trust & Identity Domain
-- [ ] `createTrust` / `getTrust` / `updateTrust`
-- [ ] `addTrustee` / `listTrustees`
+- [x] `createTrust` / `getTrust` / `updateTrust` / `listTrusts` [trusts.js]
+- [x] `addTrustee` / `listTrustees` / `updateTrustee` [trusts.js]
 
 ### Ledger Domain
-- [ ] `createAccount` / `listAccounts`
-- [ ] `createJournalEntry` / `postJournalEntry` (Immutable Ledger)
+- [x] `createAccount` / `listAccounts`
+- [x] `createJournalEntry` / `postJournalEntry` (Immutable Ledger)
 
 ### Settlement Domain
-- [ ] `createPaymentOrder` (Payment Order State Machine)
-- [ ] `dispatchPaymentOrder` (Sponsor Adapter Interface)
+- [x] `createPaymentOrder` (Payment Order State Machine)
+- [x] `dispatchPaymentOrder` (Sponsor Adapter Interface) [Implemented as execute endpoint]
 
 ## Phase 3: Integration & Contract Testing
 

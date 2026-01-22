@@ -7,6 +7,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
+    // Exclude Playwright tests and retired/archived tests - they use different runners or are archived
+    exclude: ['**/node_modules/**', '**/dist/**', 'test/*.spec.ts', '**/.retired/**', '**/.archive/**', '**/.retired_tests/**'],
     // CI mode: non-interactive, single run
     watch: process.env.CI !== 'true',
     coverage: {
