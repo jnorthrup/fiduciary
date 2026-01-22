@@ -4,7 +4,15 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
+## [PLANNING] Track: Long Horizon Adapters
+
+*Link: [./conductor/tracks/long_horizon_adapters_20260121/](./conductor/tracks/long_horizon_adapters_20260121/)*
+*Future-proof adapter patterns: LSM-tree WAL, Merkle tree integrity, SHA-3 sponge, USB crypto path, generic 2FA wrapper (Google-only)*
+
+---
+
 ## [~] Track: NACHA Account Management System
+
 
 *Link: [./conductor/tracks/nacha_accounts_20260120/](./conductor/tracks/nacha_accounts_20260120/)*
 *Mobile-first account table, NACHA submissions, GCS WAL persistence*
