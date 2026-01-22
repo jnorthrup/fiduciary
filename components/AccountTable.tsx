@@ -1,20 +1,26 @@
 /**
  * AccountTable - Mobile-first account table with keyboard navigation
- * 
+ *
  * Features:
  * - Arrow key navigation (↑/↓ to move, Enter to select)
  * - Touch swipe gestures (left=actions, right=edit)
  * - Inline editing mode with validation
- * - Virtualized for performance with large account lists
+ * - Virtualized for performance with large account lists (react-window)
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { List } from 'react-window';
 import { useLedgerStore } from '../services/ledgerService';
 import * as types from '../types';
 import {
     Search, Filter, Edit2, Trash2, ChevronRight,
     Check, X, DollarSign, PlusCircle
 } from 'lucide-react';
+
+interface ListRowProps {
+    index: number;
+    style: React.CSSProperties;
+}
 
 interface Props {
     entityId: string;
@@ -87,11 +93,14 @@ export const AccountTable: React.FC<Props> = ({
     const [validationErrors, setValidationErrors] = useState<ValidationError>({});
 
     const containerRef = useRef<HTMLDivElement>(null);
-    const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+    const listRef = useRef<List>(null);
     const cellRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
     // Column count for navigation
     const COLUMN_COUNT = 3;
+
+    // Row height for virtualization
+    const ROW_HEIGHT = 120; // Approximate height of each account row including content
 
     // Filter accounts
     const filteredAccounts = accounts
@@ -220,11 +229,12 @@ export const AccountTable: React.FC<Props> = ({
         }
     }, [editingAccountId]);
 
-    // Scroll selected row into view
+    // Scroll selected row into view (virtualized)
     useEffect(() => {
-        const row = rowRefs.current.get(filteredAccounts[cursorIndex]?.id);
-        row?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, [cursorIndex, filteredAccounts]);
+        if (listRef.current && cursorIndex >= 0) {
+            listRef.current.scrollToRow({ index: cursorIndex, align: 'smart' });
+        }
+    }, [cursorIndex]);
 
     // =========================================
     // Touch/Swipe Handling
@@ -522,6 +532,209 @@ export const AccountTable: React.FC<Props> = ({
     };
 
     // =========================================
+    // Virtualized Row Renderer Component
+    // =========================================
+    const RowComponent = useCallback((props: { index: number; style: React.CSSProperties }) => {
+        const { index, style } = props;
+        const account = filteredAccounts[index];
+        if (!account) return null;
+
+        const isCursor = index === cursorIndex;
+        const isSelected = account.id === selectedAccountId;
+        const isEditing = account.id === editingAccountId;
+        const isSwipingThis = swipeState.accountId === account.id;
+        const swipeOffset = isSwipingThis ? swipeState.currentX - swipeState.startX : 0;
+
+        return (
+            <div
+                style={style}
+                className={`relative border-b border-slate-100 transition-all ${isCursor ? 'bg-indigo-50 ring-2 ring-indigo-300 ring-inset' : 'bg-white'
+                    } ${isSelected ? 'bg-slate-100' : ''}`}
+                role="row"
+                aria-selected={isSelected}
+                onTouchStart={(e) => handleTouchStart(account.id, e)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onClick={() => {
+                    setCursorIndex(index);
+                    if (!isEditing) {
+                        setSelectedAccountId(account.id);
+                        onAccountSelect?.(account);
+                    }
+                }}
+            >
+                {/* Swipe Actions (visible on swipe left) */}
+                {isSelected && !isEditing && (
+                    <div className="absolute right-0 top-0 bottom-0 flex items-center gap-2 px-3 bg-slate-100 z-10 animate-in slide-in-from-right duration-200">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); startEditing(account); }}
+                            className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                            aria-label="Edit account"
+                        >
+                            <Edit2 size={16} />
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(account.id); }}
+                            className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                            aria-label="Delete account"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
+                )}
+
+                {/* Row Content */}
+                <div
+                    className="p-4 transition-transform"
+                    style={{ transform: `translateX(${Math.max(-80, Math.min(80, swipeOffset))}px)` }}
+                >
+                    {isEditing ? (
+                        /* Edit Mode */
+                        <div className="space-y-3 animate-in fade-in duration-200">
+                            <div>
+                                <input
+                                    type="text"
+                                    value={editForm.name}
+                                    onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
+                                    className={`w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none ${validationErrors.name ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
+                                    placeholder="Account Name"
+                                    autoFocus
+                                    onKeyDown={(e) => handleEditKeyDown(e, 'name')}
+                                    aria-invalid={!!validationErrors.name}
+                                    aria-describedby={validationErrors.name ? 'name-error' : undefined}
+                                />
+                                {validationErrors.name && (
+                                    <p id="name-error" className="mt-1 text-xs text-red-600">
+                                        {validationErrors.name}
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <input
+                                    type="text"
+                                    value={editForm.description}
+                                    onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
+                                    className={`w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none ${validationErrors.description ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
+                                    placeholder="Description (optional)"
+                                    onKeyDown={(e) => handleEditKeyDown(e, 'description')}
+                                    aria-invalid={!!validationErrors.description}
+                                    aria-describedby={validationErrors.description ? 'description-error' : undefined}
+                                />
+                                {validationErrors.description && (
+                                    <p id="description-error" className="mt-1 text-xs text-red-600">
+                                        {validationErrors.description}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={saveEditing}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700"
+                                    onKeyDown={(e) => handleButtonKeyDown(e, 'save')}
+                                >
+                                    <Check size={14} /> Save
+                                </button>
+                                <button
+                                    onClick={cancelEditing}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-300"
+                                    onKeyDown={(e) => handleButtonKeyDown(e, 'cancel')}
+                                >
+                                    <X size={14} /> Cancel
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        /* View Mode - Grid Cells */
+                        <div className="flex justify-between items-start w-full">
+                            {/* Cell 0: Type and Code */}
+                            <div
+                                ref={(el) => el && cellRefs.current.set(`${index}-0`, el)}
+                                role="gridcell"
+                                tabIndex={focusedCell?.row === index && focusedCell?.col === 0 ? 0 : -1}
+                                className="flex-1 min-w-0 focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded"
+                                onClick={() => {
+                                    setCursorIndex(index);
+                                    setFocusedCell({ row: index, col: 0 });
+                                    setSelectedAccountId(account.id);
+                                }}
+                            >
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getTypeColor(account.type)}`}>
+                                        {account.type}
+                                    </span>
+                                    <span className="font-mono text-xs text-slate-400 bg-slate-50 px-1 rounded">
+                                        {account.code}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Cell 1: Name and Description */}
+                            <div
+                                ref={(el) => el && cellRefs.current.set(`${index}-1`, el)}
+                                role="gridcell"
+                                tabIndex={focusedCell?.row === index && focusedCell?.col === 1 ? 0 : -1}
+                                className="flex-1 min-w-0 focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded"
+                                onClick={() => {
+                                    setCursorIndex(index);
+                                    setFocusedCell({ row: index, col: 1 });
+                                    setSelectedAccountId(account.id);
+                                }}
+                            >
+                                <h3 className="font-semibold text-slate-800 text-sm truncate">{account.name}</h3>
+                                <p className="text-xs text-slate-400 truncate mt-0.5">
+                                    {account.description || 'No description'}
+                                </p>
+                            </div>
+
+                            {/* Cell 2: Balance */}
+                            <div
+                                ref={(el) => el && cellRefs.current.set(`${index}-2`, el)}
+                                role="gridcell"
+                                tabIndex={focusedCell?.row === index && focusedCell?.col === 2 ? 0 : -1}
+                                className="text-right ml-3 shrink-0 focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded"
+                                onClick={() => {
+                                    setCursorIndex(index);
+                                    setFocusedCell({ row: index, col: 2 });
+                                    setSelectedAccountId(account.id);
+                                }}
+                            >
+                                <span className={`font-mono font-bold text-sm ${account.balance < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                                    ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                </span>
+                                <p className="text-[10px] text-slate-400 uppercase">{account.normalBalance}</p>
+                                <ChevronRight size={16} className="text-slate-300 ml-2 shrink-0 inline" />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }, [
+        filteredAccounts,
+        cursorIndex,
+        selectedAccountId,
+        editingAccountId,
+        swipeState,
+        editForm,
+        validationErrors,
+        focusedCell,
+        onAccountSelect,
+        handleTouchStart,
+        handleTouchMove,
+        handleTouchEnd,
+        handleEditKeyDown,
+        handleButtonKeyDown,
+        startEditing,
+        handleDelete,
+        saveEditing,
+        cancelEditing,
+        setCursorIndex,
+        setSelectedAccountId,
+        setFocusedCell,
+        getTypeColor
+    ]);
+
+    // =========================================
     // Render
     // =========================================
     return (
@@ -588,8 +801,8 @@ export const AccountTable: React.FC<Props> = ({
                 <span><kbd className="px-1.5 py-0.5 bg-white rounded border border-indigo-200">Tab</kbd> Next</span>
             </div>
 
-            {/* Account List */}
-            <div className="flex-1 overflow-y-auto" role="rowgroup">
+            {/* Account List - Virtualized */}
+            <div className="flex-1" role="rowgroup">
                 {filteredAccounts.length === 0 ? (
                     <div className="text-center py-12 text-slate-400">
                         <DollarSign size={48} className="mx-auto mb-4 opacity-20" />
@@ -597,179 +810,16 @@ export const AccountTable: React.FC<Props> = ({
                         <p className="text-xs mt-1">Try adjusting your search or filters.</p>
                     </div>
                 ) : (
-                    filteredAccounts.map((account, index) => {
-                        const isCursor = index === cursorIndex;
-                        const isSelected = account.id === selectedAccountId;
-                        const isEditing = account.id === editingAccountId;
-                        const isSwipingThis = swipeState.accountId === account.id;
-                        const swipeOffset = isSwipingThis ? swipeState.currentX - swipeState.startX : 0;
-
-                        return (
-                            <div
-                                key={account.id}
-                                ref={(el) => el && rowRefs.current.set(account.id, el)}
-                                className={`relative border-b border-slate-100 transition-all ${isCursor ? 'bg-indigo-50 ring-2 ring-indigo-300 ring-inset' : 'bg-white'
-                                    } ${isSelected ? 'bg-slate-100' : ''}`}
-                                role="row"
-                                aria-selected={isSelected}
-                                onTouchStart={(e) => handleTouchStart(account.id, e)}
-                                onTouchMove={handleTouchMove}
-                                onTouchEnd={handleTouchEnd}
-                                onClick={() => {
-                                    setCursorIndex(index);
-                                    if (!isEditing) {
-                                        setSelectedAccountId(account.id);
-                                        onAccountSelect?.(account);
-                                    }
-                                }}
-                            >
-                                {/* Swipe Actions (visible on swipe left) */}
-                                {isSelected && !isEditing && (
-                                    <div className="absolute right-0 top-0 bottom-0 flex items-center gap-2 px-3 bg-slate-100 z-10 animate-in slide-in-from-right duration-200">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); startEditing(account); }}
-                                            className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                                            aria-label="Edit account"
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleDelete(account.id); }}
-                                            className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                                            aria-label="Delete account"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                )}
-
-                                {/* Row Content */}
-                                <div
-                                    className="p-4 transition-transform"
-                                    style={{ transform: `translateX(${Math.max(-80, Math.min(80, swipeOffset))}px)` }}
-                                >
-                                    {isEditing ? (
-                                        /* Edit Mode */
-                                        <div className="space-y-3 animate-in fade-in duration-200">
-                                            <div>
-                                                <input
-                                                    type="text"
-                                                    value={editForm.name}
-                                                    onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
-                                                    className={`w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none ${validationErrors.name ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
-                                                    placeholder="Account Name"
-                                                    autoFocus
-                                                    onKeyDown={(e) => handleEditKeyDown(e, 'name')}
-                                                    aria-invalid={!!validationErrors.name}
-                                                    aria-describedby={validationErrors.name ? 'name-error' : undefined}
-                                                />
-                                                {validationErrors.name && (
-                                                    <p id="name-error" className="mt-1 text-xs text-red-600">
-                                                        {validationErrors.name}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <input
-                                                    type="text"
-                                                    value={editForm.description}
-                                                    onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
-                                                    className={`w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none ${validationErrors.description ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}
-                                                    placeholder="Description (optional)"
-                                                    onKeyDown={(e) => handleEditKeyDown(e, 'description')}
-                                                    aria-invalid={!!validationErrors.description}
-                                                    aria-describedby={validationErrors.description ? 'description-error' : undefined}
-                                                />
-                                                {validationErrors.description && (
-                                                    <p id="description-error" className="mt-1 text-xs text-red-600">
-                                                        {validationErrors.description}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={saveEditing}
-                                                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700"
-                                                    onKeyDown={(e) => handleButtonKeyDown(e, 'save')}
-                                                >
-                                                    <Check size={14} /> Save
-                                                </button>
-                                                <button
-                                                    onClick={cancelEditing}
-                                                    className="flex items-center gap-1 px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-300"
-                                                    onKeyDown={(e) => handleButtonKeyDown(e, 'cancel')}
-                                                >
-                                                    <X size={14} /> Cancel
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        /* View Mode - Grid Cells */
-                                        <div className="flex justify-between items-start w-full">
-                                            {/* Cell 0: Type and Code */}
-                                            <div
-                                                ref={(el) => el && cellRefs.current.set(`${index}-0`, el)}
-                                                role="gridcell"
-                                                tabIndex={focusedCell?.row === index && focusedCell?.col === 0 ? 0 : -1}
-                                                className="flex-1 min-w-0 focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded"
-                                                onClick={() => {
-                                                    setCursorIndex(index);
-                                                    setFocusedCell({ row: index, col: 0 });
-                                                    setSelectedAccountId(account.id);
-                                                }}
-                                            >
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getTypeColor(account.type)}`}>
-                                                        {account.type}
-                                                    </span>
-                                                    <span className="font-mono text-xs text-slate-400 bg-slate-50 px-1 rounded">
-                                                        {account.code}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Cell 1: Name and Description */}
-                                            <div
-                                                ref={(el) => el && cellRefs.current.set(`${index}-1`, el)}
-                                                role="gridcell"
-                                                tabIndex={focusedCell?.row === index && focusedCell?.col === 1 ? 0 : -1}
-                                                className="flex-1 min-w-0 focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded"
-                                                onClick={() => {
-                                                    setCursorIndex(index);
-                                                    setFocusedCell({ row: index, col: 1 });
-                                                    setSelectedAccountId(account.id);
-                                                }}
-                                            >
-                                                <h3 className="font-semibold text-slate-800 text-sm truncate">{account.name}</h3>
-                                                <p className="text-xs text-slate-400 truncate mt-0.5">
-                                                    {account.description || 'No description'}
-                                                </p>
-                                            </div>
-
-                                            {/* Cell 2: Balance */}
-                                            <div
-                                                ref={(el) => el && cellRefs.current.set(`${index}-2`, el)}
-                                                role="gridcell"
-                                                tabIndex={focusedCell?.row === index && focusedCell?.col === 2 ? 0 : -1}
-                                                className="text-right ml-3 shrink-0 focus:outline-none focus:ring-2 focus:ring-indigo-300 rounded"
-                                                onClick={() => {
-                                                    setCursorIndex(index);
-                                                    setFocusedCell({ row: index, col: 2 });
-                                                    setSelectedAccountId(account.id);
-                                                }}
-                                            >
-                                                <span className={`font-mono font-bold text-sm ${account.balance < 0 ? 'text-red-600' : 'text-slate-900'}`}>
-                                                    ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                                </span>
-                                                <p className="text-[10px] text-slate-400 uppercase">{account.normalBalance}</p>
-                                                <ChevronRight size={16} className="text-slate-300 ml-2 shrink-0 inline" />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })
+                    <List
+                        listRef={listRef}
+                        defaultHeight={600}
+                        rowCount={filteredAccounts.length}
+                        rowHeight={ROW_HEIGHT}
+                        rowComponent={RowComponent}
+                        rowProps={{}}
+                        className="overflow-y-auto"
+                        style={{ height: '100%' }}
+                    />
                 )}
             </div>
 

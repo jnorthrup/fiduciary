@@ -8,6 +8,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { AccountTable } from './AccountTable';
 import * as types from '../types';
 
+// Polyfill ResizeObserver for react-window
+class ResizeObserverMock {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+}
+global.ResizeObserver = ResizeObserverMock;
+
 // Mock the ledgerService module
 // Note: vi.mock factory is hoisted and must be self-contained
 vi.mock('../services/ledgerService', () => {
@@ -1473,6 +1481,179 @@ describe('AccountTable', () => {
                 const rows = screen.getAllByRole('row');
                 expect(rows[1]).toHaveAttribute('aria-selected', 'true');
             });
+        });
+    });
+
+    describe('Virtualized Scrolling Performance', () => {
+        it('renders efficiently with 10,000+ accounts', () => {
+            // Create large dataset
+            const largeMockAccounts = Array.from({ length: 10000 }, (_, i) => ({
+                id: `acc-${i}`,
+                entityId: 'entity-1',
+                code: `${1000 + i}`,
+                name: `Account ${i}`,
+                type: i % 5 === 0 ? 'Asset' : i % 5 === 1 ? 'Liability' : i % 5 === 2 ? 'Equity' : i % 5 === 3 ? 'Income' : 'Expense',
+                normalBalance: i % 2 === 0 ? 'Debit' : 'Credit',
+                balance: Math.random() * 10000,
+                isActive: true,
+                _version: '1.0'
+            }));
+
+            // Mock the store to return large dataset
+            const mocks = (globalThis as any).__accountTableTestMocks;
+            const originalUseLedgerStore = require('../services/ledgerService').useLedgerStore;
+
+            vi.doMock('../services/ledgerService', () => ({
+                useLedgerStore: () => ({
+                    accounts: largeMockAccounts,
+                    updateAccount: mocks.mockUpdateAccount,
+                    deleteAccount: mocks.mockDeleteAccount,
+                    cursorIndex: 0,
+                    setCursorIndex: vi.fn(),
+                    selectedAccountId: null,
+                    setSelectedAccountId: vi.fn(),
+                    paginationCursor: null,
+                    setPaginationCursor: vi.fn(),
+                    paginationLimit: 50,
+                    setPaginationLimit: vi.fn(),
+                    fetchNextAccountsPage: vi.fn(),
+                    fetchPreviousAccountsPage: vi.fn()
+                }),
+                LedgerProvider: ({ children }: { children: any }) => {
+                    const React = require('react');
+                    return React.createElement('div', { className: 'mock-ledger-provider' }, children);
+                }
+            }));
+
+            const startTime = performance.now();
+
+            render(<AccountTable entityId="entity-1" />);
+
+            const endTime = performance.now();
+            const renderTime = endTime - startTime;
+
+            // Should render quickly even with 10,000 accounts
+            // Virtualization ensures only visible rows are rendered
+            expect(renderTime).toBeLessThan(1000); // Should render in under 1 second
+
+            // Should show the account count
+            expect(screen.getByText('10000 accounts')).toBeInTheDocument();
+        });
+
+        it('maintains keyboard navigation performance with large datasets', () => {
+            const largeMockAccounts = Array.from({ length: 10000 }, (_, i) => ({
+                id: `acc-${i}`,
+                entityId: 'entity-1',
+                code: `${1000 + i}`,
+                name: `Account ${i}`,
+                type: 'Asset',
+                normalBalance: 'Debit',
+                balance: Math.random() * 10000,
+                isActive: true,
+                _version: '1.0'
+            }));
+
+            const mocks = (globalThis as any).__accountTableTestMocks;
+
+            vi.doMock('../services/ledgerService', () => ({
+                useLedgerStore: () => ({
+                    accounts: largeMockAccounts,
+                    updateAccount: mocks.mockUpdateAccount,
+                    deleteAccount: mocks.mockDeleteAccount,
+                    cursorIndex: 0,
+                    setCursorIndex: vi.fn(),
+                    selectedAccountId: null,
+                    setSelectedAccountId: vi.fn(),
+                    paginationCursor: null,
+                    setPaginationCursor: vi.fn(),
+                    paginationLimit: 50,
+                    setPaginationLimit: vi.fn(),
+                    fetchNextAccountsPage: vi.fn(),
+                    fetchPreviousAccountsPage: vi.fn()
+                }),
+                LedgerProvider: ({ children }: { children: any }) => {
+                    const React = require('react');
+                    return React.createElement('div', { className: 'mock-ledger-provider' }, children);
+                }
+            }));
+
+            render(<AccountTable entityId="entity-1" />);
+
+            const container = screen.getByRole('grid');
+
+            const startTime = performance.now();
+
+            // Simulate rapid navigation
+            for (let i = 0; i < 100; i++) {
+                fireEvent.keyDown(container, { key: 'ArrowDown' });
+            }
+
+            const endTime = performance.now();
+            const navigationTime = endTime - startTime;
+
+            // Navigation should remain fast even with large dataset
+            expect(navigationTime).toBeLessThan(500); // 100 key presses in under 500ms
+        });
+
+        it('maintains touch gesture performance with large datasets', () => {
+            const largeMockAccounts = Array.from({ length: 10000 }, (_, i) => ({
+                id: `acc-${i}`,
+                entityId: 'entity-1',
+                code: `${1000 + i}`,
+                name: `Account ${i}`,
+                type: 'Asset',
+                normalBalance: 'Debit',
+                balance: Math.random() * 10000,
+                isActive: true,
+                _version: '1.0'
+            }));
+
+            const mocks = (globalThis as any).__accountTableTestMocks;
+
+            vi.doMock('../services/ledgerService', () => ({
+                useLedgerStore: () => ({
+                    accounts: largeMockAccounts,
+                    updateAccount: mocks.mockUpdateAccount,
+                    deleteAccount: mocks.mockDeleteAccount,
+                    cursorIndex: 0,
+                    setCursorIndex: vi.fn(),
+                    selectedAccountId: null,
+                    setSelectedAccountId: vi.fn(),
+                    paginationCursor: null,
+                    setPaginationCursor: vi.fn(),
+                    paginationLimit: 50,
+                    setPaginationLimit: vi.fn(),
+                    fetchNextAccountsPage: vi.fn(),
+                    fetchPreviousAccountsPage: vi.fn()
+                }),
+                LedgerProvider: ({ children }: { children: any }) => {
+                    const React = require('react');
+                    return React.createElement('div', { className: 'mock-ledger-provider' }, children);
+                }
+            }));
+
+            render(<AccountTable entityId="entity-1" />);
+
+            const firstRow = screen.getByText('Account 0').closest('[role="row"]')!;
+
+            const startTime = performance.now();
+
+            // Perform swipe gesture
+            fireEvent.touchStart(firstRow, {
+                touches: [{ clientX: 100, clientY: 50 }]
+            });
+
+            fireEvent.touchMove(firstRow, {
+                touches: [{ clientX: 50, clientY: 50 }]
+            });
+
+            fireEvent.touchEnd(firstRow);
+
+            const endTime = performance.now();
+            const gestureTime = endTime - startTime;
+
+            // Touch gestures should remain responsive
+            expect(gestureTime).toBeLessThan(100); // Gesture handling in under 100ms
         });
     });
 });

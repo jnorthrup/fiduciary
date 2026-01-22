@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.4",
+    "@types/react-window": "^1.8.8",
     "axios": "^1.13.2",
     "cors": "^2.8.5",
     "d3": "7.8.5",
@@ -31,6 +32,7 @@
     "mermaid": "10.6.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-window": "^2.2.5",
     "uuid": "9.0.1",
     "xlsx": "0.18.5",
     "y-indexeddb": "^9.0.12",
