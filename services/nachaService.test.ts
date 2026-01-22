@@ -128,6 +128,33 @@ describe('nachaService', () => {
             expect(control.length).toBe(94);
             expect(control[0]).toBe('9'); // Record Type
         });
+
+        it('enforces 94-character length on all generated lines', () => {
+            const file = generateNachaFile(testFile);
+            const lines = file.split('\r\n').filter(l => l.length > 0);
+            lines.forEach((line, index) => {
+                if (line.length !== 94) {
+                    console.error(`Line ${index + 1} has length ${line.length}: "${line}"`);
+                }
+                expect(line.length).toBe(94);
+            });
+        });
+
+        it('enforces blocking factor of 10', () => {
+            // Create a file with mostly random number of entries to force padding
+            const largeBatch = { ...testBatch, entries: [...Array(13).keys()].map(() => testEntry) };
+            const file = generateNachaFile({ ...testFile, batches: [largeBatch] });
+            const lines = file.split('\r\n').filter(l => l.length > 0);
+
+            // 1 File Header + 1 Batch Header + 13 Entries + 1 Batch Control + 1 File Control = 17 records
+            // Should pad to 20 records (multiple of 10)
+            expect(lines.length % 10).toBe(0);
+            expect(lines.length).toBe(20);
+
+            // Last 3 lines should be padding (all 9s)
+            const padding = lines.slice(17);
+            padding.forEach(p => expect(p).toMatch(/^9+$/));
+        });
     });
 
     describe('Record Content', () => {

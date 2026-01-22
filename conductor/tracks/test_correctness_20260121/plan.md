@@ -39,21 +39,27 @@
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 2 Test Naming'
 
+### 2.3 Server Test Cleanup
+- [x] Task: Fix deprecated done() callbacks in server tests [17 tests migrated to async/await]
+  - [x] Sub-task: Migrate server/index.test.ts to async/await
+  - [x] Sub-task: Migrate server/submission.test.ts to async/await
+  - [x] Sub-task: Resolve test port collisions (30102 vs 30103)
+
 ---
 
 ## Phase 3: Use Case Validation Expansion [P1]
 
 ### 3.1 Critical User Flow Tests
-- [ ] Task: Add integration tests for key flows
-  - [ ] Sub-task: Test Login → Create Account flow
-  - [ ] Sub-task: Test Create Account → NACHA submission flow
-  - [ ] Sub-task: Test account hierarchy navigation
+- [x] Task: Add integration tests for key flows [Added tests/integration/user-flows.test.ts]
+  - [x] Sub-task: Test Login → Create Account flow
+  - [x] Sub-task: Test Create Account → NACHA submission flow [Implemented via ACH Record + NACHA Generation test]
+  - [x] Sub-task: Test account hierarchy navigation [Verified parent/child relationship in test]
 
 ### 3.2 Business Invariant Tests
-- [ ] Task: Add explicit invariant validation
-  - [ ] Sub-task: Test double-entry accounting rules
-  - [ ] Sub-task: Test NACHA file format constraints
-  - [ ] Sub-task: Test balance calculation correctness
+- [x] Task: Add explicit invariant validation
+  - [x] Sub-task: Test double-entry accounting rules [Implemented in services/ledgerService.test.tsx]
+  - [x] Sub-task: Test NACHA file format constraints [Implemented in services/nachaService.test.ts]
+  - [x] Sub-task: Test balance calculation correctness [Implemented in services/ledgerService.test.tsx]
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 3 Use Cases'
 
