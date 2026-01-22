@@ -11,6 +11,7 @@ import auditRouter from './routes/audit.js';
 import bankingRouter from './routes/banking.js';
 import bsoRouter from './routes/bso.js';
 import ledgerRouter from './routes/ledger.js';
+import nachaRouter from './routes/nacha.js';
 import settlementRouter from './routes/settlement.js';
 import trustsRouter from './routes/trusts.js';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -171,6 +172,9 @@ app.use('/api/settlement', verifyFirebaseToken, settlementRouter);
 
 // Mount Trusts router (LAS Trust ERP)
 app.use('/api/trusts', verifyFirebaseToken, trustsRouter);
+
+// Mount NACHA router (ACH file submission)
+app.use('/api/nacha', verifyFirebaseToken, nachaRouter);
 
 // Mount Ledger router
 if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'ledger-service') {
