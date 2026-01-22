@@ -110,12 +110,12 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 6.1 Virtualization' [skipped per user request]
 
 ### 6.2 NACHA Server Routes
-- [ ] Task: Create /api/nacha submission endpoint
-  - [ ] Sub-task: Write failing tests for POST /api/nacha/submit
-  - [ ] Sub-task: Implement server route with JWT verification
-  - [ ] Sub-task: Add GCS storage integration with user UID
-  - [ ] Sub-task: Return submission ID and checksum
-- [ ] Task: Conductor - User Manual Verification 'Phase 6.2 NACHA Routes'
+- [x] Task: Create /api/nacha submission endpoint [f7c30c4]
+  - [x] Sub-task: Write failing tests for POST /api/nacha/submit
+  - [x] Sub-task: Implement server route with JWT verification
+  - [x] Sub-task: Add GCS storage integration with user UID
+  - [x] Sub-task: Return submission ID and checksum
+- [x] Task: Conductor - User Manual Verification 'Phase 6.2 NACHA Routes' [skipped per user request]
 
 ### 6.3 Blackboard Architecture Tests
 - [ ] Task: Add test coverage for BlackboardArchitecture
