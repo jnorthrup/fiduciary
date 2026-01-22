@@ -102,12 +102,12 @@
 ## Phase 6: Gap Resolution [P0 - Verification Gaps]
 
 ### 6.1 Virtualized Scrolling
-- [ ] Task: Install and configure react-window for AccountTable
-  - [ ] Sub-task: Write failing tests for virtualized rendering performance
-  - [ ] Sub-task: Install react-window and @types/react-window
-  - [ ] Sub-task: Refactor AccountTable to use FixedSizeList
-  - [ ] Sub-task: Verify keyboard navigation works with virtualized rows
-- [ ] Task: Conductor - User Manual Verification 'Phase 6.1 Virtualization'
+- [x] Task: Install and configure react-window for AccountTable [f0ec70c]
+  - [x] Sub-task: Write failing tests for virtualized rendering performance
+  - [x] Sub-task: Install react-window and @types/react-window
+  - [x] Sub-task: Refactor AccountTable to use FixedSizeList
+  - [x] Sub-task: Verify keyboard navigation works with virtualized rows
+- [x] Task: Conductor - User Manual Verification 'Phase 6.1 Virtualization' [skipped per user request]
 
 ### 6.2 NACHA Server Routes
 - [ ] Task: Create /api/nacha submission endpoint
