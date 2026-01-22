@@ -56,6 +56,22 @@ describe('BlackboardArchitecture', () => {
       expect(subscriber).not.toHaveBeenCalled()
     })
 
+    it('should remove channel when last subscriber unsubscribes', async () => {
+      const subscriber1 = vi.fn()
+      const unsubscribe1 = blackboard.subscribe('test-channel', subscriber1)
+
+      const subscriber2 = vi.fn()
+      const unsubscribe2 = blackboard.subscribe('test-channel', subscriber2)
+
+      unsubscribe1()
+      await blackboard.publish('test-channel', 'data1')
+      expect(subscriber2).toHaveBeenCalledWith('data1')
+
+      unsubscribe2()
+      await blackboard.publish('test-channel', 'data2')
+      expect(subscriber2).not.toHaveBeenCalledWith('data2')
+    })
+
     it('should handle non-existent channels gracefully', async () => {
       await expect(blackboard.publish('non-existent', 'data')).resolves.toBeUndefined()
     })
@@ -315,6 +331,143 @@ describe('BlackboardArchitecture', () => {
 
       const value = await blackboard.getNodeValue('unhydrated-node')
       expect(value).toBeUndefined()
+    })
+
+    it('should clear specific node state', async () => {
+      const node: BlackboardNode<string> = {
+        id: 'clearable-node',
+        dependencies: [],
+        hydrate: async () => 'value',
+        notify: vi.fn()
+      }
+
+      await blackboard.registerNode(node)
+      await blackboard.hydrateNode('clearable-node')
+
+      expect(await blackboard.isHydrated('clearable-node')).toBe(true)
+      expect(await blackboard.getNodeValue('clearable-node')).toBe('value')
+
+      blackboard.clearNode('clearable-node')
+
+      expect(await blackboard.isHydrated('clearable-node')).toBe(false)
+      expect(await blackboard.getNodeValue('clearable-node')).toBeUndefined()
+    })
+
+    it('should clear all state including channels and nodes', async () => {
+      const subscriber = vi.fn()
+      blackboard.subscribe('test-channel', subscriber)
+
+      const node: BlackboardNode<string> = {
+        id: 'test-node',
+        dependencies: [],
+        hydrate: async () => 'value',
+        notify: vi.fn()
+      }
+
+      await blackboard.registerNode(node)
+      await blackboard.hydrateNode('test-node')
+
+      expect(await blackboard.isHydrated('test-node')).toBe(true)
+
+      blackboard.clearAll()
+
+      expect(await blackboard.isHydrated('test-node')).toBe(false)
+
+      await blackboard.publish('test-channel', 'data')
+      expect(subscriber).not.toHaveBeenCalled()
+    })
+
+    it('should allow re-hydration after clearing node', async () => {
+      const mockHydrate = vi.fn().mockResolvedValueOnce('first').mockResolvedValueOnce('second')
+      const node: BlackboardNode<string> = {
+        id: 'rehydrate-node',
+        dependencies: [],
+        hydrate: mockHydrate,
+        notify: vi.fn()
+      }
+
+      await blackboard.registerNode(node)
+      await blackboard.hydrateNode('rehydrate-node')
+      expect(await blackboard.getNodeValue('rehydrate-node')).toBe('first')
+
+      blackboard.clearNode('rehydrate-node')
+      expect(await blackboard.isHydrated('rehydrate-node')).toBe(false)
+
+      await blackboard.hydrateNode('rehydrate-node')
+      expect(await blackboard.getNodeValue('rehydrate-node')).toBe('second')
+      expect(mockHydrate).toHaveBeenCalledTimes(2)
+    })
+
+    it('should throw error for non-existent node during hydration', async () => {
+      await expect(blackboard.hydrateNode('non-existent-node')).rejects.toThrow('Node not found')
+    })
+
+    it('should handle self-circular dependency', async () => {
+      const node: BlackboardNode<string> = {
+        id: 'self-circular',
+        dependencies: ['self-circular'],
+        hydrate: async () => 'value',
+        notify: vi.fn()
+      }
+
+      await blackboard.registerNode(node)
+      await expect(blackboard.hydrateNode('self-circular')).rejects.toThrow(/circular/i)
+    })
+
+    it('should clear hydrating state even when hydration fails', async () => {
+      const node: BlackboardNode<string> = {
+        id: 'failing-node',
+        dependencies: [],
+        hydrate: async () => {
+          throw new Error('Hydration failed')
+        },
+        notify: vi.fn()
+      }
+
+      await blackboard.registerNode(node)
+
+      await expect(blackboard.hydrateNode('failing-node')).rejects.toThrow('Hydration failed')
+
+      const node2: BlackboardNode<string> = {
+        id: 'dependent-node',
+        dependencies: ['failing-node'],
+        hydrate: async () => 'value',
+        notify: vi.fn()
+      }
+
+      await blackboard.registerNode(node2)
+      await expect(blackboard.hydrateNode('dependent-node')).rejects.toThrow()
+    })
+
+    it('should not re-hydrate already hydrated nodes', async () => {
+      const mockHydrate = vi.fn().mockResolvedValue('value')
+      const node: BlackboardNode<string> = {
+        id: 'cached-node',
+        dependencies: [],
+        hydrate: mockHydrate,
+        notify: vi.fn()
+      }
+
+      await blackboard.registerNode(node)
+      await blackboard.hydrateNode('cached-node')
+      await blackboard.hydrateNode('cached-node')
+
+      expect(mockHydrate).toHaveBeenCalledTimes(1)
+    })
+
+    it('should call notify with hydrated value', async () => {
+      const notifySpy = vi.fn()
+      const node: BlackboardNode<string> = {
+        id: 'notify-node',
+        dependencies: [],
+        hydrate: async () => 'notified-value',
+        notify: notifySpy
+      }
+
+      await blackboard.registerNode(node)
+      await blackboard.hydrateNode('notify-node')
+
+      expect(notifySpy).toHaveBeenCalledWith('notified-value')
     })
   })
 })
