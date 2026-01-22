@@ -4,7 +4,7 @@
 
 set -e
 
-PROJECT_ID="${GCP_PROJECT_ID:-gen-lang-client-0754063985}"
+PROJECT_ID="${GCP_PROJECT_ID}"
 REGION="${GCP_REGION:-us-central1}"
 
 echo "=== Deploying Cloud Functions for $PROJECT_ID ==="

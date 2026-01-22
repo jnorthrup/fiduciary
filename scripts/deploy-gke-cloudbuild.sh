@@ -5,7 +5,7 @@
 set -e
 
 # GCP Configuration from environment
-PROJECT_ID="${GCP_PROJECT_ID:-gen-lang-client-0754063985}"
+PROJECT_ID="${GCP_PROJECT_ID}"
 REGION="${GCP_REGION:-us-central1}"
 ZONE="${GCP_ZONE:-us-central1-a}"
 CLUSTER_NAME="${GKE_CLUSTER:-ledger-pwa-cluster}"

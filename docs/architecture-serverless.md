@@ -110,7 +110,7 @@ sequenceDiagram
 Each user's data is isolated by their Firebase UID:
 
 ```
-gs://gen-lang-client-0754063985-trust-data/
+gs://${GCP_PROJECT_ID}-trust-data/
 ├── users/
 │   ├── {uid-1}/
 │   │   ├── state.json          # Redux state

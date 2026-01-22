@@ -107,8 +107,7 @@ const GOOGLE_AUTH = {
 // Auto-detect from K_SERVICE (Cloud Run) or CLOUDSDK_CORE_PROJECT
 const detectedProject = process.env.GOOGLE_CLOUD_PROJECT
     || process.env.CLOUDSDK_CORE_PROJECT
-    || process.env.GCP_PROJECT_ID
-    || 'gen-lang-client-0754063985';
+    || process.env.GCP_PROJECT_ID;
 
 const GCP_CORE = {
     // GCP Project ID (auto-detected in Cloud Run)

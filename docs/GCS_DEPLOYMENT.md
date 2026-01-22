@@ -2,7 +2,7 @@
 
 ## Overview
 
-Replaces Firebase Hosting (https://gen-lang-client-0754063985.web.app) with Google Cloud Storage static hosting.
+Replaces Firebase Hosting (https://${GCP_PROJECT_ID}.web.app) with Google Cloud Storage static hosting.
 
 **Changes:**
 - Firebase/Gmail authentication **DISABLED**
@@ -43,7 +43,7 @@ After deployment:
 ./deploy-gcs.sh <PROJECT_ID>
 
 # Example
-./deploy-gcs.sh gen-lang-client-0754063985
+./deploy-gcs.sh ${GCP_PROJECT_ID}
 ```
 
 ## Environment Variables
@@ -64,7 +64,7 @@ To remove the old Firebase Hosting:
 npm uninstall -g firebase-tools
 
 # Or disable Firebase Hosting site
-firebase hosting:disable --only gen-lang-client-0754063985
+firebase hosting:disable --only ${GCP_PROJECT_ID}
 ```
 
 ## Terraform Deployment
@@ -73,7 +73,7 @@ firebase hosting:disable --only gen-lang-client-0754063985
 cd infra/gcp
 terraform init
 terraform apply \
-  -var="project_id=<PROJECT_ID>" \
+  -var="project_id=${GCP_PROJECT_ID}" \
   -var="enable_gcs_hosting=true" \
   -var="enable_cloud_cdn=true"
 ```

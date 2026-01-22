@@ -5,7 +5,7 @@
 set -e
 
 NAMESPACE="${1:-ledger-pwa}"
-PROJECT_ID="${GCP_PROJECT_ID:-gen-lang-client-0754063985}"
+PROJECT_ID="${GCP_PROJECT_ID}"
 REGION="${GCP_REGION:-us-central1}"
 FUNCTION_URL="${CLOUD_FUNCTION_URL:-}"
 
