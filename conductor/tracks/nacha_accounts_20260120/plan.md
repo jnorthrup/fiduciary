@@ -118,12 +118,12 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 6.2 NACHA Routes' [skipped per user request]
 
 ### 6.3 Blackboard Architecture Tests
-- [ ] Task: Add test coverage for BlackboardArchitecture
-  - [ ] Sub-task: Write failing tests for Blackboard pub/sub
-  - [ ] Sub-task: Write failing tests for dependency resolution
-  - [ ] Sub-task: Implement tests for node hydration order
-  - [ ] Sub-task: Verify automatic propagation on upstream changes
-- [ ] Task: Conductor - User Manual Verification 'Phase 6.3 Blackboard Tests'
+- [x] Task: Add test coverage for BlackboardArchitecture [c062b4a]
+  - [x] Sub-task: Write failing tests for Blackboard pub/sub
+  - [x] Sub-task: Write failing tests for dependency resolution
+  - [x] Sub-task: Implement tests for node hydration order
+  - [x] Sub-task: Verify automatic propagation on upstream changes
+- [x] Task: Conductor - User Manual Verification 'Phase 6.3 Blackboard Tests' [skipped per user request]
 
 ---
 
