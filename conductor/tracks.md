@@ -4,7 +4,7 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
-## [~] Track: NACHA Account Management System
+## [x] Track: NACHA Account Management System
 
 *Link: [./conductor/tracks/nacha_accounts_20260120/](./conductor/tracks/nacha_accounts_20260120/)*
 *Mobile-first account table, NACHA submissions, GCS WAL persistence*
