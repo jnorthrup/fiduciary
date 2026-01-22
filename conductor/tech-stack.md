@@ -9,6 +9,7 @@
 | Framework | React | 19.2.3 | UI framework |
 | Language | TypeScript | 5.8.2 | Type-safe development |
 | Build Tool | Vite | 6.2.0 | Fast dev server & bundler |
+| Virtualization | react-window | 2.2.5 | Virtualized scrolling for large lists |
 | State Management | Redux | - | Client-side state |
 | Styling | Tailwind CSS | CDN | Utility-first CSS |
 | Icons | Lucide React | 0.561.0 | Icon library |
@@ -38,6 +39,14 @@
 | State | GCS JSON | `users/{uid}/state.json` |
 | WAL | GCS Append | `users/{uid}/wal/{timestamp}.json` |
 | Documents | GCS Objects | `users/{uid}/docs/{docId}` |
+
+## API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| /api/nacha/submit | POST | Submit NACHA file for storage |
+| /api/nacha/submissions | GET | List user's NACHA submissions |
+| /api/nacha/submissions/:id | GET | Retrieve specific submission |
 
 ## APIs & Integrations
 
