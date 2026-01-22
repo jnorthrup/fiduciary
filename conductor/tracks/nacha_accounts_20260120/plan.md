@@ -1,9 +1,9 @@
 # Implementation Plan: NACHA Account Management System
 
-## Phase 1: Core Account Table Navigation [P0 - Immediate]
+## Phase 1: Core Account Table Navigation [P0 - Immediate] [checkpoint: 5be7d3c]
 
 ### 1.1 Account Table Component
-- [ ] Task: Create mobile-first AccountTable.tsx
+- [x] Task: Create mobile-first AccountTable.tsx
   - [x] Sub-task: Write failing tests for keyboard navigation (arrow keys, Enter)
   - [x] Sub-task: Implement AccountTable with virtualized scrolling
   - [x] Sub-task: Write failing tests for inline editing mode
@@ -13,7 +13,7 @@
 - [x] Task: Integrate with existing ledger store
   - [x] Sub-task: Add cursor-based pagination to accountService [66/66 tests passing]
   - [x] Sub-task: Wire AccountTable to useLedgerStore [store integrated, test mocks properly refactored]
-- [ ] Task: Conductor - User Manual Verification 'Phase 1.1 Account Table'
+- [x] Task: Conductor - User Manual Verification 'Phase 1.1 Account Table' [checkpoint: 5be7d3c]
 
 ### 1.2 Navigation State Management
 - [x] Task: Add selection/cursor state to ledger store [b1fa611]
