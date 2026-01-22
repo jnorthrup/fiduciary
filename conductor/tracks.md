@@ -4,13 +4,6 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
-## [x] Track: NACHA Account Management System
-
-*Link: [./conductor/tracks/nacha_accounts_20260120/](./conductor/tracks/nacha_accounts_20260120/)*
-*Mobile-first account table, NACHA submissions, GCS WAL persistence*
-
----
-
 ## [PLANNING] Track: LAS Trust ERP Validation
 
 *Link: [./conductor/tracks/las_trust_erp_20260121/](./conductor/tracks/las_trust_erp_20260121/)*
@@ -41,9 +34,10 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ## [ARCHIVED] Completed & Retired Tracks
 
-Stored in `conductor/tracks/.archive/` for reference:
+Stored in `conductor/archive/` for reference:
 
 **Completed:**
+- NACHA Account Management System (nacha_accounts_20260120)
 - ACH Settlement Logic (ach_settlement_20260112)
 - CI/CD Pipeline (cid_deploy_20260115)
 - Production Readiness (production_readiness_20260120)
