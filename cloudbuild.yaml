@@ -1,64 +1,44 @@
-# =============================================================================
-# Cloud Build Configuration for Production Deployment
-# =============================================================================
-# Deploys to:
-# - Cloud Run (fullstack server with API + static frontend)
-# - Firebase Hosting (CDN for static assets)
-# - GCS Bucket (backup static hosting)
-#
-# No Docker/Kubernetes - uses Cloud Run's buildpack-based source deployment
-# =============================================================================
-
 steps:
-  # 1. Install dependencies
-  - name: 'node:20'
-    entrypoint: npm
-    args: ['ci']
-    id: 'install-deps'
-
-  # 2. Run tests (fail-fast)
-  - name: 'node:20'
-    entrypoint: npm
-    args: ['run', 'test:ci']
-    id: 'run-tests'
-    waitFor: ['install-deps']
-    env:
-      - 'CI=true'
-
-  # 3. Build frontend with production env vars
-  - name: 'node:20'
-    entrypoint: npm
-    args: ['run', 'build']
-    id: 'build-frontend'
-    waitFor: ['run-tests']
-    env:
-      - 'VITE_FIREBASE_ENABLED=true'
-      - 'VITE_GMAIL_AUTH_ENABLED=true'
-      - 'VITE_IRS_API_URL=/api'
-      - 'VITE_DEMO_MODE=false'
-      - 'VITE_IRS_MOCK_MODE=false'
-
-  # 4. Copy frontend build to server/public for Cloud Run
-  - name: 'node:20'
-    entrypoint: bash
+  # 1. Install & Build Frontend
+  - name: 'node:20-alpine'
+    entrypoint: 'sh'
     args:
       - '-c'
       - |
-        rm -rf server/public
-        cp -r dist server/public
-        echo "Frontend copied to server/public"
-    id: 'copy-frontend'
-    waitFor: ['build-frontend']
+        npm ci
+        export VITE_FIREBASE_ENABLED=true
+        export VITE_GMAIL_AUTH_ENABLED=true
+        export VITE_IRS_API_URL=/api
+        export VITE_DEMO_MODE=false
+        npm run build
 
-  # 5. Deploy to Cloud Run (source-based, no Docker)
+  # 2. Prepare Server Directory
+  - name: 'alpine'
+    script: |
+      rm -rf server/public
+      mkdir -p server/public
+      cp -r dist/* server/public/
+
+  # 3. Build & Publish Container (Cloud Native Buildpacks)
+  #    "We are serverless" -> No Dockerfile required.
+  - name: 'gcr.io/k8s-skaffold/pack'
+    entrypoint: 'pack'
+    args:
+      - 'build'
+      - 'gcr.io/fiduciary-prod/trust-ledger-fullstack'
+      - '--builder=gcr.io/buildpacks/builder:v1'
+      - '--path=./server'
+      - '--publish'
+
+  # 4. Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'trust-ledger-fullstack'
-      - '--source'
-      - './server'
+      - '--image'
+      - 'gcr.io/fiduciary-prod/trust-ledger-fullstack'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -66,79 +46,8 @@ steps:
       - '--allow-unauthenticated'
       - '--memory'
       - '512Mi'
-      - '--cpu'
-      - '1'
-      - '--min-instances'
-      - '0'
-      - '--max-instances'
-      - '10'
       - '--set-env-vars'
-      - 'NODE_ENV=production,VITE_FIREBASE_ENABLED=true,VITE_GMAIL_AUTH_ENABLED=true'
-    id: 'deploy-cloudrun'
-    waitFor: ['copy-frontend']
+      - 'NODE_ENV=production'
 
-  # 6. Deploy to Firebase Hosting
-  - name: 'node:20'
-    entrypoint: bash
-    args:
-      - '-c'
-      - |
-        npm install -g firebase-tools
-        firebase deploy --project $PROJECT_ID --only hosting --non-interactive
-    id: 'deploy-firebase'
-    waitFor: ['build-frontend']
-
-  # 7. Deploy to GCS Static Bucket (backup)
-  - name: 'gcr.io/cloud-builders/gsutil'
-    args:
-      - '-m'
-      - 'rsync'
-      - '-r'
-      - '-d'
-      - 'dist/'
-      - 'gs://$PROJECT_ID-fullstack-static/'
-    id: 'deploy-gcs'
-    waitFor: ['build-frontend']
-
-  # 8. Set cache headers on GCS assets
-  - name: 'gcr.io/cloud-builders/gsutil'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        # Immutable cache for hashed assets
-        gsutil -m setmeta -h "Cache-Control:public, max-age=31536000, immutable" \
-          gs://$PROJECT_ID-fullstack-static/assets/*.js \
-          gs://$PROJECT_ID-fullstack-static/assets/*.css \
-          2>/dev/null || true
-        # Short cache for index.html
-        gsutil setmeta -h "Cache-Control:public, max-age=3600" \
-          gs://$PROJECT_ID-fullstack-static/index.html \
-          2>/dev/null || true
-    id: 'set-cache-headers'
-    waitFor: ['deploy-gcs']
-
-  # 9. Print deployment URLs
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: bash
-    args:
-      - '-c'
-      - |
-        echo "=== DEPLOYMENT COMPLETE ==="
-        echo ""
-        echo "Cloud Run URL:"
-        gcloud run services describe trust-ledger-fullstack --region us-central1 --format='value(status.url)'
-        echo ""
-        echo "Firebase Hosting URL:"
-        echo "https://$PROJECT_ID.web.app"
-        echo ""
-        echo "GCS Static URL:"
-        echo "https://storage.googleapis.com/$PROJECT_ID-fullstack-static/index.html"
-    id: 'print-urls'
-    waitFor: ['deploy-cloudrun', 'deploy-firebase', 'set-cache-headers']
-
-options:
-  logging: CLOUD_LOGGING_ONLY
-  machineType: 'E2_HIGHCPU_8'
-
-timeout: '1200s'
+images:
+  - 'gcr.io/fiduciary-prod/trust-ledger-fullstack'
