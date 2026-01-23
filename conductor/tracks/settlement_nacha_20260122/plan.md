@@ -70,7 +70,7 @@ Journal Entry → Payment Order → NACHA Generator → NACHA Submit → Storage
 
 ---
 
-## Phase 3: End-to-End Flow Testing
+## Phase 3: End-to-End Flow Testing [checkpoint: 4904128]
 
 ### 3.1 Integration Test Suite
 - [x] Task: Create `tests/integration/settlement-nacha.test.ts`
