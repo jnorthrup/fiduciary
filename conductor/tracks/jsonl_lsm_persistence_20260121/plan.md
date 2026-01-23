@@ -51,7 +51,7 @@
   - [x] Sub-task: Verify coverage >80% (96.77% statements, 100% functions, 77.27% branches)
 
 ### 2.2 Binary Reduction Semantics
-- [ ] Task: Implement pure function compaction
+- [x] Task: Implement pure function compaction [10e02dc]
   - [x] Sub-task: Write failing tests for compaction purity (no side effects) [10e02dc]
   - [x] Sub-task: Ensure compaction writes to new location only [10e02dc]
   - [x] Sub-task: Write failing tests for atomic promotion (metadata update after compaction) [e738511]
@@ -189,12 +189,12 @@
 ### Unit Tests
 - [x] JSONL serialization/deserialization
 - [x] GCS append operations
-- [ ] Compaction purity (no side effects)
-- [ ] Streaming read correctness
-- [ ] Query layer map/reduce
+- [x] Compaction purity (no side effects)
+- [x] Streaming read correctness
+- [x] Query layer map/reduce
 
 ### Integration Tests
-- [ ] Write → Compact → Read cycle
+- [x] Write → Compact → Read cycle [593466b]
 - [ ] Migration from state.json to JSONL
 - [ ] Concurrent writes handling
 - [ ] Metadata recovery
