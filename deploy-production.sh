@@ -102,7 +102,7 @@ steps:
       - '--memory'
       - '512Mi'
       - '--set-env-vars'
-      - 'NODE_ENV=production'
+      - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=fiduciary-prod'
 
 images:
   - '$IMAGE_NAME'
