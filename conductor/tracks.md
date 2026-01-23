@@ -25,7 +25,7 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
-## [~] Track: Settlement → NACHA Integration
+## [x] Track: Settlement → NACHA Integration
 
 *Link: [./conductor/tracks/settlement_nacha_20260122/](./conductor/tracks/settlement_nacha_20260122/)*
 *Wire ledger payment orders to NACHA file generation and submission*
