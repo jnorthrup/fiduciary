@@ -26,7 +26,7 @@ steps:
     args:
       - 'build'
       - 'gcr.io/fiduciary-prod/trust-ledger-fullstack'
-      - '--builder=gcr.io/buildpacks/builder:v1'
+      - '--builder=gcr.io/buildpacks/builder:google-22'
       - '--path=./server'
       - '--publish'
 
