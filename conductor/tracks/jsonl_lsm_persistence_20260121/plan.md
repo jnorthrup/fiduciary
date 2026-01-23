@@ -202,5 +202,5 @@
 ### Manual Verification
 - [x] JSONL files are valid newline-delimited JSON
 - [x] Compaction produces smaller files
-- [ ] Migration preserves all data
-- [ ] Query results match expectations
+- [x] Migration preserves all data
+- [x] Query results match expectations
