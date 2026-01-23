@@ -2,6 +2,11 @@ import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
+// Force GCS mode for persistence tests (must be before gcs-persistence import)
+process.env.NODE_ENV = 'production';
+process.env.GOOGLE_APPLICATION_CREDENTIALS = '/fake/path.json';
+delete process.env.USE_LOCAL_PERSISTENCE;
+
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
 

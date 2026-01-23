@@ -356,6 +356,199 @@ class GCSPersistence {
         }
     }
 
+    // =========================================================================
+    // JSONL WAL Methods (Phase 1.2)
+    // =========================================================================
+
+    /**
+     * Resolve GCS path for WAL file with spec-compliant format.
+     * Path format: users/{uid}/wal/{entityType}/{YYYY-MM-DD}.jsonl
+     *
+     * @param {string} uid - User OID
+     * @param {string} entityType - Entity type (e.g., 'journal_entries', 'ledger')
+     * @param {Date|string} [date] - Date object or YYYY-MM-DD string. Defaults to today.
+     * @returns {string} GCS path to WAL file
+     */
+    getWALPath(uid, entityType, date) {
+        let dateStr;
+
+        if (!date) {
+            // Default to today
+            dateStr = new Date().toISOString().split('T')[0];
+        } else if (typeof date === 'string') {
+            // Assume YYYY-MM-DD format string
+            dateStr = date;
+        } else if (date instanceof Date) {
+            // Extract YYYY-MM-DD from Date object
+            dateStr = date.toISOString().split('T')[0];
+        } else {
+            throw new Error(`Invalid date parameter: ${date}`);
+        }
+
+        return `users/${uid}/wal/${entityType}/${dateStr}.jsonl`;
+    }
+
+    /**
+     * Append a JSONL line to the WAL file.
+     * Uses jsonlSerializer for serialization.
+     * For GCS, appends using read-modify-write (GCS doesn't support true append).
+     *
+     * @param {string} uid - User OID
+     * @param {string} entityType - Entity type
+     * @param {Object} line - Object to serialize as JSONL line
+     * @returns {Promise<{ success: boolean; path?: string; error?: string }>}
+     */
+    async appendJSONL(uid, entityType, line) {
+        const { serializeToJSONL } = await import('./jsonlSerializer.ts');
+
+        const walPath = this.getWALPath(uid, entityType);
+
+        try {
+            // Serialize line using jsonlSerializer
+            const jsonlLine = serializeToJSONL(line);
+
+            if (this.useLocalStorage) {
+                // Local file system: append directly
+                const localPath = this._getLocalPath(walPath);
+                fs.appendFileSync(localPath, jsonlLine);
+                console.info(`[LOCAL] Appended JSONL line to ${walPath}`);
+                return { success: true, path: walPath };
+            }
+
+            // GCS: read-modify-write
+            const file = this.bucket.file(walPath);
+            const [exists] = await file.exists();
+
+            if (exists) {
+                // Read existing content and append
+                const [existingContent] = await file.download();
+                const newContent = existingContent.toString() + jsonlLine;
+
+                await file.save(newContent, {
+                    contentType: 'application/x-ndjson',
+                    resumable: false,
+                });
+            } else {
+                // Create new WAL file
+                await file.save(jsonlLine, {
+                    contentType: 'application/x-ndjson',
+                    resumable: false,
+                });
+            }
+
+            console.info(`Appended JSONL line to ${walPath}`);
+            return { success: true, path: walPath };
+        } catch (error) {
+            console.error(`Error appending JSONL to ${walPath}:`, error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Ensure WAL persistence for an entity type.
+     * Verifies all WAL files are persisted and validates JSONL integrity.
+     *
+     * @param {string} uid - User OID
+     * @param {string} entityType - Entity type
+     * @returns {Promise<{ success: boolean; filesFlushed?: number; totalBytes?: number; validLines?: number; invalidLines?: number; error?: string }>}
+     */
+    async flushWAL(uid, entityType) {
+        const { validateJSONLine } = await import('./jsonlSerializer.ts');
+
+        const walPrefix = `users/${uid}/wal/${entityType}/`;
+
+        try {
+            if (this.useLocalStorage) {
+                // Local file system: list and validate WAL files
+                const walDir = this._getLocalPath(walPrefix);
+                if (!fs.existsSync(walDir)) {
+                    return { success: true, filesFlushed: 0, totalBytes: 0, validLines: 0, invalidLines: 0 };
+                }
+
+                const files = fs.readdirSync(walDir).filter(f => f.endsWith('.jsonl'));
+                let totalBytes = 0;
+                let validLines = 0;
+                let invalidLines = 0;
+
+                for (const filename of files) {
+                    const filePath = path.join(walDir, filename);
+                    try {
+                        const stats = fs.statSync(filePath);
+                        totalBytes += stats.size;
+
+                        const content = fs.readFileSync(filePath, 'utf-8');
+                        const lines = content.split('\n').filter(line => line.trim());
+
+                        for (const line of lines) {
+                            if (validateJSONLine(line)) {
+                                validLines++;
+                            } else {
+                                invalidLines++;
+                                console.warn(`Invalid JSONL line in ${filePath}: ${line.substring(0, 50)}...`);
+                            }
+                        }
+                    } catch (fileError) {
+                        console.error(`Error flushing WAL file ${filePath}:`, fileError.message);
+                    }
+                }
+
+                console.info(`[LOCAL] Flushed WAL for ${uid}/${entityType}: ${files.length} files, ${totalBytes} bytes, ${validLines} valid lines`);
+
+                return {
+                    success: true,
+                    filesFlushed: files.length,
+                    totalBytes,
+                    validLines,
+                    invalidLines,
+                };
+            }
+
+            // GCS: list and validate WAL files
+            const [files] = await this.bucket.getFiles({ prefix: walPrefix });
+            const walFiles = files.filter(f => f.name.endsWith('.jsonl'));
+
+            let totalBytes = 0;
+            let validLines = 0;
+            let invalidLines = 0;
+
+            for (const walFile of walFiles) {
+                try {
+                    // Get file metadata
+                    const [metadata] = await walFile.getMetadata();
+                    totalBytes += parseInt(metadata.size || '0', 10);
+
+                    // Read and validate JSONL content
+                    const [content] = await walFile.download();
+                    const lines = content.toString().split('\n').filter(line => line.trim());
+
+                    for (const line of lines) {
+                        if (validateJSONLine(line)) {
+                            validLines++;
+                        } else {
+                            invalidLines++;
+                            console.warn(`Invalid JSONL line in ${walFile.name}: ${line.substring(0, 50)}...`);
+                        }
+                    }
+                } catch (fileError) {
+                    console.error(`Error flushing WAL file ${walFile.name}:`, fileError.message);
+                }
+            }
+
+            console.info(`Flushed WAL for ${uid}/${entityType}: ${walFiles.length} files, ${totalBytes} bytes, ${validLines} valid lines`);
+
+            return {
+                success: true,
+                filesFlushed: walFiles.length,
+                totalBytes,
+                validLines,
+                invalidLines,
+            };
+        } catch (error) {
+            console.error(`Error flushing WAL for ${uid}/${entityType}:`, error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
     /**
      * Save NACHA submission with traceability metadata
      *

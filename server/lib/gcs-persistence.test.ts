@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Set environment before importing gcs-persistence
+process.env.NODE_ENV = 'production';
+process.env.GOOGLE_APPLICATION_CREDENTIALS = '/fake/path.json';
+delete process.env.USE_LOCAL_PERSISTENCE;
+
 const { mockFile, mockBucket, mockStorageInstance } = vi.hoisted(() => {
     const file = {
         save: vi.fn(),
@@ -30,7 +35,7 @@ vi.mock('@google-cloud/storage', () => {
     };
 });
 
-// Import after mock
+// Import after mock and env setup
 import { persistence } from './gcs-persistence.js';
 
 describe('GCSPersistence', () => {
@@ -369,6 +374,189 @@ describe('GCSPersistence', () => {
                 expect(stats.entryCount).toBe(0);
                 expect(stats.sizeBytes).toBe(0);
                 expect(stats.hasSnapshot).toBe(false);
+            });
+        });
+
+        // =========================================================================
+        // JSONL WAL Methods (Phase 1.2)
+        // =========================================================================
+
+        describe('JSONL WAL Methods', () => {
+            describe('getWALPath', () => {
+                it('should resolve path with spec-compliant format: users/{uid}/wal/{entityType}/{YYYY-MM-DD}.jsonl', () => {
+                    const uid = 'test-uid';
+                    const entityType = 'journal_entries';
+                    const date = new Date('2026-01-20T12:00:00Z');
+
+                    const path = persistence.getWALPath(uid, entityType, date);
+
+                    expect(path).toBe('users/test-uid/wal/journal_entries/2026-01-20.jsonl');
+                });
+
+                it('should use today\'s date when date parameter is omitted', () => {
+                    const uid = 'test-uid';
+                    const entityType = 'ledger';
+                    const today = new Date().toISOString().split('T')[0];
+
+                    const path = persistence.getWALPath(uid, entityType);
+
+                    expect(path).toBe(`users/test-uid/wal/ledger/${today}.jsonl`);
+                });
+
+                it('should accept date string in YYYY-MM-DD format', () => {
+                    const uid = 'test-uid';
+                    const entityType = 'accounts';
+                    const dateString = '2026-01-15';
+
+                    const path = persistence.getWALPath(uid, entityType, dateString);
+
+                    expect(path).toBe('users/test-uid/wal/accounts/2026-01-15.jsonl');
+                });
+            });
+
+            describe('appendJSONL', () => {
+                it('should create new WAL file with spec-compliant path using jsonlSerializer', async () => {
+                    mockFile.exists.mockResolvedValueOnce([false]);
+
+                    const line = { type: 'CREATE', payload: { id: 'acc-001' }, timestamp: '2026-01-20T10:00:00Z' };
+                    const result = await persistence.appendJSONL('test-uid', 'journal_entries', line);
+
+                    // Verify spec-compliant path format
+                    const expectedPathPattern = /^users\/test-uid\/wal\/journal_entries\/\d{4}-\d{2}-\d{2}\.jsonl$/;
+                    expect(result.success).toBe(true);
+                    expect(result.path).toMatch(expectedPathPattern);
+
+                    // Verify jsonlSerializer was used (JSON + newline)
+                    const [savedContent] = mockFile.save.mock.calls[0];
+                    expect(savedContent).toBe(JSON.stringify(line) + '\n');
+                });
+
+                it('should append to existing WAL file using compose() or read-modify-write', async () => {
+                    const existingLine = { type: 'EXISTING', timestamp: '2026-01-19T10:00:00Z' };
+                    const newLine = { type: 'NEW', timestamp: '2026-01-20T10:00:00Z' };
+                    const existingContent = JSON.stringify(existingLine) + '\n';
+
+                    mockFile.exists.mockResolvedValueOnce([true]);
+                    mockFile.download.mockResolvedValueOnce([Buffer.from(existingContent)]);
+
+                    const result = await persistence.appendJSONL('test-uid', 'journal_entries', newLine);
+
+                    expect(result.success).toBe(true);
+
+                    // Verify both lines are in the saved content
+                    const [savedContent] = mockFile.save.mock.calls[0];
+                    expect(savedContent).toContain(JSON.stringify(existingLine) + '\n');
+                    expect(savedContent).toContain(JSON.stringify(newLine) + '\n');
+                });
+
+                it('should use jsonlSerializer for serialization', async () => {
+                    mockFile.exists.mockResolvedValueOnce([false]);
+
+                    const line = { type: 'TEST', data: { nested: 'value' } };
+                    await persistence.appendJSONL('test-uid', 'ledger', line);
+
+                    const [savedContent] = mockFile.save.mock.calls[0];
+                    // Verify newline termination (jsonlSerializer behavior)
+                    expect(savedContent.endsWith('\n')).toBe(true);
+
+                    // Verify line can be parsed back
+                    const parsed = JSON.parse(savedContent.trim());
+                    expect(parsed).toEqual(line);
+                });
+
+                it('should return error object on failure', async () => {
+                    mockFile.exists.mockRejectedValueOnce(new Error('Storage unavailable'));
+
+                    const result = await persistence.appendJSONL('test-uid', 'ledger', { type: 'FAIL' });
+
+                    expect(result.success).toBe(false);
+                    expect(result.error).toBeDefined();
+                    expect(result.path).toBeUndefined();
+                });
+            });
+
+            describe('flushWAL', () => {
+                it('should ensure persistence for entity type WAL files', async () => {
+                    const mockWalFiles = [
+                        {
+                            name: 'users/test-uid/wal/journal_entries/2026-01-20.jsonl',
+                            getMetadata: vi.fn().mockResolvedValue([{ size: '512' }]),
+                        },
+                        {
+                            name: 'users/test-uid/wal/journal_entries/2026-01-19.jsonl',
+                            getMetadata: vi.fn().mockResolvedValue([{ size: '256' }]),
+                        },
+                    ];
+
+                    mockBucket.getFiles.mockResolvedValueOnce([mockWalFiles]);
+
+                    const result = await persistence.flushWAL('test-uid', 'journal_entries');
+
+                    expect(result.success).toBe(true);
+                    expect(result.filesFlushed).toBe(2);
+                    expect(result.totalBytes).toBe(768);
+                });
+
+                it('should handle empty WAL (no files to flush)', async () => {
+                    mockBucket.getFiles.mockResolvedValueOnce([[]]);
+
+                    const result = await persistence.flushWAL('test-uid', 'nonexistent');
+
+                    expect(result.success).toBe(true);
+                    expect(result.filesFlushed).toBe(0);
+                    expect(result.totalBytes).toBe(0);
+                });
+
+                it('should return error object on failure', async () => {
+                    mockBucket.getFiles.mockRejectedValueOnce(new Error('Storage unavailable'));
+
+                    const result = await persistence.flushWAL('test-uid', 'ledger');
+
+                    expect(result.success).toBe(false);
+                    expect(result.error).toBeDefined();
+                });
+
+                it('should verify file integrity by reading and validating JSONL lines', async () => {
+                    const validContent = Buffer.from([
+                        '{"type":"ACTION_1"}',
+                        '{"type":"ACTION_2"}',
+                    ].join('\n'));
+
+                    const mockWalFile = {
+                        name: 'users/test-uid/wal/ledger/2026-01-20.jsonl',
+                        download: vi.fn().mockResolvedValue([validContent]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: validContent.length }]),
+                    };
+
+                    mockBucket.getFiles.mockResolvedValueOnce([[mockWalFile]]);
+
+                    const result = await persistence.flushWAL('test-uid', 'ledger');
+
+                    expect(result.success).toBe(true);
+                    expect(result.validLines).toBe(2);
+                });
+
+                it('should report invalid lines during integrity check', async () => {
+                    const mixedContent = Buffer.from([
+                        '{"type":"VALID"}',
+                        'this is not valid json',
+                        '{"type":"ALSO_VALID"}',
+                    ].join('\n'));
+
+                    const mockWalFile = {
+                        name: 'users/test-uid/wal/ledger/2026-01-20.jsonl',
+                        download: vi.fn().mockResolvedValue([mixedContent]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: mixedContent.length }]),
+                    };
+
+                    mockBucket.getFiles.mockResolvedValueOnce([[mockWalFile]]);
+
+                    const result = await persistence.flushWAL('test-uid', 'ledger');
+
+                    expect(result.success).toBe(true);
+                    expect(result.validLines).toBe(2);
+                    expect(result.invalidLines).toBe(1);
+                });
             });
         });
     });
