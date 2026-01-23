@@ -75,38 +75,38 @@
 ## Phase 3: Read Path - Streaming & Queries
 
 ### 3.1 Streaming Reads
-- [ ] Task: Create `jsonlStream.ts` module
-  - [ ] Sub-task: Write failing tests for `streamJSONL<T>(uid, entityType, options)`
-  - [ ] Sub-task: Implement async generator for streaming GCS files
-  - [ ] Sub-task: Write failing tests for key-range queries (startKey, endKey)
-  - [ ] Sub-task: Implement key filtering during stream
-  - [ ] Sub-task: Write failing tests for time-range queries (startDate, endDate)
-  - [ ] Sub-task: Implement date filtering during stream
-  - [ ] Sub-task: Write failing tests for filter predicate function
-  - [ ] Sub-task: Implement in-stream filtering with user-provided predicate
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Create `jsonlStream.ts` module [36fdaaf]
+  - [x] Sub-task: Write failing tests for `streamJSONL<T>(uid, entityType, options)` [36fdaaf]
+  - [x] Sub-task: Implement async generator for streaming GCS files [36fdaaf]
+  - [x] Sub-task: Write failing tests for key-range queries (startKey, endKey) [36fdaaf]
+  - [x] Sub-task: Implement key filtering during stream [36fdaaf]
+  - [x] Sub-task: Write failing tests for time-range queries (startDate, endDate) [36fdaaf]
+  - [x] Sub-task: Implement date filtering during stream [36fdaaf]
+  - [x] Sub-task: Write failing tests for filter predicate function [36fdaaf]
+  - [x] Sub-task: Implement in-stream filtering with user-provided predicate [36fdaaf]
+  - [x] Sub-task: Verify coverage >80% (86.73% lines, 80.64% branches) [36fdaaf]
 
 ### 3.2 Query Layer (MapReduce-Style)
-- [ ] Task: Create `mapReduceViews.ts` module
-  - [ ] Sub-task: Write failing tests for Mapper function type
-  - [ ] Sub-task: Implement map: (obj) → [key, value][] emission
-  - [ ] Sub-task: Write failing tests for Reducer function (sum, avg, min, max, count)
-  - [ ] Sub-task: Implement reduce: values[] → reduced value
-  - [ ] Sub-task: Write failing tests for ReReducer (incremental aggregation)
-  - [ ] Sub-task: Implement re-reduce: reducedValues[] → final value
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Create `mapReduceViews.ts` module [02c9bf8]
+  - [x] Sub-task: Write failing tests for Mapper function type [02c9bf8]
+  - [x] Sub-task: Implement map: (obj) → [key, value][] emission [02c9bf8]
+  - [x] Sub-task: Write failing tests for Reducer function (sum, avg, min, max, count) [02c9bf8]
+  - [x] Sub-task: Implement reduce: values[] → reduced value [02c9bf8]
+  - [x] Sub-task: Write failing tests for ReReducer (incremental aggregation) [02c9bf8]
+  - [x] Sub-task: Implement re-reduce: reducedValues[] → final value [02c9bf8]
+  - [x] Sub-task: Verify coverage >80% (100% coverage) [02c9bf8]
 
 ### 3.3 Materialized Views
-- [ ] Task: Implement view storage and caching
-  - [ ] Sub-task: Write failing tests for `queryView(uid, view, keyRange)`
-  - [ ] Sub-task: Implement view execution over SSTables + WAL files
-  - [ ] Sub-task: Write failing tests for cached view results
-  - [ ] Sub-task: Implement view result caching in GCS
-  - [ ] Sub-task: Write failing tests for view invalidation on compaction
-  - [ ] Sub-task: Implement cache invalidation triggers
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Implement view storage and caching [f7e3d13]
+  - [x] Sub-task: Write failing tests for `queryView(uid, view, keyRange)` [f7e3d13]
+  - [x] Sub-task: Implement view execution over SSTables + WAL files [f7e3d13]
+  - [x] Sub-task: Write failing tests for cached view results [f7e3d13]
+  - [x] Sub-task: Implement view result caching in GCS [f7e3d13]
+  - [x] Sub-task: Write failing tests for view invalidation on compaction [f7e3d13]
+  - [x] Sub-task: Implement cache invalidation triggers [f7e3d13]
+  - [x] Sub-task: Verify coverage >80% (89.15% statements, 80.76% branches) [f7e3d13]
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 3 Read Path'
+- [~] Task: Conductor - User Manual Verification 'Phase 3 Read Path'
 
 ---
 
