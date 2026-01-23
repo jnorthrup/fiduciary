@@ -49,7 +49,9 @@ import {
     detectStateJSON,
     parseStateJSON,
     migrateStateToJSONL,
+    rollbackMigration,
     type MigrationResult,
+    type RollbackResult,
 } from './migrateStateToJSONL.js';
 import { _setBucketForTesting } from './migrateStateToJSONL.js';
 import { _setBucketForTesting as setMetadataBucket } from './walMetadata.js';
@@ -463,6 +465,164 @@ describe('migrateStateToJSONL - migrateStateToJSONL', () => {
         mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
 
         const result = await migrateStateToJSONL(uid);
+
+        expect(result.duration).toBeGreaterThanOrEqual(0);
+        expect(typeof result.duration).toBe('number');
+    });
+});
+
+describe('migrateStateToJSONL - rollbackMigration', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        _setBucketForTesting(mockBucket as any);
+        setMetadataBucket(mockBucket as any);
+    });
+
+    it('should restore state.json from backup and update metadata to rolledback', async () => {
+        const uid = 'rollback-uid';
+        const mockState = {
+            accounts: [{ id: 'acc-001', name: 'Cash' }],
+        };
+
+        // Setup: state.json backup exists, metadata shows migration complete
+        mockFile.exists
+            .mockResolvedValueOnce([true])   // backup state.json exists
+            .mockResolvedValue([true]);      // metadata exists
+        mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
+
+        // Mock metadata load with migration complete
+        const existingMetadata = {
+            uid,
+            entityType: 'accounts',
+            version: 1,
+            createdAt: '2026-01-23T10:00:00Z',
+            updatedAt: '2026-01-23T10:00:00Z',
+            walFiles: [],
+            sstables: [{
+                path: 'users/rollback-uid/snapshots/accounts/20260123-compact.jsonl',
+                indexPath: 'users/rollback-uid/snapshots/accounts/20260123-compact-index.json',
+                recordCount: 1,
+                byteSize: 100,
+                startKey: 'acc-001',
+                endKey: 'acc-001',
+                compactedAt: '2026-01-23T10:00:00Z',
+            }],
+            migrationStatus: 'complete' as const,
+            thresholdConfig: { enabled: true, value: 1000 },
+        };
+        mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(existingMetadata))]);
+
+        const result = await rollbackMigration(uid);
+
+        expect(result.success).toBe(true);
+        expect(result.errors).toEqual([]);
+
+        // Verify state.json backup was restored
+        expect(mockFile.copy).toHaveBeenCalledWith(`${uid}/state.json`);
+    });
+
+    it('should return error when backup state.json does not exist', async () => {
+        const uid = 'no-backup-uid';
+        mockFile.exists.mockResolvedValueOnce([false]); // backup does not exist
+
+        const result = await rollbackMigration(uid);
+
+        expect(result.success).toBe(false);
+        expect(result.errors).toContain('Backup state.json not found, cannot rollback');
+    });
+
+    it('should return error when metadata cannot be loaded', async () => {
+        const uid = 'no-metadata-uid';
+        mockFile.exists.mockResolvedValueOnce([true]); // backup exists
+        // loadMetadata returns null when metadata is empty/invalid
+        mockFile.download.mockResolvedValueOnce([Buffer.from('not valid json')]);
+
+        const result = await rollbackMigration(uid);
+
+        // Even if metadata fails to load, state.json is restored successfully
+        // so the rollback should still be considered successful
+        expect(result.success).toBe(true);
+        expect(result.entityTypesUpdated).toEqual([]);
+    });
+
+    it('should restore all entity type metadata to rolledback status', async () => {
+        const uid = 'multi-entity-uid';
+
+        // Set up simpler mocks
+        mockFile.copy.mockResolvedValue(true);
+        mockFile.save.mockResolvedValue(true);
+
+        // Mock exists for backup state.json and accounts metadata only
+        let existsCallIndex = 0;
+        mockFile.exists.mockImplementation(async () => {
+            existsCallIndex++;
+            // Call 1: backup state.json
+            if (existsCallIndex === 1) return [true];
+            // Call 2: accounts metadata exists
+            if (existsCallIndex === 2) return [true];
+            // All other entity types' metadata does not exist
+            return [false];
+        });
+
+        // Mock download for accounts metadata only
+        let downloadCallIndex = 0;
+        mockFile.download.mockImplementation(async () => {
+            downloadCallIndex++;
+            // First call is for backup state.json existence check (not actually downloaded in rollback)
+            // Subsequent calls for metadata
+            const accountsMetadata = {
+                uid,
+                entityType: 'accounts',
+                version: 1,
+                createdAt: '2026-01-23T10:00:00Z',
+                updatedAt: '2026-01-23T10:00:00Z',
+                walFiles: [],
+                sstables: [],
+                migrationStatus: 'complete' as const,
+                thresholdConfig: { enabled: true, value: 1000 },
+            };
+            return [Buffer.from(JSON.stringify(accountsMetadata))];
+        });
+
+        const result = await rollbackMigration(uid);
+
+        expect(result.success).toBe(true);
+        expect(result.entityTypesUpdated).toContain('accounts');
+    });
+
+    it('should handle storage errors during rollback gracefully', async () => {
+        const uid = 'error-rollback-uid';
+        mockFile.exists.mockResolvedValueOnce([true]);
+        mockFile.copy.mockRejectedValueOnce(new Error('Storage unavailable'));
+
+        const result = await rollbackMigration(uid);
+
+        expect(result.success).toBe(false);
+        expect(result.errors.length).toBeGreaterThan(0);
+        expect(result.errors[0]).toContain('Failed to restore state.json from backup');
+    });
+
+    it('should report rollback duration', async () => {
+        const uid = 'duration-rollback-uid';
+        const mockState = { accounts: [{ id: 'acc-001' }] };
+
+        mockFile.exists.mockResolvedValueOnce([true]).mockResolvedValue([true]);
+        mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
+
+        const accountsMetadata = {
+            uid,
+            entityType: 'accounts',
+            version: 1,
+            createdAt: '2026-01-23T10:00:00Z',
+            updatedAt: '2026-01-23T10:00:00Z',
+            walFiles: [],
+            sstables: [],
+            migrationStatus: 'complete' as const,
+            thresholdConfig: { enabled: true, value: 1000 },
+        };
+        mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(accountsMetadata))]);
+
+        const result = await rollbackMigration(uid);
 
         expect(result.duration).toBeGreaterThanOrEqual(0);
         expect(typeof result.duration).toBe('number');

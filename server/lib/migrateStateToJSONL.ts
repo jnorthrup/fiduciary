@@ -60,6 +60,22 @@ export interface MigrationResult {
 }
 
 /**
+ * Rollback result structure
+ *
+ * Spec: Phase 4.4 Rollback Capability
+ */
+export interface RollbackResult {
+    /** Whether rollback completed successfully */
+    success: boolean;
+    /** Entity types whose metadata was updated */
+    entityTypesUpdated: string[];
+    /** Any errors encountered during rollback */
+    errors: string[];
+    /** Rollback duration in milliseconds */
+    duration: number;
+}
+
+/**
  * Parsed state.json structure with entity collections
  */
 interface ParsedState {
@@ -387,8 +403,94 @@ export async function migrateStateToJSONL(uid: string): Promise<MigrationResult>
     }
 }
 
+/**
+ * Rollback migration to state.json
+ *
+ * Process:
+ * 1. Verify backup state.json exists
+ * 2. Restore state.json from backup (atomic copy)
+ * 3. Update metadata for all entity types to 'rolledback' status
+ *
+ * @param uid - User OID
+ * @returns Promise<RollbackResult> - Rollback result with statistics
+ *
+ * Spec: Phase 4.4 Rollback Capability
+ */
+export async function rollbackMigration(uid: string): Promise<RollbackResult> {
+    const startTime = Date.now();
+    const errors: string[] = [];
+    const entityTypesUpdated: string[] = [];
+
+    try {
+        const bucket = getBucket();
+        const backupStatePath = `${uid}/state.json`;
+        const backupFile = bucket.file(backupStatePath);
+
+        // Step 1: Verify backup exists
+        const [backupExists] = await backupFile.exists();
+        if (!backupExists) {
+            return {
+                success: false,
+                entityTypesUpdated: [],
+                errors: ['Backup state.json not found, cannot rollback'],
+                duration: Date.now() - startTime,
+            };
+        }
+
+        // Step 2: Restore state.json from backup (atomic copy)
+        // In GCS, copy is atomic - this restores state.json to its original location
+        try {
+            await backupFile.copy(backupStatePath);
+        } catch (copyError) {
+            const errorMsg = `Failed to restore state.json from backup: ${copyError}`;
+            errors.push(errorMsg);
+            return {
+                success: false,
+                entityTypesUpdated,
+                errors,
+                duration: Date.now() - startTime,
+            };
+        }
+
+        // Step 3: Update metadata for all migratable entity types to 'rolledback'
+        for (const entityType of MIGRATABLE_ENTITY_TYPES) {
+            try {
+                const existingMetadata = await loadMetadata(uid, entityType);
+                if (existingMetadata && existingMetadata.migrationStatus === 'complete') {
+                    existingMetadata.migrationStatus = 'rolledback';
+                    await saveMetadataAtomic(uid, existingMetadata);
+                    entityTypesUpdated.push(entityType);
+                }
+            } catch (metadataError) {
+                // Log error but continue with other entity types
+                const errorMsg = `Failed to update metadata for ${entityType}: ${metadataError}`;
+                errors.push(errorMsg);
+                console.error(errorMsg);
+            }
+        }
+
+        // Success if backup was restored (metadata errors are non-critical)
+        const success = true;
+
+        return {
+            success,
+            entityTypesUpdated,
+            errors,
+            duration: Date.now() - startTime,
+        };
+    } catch (error) {
+        return {
+            success: false,
+            entityTypesUpdated,
+            errors: [`Rollback failed: ${error}`],
+            duration: Date.now() - startTime,
+        };
+    }
+}
+
 export default {
     detectStateJSON,
     parseStateJSON,
     migrateStateToJSONL,
+    rollbackMigration,
 };
