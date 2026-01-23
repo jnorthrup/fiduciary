@@ -146,45 +146,41 @@
   - [x] Sub-task: Implement rollback function to restore state.json and update metadata [5f89f5b]
   - [x] Sub-task: Verify coverage >80% (94.07% statements) [5f89f5b]
 
-- [~] Task: Conductor - User Manual Verification 'Phase 4 Migration'
+- [x] Task: Conductor - User Manual Verification 'Phase 4 Migration' [checkpoint: d0b047b]
 
 ---
 
 ## Phase 5: WAL Composition - Binary Blackbox
 
 ### 5.1 WAL Handle API
-- [ ] Task: Create `walHandle.ts` module
-  - [ ] Sub-task: Write failing tests for `openWAL(uid, entityType)`
-  - [ ] Sub-task: Implement WALHandle factory with metadata loading
-  - [ ] Sub-task: Write failing tests for `handle.append(obj)`
-  - [ ] Sub-task: Implement append via JSONL serialization + GCS append
-  - [ ] Sub-task: Write failing tests for `handle.stream(options)`
-  - [ ] Sub-task: Implement streaming via jsonlStream module
-  - [ ] Sub-task: Write failing tests for `handle.compact(config)`
-  - [ ] Sub-task: Implement compaction via lsmCompactor module
-  - [ ] Sub-task: Write failing tests for `handle.close()`
-  - [ ] Sub-task: Implement flush and metadata save on close
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Create `walHandle.ts` module [b47a325]
+  - [x] Sub-task: Write failing tests for `openWAL(uid, entityType)` [b47a325]
+  - [x] Sub-task: Implement WALHandle factory with metadata loading [b47a325]
+  - [x] Sub-task: Write failing tests for `handle.append(obj)` [b47a325]
+  - [x] Sub-task: Implement append via JSONL serialization + GCS append [b47a325]
+  - [x] Sub-task: Write failing tests for `handle.stream(options)` [b47a325]
+  - [x] Sub-task: Implement streaming via jsonlStream module [b47a325]
+  - [x] Sub-task: Write failing tests for `handle.compact(config)` [b47a325]
+  - [x] Sub-task: Implement compaction via lsmCompactor module [b47a325]
+  - [x] Sub-task: Write failing tests for `handle.close()` [b47a325]
+  - [x] Sub-task: Implement flush and metadata save on close [b47a325]
+  - [x] Sub-task: Verify coverage >80% (97.61% statements, 100% functions) [b47a325]
 
 ### 5.2 Metadata Management
-- [ ] Task: Create `walMetadata.ts` module
-  - [ ] Sub-task: Write failing tests for WALMetadata structure validation
-  - [ ] Sub-task: Implement WALMetadata interface with all fields
-  - [ ] Sub-task: Write failing tests for metadata atomic updates
-  - [ ] Sub-task: Implement write-to-temp + rename pattern for atomicity
-  - [ ] Sub-task: Write failing tests for metadata recovery on startup
-  - [ ] Sub-task: Implement metadata repair if corrupted (rebuild from file listing)
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Add metadata recovery/repair to walMetadata.ts [99d3f01]
+  - [x] Sub-task: Write failing tests for metadata recovery on startup [99d3f01]
+  - [x] Sub-task: Implement metadata repair if corrupted (rebuild from file listing) [99d3f01]
+  - [x] Sub-task: Verify coverage >80% (89.14% coverage) [99d3f01]
 
 ### 5.3 Threshold Configuration
-- [ ] Task: Implement per-entity-type threshold configuration
-  - [ ] Sub-task: Write failing tests for configurable threshold values
-  - [ ] Sub-task: Implement thresholdConfig in metadata with enabled/value fields
-  - [ ] Sub-task: Write failing tests for threshold-based routing
-  - [ ] Sub-task: Implement routing logic: state.json vs JSONL based on config
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Implement per-entity-type threshold configuration [walMetadata already has thresholdConfig]
+  - [x] Sub-task: Write failing tests for configurable threshold values [e738511]
+  - [x] Sub-task: Implement thresholdConfig in metadata with enabled/value fields [e738511]
+  - [x] Sub-task: Write failing tests for threshold-based routing [e738511]
+  - [x] Sub-task: Implement routing logic: state.json vs JSONL based on config [e738511]
+  - [x] Sub-task: Verify coverage >80% [e738511]
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 5 WAL Composition'
+- [x] Task: Conductor - User Manual Verification 'Phase 5 WAL Composition'
 
 ---
 
