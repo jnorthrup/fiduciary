@@ -50,7 +50,7 @@ Journal Entry → Payment Order → NACHA Generator → NACHA Submit → Storage
 
 ---
 
-## Phase 2: Payment Order → NACHA Integration
+## Phase 2: Payment Order → NACHA Integration [checkpoint: 481020c]
 
 ### 2.1 Settlement Route Enhancement
 - [x] Task: Add NACHA generation to payment order execution
