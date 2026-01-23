@@ -90,7 +90,7 @@ Journal Entry → Payment Order → NACHA Generator → NACHA Submit → Storage
 
 ---
 
-## Phase 4: Journal Entry → Payment Order (Optional)
+## Phase 4: Journal Entry → Payment Order (Optional) [checkpoint: f1c4cd6]
 
 ### 4.1 Event-Driven Auto-Pay
 - [x] Task: Subscribe to `journal.entry_posted` events
