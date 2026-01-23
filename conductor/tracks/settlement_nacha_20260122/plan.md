@@ -86,7 +86,7 @@ Journal Entry → Payment Order → NACHA Generator → NACHA Submit → Storage
   - [x] Sub-task: GET /api/nacha/submissions (verify file appears)
   - [x] Sub-task: Decode and verify NACHA file format
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 3 E2E Flow'
+- [x] Task: Conductor - User Manual Verification 'Phase 3 E2E Flow' [fdb02a0]
 
 ---
 
