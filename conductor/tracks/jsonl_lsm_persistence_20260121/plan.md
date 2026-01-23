@@ -196,11 +196,11 @@
 ### Integration Tests
 - [x] Write → Compact → Read cycle [593466b]
 - [x] Migration from state.json to JSONL
-- [~] Concurrent writes handling
-- [ ] Metadata recovery
+- [x] Concurrent writes handling [9727382]
+- [x] Metadata recovery
 
 ### Manual Verification
-- [ ] JSONL files are valid newline-delimited JSON
-- [ ] Compaction produces smaller files
+- [x] JSONL files are valid newline-delimited JSON
+- [x] Compaction produces smaller files
 - [ ] Migration preserves all data
 - [ ] Query results match expectations
