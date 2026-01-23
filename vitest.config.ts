@@ -14,7 +14,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json'],
-      include: ['server/lib/jsonlSerializer.ts', 'server/lib/lsmCompactor.ts', 'server/lib/jsonlStream.ts'],
+      include: ['server/lib/jsonlSerializer.ts', 'server/lib/lsmCompactor.ts', 'server/lib/jsonlStream.ts', 'server/lib/mapReduceViews.ts'],
       // Coverage thresholds
       thresholds: {
         lines: 80,
