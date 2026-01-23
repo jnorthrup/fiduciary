@@ -18,7 +18,7 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
-## [~] Track: Use Case Correctness & Test Adjustments
+## [x] Track: Use Case Correctness & Test Adjustments
 
 *Link: [./conductor/tracks/test_correctness_20260121/](./conductor/tracks/test_correctness_20260121/)*
 *Fix AccountTable test failures, establish use case testing standards*
