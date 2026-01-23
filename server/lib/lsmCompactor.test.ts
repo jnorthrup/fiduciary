@@ -468,8 +468,212 @@ describe('lsmCompactor', () => {
         });
     });
 
-    describe('CompactionConfig validation', () => {
-        it('should accept valid CompactionConfig with tiered strategy', async () => {
+    describe('Tiered compaction strategy', () => {
+        it('should merge N WAL files into 1 SSTable when using tiered strategy', async () => {
+            const uid = 'test-uid';
+            const entityType = 'events';
+            const config: CompactionConfig = {
+                maxWALFiles: 5,
+                maxFileSizeMB: 100,
+                minRecordsToCompact: 1,
+                strategy: 'tiered',
+            };
+
+            // Create 5 WAL files (N = 5)
+            const mockWalFiles = Array.from({ length: 5 }, (_, i) => {
+                const path = `users/${uid}/wal/${entityType}/2026-01-${String(20 + i).padStart(2, '0')}.jsonl`;
+                const file = mockBucket._getMockFile(path);
+                file.name = path;
+                file.download.mockResolvedValue([Buffer.from(`{"id":"evt-${i}","timestamp":"2026-01-${20 + i}T10:00:00Z"}`)]);
+                file.getMetadata.mockResolvedValue([{ size: '100' }]);
+                return file;
+            });
+
+            mockBucket.getFiles.mockResolvedValueOnce([mockWalFiles]);
+
+            const result = await compactWAL(uid, entityType, config);
+
+            // Verify N files were read
+            expect(result.recordCount).toBe(5);
+
+            // Verify EXACTLY 1 SSTable was created (N -> 1 merge)
+            expect(result.sstablePath).toBeDefined();
+            const sstableCalls = mockBucket.file.mock.calls.filter(
+                call => (call[0] as string)?.includes('-compact.jsonl')
+            );
+            expect(sstableCalls.length).toBe(1);
+
+            // Verify exactly 1 index was created
+            const indexCalls = mockBucket.file.mock.calls.filter(
+                call => (call[0] as string)?.includes('-index.json')
+            );
+            expect(indexCalls.length).toBe(1);
+        });
+
+        it('should merge 10 WAL files into 1 SSTable (larger N)', async () => {
+            const uid = 'test-uid';
+            const entityType = 'transactions';
+            const config: CompactionConfig = {
+                maxWALFiles: 10,
+                maxFileSizeMB: 100,
+                minRecordsToCompact: 1,
+                strategy: 'tiered',
+            };
+
+            // Create 10 WAL files
+            const mockWalFiles = Array.from({ length: 10 }, (_, i) => {
+                const path = `users/${uid}/wal/${entityType}/2026-01-${String(i + 1).padStart(2, '0')}.jsonl`;
+                const file = mockBucket._getMockFile(path);
+                file.name = path;
+                file.download.mockResolvedValue([Buffer.from(`{"id":"txn-${i}","timestamp":"2026-01-${String(i + 1).padStart(2, '0')}T10:00:00Z"}`)]);
+                file.getMetadata.mockResolvedValue([{ size: '100' }]);
+                return file;
+            });
+
+            mockBucket.getFiles.mockResolvedValueOnce([mockWalFiles]);
+
+            const result = await compactWAL(uid, entityType, config);
+
+            // Verify all 10 files were merged
+            expect(result.recordCount).toBe(10);
+
+            // Verify exactly 1 SSTable created (10 -> 1 merge)
+            const sstableCalls = mockBucket.file.mock.calls.filter(
+                call => (call[0] as string)?.includes('-compact.jsonl')
+            );
+            expect(sstableCalls.length).toBe(1);
+        });
+
+        it('should handle single WAL file merging into 1 SSTable (N=1)', async () => {
+            const uid = 'test-uid';
+            const entityType = 'single';
+            const config: CompactionConfig = {
+                maxWALFiles: 10,
+                maxFileSizeMB: 100,
+                minRecordsToCompact: 1,
+                strategy: 'tiered',
+            };
+
+            const walContent = Buffer.from([
+                '{"id":"single-001","timestamp":"2026-01-20T10:00:00Z"}',
+            ].join('\n'));
+
+            const mockWalFile = mockBucket._getMockFile(`users/${uid}/wal/${entityType}/2026-01-20.jsonl`);
+            mockWalFile.name = `users/${uid}/wal/${entityType}/2026-01-20.jsonl`;
+            mockWalFile.download.mockResolvedValue([walContent]);
+            mockWalFile.getMetadata.mockResolvedValue([{ size: String(walContent.length) }]);
+
+            mockBucket.getFiles.mockResolvedValueOnce([[mockWalFile]]);
+
+            const result = await compactWAL(uid, entityType, config);
+
+            // Verify 1 file in -> 1 SSTable out
+            expect(result.recordCount).toBe(1);
+            const sstableCalls = mockBucket.file.mock.calls.filter(
+                call => (call[0] as string)?.includes('-compact.jsonl')
+            );
+            expect(sstableCalls.length).toBe(1);
+        });
+
+        it('should not create multiple SSTables for tiered strategy', async () => {
+            const uid = 'test-uid';
+            const entityType = 'multi';
+            const config: CompactionConfig = {
+                maxWALFiles: 7,
+                maxFileSizeMB: 100,
+                minRecordsToCompact: 1,
+                strategy: 'tiered',
+            };
+
+            // Create 7 WAL files
+            const mockWalFiles = Array.from({ length: 7 }, (_, i) => {
+                const path = `users/${uid}/wal/${entityType}/2026-01-${String(i + 1).padStart(2, '0')}.jsonl`;
+                const file = mockBucket._getMockFile(path);
+                file.name = path;
+                file.download.mockResolvedValue([Buffer.from(`{"id":"m-${i}","timestamp":"2026-01-${String(i + 1).padStart(2, '0')}T10:00:00Z"}`)]);
+                file.getMetadata.mockResolvedValue([{ size: '100' }]);
+                return file;
+            });
+
+            mockBucket.getFiles.mockResolvedValueOnce([mockWalFiles]);
+
+            const result = await compactWAL(uid, entityType, config);
+
+            // Verify exactly 1 SSTable, not multiple
+            const sstableCalls = mockBucket.file.mock.calls.filter(
+                call => (call[0] as string)?.includes('-compact.jsonl')
+            );
+            expect(sstableCalls.length).toBe(1);
+            expect(sstableCalls.length).not.toBeGreaterThan(1);
+        });
+
+        it('should produce SSTable with combined records from all input files', async () => {
+            const uid = 'test-uid';
+            const entityType = 'combined';
+            const config: CompactionConfig = {
+                maxWALFiles: 3,
+                maxFileSizeMB: 100,
+                minRecordsToCompact: 1,
+                strategy: 'tiered',
+            };
+
+            // File 1: 2 records
+            const walContent1 = Buffer.from([
+                '{"id":"c-001","timestamp":"2026-01-20T10:00:00Z"}',
+                '{"id":"c-002","timestamp":"2026-01-20T11:00:00Z"}',
+            ].join('\n'));
+
+            // File 2: 3 records
+            const walContent2 = Buffer.from([
+                '{"id":"c-003","timestamp":"2026-01-21T10:00:00Z"}',
+                '{"id":"c-004","timestamp":"2026-01-21T11:00:00Z"}',
+                '{"id":"c-005","timestamp":"2026-01-21T12:00:00Z"}',
+            ].join('\n'));
+
+            // File 3: 1 record
+            const walContent3 = Buffer.from([
+                '{"id":"c-006","timestamp":"2026-01-22T10:00:00Z"}',
+            ].join('\n'));
+
+            const mockWalFile1 = mockBucket._getMockFile(`users/${uid}/wal/${entityType}/2026-01-20.jsonl`);
+            mockWalFile1.name = `users/${uid}/wal/${entityType}/2026-01-20.jsonl`;
+            mockWalFile1.download.mockResolvedValue([walContent1]);
+            mockWalFile1.getMetadata.mockResolvedValue([{ size: String(walContent1.length) }]);
+
+            const mockWalFile2 = mockBucket._getMockFile(`users/${uid}/wal/${entityType}/2026-01-21.jsonl`);
+            mockWalFile2.name = `users/${uid}/wal/${entityType}/2026-01-21.jsonl`;
+            mockWalFile2.download.mockResolvedValue([walContent2]);
+            mockWalFile2.getMetadata.mockResolvedValue([{ size: String(walContent2.length) }]);
+
+            const mockWalFile3 = mockBucket._getMockFile(`users/${uid}/wal/${entityType}/2026-01-22.jsonl`);
+            mockWalFile3.name = `users/${uid}/wal/${entityType}/2026-01-22.jsonl`;
+            mockWalFile3.download.mockResolvedValue([walContent3]);
+            mockWalFile3.getMetadata.mockResolvedValue([{ size: String(walContent3.length) }]);
+
+            mockBucket.getFiles.mockResolvedValueOnce([[mockWalFile1, mockWalFile2, mockWalFile3]]);
+
+            const result = await compactWAL(uid, entityType, config);
+
+            // Verify all 6 records combined into 1 SSTable
+            expect(result.recordCount).toBe(6);
+
+            // Get the SSTable content
+            const sstableFile = mockBucket._getMockFile(result.sstablePath || '');
+            const saveCall = sstableFile.save.mock.calls[0];
+            const savedContent = saveCall[0] as string;
+
+            // Verify SSTable contains combined records (not just one file)
+            expect(savedContent).toContain('c-001');
+            expect(savedContent).toContain('c-002');
+            expect(savedContent).toContain('c-003');
+            expect(savedContent).toContain('c-004');
+            expect(savedContent).toContain('c-005');
+            expect(savedContent).toContain('c-006');
+        });
+    });
+
+    describe('CompactionConfig parsing', () => {
+        it('should parse CompactionConfig with tiered strategy', async () => {
             const config: CompactionConfig = {
                 maxWALFiles: 10,
                 maxFileSizeMB: 100,
@@ -482,9 +686,14 @@ describe('lsmCompactor', () => {
             mockBucket.getFiles.mockResolvedValueOnce([[]]);
 
             await compactWAL(uid, entityType, config);
+
+            // Verify config is accepted and used
+            expect(mockBucket.getFiles).toHaveBeenCalledWith({
+                prefix: `users/${uid}/wal/${entityType}/`
+            });
         });
 
-        it('should accept CompactionConfig with leveled strategy', async () => {
+        it('should parse CompactionConfig with leveled strategy', async () => {
             const config: CompactionConfig = {
                 maxWALFiles: 5,
                 maxFileSizeMB: 50,
@@ -497,6 +706,91 @@ describe('lsmCompactor', () => {
             mockBucket.getFiles.mockResolvedValueOnce([[]]);
 
             await compactWAL(uid, entityType, config);
+
+            // Verify config is accepted
+            expect(mockBucket.getFiles).toHaveBeenCalled();
+        });
+
+        it('should enforce maxWALFiles limit from config', async () => {
+            const uid = 'test-uid';
+            const entityType = 'limited';
+            const config: CompactionConfig = {
+                maxWALFiles: 3,
+                maxFileSizeMB: 100,
+                minRecordsToCompact: 1,
+                strategy: 'tiered',
+            };
+
+            // Create 5 WAL files but config limits to 3
+            const mockWalFiles = Array.from({ length: 5 }, (_, i) => {
+                const path = `users/${uid}/wal/${entityType}/2026-01-${String(i + 1).padStart(2, '0')}.jsonl`;
+                const file = mockBucket._getMockFile(path);
+                file.name = path;
+                file.download.mockResolvedValue([Buffer.from(`{"id":"lim-${i}","timestamp":"2026-01-${String(i + 1).padStart(2, '0')}T10:00:00Z"}`)]);
+                file.getMetadata.mockResolvedValue([{ size: '100' }]);
+                return file;
+            });
+
+            mockBucket.getFiles.mockResolvedValueOnce([mockWalFiles]);
+
+            const result = await compactWAL(uid, entityType, config);
+
+            // Verify only 3 files processed per config
+            expect(result.recordCount).toBe(3);
+        });
+
+        it('should enforce maxFileSizeMB limit from config', async () => {
+            const uid = 'test-uid';
+            const entityType = 'sizelimit';
+            const config: CompactionConfig = {
+                maxWALFiles: 10,
+                maxFileSizeMB: 1,
+                minRecordsToCompact: 1,
+                strategy: 'tiered',
+            };
+
+            const largeWalContent = Buffer.from([
+                '{"id":"big-001","data":"' + 'x'.repeat(2 * 1024 * 1024) + '","timestamp":"2026-01-20T10:00:00Z"}',
+            ].join('\n'));
+
+            const mockWalFile = mockBucket._getMockFile(`users/${uid}/wal/${entityType}/2026-01-20.jsonl`);
+            mockWalFile.name = `users/${uid}/wal/${entityType}/2026-01-20.jsonl`;
+            mockWalFile.download.mockResolvedValue([largeWalContent]);
+            mockWalFile.getMetadata.mockResolvedValue([{ size: String(largeWalContent.length) }]);
+
+            mockBucket.getFiles.mockResolvedValueOnce([[mockWalFile]]);
+
+            const result = await compactWAL(uid, entityType, config);
+
+            // Verify compaction skipped due to size limit
+            expect(result.skippedReason).toBe('maxFileSizeMB exceeded');
+        });
+
+        it('should enforce minRecordsToCompact threshold from config', async () => {
+            const uid = 'test-uid';
+            const entityType = 'recordlimit';
+            const config: CompactionConfig = {
+                maxWALFiles: 10,
+                maxFileSizeMB: 100,
+                minRecordsToCompact: 10,
+                strategy: 'tiered',
+            };
+
+            const walContent = Buffer.from([
+                '{"id":"rec-001","timestamp":"2026-01-20T10:00:00Z"}',
+            ].join('\n'));
+
+            const mockWalFile = mockBucket._getMockFile(`users/${uid}/wal/${entityType}/2026-01-20.jsonl`);
+            mockWalFile.name = `users/${uid}/wal/${entityType}/2026-01-20.jsonl`;
+            mockWalFile.download.mockResolvedValue([walContent]);
+            mockWalFile.getMetadata.mockResolvedValue([{ size: String(walContent.length) }]);
+
+            mockBucket.getFiles.mockResolvedValueOnce([[mockWalFile]]);
+
+            const result = await compactWAL(uid, entityType, config);
+
+            // Verify compaction skipped due to record count threshold
+            expect(result.skippedReason).toBe('minRecordsToCompact not met');
         });
     });
 

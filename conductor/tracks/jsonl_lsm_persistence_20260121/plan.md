@@ -54,19 +54,19 @@
 - [ ] Task: Implement pure function compaction
   - [x] Sub-task: Write failing tests for compaction purity (no side effects) [10e02dc]
   - [x] Sub-task: Ensure compaction writes to new location only [10e02dc]
-  - [~] Sub-task: Write failing tests for atomic promotion (metadata update after compaction)
-  - [ ] Sub-task: Implement atomic metadata update (temp file + rename)
-  - [ ] Sub-task: Write failing tests for rollback capability
-  - [ ] Sub-task: Implement source file retention until promotion confirmed
-  - [ ] Sub-task: Verify coverage >80%
+  - [x] Sub-task: Write failing tests for atomic promotion (metadata update after compaction) [e738511]
+  - [x] Sub-task: Implement atomic metadata update (temp file + rename) [e738511]
+  - [x] Sub-task: Write failing tests for rollback capability [e738511]
+  - [x] Sub-task: Implement source file retention until promotion confirmed [e738511]
+  - [x] Sub-task: Verify coverage >80% (88.99% statements, 100% functions)
 
 ### 2.3 Compaction Configuration
-- [ ] Task: Implement configurable compaction strategy
-  - [ ] Sub-task: Write failing tests for tiered compaction (default)
-  - [ ] Sub-task: Implement tiered strategy: merge N files into 1
-  - [ ] Sub-task: Write failing tests for CompactionConfig parsing
-  - [ ] Sub-task: Implement config: maxWALFiles, maxFileSizeMB, minRecordsToCompact, strategy
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Implement configurable compaction strategy
+  - [x] Sub-task: Write failing tests for tiered compaction (default) [NEW_COMMIT]
+  - [x] Sub-task: Implement tiered strategy: merge N files into 1 [319040a]
+  - [x] Sub-task: Write failing tests for CompactionConfig parsing [NEW_COMMIT]
+  - [x] Sub-task: Implement config: maxWALFiles, maxFileSizeMB, minRecordsToCompact, strategy [319040a]
+  - [x] Sub-task: Verify coverage >80% (88.99% statements)
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 2 LSM Compaction'
 
