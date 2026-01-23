@@ -39,6 +39,7 @@ export default defineConfig(({ mode }) => {
         },
       },
       rollupOptions: {
+        external: ['@google/genai'],
         output: {
           manualChunks: (id) => {
             // React ecosystem
