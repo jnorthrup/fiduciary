@@ -19,7 +19,7 @@ Journal Entry → Payment Order → NACHA Generator → NACHA Submit → Storage
 
 ---
 
-## Phase 1: NACHA Generator Service
+## Phase 1: NACHA Generator Service [checkpoint: 01d7527]
 
 ### 1.1 Port Bash Generator to JavaScript
 - [x] Task: Create `server/lib/nacha-generator.js`
