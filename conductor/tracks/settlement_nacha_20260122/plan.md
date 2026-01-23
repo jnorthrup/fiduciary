@@ -80,11 +80,11 @@ Journal Entry → Payment Order → NACHA Generator → NACHA Submit → Storage
   - [x] Sub-task: Test: Payment order contains nachaSubmissionId reference
 
 ### 3.2 Manual Verification
-- [ ] Task: End-to-end curl test
-  - [ ] Sub-task: POST /api/settlement/payment-orders (method=ACH)
-  - [ ] Sub-task: POST /api/settlement/payment-orders/:id/execute
-  - [ ] Sub-task: GET /api/nacha/submissions (verify file appears)
-  - [ ] Sub-task: Decode and verify NACHA file format
+- [x] Task: End-to-end curl test
+  - [x] Sub-task: POST /api/settlement/payment-orders (method=ACH)
+  - [x] Sub-task: POST /api/settlement/payment-orders/:id/execute
+  - [x] Sub-task: GET /api/nacha/submissions (verify file appears)
+  - [x] Sub-task: Decode and verify NACHA file format
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 3 E2E Flow'
 

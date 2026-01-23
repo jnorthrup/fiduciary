@@ -63,8 +63,15 @@ class GCSPersistence {
      */
     async saveData(uid, component, data) {
         const fileName = `${uid}/${component}.json`;
-        const file = this.bucket.file(fileName);
 
+        if (this.useLocalStorage) {
+            const localPath = this._getLocalPath(fileName);
+            fs.writeFileSync(localPath, JSON.stringify(data, null, 2));
+            console.info(`Saved ${fileName} to local storage`);
+            return;
+        }
+
+        const file = this.bucket.file(fileName);
         await file.save(JSON.stringify(data, null, 2), {
             contentType: 'application/json',
             resumable: false,
@@ -81,8 +88,20 @@ class GCSPersistence {
      */
     async loadData(uid, component) {
         const fileName = `${uid}/${component}.json`;
-        const file = this.bucket.file(fileName);
 
+        if (this.useLocalStorage) {
+            const localPath = this._getLocalPath(fileName);
+            if (!fs.existsSync(localPath)) return null;
+            try {
+                const content = fs.readFileSync(localPath, 'utf-8');
+                return JSON.parse(content);
+            } catch (error) {
+                console.error(`Error loading ${fileName} from local storage:`, error.message);
+                return null;
+            }
+        }
+
+        const file = this.bucket.file(fileName);
         try {
             const [exists] = await file.exists();
             if (!exists) return null;
