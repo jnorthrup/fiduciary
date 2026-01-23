@@ -287,7 +287,7 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
 
   const renderWizardContent = () => {
     switch (activeWizard) {
-      case 'DTCC': return <DTCCLiquidationWizard entity={entity} records={store.dtccPledgeRecords} onAddRecord={store.addDTCCRecord} onUpdateRecord={store.updateDTCCRecord} onPostJournal={store.postJournal} />;
+      case 'DTCC': return <DTCCLiquidationWizard entity={entity} records={store.dtccPledgeRecords} onAddRecord={store.addDTCCRecord} onUpdateRecord={store.updateDTCCRecord} onPostJournal={store.postJournal} onCreateSettlement={store.addSettlement} />;
       case 'EXCHANGE': return <InstrumentExchangeWizard entity={entity} onComplete={store.exchangeInstrument} />;
       case 'REAL_ESTATE': return <RealEstateAcquisitionWizard entity={entity} onClose={closeWizard} />;
       case 'COLLATERAL': return <CollateralManagementWidget entity={entity} onClose={closeWizard} />;

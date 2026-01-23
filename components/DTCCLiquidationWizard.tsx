@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { Entity, DTCCPledgeRecord, DCFlag } from '../types';
-import { 
-  Building2, ShieldCheck, Zap, BarChart3, Database, 
-  ArrowRight, Search, Landmark, Scale, Lock, 
+import { Entity, DTCCPledgeRecord, DCFlag, SettlementInstruction, ExternalRail } from '../types';
+import {
+  Building2, ShieldCheck, Zap, BarChart3, Database,
+  ArrowRight, Search, Landmark, Scale, Lock,
   CheckCircle2, Loader2, AlertTriangle, FileCode, History,
   TrendingDown, Coins, Trash2, TrendingUp, ArrowUpRight, ArrowDownRight,
   Receipt, X
@@ -16,10 +16,11 @@ interface Props {
   onAddRecord: (r: DTCCPledgeRecord) => void;
   onUpdateRecord: (r: DTCCPledgeRecord) => void;
   onPostJournal: (entityId: string, date: string, memo: string, type: string, lines: any[]) => void;
+  onCreateSettlement?: (s: SettlementInstruction) => void;
 }
 
-export const DTCCLiquidationWizard: React.FC<Props> = ({ 
-  entity, records, onAddRecord, onUpdateRecord, onPostJournal 
+export const DTCCLiquidationWizard: React.FC<Props> = ({
+  entity, records, onAddRecord, onUpdateRecord, onPostJournal, onCreateSettlement
 }) => {
   const [activeTab, setActiveTab] = useState<'Pledge' | 'Registry' | 'Liquidation'>('Pledge');
   const [step, setStep] = useState(1);
@@ -128,12 +129,35 @@ export const DTCCLiquidationWizard: React.FC<Props> = ({
           const updated = { ...record, status: 'Liquidated' as const, liquidationProceeds: proceeds };
           onUpdateRecord(updated);
 
+          const liquidationDate = new Date().toISOString();
+          const dateStr = liquidationDate.split('T')[0];
+
           // DR Cash | CR Pledged Asset | DR Liquidation Fees
-          onPostJournal(entity.id, new Date().toISOString().split('T')[0], `DTCC Asset Liquidation: ${record.cusip}`, 'LIQUIDATE', [
+          onPostJournal(entity.id, dateStr, `DTCC Asset Liquidation: ${record.cusip}`, 'LIQUIDATE', [
               { accountCode: '101000', dc: DCFlag.Debit, amount: proceeds },
               { accountCode: '109000', dc: DCFlag.Credit, amount: record.marketValue },
-              { accountCode: '520000', dc: DCFlag.Debit, amount: record.marketValue - proceeds } // Realizing the loss/fee
+              { accountCode: '520000', dc: DCFlag.Debit, amount: record.marketValue - proceeds }
           ]);
+
+          // Create settlement instruction for ACH disbursement of proceeds
+          if (onCreateSettlement) {
+              const settlement: SettlementInstruction = {
+                  payment_id: `LIQD-${record.id}-${Date.now()}`,
+                  entityId: entity.id,
+                  payee: `DTCC Liquidation: ${record.assetName} (${record.cusip})`,
+                  amount: proceeds,
+                  method: ExternalRail.SPONSORED_ACH,
+                  funding_source: '101000',
+                  supporting_docs: [record.controlNumber],
+                  approval: {
+                      required_signers: [],
+                  },
+                  status: 'Pending',
+                  internal_trace_id: record.controlNumber,
+                  date_created: liquidationDate
+              };
+              onCreateSettlement(settlement);
+          }
 
           setLoading(false);
           setActiveTab('Registry');
