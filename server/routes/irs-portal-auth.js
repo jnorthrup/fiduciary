@@ -8,9 +8,19 @@
 
 import express from 'express';
 import { randomUUID } from 'crypto';
-import { IRSPortalClient } from '../services/iris-portal-client.js';
 
 const router = express.Router();
+
+// Lazy load Playwright-based client only when routes are hit
+// This prevents crash on Cloud Run where browsers aren't installed
+let IRSPortalClient = null;
+const getPortalClient = async () => {
+  if (!IRSPortalClient) {
+    const module = await import('../services/iris-portal-client.js');
+    IRSPortalClient = module.IRSPortalClient;
+  }
+  return IRSPortalClient;
+};
 
 /**
  * In-memory session storage for authentication flows
@@ -59,7 +69,8 @@ router.post('/login', async (req, res) => {
 
     // Create new authentication session
     const sessionId = `session-${randomUUID()}`;
-    const client = new IRSPortalClient({
+    const PortalClient = await getPortalClient();
+    const client = new PortalClient({
       headless: true,
       testMode: process.env.NODE_ENV !== 'production',
     });

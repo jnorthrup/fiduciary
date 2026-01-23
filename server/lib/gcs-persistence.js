@@ -48,6 +48,10 @@ class GCSPersistence {
      * Ensure bucket exists
      */
     async ensureBucket() {
+        if (this.useLocalStorage) {
+            console.info('[PERSISTENCE] Using local storage, skipping bucket check');
+            return;
+        }
         const [exists] = await this.bucket.exists();
         if (!exists) {
             console.info(`Creating bucket ${this.bucketName}...`);
