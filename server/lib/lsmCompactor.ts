@@ -6,9 +6,11 @@
  * and creates SSTable with sorted index.
  *
  * Spec: Phase 2.1 SSTable Generation
+ * Spec: Phase 2.2 Binary Reduction Semantics (atomic promotion)
  */
 
 import { serializeToJSONL, deserializeJSONL, validateJSONLine } from './jsonlSerializer.ts';
+import { loadMetadata, saveMetadataAtomic, addSSTable, type WALMetadata, type SSTableMetadata } from './walMetadata.ts';
 
 // GCS Bucket interface (minimal subset needed for testing)
 interface GCSBucket {
@@ -51,6 +53,8 @@ export interface CompactionResult {
     invalidEntries?: number;
     /** Reason for skipping compaction (if skipped) */
     skippedReason?: string;
+    /** Whether metadata was updated atomically */
+    metadataUpdated?: boolean;
 }
 
 /**
@@ -151,6 +155,7 @@ async function readWALFiles(uid: string, entityType: string, maxFiles: number): 
     records: WALRecord[];
     invalidCount: number;
     totalSize: number;
+    walFilePaths: string[];
 }> {
     const bucket = getBucket();
     const walPrefix = `users/${uid}/wal/${entityType}/`;
@@ -165,12 +170,16 @@ async function readWALFiles(uid: string, entityType: string, maxFiles: number): 
     const records: WALRecord[] = [];
     let invalidCount = 0;
     let totalSize = 0;
+    const walFilePaths: string[] = [];
 
     for (const walFile of walFiles) {
         try {
             // Get file size
             const [metadata] = await walFile.getMetadata();
             totalSize += parseInt(metadata.size || '0', 10);
+
+            // Track WAL file path for metadata update
+            walFilePaths.push(walFile.name);
 
             // Read content
             const [content] = await walFile.download();
@@ -195,7 +204,7 @@ async function readWALFiles(uid: string, entityType: string, maxFiles: number): 
         }
     }
 
-    return { records, invalidCount, totalSize };
+    return { records, invalidCount, totalSize, walFilePaths };
 }
 
 /**
@@ -273,6 +282,12 @@ function createSSTable(records: WALRecord[]): { content: string; index: SSTableI
  * - WAL read: users/{uid}/wal/{entityType}/{YYYY-MM-DD}.jsonl
  * - SSTable write: snapshots/{entityType}/{timestamp}-compact.jsonl
  * - Index write: snapshots/{entityType}/{timestamp}-index.json
+ * - Metadata update: users/{uid}/metadata/{entityType}.json (atomic)
+ *
+ * Spec: Phase 2.2 Binary Reduction Semantics
+ * - Compaction is pure function (no side effects on source files)
+ * - Atomic promotion: metadata update only after successful compaction
+ * - Source files retained until promotion confirmed
  *
  * @param uid - User OID
  * @param entityType - Entity type (e.g., 'journal_entries', 'ledger')
@@ -286,8 +301,8 @@ export async function compactWAL(
 ): Promise<CompactionResult> {
     const bucket = getBucket();
 
-    // Read WAL files
-    const { records, invalidCount, totalSize } = await readWALFiles(
+    // Read WAL files (pure read operation)
+    const { records, invalidCount, totalSize, walFilePaths } = await readWALFiles(
         uid,
         entityType,
         config.maxWALFiles
@@ -299,6 +314,7 @@ export async function compactWAL(
             recordCount: 0,
             invalidEntries: invalidCount,
             skippedReason: invalidCount > 0 ? 'no valid records' : 'no WAL files found',
+            metadataUpdated: false,
         };
     }
 
@@ -309,6 +325,7 @@ export async function compactWAL(
             recordCount: records.length,
             invalidEntries: invalidCount,
             skippedReason: 'maxFileSizeMB exceeded',
+            metadataUpdated: false,
         };
     }
 
@@ -318,6 +335,7 @@ export async function compactWAL(
             recordCount: records.length,
             invalidEntries: invalidCount,
             skippedReason: 'minRecordsToCompact not met',
+            metadataUpdated: false,
         };
     }
 
@@ -333,7 +351,7 @@ export async function compactWAL(
     const sstablePath = `snapshots/${entityType}/${timestamp}-compact.jsonl`;
     const indexPath = `snapshots/${entityType}/${timestamp}-index.json`;
 
-    // Write SSTable
+    // Write SSTable (to new location only, no modification of source)
     const sstableFile = bucket.file(sstablePath);
     await sstableFile.save(sstableContent, {
         contentType: 'application/x-ndjson',
@@ -351,11 +369,64 @@ export async function compactWAL(
         `Compacted ${records.length} records from ${entityType} WAL to ${sstablePath}`
     );
 
+    // Atomic promotion: update metadata only after successful compaction
+    let metadataUpdated = false;
+    try {
+        // Load existing metadata or create new
+        const metadata = await loadMetadata(uid, entityType);
+
+        // Create SSTable metadata entry
+        const sstableMeta: SSTableMetadata = {
+            path: sstablePath,
+            indexPath,
+            recordCount: records.length,
+            byteSize: sstableContent.length,
+            startKey: sortedRecords[0]?.sortKey || '',
+            endKey: sortedRecords[sortedRecords.length - 1]?.sortKey || '',
+            compactedAt: new Date().toISOString(),
+        };
+
+        if (metadata) {
+            // Update existing metadata with new SSTable
+            // WAL files are retained until promotion confirmed
+            await saveMetadataAtomic(uid, {
+                ...metadata,
+                sstables: [...metadata.sstables, sstableMeta],
+                // walFiles remains unchanged (retained for rollback)
+            });
+            metadataUpdated = true;
+            console.info(
+                `Updated metadata for ${uid}/${entityType} with SSTable ${sstablePath}`
+            );
+        } else {
+            // Create new metadata if none exists
+            const { createInitialMetadata } = await import('./walMetadata.js');
+            const newMetadata = createInitialMetadata(uid, entityType);
+            await saveMetadataAtomic(uid, {
+                ...newMetadata,
+                sstables: [sstableMeta],
+                // No WAL files tracked yet (new entity type)
+            });
+            metadataUpdated = true;
+            console.info(
+                `Created new metadata for ${uid}/${entityType} with SSTable ${sstablePath}`
+            );
+        }
+    } catch (error) {
+        console.error(
+            `Failed to update metadata for ${uid}/${entityType} after compaction:`,
+            error
+        );
+        // Compaction succeeded but metadata update failed
+        // SSTable exists but metadata is stale (will be recovered on next load)
+    }
+
     return {
         sstablePath,
         indexPath,
         recordCount: records.length,
         invalidEntries: invalidCount,
+        metadataUpdated,
     };
 }
 

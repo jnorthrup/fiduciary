@@ -12,6 +12,9 @@ class GCSPersistence {
         this.projectId = process.env.GOOGLE_CLOUD_PROJECT || 'fiduciary-dev';
         this.bucketName = `fiduciary-persistence-${this.projectId}`;
 
+        // Threshold for dual-write vs JSONL-only mode (default: 1000 objects)
+        this.threshold = 1000;
+
         // Use local file system in development mode
         this.useLocalStorage = process.env.USE_LOCAL_PERSISTENCE === 'true'
             || (process.env.NODE_ENV !== 'production' && !process.env.GOOGLE_APPLICATION_CREDENTIALS);
@@ -122,6 +125,122 @@ class GCSPersistence {
     async listComponents(uid) {
         const [files] = await this.bucket.getFiles({ prefix: `${uid}/` });
         return files.map(file => path.basename(file.name, '.json'));
+    }
+
+    // =========================================================================
+    // Threshold Detection and Dual-Write Methods (Phase 1.3)
+    // =========================================================================
+
+    /**
+     * Set the threshold for dual-write vs JSONL-only mode.
+     * @param {number} value - New threshold value
+     */
+    setThreshold(value) {
+        if (typeof value !== 'number' || value < 0) {
+            throw new Error('Threshold must be a non-negative number');
+        }
+        this.threshold = value;
+        console.info(`[PERSISTENCE] Threshold updated to ${value}`);
+    }
+
+    /**
+     * Get the current threshold value.
+     * @returns {number} Current threshold
+     */
+    getThreshold() {
+        return this.threshold;
+    }
+
+    /**
+     * Count objects of a specific entity type in state.json.
+     * Used to determine whether to use dual-write or JSONL-only mode.
+     *
+     * @param {string} uid - User OID
+     * @param {string} entityType - Entity type (e.g., 'journal_entries', 'ledger')
+     * @returns {Promise<number>} Number of objects of this type
+     */
+    async countObjects(uid, entityType) {
+        try {
+            const stateData = await this.loadData(uid, 'state');
+
+            if (!stateData || !stateData[entityType]) {
+                return 0;
+            }
+
+            const entities = stateData[entityType];
+            if (!Array.isArray(entities)) {
+                return 0;
+            }
+
+            return entities.length;
+        } catch (error) {
+            console.error(`Error counting objects for ${uid}/${entityType}:`, error.message);
+            return 0;
+        }
+    }
+
+    /**
+     * Save an entity with threshold-based routing.
+     * - Dual-write mode (< threshold): Write to both state.json AND JSONL WAL
+     * - JSONL-only mode (>= threshold): Write ONLY to JSONL, state.json gets "delegated" marker
+     *
+     * @param {string} uid - User OID
+     * @param {string} entityType - Entity type
+     * @param {Object} entity - Entity object to save
+     * @returns {Promise<{ mode: string; writtenTo: string[]; delegated?: boolean }>}
+     */
+    async saveEntity(uid, entityType, entity) {
+        const count = await this.countObjects(uid, entityType);
+        const mode = count >= this.threshold ? 'jsonl-only' : 'dual-write';
+
+        const result = {
+            mode,
+            writtenTo: [],
+            delegated: false,
+        };
+
+        if (mode === 'dual-write') {
+            // Dual-write: Write to both state.json and JSONL WAL
+            result.writtenTo.push('state.json', 'jsonl');
+
+            // Update state.json
+            const stateData = (await this.loadData(uid, 'state')) || {};
+            if (!stateData[entityType]) {
+                stateData[entityType] = [];
+            }
+            stateData[entityType].push(entity);
+            await this.saveData(uid, 'state', stateData);
+
+            // Append to JSONL WAL
+            await this.appendJSONL(uid, entityType, entity);
+        } else {
+            // JSONL-only: Write only to JSONL WAL, mark state.json as delegated
+            result.writtenTo.push('jsonl');
+            result.delegated = true;
+
+            // Append to JSONL WAL
+            await this.appendJSONL(uid, entityType, entity);
+
+            // Update state.json with delegated marker (preserving existing marker if present)
+            const stateData = (await this.loadData(uid, 'state')) || {};
+
+            // Preserve existing delegated marker
+            if (stateData._delegatedTo) {
+                // Don't update timestamp if already delegated
+                await this.saveData(uid, 'state', stateData);
+            } else {
+                // Create new delegated marker
+                stateData._delegatedTo = {
+                    format: 'jsonl',
+                    entityType,
+                    threshold: this.threshold,
+                    at: new Date().toISOString(),
+                };
+                await this.saveData(uid, 'state', stateData);
+            }
+        }
+
+        return result;
     }
 
     // =========================================================================

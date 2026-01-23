@@ -562,6 +562,313 @@ describe('GCSPersistence', () => {
     });
 
     // =========================================================================
+    // Threshold Detection and Dual-Write Tests (Phase 1.3)
+    // =========================================================================
+
+    describe('Threshold Detection and Dual-Write', () => {
+        const THRESHOLD = 1000;
+
+        describe('countObjects', () => {
+            it('should count objects in state.json for dual-write mode detection', async () => {
+                const uid = 'test-uid';
+                const entityType = 'journal_entries';
+
+                // Mock state.json with array of entities
+                const mockState = {
+                    journal_entries: [
+                        { id: 'je-001', timestamp: '2026-01-20T10:00:00Z' },
+                        { id: 'je-002', timestamp: '2026-01-20T11:00:00Z' },
+                        { id: 'je-003', timestamp: '2026-01-20T12:00:00Z' },
+                    ]
+                };
+
+                mockFile.exists.mockResolvedValueOnce([true]);
+                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
+
+                const count = await persistence.countObjects(uid, entityType);
+
+                expect(count).toBe(3);
+                expect(mockBucket.file).toHaveBeenCalledWith(`${uid}/state.json`);
+            });
+
+            it('should return 0 when state.json does not exist', async () => {
+                mockFile.exists.mockResolvedValueOnce([false]);
+
+                const count = await persistence.countObjects('new-uid', 'journal_entries');
+
+                expect(count).toBe(0);
+            });
+
+            it('should return 0 when state.json exists but entityType array is missing', async () => {
+                const mockState = { ledger: { balance: 100 } };
+                mockFile.exists.mockResolvedValueOnce([true]);
+                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
+
+                const count = await persistence.countObjects('test-uid', 'journal_entries');
+
+                expect(count).toBe(0);
+            });
+
+            it('should handle malformed state.json gracefully', async () => {
+                mockFile.exists.mockResolvedValueOnce([true]);
+                mockFile.download.mockResolvedValueOnce([Buffer.from('invalid json')]);
+
+                const count = await persistence.countObjects('test-uid', 'journal_entries');
+
+                expect(count).toBe(0);
+            });
+
+            it('should count objects from local storage in dev mode', async () => {
+                // Test local storage path
+                const localPersistence = new GCSPersistence();
+                localPersistence.useLocalStorage = true;
+
+                const count = await localPersistence.countObjects('local-uid', 'accounts');
+
+                expect(count).toBe(0);
+            });
+        });
+
+        describe('Dual-Write Mode (< THRESHOLD)', () => {
+            it('should write to both state.json AND JSONL WAL when object count < threshold', async () => {
+                const uid = 'small-uid';
+                const entityType = 'journal_entries';
+                const entity = { id: 'je-001', timestamp: '2026-01-20T10:00:00Z', amount: 100 };
+
+                // Mock countObjects returns < THRESHOLD
+                const mockState = {
+                    journal_entries: Array(500).fill(null).map((_, i) => ({
+                        id: `je-${i}`,
+                        timestamp: '2026-01-20T10:00:00Z'
+                    }))
+                };
+
+                mockFile.exists
+                    .mockResolvedValueOnce([true])   // state.json exists for count
+                    .mockResolvedValueOnce([false]); // WAL file does not exist
+                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
+                mockBucket.getFiles.mockResolvedValueOnce([[]]);
+
+                const result = await persistence.saveEntity(uid, entityType, entity);
+
+                expect(result.mode).toBe('dual-write');
+                expect(result.writtenTo).toEqual(expect.arrayContaining(['state.json', 'jsonl']));
+
+                // Verify state.json was updated
+                expect(mockFile.save).toHaveBeenCalledWith(
+                    expect.stringContaining('"journal_entries"'),
+                    expect.objectContaining({ contentType: 'application/json' })
+                );
+
+                // Verify JSONL WAL was updated
+                expect(mockFile.save).toHaveBeenCalledWith(
+                    expect.stringContaining(JSON.stringify(entity) + '\n'),
+                    expect.objectContaining({ contentType: 'application/x-ndjson' })
+                );
+            });
+
+            it('should append entity to existing array in state.json', async () => {
+                const uid = 'append-uid';
+                const entityType = 'accounts';
+                const newEntity = { id: 'acc-999', name: 'New Account' };
+
+                const existingState = {
+                    accounts: [
+                        { id: 'acc-001', name: 'Account 1' },
+                        { id: 'acc-002', name: 'Account 2' },
+                    ]
+                };
+
+                mockFile.exists
+                    .mockResolvedValueOnce([true])   // state.json exists
+                    .mockResolvedValueOnce([false]); // WAL file does not exist
+                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(existingState))]);
+                mockBucket.getFiles.mockResolvedValueOnce([[]]);
+
+                const result = await persistence.saveEntity(uid, entityType, newEntity);
+
+                expect(result.mode).toBe('dual-write');
+
+                // Verify entity was appended
+                const [savedContent] = mockFile.save.mock.calls[0];
+                const savedState = JSON.parse(savedContent);
+                expect(savedState.accounts).toHaveLength(3);
+                expect(savedState.accounts[2]).toEqual(newEntity);
+            });
+        });
+
+        describe('JSONL-Only Mode (>= THRESHOLD)', () => {
+            it('should write ONLY to JSONL WAL when object count >= threshold', async () => {
+                const uid = 'large-uid';
+                const entityType = 'journal_entries';
+                const entity = { id: 'je-1001', timestamp: '2026-01-20T10:00:00Z', amount: 100 };
+
+                // Mock countObjects returns >= THRESHOLD
+                const mockState = {
+                    journal_entries: Array(1000).fill(null).map((_, i) => ({
+                        id: `je-${i}`,
+                        timestamp: '2026-01-20T10:00:00Z'
+                    }))
+                };
+
+                mockFile.exists
+                    .mockResolvedValueOnce([true])    // state.json exists for count
+                    .mockResolvedValueOnce([false]);  // WAL file does not exist
+                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
+                mockBucket.getFiles.mockResolvedValueOnce([[]]);
+
+                const result = await persistence.saveEntity(uid, entityType, entity);
+
+                expect(result.mode).toBe('jsonl-only');
+                expect(result.writtenTo).toEqual(['jsonl']);
+                expect(result.writtenTo).not.toContain('state.json');
+            });
+
+            it('should write "delegated" marker to state.json in JSONL-only mode', async () => {
+                const uid = 'delegated-uid';
+                const entityType = 'ledger';
+                const entity = { id: 'led-001', balance: 5000 };
+
+                const mockState = {
+                    ledger: Array(1500).fill(null).map((_, i) => ({
+                        id: `led-${i}`,
+                        balance: i * 10
+                    }))
+                };
+
+                mockFile.exists
+                    .mockResolvedValueOnce([true])    // state.json exists
+                    .mockResolvedValueOnce([false]);  // WAL file does not exist
+                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
+                mockBucket.getFiles.mockResolvedValueOnce([[]]);
+
+                const result = await persistence.saveEntity(uid, entityType, entity);
+
+                expect(result.mode).toBe('jsonl-only');
+                expect(result.delegated).toBe(true);
+
+                // Verify state.json got delegated marker
+                const stateJsonCalls = mockFile.save.mock.calls.filter(call =>
+                    call[1]?.contentType === 'application/json'
+                );
+                expect(stateJsonCalls.length).toBeGreaterThan(0);
+
+                const [savedContent] = stateJsonCalls[0];
+                const savedState = JSON.parse(savedContent);
+                expect(savedState._delegatedTo).toEqual({
+                    format: 'jsonl',
+                    entityType,
+                    threshold: THRESHOLD,
+                    at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/)
+                });
+            });
+
+            it('should preserve existing "delegated" marker on subsequent writes', async () => {
+                const uid = 'existing-delegated-uid';
+                const entityType = 'transactions';
+                const entity = { id: 'txn-002', amount: 200 };
+
+                // Existing state with delegated marker
+                const existingDelegatedState = {
+                    _delegatedTo: {
+                        format: 'jsonl',
+                        entityType,
+                        threshold: THRESHOLD,
+                        at: '2026-01-19T10:00:00Z'
+                    }
+                };
+
+                mockFile.exists
+                    .mockResolvedValueOnce([true])    // state.json exists
+                    .mockResolvedValueOnce([false]);  // WAL file does not exist
+                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(existingDelegatedState))]);
+                mockBucket.getFiles.mockResolvedValueOnce([[]]);
+
+                const result = await persistence.saveEntity(uid, entityType, entity);
+
+                expect(result.mode).toBe('jsonl-only');
+
+                // Verify delegated marker was preserved
+                const stateJsonCalls = mockFile.save.mock.calls.filter(call =>
+                    call[1]?.contentType === 'application/json'
+                );
+                const [savedContent] = stateJsonCalls[0];
+                const savedState = JSON.parse(savedContent);
+                expect(savedState._delegatedTo.at).toBe('2026-01-19T10:00:00Z');
+            });
+        });
+
+        describe('Threshold Configuration', () => {
+            it('should use configurable threshold value', async () => {
+                const customThreshold = 500;
+                persistence.setThreshold(customThreshold);
+
+                const uid = 'custom-threshold-uid';
+                const entityType = 'entities';
+
+                // Mock state with 600 objects (>= custom threshold)
+                const mockState = {
+                    entities: Array(600).fill(null).map((_, i) => ({ id: `ent-${i}` }))
+                };
+
+                mockFile.exists.mockResolvedValueOnce([true]);
+                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
+                mockBucket.getFiles.mockResolvedValueOnce([[]]);
+
+                const entity = { id: 'ent-601', data: 'test' };
+                mockFile.exists.mockResolvedValueOnce([false]);
+
+                const result = await persistence.saveEntity(uid, entityType, entity);
+
+                expect(result.mode).toBe('jsonl-only');
+            });
+
+            it('should default to threshold of 1000 when not configured', async () => {
+                const defaultThreshold = persistence.getThreshold();
+                expect(defaultThreshold).toBe(1000);
+            });
+        });
+
+        describe('Seamless Migration Path', () => {
+            it('should transition from dual-write to JSONL-only as data grows', async () => {
+                const uid = 'growing-uid';
+                const entityType = 'events';
+
+                // Start with 999 objects (dual-write mode)
+                let mockState = {
+                    events: Array(999).fill(null).map((_, i) => ({ id: `ev-${i}` }))
+                };
+
+                mockFile.exists
+                    .mockResolvedValueOnce([true])    // state.json exists
+                    .mockResolvedValueOnce([false]);  // WAL file does not exist
+                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
+                mockBucket.getFiles.mockResolvedValueOnce([[]]);
+
+                const entity999 = { id: 'ev-999', data: 'last dual-write' };
+                let result1 = await persistence.saveEntity(uid, entityType, entity999);
+
+                expect(result1.mode).toBe('dual-write');
+
+                // Add 1000th object (should trigger JSONL-only mode)
+                mockState.events.push(entity999);
+                mockFile.exists
+                    .mockReset()
+                    .mockResolvedValueOnce([true])
+                    .mockResolvedValueOnce([false]);
+                mockFile.download.mockResolvedValueOnce([Buffer.from(JSON.stringify(mockState))]);
+                mockBucket.getFiles.mockResolvedValueOnce([[]]);
+
+                const entity1000 = { id: 'ev-1000', data: 'first jsonl-only' };
+                const result2 = await persistence.saveEntity(uid, entityType, entity1000);
+
+                expect(result2.mode).toBe('jsonl-only');
+                expect(result2.delegated).toBe(true);
+            });
+        });
+    });
+
+    // =========================================================================
     // NACHA Submission Tests
     // =========================================================================
 

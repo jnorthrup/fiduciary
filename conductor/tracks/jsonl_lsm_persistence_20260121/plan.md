@@ -1,6 +1,6 @@
 # Implementation Plan: JSONL LSM Persistence Layer
 
-## Phase 1: Write Path - WAL & JSONL Append
+## Phase 1: Write Path - WAL & JSONL Append [checkpoint: 8981d82]
 
 ### 1.1 JSONL Serialization Module
 - [x] Task: Create `jsonlSerializer.ts` module [119a321]
@@ -33,28 +33,28 @@
   - [x] Sub-task: Implement JSONL-only write with state.json "delegated" marker
   - [x] Sub-task: Verify coverage >80%
 
-- [~] Task: Conductor - User Manual Verification 'Phase 1 Write Path'
+- [x] Task: Conductor - User Manual Verification 'Phase 1 Write Path' [8981d82]
 
 ---
 
 ## Phase 2: LSM Compaction Engine
 
 ### 2.1 SSTable Generation
-- [ ] Task: Create `lsmCompactor.ts` module
-  - [ ] Sub-task: Write failing tests for `compactWAL(uid, entityType, config)`
-  - [ ] Sub-task: Implement WAL file reading and merging
-  - [ ] Sub-task: Implement sorting by key (timestamp or entity ID)
-  - [ ] Sub-task: Write failing tests for SSTable metadata generation
-  - [ ] Sub-task: Implement SSTable creation at `snapshots/{entityType}/{timestamp}-compact.jsonl`
-  - [ ] Sub-task: Write failing tests for sorted index generation
-  - [ ] Sub-task: Implement index creation: `snapshots/{entityType}/{timestamp}-index.json`
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Create `lsmCompactor.ts` module [319040a]
+  - [x] Sub-task: Write failing tests for `compactWAL(uid, entityType, config)`
+  - [x] Sub-task: Implement WAL file reading and merging
+  - [x] Sub-task: Implement sorting by key (timestamp or entity ID)
+  - [x] Sub-task: Write failing tests for SSTable metadata generation
+  - [x] Sub-task: Implement SSTable creation at `snapshots/{entityType}/{timestamp}-compact.jsonl`
+  - [x] Sub-task: Write failing tests for sorted index generation
+  - [x] Sub-task: Implement index creation: `snapshots/{entityType}/{timestamp}-index.json`
+  - [x] Sub-task: Verify coverage >80% (96.77% statements, 100% functions, 77.27% branches)
 
 ### 2.2 Binary Reduction Semantics
 - [ ] Task: Implement pure function compaction
-  - [ ] Sub-task: Write failing tests for compaction purity (no side effects)
-  - [ ] Sub-task: Ensure compaction writes to new location only
-  - [ ] Sub-task: Write failing tests for atomic promotion (metadata update after compaction)
+  - [x] Sub-task: Write failing tests for compaction purity (no side effects) [10e02dc]
+  - [x] Sub-task: Ensure compaction writes to new location only [10e02dc]
+  - [~] Sub-task: Write failing tests for atomic promotion (metadata update after compaction)
   - [ ] Sub-task: Implement atomic metadata update (temp file + rename)
   - [ ] Sub-task: Write failing tests for rollback capability
   - [ ] Sub-task: Implement source file retention until promotion confirmed
@@ -191,8 +191,8 @@
 ## Verification Checkpoints
 
 ### Unit Tests
-- [ ] JSONL serialization/deserialization
-- [ ] GCS append operations
+- [x] JSONL serialization/deserialization
+- [x] GCS append operations
 - [ ] Compaction purity (no side effects)
 - [ ] Streaming read correctness
 - [ ] Query layer map/reduce
