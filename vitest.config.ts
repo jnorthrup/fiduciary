@@ -7,6 +7,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
+    // Hard timeout for all tests (10 seconds max per test)
+    testTimeout: 10000,
+    hookTimeout: 10000,
     // Exclude Playwright tests and retired/archived tests - they use different runners or are archived
     exclude: ['**/node_modules/**', '**/dist/**', 'test/*.spec.ts', '**/.retired/**', '**/.archive/**', '**/.retired_tests/**'],
     // CI mode: non-interactive, single run
