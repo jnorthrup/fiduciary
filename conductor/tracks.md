@@ -32,7 +32,7 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
-## [x] Track: JSONL LSM Persistence Layer
+## [~] Track: JSONL LSM Persistence Layer
 
 *Link: [./conductor/tracks/jsonl_lsm_persistence_20260121/](./conductor/tracks/jsonl_lsm_persistence_20260121/)*
 *LSM-tree with JSONL WAL, configurable threshold, MapReduce-compatible streaming*

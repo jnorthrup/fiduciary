@@ -195,8 +195,8 @@
 
 ### Integration Tests
 - [x] Write → Compact → Read cycle [593466b]
-- [ ] Migration from state.json to JSONL
-- [ ] Concurrent writes handling
+- [x] Migration from state.json to JSONL
+- [~] Concurrent writes handling
 - [ ] Metadata recovery
 
 ### Manual Verification

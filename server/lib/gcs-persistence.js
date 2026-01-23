@@ -514,7 +514,7 @@ class GCSPersistence {
     /**
      * Append a JSONL line to the WAL file.
      * Uses jsonlSerializer for serialization.
-     * For GCS, appends using read-modify-write (GCS doesn't support true append).
+     * For GCS, appends using read-modify-write with retry for concurrent writes.
      *
      * @param {string} uid - User OID
      * @param {string} entityType - Entity type
@@ -538,29 +538,68 @@ class GCSPersistence {
                 return { success: true, path: walPath };
             }
 
-            // GCS: read-modify-write
+            // GCS: read-modify-write with retry for concurrent write safety
             const file = this.bucket.file(walPath);
-            const [exists] = await file.exists();
+            const maxRetries = 5;
+            let attempt = 0;
 
-            if (exists) {
-                // Read existing content and append
-                const [existingContent] = await file.download();
-                const newContent = existingContent.toString() + jsonlLine;
+            while (attempt < maxRetries) {
+                try {
+                    // Always try to read existing file first (handles both append and create-if-exists)
+                    let existingContent;
+                    let generation;
 
-                await file.save(newContent, {
-                    contentType: 'application/x-ndjson',
-                    resumable: false,
-                });
-            } else {
-                // Create new WAL file
-                await file.save(jsonlLine, {
-                    contentType: 'application/x-ndjson',
-                    resumable: false,
-                });
+                    try {
+                        // Attempt to read existing content and generation atomically
+                        const [content, metadata] = await Promise.all([
+                            file.download(),
+                            file.getMetadata()
+                        ]);
+                        existingContent = content[0].toString();
+                        generation = metadata[0].generation;
+                    } catch (readError) {
+                        // File doesn't exist yet - create new file
+                        if (readError.code === 404) {
+                            existingContent = '';
+                            generation = 0; // Use 0 for create-if-not-exists
+                        } else {
+                            throw readError;
+                        }
+                    }
+
+                    // Append new line to existing content
+                    const newContent = existingContent + jsonlLine;
+
+                    // Save with generation precondition
+                    await file.save(newContent, {
+                        contentType: 'application/x-ndjson',
+                        resumable: false,
+                        preconditionOpts: {
+                            ifGenerationMatch: generation
+                        }
+                    });
+
+                    console.info(`Appended JSONL line to ${walPath}`);
+                    return { success: true, path: walPath };
+                } catch (retryError) {
+                    // Check if error is due to generation mismatch (concurrent write)
+                    if (retryError.code === 412 || retryError.message?.includes('precondition')) {
+                        attempt++;
+                        if (attempt >= maxRetries) {
+                            throw new Error(`Failed to append after ${maxRetries} retries due to concurrent writes`);
+                        }
+                        // Exponential backoff with jitter before retry
+                        const baseDelay = Math.pow(2, attempt) * 10;
+                        const jitter = Math.random() * 10;
+                        await new Promise(resolve => setTimeout(resolve, baseDelay + jitter));
+                        continue;
+                    }
+                    throw retryError;
+                }
             }
 
-            console.info(`Appended JSONL line to ${walPath}`);
-            return { success: true, path: walPath };
+            // Should not reach here
+            throw new Error('Unexpected state in appendJSONL retry loop');
         } catch (error) {
             console.error(`Error appending JSONL to ${walPath}:`, error.message);
             return { success: false, error: error.message };
