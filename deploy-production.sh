@@ -81,7 +81,7 @@ steps:
     args:
       - 'build'
       - '$IMAGE_NAME'
-      - '--builder=gcr.io/buildpacks/builder:v1'
+      - '--builder=gcr.io/buildpacks/builder:google-22'
       - '--path=./server'
       - '--publish'
 
