@@ -33,6 +33,9 @@ const mockBucket = vi.hoisted(() => {
         getFiles: vi.fn().mockResolvedValue([[]]),
         _getMockFile: (path: string) => createMockFile(path),
         _clearMockFiles: () => mockFiles.clear(),
+        _setGetFilesMock: (mock: ReturnType<typeof vi.fn>) => {
+            bucket.getFiles = mock;
+        },
     };
 
     return bucket;
@@ -62,7 +65,9 @@ import {
     saveMetadataAtomic,
     updateMetadata,
     createInitialMetadata,
-    _setBucketForTesting
+    _setBucketForTesting,
+    recoverMetadata,
+    validateMetadata,
 } from './walMetadata.js';
 
 // Set bucket mock for testing
@@ -494,6 +499,423 @@ describe('walMetadata', () => {
             // Verify WAL files are still present in metadata
             expect(savedMetadata.walFiles).toHaveLength(2);
             expect(savedMetadata.walFiles).toEqual(existingMetadata.walFiles);
+        });
+    });
+
+    describe('Metadata Recovery', () => {
+        describe('validateMetadata', () => {
+            it('should return true for valid metadata', () => {
+                const metadata: WALMetadata = {
+                    uid: 'test-uid',
+                    entityType: 'journal_entries',
+                    version: 1,
+                    createdAt: '2026-01-20T10:00:00Z',
+                    updatedAt: '2026-01-20T10:00:00Z',
+                    walFiles: [],
+                    sstables: [],
+                    migrationStatus: 'none',
+                    thresholdConfig: { enabled: true, value: 1000 },
+                };
+
+                expect(validateMetadata(metadata)).toBe(true);
+            });
+
+            it('should return false for null', () => {
+                expect(validateMetadata(null)).toBe(false);
+            });
+
+            it('should return false for metadata missing required fields', () => {
+                const invalidMetadata = {
+                    uid: 'test-uid',
+                    entityType: 'journal_entries',
+                    // Missing version, createdAt, updatedAt
+                } as unknown as WALMetadata;
+
+                expect(validateMetadata(invalidMetadata)).toBe(false);
+            });
+
+            it('should return false for metadata with invalid migration status', () => {
+                const invalidMetadata: WALMetadata = {
+                    uid: 'test-uid',
+                    entityType: 'journal_entries',
+                    version: 1,
+                    createdAt: '2026-01-20T10:00:00Z',
+                    updatedAt: '2026-01-20T10:00:00Z',
+                    walFiles: [],
+                    sstables: [],
+                    migrationStatus: 'invalid' as any,
+                    thresholdConfig: { enabled: true, value: 1000 },
+                };
+
+                expect(validateMetadata(invalidMetadata)).toBe(false);
+            });
+
+            it('should return false for metadata with invalid threshold config', () => {
+                const invalidMetadata: WALMetadata = {
+                    uid: 'test-uid',
+                    entityType: 'journal_entries',
+                    version: 1,
+                    createdAt: '2026-01-20T10:00:00Z',
+                    updatedAt: '2026-01-20T10:00:00Z',
+                    walFiles: [],
+                    sstables: [],
+                    migrationStatus: 'none',
+                    thresholdConfig: { enabled: true, value: -100 },
+                };
+
+                expect(validateMetadata(invalidMetadata)).toBe(false);
+            });
+
+            it('should return false for metadata with negative version', () => {
+                const invalidMetadata: WALMetadata = {
+                    uid: 'test-uid',
+                    entityType: 'journal_entries',
+                    version: -1,
+                    createdAt: '2026-01-20T10:00:00Z',
+                    updatedAt: '2026-01-20T10:00:00Z',
+                    walFiles: [],
+                    sstables: [],
+                    migrationStatus: 'none',
+                    thresholdConfig: { enabled: true, value: 1000 },
+                };
+
+                expect(validateMetadata(invalidMetadata)).toBe(false);
+            });
+        });
+
+        describe('recoverMetadata', () => {
+            it('should scan GCS and rebuild metadata when corrupted', async () => {
+                const uid = 'test-uid';
+                const entityType = 'journal_entries';
+
+                // Simulate corrupted metadata
+                const mockMetadataFile = mockBucket._getMockFile(`users/${uid}/metadata/${entityType}.json`);
+                mockMetadataFile.exists.mockResolvedValue([true]);
+                mockMetadataFile.download.mockResolvedValue([Buffer.from('invalid{json')]);
+
+                // Mock all files in GCS
+                const allFiles = [
+                    // WAL files
+                    {
+                        name: `users/${uid}/wal/${entityType}/2026-01-19.jsonl`,
+                        download: vi.fn().mockResolvedValue([
+                            Buffer.from([
+                                '{"type":"test","payload":{"id":"1"}}',
+                                '{"type":"test","payload":{"id":"2"}}',
+                            ].join('\n'))
+                        ]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '1024' }]),
+                    },
+                    {
+                        name: `users/${uid}/wal/${entityType}/2026-01-20.jsonl`,
+                        download: vi.fn().mockResolvedValue([
+                            Buffer.from([
+                                '{"type":"test","payload":{"id":"3"}}',
+                            ].join('\n'))
+                        ]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '512' }]),
+                    },
+                    // SSTable
+                    {
+                        name: `snapshots/${entityType}/20260120T100000-compact.jsonl`,
+                        download: vi.fn().mockResolvedValue([
+                            Buffer.from([
+                                '{"type":"test","payload":{"id":"old1"}}',
+                                '{"type":"test","payload":{"id":"old2"}}',
+                                '{"type":"test","payload":{"id":"old3"}}',
+                            ].join('\n'))
+                        ]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '2048' }]),
+                    },
+                    // Index file
+                    {
+                        name: `snapshots/${entityType}/20260120T100000-index.json`,
+                        download: vi.fn().mockResolvedValue([
+                            Buffer.from(JSON.stringify({
+                                startKey: '2026-01-19T00:00:00Z',
+                                endKey: '2026-01-20T23:59:59Z',
+                                recordCount: 3,
+                            }))
+                        ]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '256' }]),
+                    },
+                ];
+
+                mockBucket.getFiles.mockResolvedValue([allFiles]);
+
+                const recovered = await recoverMetadata(uid, entityType);
+
+                // Verify metadata was reconstructed
+                expect(recovered).not.toBeNull();
+                expect(recovered!.uid).toBe(uid);
+                expect(recovered!.entityType).toBe(entityType);
+                expect(recovered!.version).toBe(1);
+                expect(recovered!.walFiles).toHaveLength(2);
+                expect(recovered!.walFiles[0].path).toBe(`users/${uid}/wal/${entityType}/2026-01-19.jsonl`);
+                expect(recovered!.walFiles[0].date).toBe('2026-01-19');
+                expect(recovered!.walFiles[0].recordCount).toBe(2);
+                expect(recovered!.walFiles[1].path).toBe(`users/${uid}/wal/${entityType}/2026-01-20.jsonl`);
+                expect(recovered!.walFiles[1].date).toBe('2026-01-20');
+                expect(recovered!.walFiles[1].recordCount).toBe(1);
+                expect(recovered!.sstables).toHaveLength(1);
+                expect(recovered!.sstables[0].path).toBe(`snapshots/${entityType}/20260120T100000-compact.jsonl`);
+                expect(recovered!.sstables[0].indexPath).toBe(`snapshots/${entityType}/20260120T100000-index.json`);
+                expect(recovered!.sstables[0].recordCount).toBe(3);
+            });
+
+            it('should return null and not rebuild if metadata is valid', async () => {
+                const uid = 'test-uid';
+                const entityType = 'journal_entries';
+
+                const validMetadata: WALMetadata = {
+                    uid,
+                    entityType,
+                    version: 5,
+                    createdAt: '2026-01-20T10:00:00Z',
+                    updatedAt: '2026-01-20T11:00:00Z',
+                    walFiles: [],
+                    sstables: [],
+                    migrationStatus: 'none',
+                    thresholdConfig: { enabled: true, value: 1000 },
+                };
+
+                const mockMetadataFile = mockBucket._getMockFile(`users/${uid}/metadata/${entityType}.json`);
+                mockMetadataFile.exists.mockResolvedValue([true]);
+                mockMetadataFile.download.mockResolvedValue([Buffer.from(JSON.stringify(validMetadata))]);
+
+                const recovered = await recoverMetadata(uid, entityType);
+
+                // Should not scan GCS if metadata is valid
+                expect(mockBucket.getFiles).not.toHaveBeenCalled();
+                expect(recovered).toBeNull();
+            });
+
+            it('should rebuild metadata if metadata file does not exist', async () => {
+                const uid = 'test-uid';
+                const entityType = 'journal_entries';
+
+                const mockMetadataFile = mockBucket._getMockFile(`users/${uid}/metadata/${entityType}.json`);
+                mockMetadataFile.exists.mockResolvedValue([false]);
+
+                const allFiles = [
+                    {
+                        name: `users/${uid}/wal/${entityType}/2026-01-20.jsonl`,
+                        download: vi.fn().mockResolvedValue([Buffer.from('{"type":"test"}\n')]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '100' }]),
+                    },
+                ];
+
+                mockBucket.getFiles.mockResolvedValue([allFiles]);
+
+                const recovered = await recoverMetadata(uid, entityType);
+
+                expect(recovered).not.toBeNull();
+                expect(recovered!.uid).toBe(uid);
+                expect(recovered!.entityType).toBe(entityType);
+                expect(recovered!.walFiles).toHaveLength(1);
+            });
+
+            it('should reconstruct SSTable metadata from index files', async () => {
+                const uid = 'test-uid';
+                const entityType = 'accounts';
+
+                const mockMetadataFile = mockBucket._getMockFile(`users/${uid}/metadata/${entityType}.json`);
+                mockMetadataFile.exists.mockResolvedValue([false]);
+
+                const allFiles = [
+                    {
+                        name: `snapshots/${entityType}/20260120T120000-compact.jsonl`,
+                        download: vi.fn().mockResolvedValue([Buffer.from('{"id":"1"}\n{"id":"2"}\n')]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '500' }]),
+                    },
+                    {
+                        name: `snapshots/${entityType}/20260120T120000-index.json`,
+                        download: vi.fn().mockResolvedValue([
+                            Buffer.from(JSON.stringify({
+                                startKey: 'acc-001',
+                                endKey: 'acc-999',
+                                recordCount: 2,
+                                compactedAt: '2026-01-20T12:00:00Z',
+                            }))
+                        ]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '200' }]),
+                    },
+                ];
+
+                mockBucket.getFiles.mockResolvedValue([allFiles]);
+
+                const recovered = await recoverMetadata(uid, entityType);
+
+                expect(recovered!.sstables).toHaveLength(1);
+                expect(recovered!.sstables[0].path).toBe(`snapshots/${entityType}/20260120T120000-compact.jsonl`);
+                expect(recovered!.sstables[0].indexPath).toBe(`snapshots/${entityType}/20260120T120000-index.json`);
+                expect(recovered!.sstables[0].startKey).toBe('acc-001');
+                expect(recovered!.sstables[0].endKey).toBe('acc-999');
+                expect(recovered!.sstables[0].recordCount).toBe(2);
+                expect(recovered!.sstables[0].compactedAt).toBe('2026-01-20T12:00:00Z');
+            });
+
+            it('should save recovered metadata atomically', async () => {
+                const uid = 'test-uid';
+                const entityType = 'journal_entries';
+
+                const mockMetadataFile = mockBucket._getMockFile(`users/${uid}/metadata/${entityType}.json`);
+                mockMetadataFile.exists.mockResolvedValue([false]);
+
+                const allFiles = [
+                    {
+                        name: `users/${uid}/wal/${entityType}/2026-01-20.jsonl`,
+                        download: vi.fn().mockResolvedValue([Buffer.from('{"type":"test"}\n')]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '100' }]),
+                    },
+                ];
+
+                mockBucket.getFiles.mockResolvedValue([allFiles]);
+
+                await recoverMetadata(uid, entityType);
+
+                // Verify metadata was saved atomically
+                const tempPath = `users/${uid}/metadata/${entityType}.json.tmp`;
+                const mockTempFile = mockBucket._getMockFile(tempPath);
+                expect(mockTempFile.save).toHaveBeenCalled();
+
+                const savedContent = mockTempFile.save.mock.calls[0][0] as string;
+                const savedMetadata = JSON.parse(savedContent);
+                expect(savedMetadata.uid).toBe(uid);
+                expect(savedMetadata.entityType).toBe(entityType);
+                expect(mockTempFile.copy).toHaveBeenCalled();
+                expect(mockTempFile.delete).toHaveBeenCalled();
+            });
+
+            it('should parse date from WAL file path format', async () => {
+                const uid = 'test-uid';
+                const entityType = 'transactions';
+
+                const mockMetadataFile = mockBucket._getMockFile(`users/${uid}/metadata/${entityType}.json`);
+                mockMetadataFile.exists.mockResolvedValue([false]);
+
+                const allFiles = [
+                    {
+                        name: `users/${uid}/wal/${entityType}/2025-12-31.jsonl`,
+                        download: vi.fn().mockResolvedValue([Buffer.from('{"type":"test"}\n')]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '100' }]),
+                    },
+                ];
+
+                mockBucket.getFiles.mockResolvedValue([allFiles]);
+
+                const recovered = await recoverMetadata(uid, entityType);
+
+                expect(recovered!.walFiles[0].date).toBe('2025-12-31');
+            });
+
+            it('should skip WAL files that do not match expected path pattern', async () => {
+                const uid = 'test-uid';
+                const entityType = 'journal_entries';
+
+                const mockMetadataFile = mockBucket._getMockFile(`users/${uid}/metadata/${entityType}.json`);
+                mockMetadataFile.exists.mockResolvedValue([false]);
+
+                const validWalFile = {
+                    name: `users/${uid}/wal/${entityType}/2026-01-20.jsonl`,
+                    download: vi.fn().mockResolvedValue([Buffer.from('{"type":"test"}\n')]),
+                    getMetadata: vi.fn().mockResolvedValue([{ size: '100' }]),
+                };
+
+                const invalidWalFile = {
+                    name: `users/${uid}/wal/${entityType}/invalid-file.txt`,
+                    download: vi.fn().mockResolvedValue([Buffer.from('data')]),
+                    getMetadata: vi.fn().mockResolvedValue([{ size: '50' }]),
+                };
+
+                const allFiles = [validWalFile, invalidWalFile];
+
+                mockBucket.getFiles.mockResolvedValue([allFiles]);
+
+                const recovered = await recoverMetadata(uid, entityType);
+
+                // Only valid WAL file should be included
+                expect(recovered!.walFiles).toHaveLength(1);
+                expect(recovered!.walFiles[0].path).toBe(validWalFile.name);
+            });
+
+            it('should return null if no files found in GCS', async () => {
+                const uid = 'new-uid';
+                const entityType = 'unknown';
+
+                const mockMetadataFile = mockBucket._getMockFile(`users/${uid}/metadata/${entityType}.json`);
+                mockMetadataFile.exists.mockResolvedValue([false]);
+
+                // Return empty arrays for all getFiles calls
+                mockBucket.getFiles.mockResolvedValue([[]]);
+
+                const recovered = await recoverMetadata(uid, entityType);
+
+                expect(recovered).toBeNull();
+            });
+
+            it('should match index files to their corresponding SSTables', async () => {
+                const uid = 'test-uid';
+                const entityType = 'journal_entries';
+
+                const mockMetadataFile = mockBucket._getMockFile(`users/${uid}/metadata/${entityType}.json`);
+                mockMetadataFile.exists.mockResolvedValue([false]);
+
+                const allFiles = [
+                    // WAL files (none)
+                    // SSTables
+                    {
+                        name: `snapshots/${entityType}/20260120T100000-compact.jsonl`,
+                        download: vi.fn().mockResolvedValue([Buffer.from('{"id":"1"}\n')]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '200' }]),
+                    },
+                    {
+                        name: `snapshots/${entityType}/20260121T100000-compact.jsonl`,
+                        download: vi.fn().mockResolvedValue([Buffer.from('{"id":"2"}\n')]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '300' }]),
+                    },
+                    // Index files
+                    {
+                        name: `snapshots/${entityType}/20260120T100000-index.json`,
+                        download: vi.fn().mockResolvedValue([
+                            Buffer.from(JSON.stringify({
+                                startKey: 'key-1',
+                                endKey: 'key-100',
+                                recordCount: 1,
+                                compactedAt: '2026-01-20T10:00:00Z',
+                            }))
+                        ]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '100' }]),
+                    },
+                    {
+                        name: `snapshots/${entityType}/20260121T100000-index.json`,
+                        download: vi.fn().mockResolvedValue([
+                            Buffer.from(JSON.stringify({
+                                startKey: 'key-101',
+                                endKey: 'key-200',
+                                recordCount: 1,
+                                compactedAt: '2026-01-21T10:00:00Z',
+                            }))
+                        ]),
+                        getMetadata: vi.fn().mockResolvedValue([{ size: '150' }]),
+                    },
+                ];
+
+                mockBucket.getFiles.mockResolvedValue([allFiles]);
+
+                const recovered = await recoverMetadata(uid, entityType);
+
+                expect(recovered).not.toBeNull();
+                expect(recovered!.sstables).toHaveLength(2);
+                // Verify correct pairing
+                const sstable1 = recovered!.sstables.find(s => s.path.includes('20260120T100000'));
+                const sstable2 = recovered!.sstables.find(s => s.path.includes('20260121T100000'));
+
+                expect(sstable1!.indexPath).toBe(`snapshots/${entityType}/20260120T100000-index.json`);
+                expect(sstable2!.indexPath).toBe(`snapshots/${entityType}/20260121T100000-index.json`);
+                expect(sstable1!.startKey).toBe('key-1');
+                expect(sstable2!.startKey).toBe('key-101');
+            });
         });
     });
 });
