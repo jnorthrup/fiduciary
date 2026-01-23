@@ -106,37 +106,37 @@
   - [x] Sub-task: Implement cache invalidation triggers [f7e3d13]
   - [x] Sub-task: Verify coverage >80% (89.15% statements, 80.76% branches) [f7e3d13]
 
-- [~] Task: Conductor - User Manual Verification 'Phase 3 Read Path'
+- [x] Task: Conductor - User Manual Verification 'Phase 3 Read Path' [checkpoint: 300b769]
 
 ---
 
 ## Phase 4: Migration Tool
 
 ### 4.1 state.json Detection and Parsing
-- [ ] Task: Create `migrateStateToJSONL.ts` module
-  - [ ] Sub-task: Write failing tests for detecting existing state.json files
-  - [ ] Sub-task: Implement GCS listing to find state.json files per user
-  - [ ] Sub-task: Write failing tests for parsing state.json entity collections
-  - [ ] Sub-task: Implement parsing with JSON validation
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Create `migrateStateToJSONL.ts` module [cddf834]
+  - [x] Sub-task: Write failing tests for detecting existing state.json files [cddf834]
+  - [x] Sub-task: Implement GCS listing to find state.json files per user [cddf834]
+  - [x] Sub-task: Write failing tests for parsing state.json entity collections [cddf834]
+  - [x] Sub-task: Implement parsing with JSON validation [cddf834]
+  - [x] Sub-task: Verify coverage >80% (93.45% statements) [cddf834]
 
 ### 4.2 JSONL Conversion and Initial SSTable
-- [ ] Task: Implement conversion logic
-  - [ ] Sub-task: Write failing tests for converting entities to JSONL format
-  - [ ] Sub-task: Implement entity-by-entity JSONL serialization
-  - [ ] Sub-task: Write failing tests for backdated timestamp assignment
-  - [ ] Sub-task: Implement timestamp extraction from existing data or default
-  - [ ] Sub-task: Write failing tests for initial SSTable generation (no compaction)
-  - [ ] Sub-task: Implement direct snapshot creation from migrated data
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Implement conversion logic [cddf834]
+  - [x] Sub-task: Write failing tests for converting entities to JSONL format [cddf834]
+  - [x] Sub-task: Implement entity-by-entity JSONL serialization [cddf834]
+  - [x] Sub-task: Write failing tests for backdated timestamp assignment [cddf834]
+  - [x] Sub-task: Implement timestamp extraction from existing data or default [cddf834]
+  - [x] Sub-task: Write failing tests for initial SSTable generation (no compaction) [cddf834]
+  - [x] Sub-task: Implement direct snapshot creation from migrated data [cddf834]
+  - [x] Sub-task: Verify coverage >80% [cddf834]
 
 ### 4.3 Migration Status Tracking
-- [ ] Task: Implement migration metadata
-  - [ ] Sub-task: Write failing tests for migration status tracking
-  - [ ] Sub-task: Implement metadata flag: migrationStatus enum
-  - [ ] Sub-task: Write failing tests for migration result reporting
-  - [ ] Sub-task: Implement MigrationResult interface with entityCounts, sstablesCreated, errors
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Implement migration metadata [cddf834]
+  - [x] Sub-task: Write failing tests for migration status tracking [cddf834]
+  - [x] Sub-task: Implement metadata flag: migrationStatus enum [cddf834]
+  - [x] Sub-task: Write failing tests for migration result reporting [cddf834]
+  - [x] Sub-task: Implement MigrationResult interface with entityCounts, sstablesCreated, errors [cddf834]
+  - [x] Sub-task: Verify coverage >80% [cddf834]
 
 ### 4.4 Rollback Capability
 - [ ] Task: Implement rollback mechanism
