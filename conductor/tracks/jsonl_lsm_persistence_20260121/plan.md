@@ -139,14 +139,14 @@
   - [x] Sub-task: Verify coverage >80% [cddf834]
 
 ### 4.4 Rollback Capability
-- [ ] Task: Implement rollback mechanism
-  - [ ] Sub-task: Write failing tests for state.json retention until verification
-  - [ ] Sub-task: Implement original file preservation during migration
-  - [ ] Sub-task: Write failing tests for manual rollback API
-  - [ ] Sub-task: Implement rollback function to restore state.json and update metadata
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Implement rollback mechanism [5f89f5b]
+  - [x] Sub-task: Write failing tests for state.json retention until verification [5f89f5b]
+  - [x] Sub-task: Implement original file preservation during migration [5f89f5b]
+  - [x] Sub-task: Write failing tests for manual rollback API [5f89f5b]
+  - [x] Sub-task: Implement rollback function to restore state.json and update metadata [5f89f5b]
+  - [x] Sub-task: Verify coverage >80% (94.07% statements) [5f89f5b]
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 4 Migration'
+- [~] Task: Conductor - User Manual Verification 'Phase 4 Migration'
 
 ---
 
