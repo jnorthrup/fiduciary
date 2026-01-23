@@ -14,6 +14,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json'],
+      include: ['server/lib/jsonlSerializer.ts'],
       // Coverage thresholds
       thresholds: {
         lines: 80,
@@ -26,7 +27,6 @@ export default defineConfig({
         'test/',
         '**/*.test.{ts,tsx}',
         '**/*.spec.{ts,tsx}',
-        'server/',
         'public/',
         'conductor/',
         'dist/',
