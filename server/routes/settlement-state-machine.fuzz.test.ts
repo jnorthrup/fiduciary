@@ -7,7 +7,8 @@ import settlementRouter from './settlement.js';
 vi.mock('../lib/gcs-persistence.js', () => ({
     default: {
         loadData: vi.fn(),
-        saveData: vi.fn()
+        saveData: vi.fn(),
+        saveNachaSubmission: vi.fn().mockResolvedValue({ submissionId: 'mock-submission-id' })
     }
 }));
 
@@ -33,9 +34,15 @@ const createApp = () => {
 
 // Random value generators
 const randomAmount = () => Math.floor(Math.random() * 1000000) / 100;
-const randomPayee = () => ['Acme Corp', 'Test Vendor', 'Company XYZ', 'Random Payee'][Math.floor(Math.random() * 4)];
+const randomPayeeName = () => ['Acme Corp', 'Test Vendor', 'Company XYZ', 'Random Payee'][Math.floor(Math.random() * 4)];
 const randomMethod = () => ['WIRE', 'ACH', 'CHECK', 'LEDGER_ONLY'][Math.floor(Math.random() * 4)];
 const randomTransactionRef = () => `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+// ACH requires banking details in payee object
+const randomPayee = (method: string) => method === 'ACH' ? {
+    name: randomPayeeName(),
+    routingNumber: '021000021',
+    accountNumber: '123456789'
+} : randomPayeeName();
 
 describe('Settlement State Machine - Fuzz Tests', () => {
     let app;
@@ -54,8 +61,8 @@ describe('Settlement State Machine - Fuzz Tests', () => {
                 vi.clearAllMocks();
 
                 const amount = randomAmount();
-                const payee = randomPayee();
                 const method = randomMethod();
+                const payee = randomPayee(method);
 
                 // Create payment order
                 persistence.loadData.mockResolvedValue({ paymentOrders: {} });
@@ -323,7 +330,11 @@ describe('Settlement State Machine - Fuzz Tests', () => {
             const originalOrder = {
                 paymentOrderId: 'po-preserve',
                 amount: 1234.56,
-                payee: 'Original Payee',
+                payee: {
+                    name: 'Original Payee',
+                    routingNumber: '021000021',
+                    accountNumber: '123456789'
+                },
                 method: 'ACH',
                 status: 'created',
                 createdAt: '2024-01-15T09:00:00Z',
@@ -343,7 +354,7 @@ describe('Settlement State Machine - Fuzz Tests', () => {
 
             expect(res.status).toBe(200);
             expect(res.body.amount).toBe(originalOrder.amount);
-            expect(res.body.payee).toBe(originalOrder.payee);
+            expect(res.body.payee).toEqual(originalOrder.payee);
             expect(res.body.method).toBe(originalOrder.method);
             // Status should change to executed
             expect(res.body.status).toBe('executed');
