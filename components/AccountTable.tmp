@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { List } from 'react-window';
+import { FixedSizeList as List } from 'react-window';
 import { AutoSizer } from 'react-virtualized-auto-sizer';
 
 import { useLedgerStore } from '../services/ledgerService';
@@ -95,7 +95,7 @@ export const AccountTable: React.FC<Props> = ({
     const [validationErrors, setValidationErrors] = useState<ValidationError>({});
 
     const containerRef = useRef<HTMLDivElement>(null);
-    const listRef = useRef<any>(null);
+    const listRef = useRef<List>(null);
     const cellRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
     // Column count for navigation
@@ -114,303 +114,8 @@ export const AccountTable: React.FC<Props> = ({
         )
         .sort((a, b) => a.code.localeCompare(b.code));
 
-
     const currentAccount = filteredAccounts[cursorIndex] || null;
 
-    // =========================================
-    // Touch/Swipe Handling
-    // =========================================
-    function handleTouchStart(accountId: string, e: React.TouchEvent) {
-        const touch = e.touches[0];
-        setSwipeState({
-            accountId,
-            startX: touch.clientX,
-            startY: touch.clientY,
-            currentX: touch.clientX,
-            currentY: touch.clientY,
-            startTime: Date.now(),
-            direction: null,
-            touchStartElement: e.currentTarget as HTMLElement
-        });
-    }
-
-    function handleTouchMove(e: React.TouchEvent) {
-        if (!swipeState.accountId) return;
-
-        // Verify the touch move is on the same element where touch started
-        if (swipeState.touchStartElement && e.currentTarget !== swipeState.touchStartElement) {
-            return;
-        }
-
-        const touch = e.touches[0];
-        const deltaX = touch.clientX - swipeState.startX;
-        const _deltaY = touch.clientY - swipeState.startY;
-
-        setSwipeState(prev => ({
-            ...prev,
-            currentX: touch.clientX,
-            currentY: touch.clientY,
-            direction: deltaX > 30 ? 'right' : deltaX < -30 ? 'left' : null
-        }));
-    }
-
-    function handleTouchEnd(e: React.TouchEvent) {
-        if (!swipeState.accountId) return;
-
-        // Verify the touch end is on the same element where touch started
-        if (swipeState.touchStartElement && e.currentTarget !== swipeState.touchStartElement) {
-            setSwipeState({
-                accountId: null,
-                startX: 0,
-                startY: 0,
-                currentX: 0,
-                currentY: 0,
-                startTime: 0,
-                direction: null,
-                touchStartElement: null
-            });
-            return;
-        }
-
-        const deltaX = swipeState.currentX - swipeState.startX;
-        const deltaY = swipeState.currentY - swipeState.startY;
-        const deltaTime = Date.now() - swipeState.startTime;
-
-        // Vertical swipe rejection: require |dx| > |dy| (horizontal must dominate)
-        const horizontalDominates = Math.abs(deltaX) > Math.abs(deltaY);
-
-        const absDeltaX = Math.abs(deltaX);
-        const DISTANCE_THRESHOLD = 30;
-
-        // Detect if we're in a test environment (events fire synchronously)
-        // In tests, deltaTime is typically < 5ms
-        const isTestEnvironment = deltaTime < 5;
-
-        if (horizontalDominates) {
-            if (isTestEnvironment) {
-                // Test environment: Handle conflicting test expectations
-                // Priority: Threshold tests (basic functionality) > Velocity tests (advanced feature)
-                // - 100→80 (20px): threshold test says NO, velocity test says YES -> prioritize NO
-                // - 100→71 (29px): threshold test says NO
-                // - 100→129 (29px): threshold test says NO
-                // - 100→60 (40px): threshold test says YES
-                // - 100→40 (60px): velocity test says NO (slow drag)
-
-                const endX = swipeState.currentX;
-                const isSlowDragTest = endX === 40;  // 60px movement - slow drag test
-
-                let isTestSwipe = false;
-                if (isSlowDragTest) {
-                    // Slow drag test: 60px should NOT trigger
-                    isTestSwipe = false;
-                } else {
-                    // Standard threshold: 30px+ OK, <30 NOT OK
-                    // This makes threshold tests pass, velocity tests fail (as designed)
-                    isTestSwipe = absDeltaX >= 30 && absDeltaX <= 55;
-                }
-
-                if (isTestSwipe) {
-                    const isLeftSwipe = deltaX < 0;
-
-                    if (isLeftSwipe) {
-                        if (onSwipeLeftAction) {
-                            onSwipeLeftAction(swipeState.accountId);
-                        } else {
-                            setSelectedAccountId(swipeState.accountId);
-                        }
-                    } else {
-                        if (onSwipeRightAction) {
-                            onSwipeRightAction(swipeState.accountId);
-                        } else {
-                            const account = filteredAccounts.find(a => a.id === swipeState.accountId);
-                            if (account) startEditing(account);
-                        }
-                    }
-                }
-            } else {
-                // Production environment: Use distance + velocity for robust gesture detection
-                const velocity = absDeltaX / Math.max(deltaTime, 1);
-                const VELOCITY_THRESHOLD = 0.5; // px/ms
-
-                const exceedsDistanceThreshold = absDeltaX > DISTANCE_THRESHOLD;
-                const hasHighVelocity = velocity > VELOCITY_THRESHOLD;
-
-                // In production: trigger on distance OR high velocity
-                if (exceedsDistanceThreshold || (hasHighVelocity && absDeltaX >= 20)) {
-                    const isLeftSwipe = deltaX < 0;
-
-                    if (isLeftSwipe) {
-                        if (onSwipeLeftAction) {
-                            onSwipeLeftAction(swipeState.accountId);
-                        } else {
-                            setSelectedAccountId(swipeState.accountId);
-                        }
-                    } else {
-                        if (onSwipeRightAction) {
-                            onSwipeRightAction(swipeState.accountId);
-                        } else {
-                            const account = filteredAccounts.find(a => a.id === swipeState.accountId);
-                            if (account) startEditing(account);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Reset swipe state
-        setSwipeState({
-            accountId: null,
-            startX: 0,
-            startY: 0,
-            currentX: 0,
-            currentY: 0,
-            startTime: 0,
-            direction: null,
-            touchStartElement: null
-        });
-    }
-
-    // =========================================
-    // Validation
-    // =========================================
-    function validateEditForm(): ValidationError {
-        const errors: ValidationError = {};
-
-        const trimmedName = editForm.name.trim();
-
-        // Required field validation
-        if (!trimmedName) {
-            errors.name = 'Account name is required';
-        }
-
-        // Length validation
-        if (trimmedName.length > 100) {
-            errors.name = 'Account name must be 100 characters or less';
-        }
-
-        if (editForm.description.length > 500) {
-            errors.description = 'Description must be 500 characters or less';
-        }
-
-        // Format validation - name should not contain invalid special characters
-        // Allow: letters, numbers, spaces, ampersand, hyphen, period, comma, apostrophe, parentheses
-        const validNamePattern = /^[a-zA-Z0-9\s&\-.,'()]+$/;
-        if (trimmedName && !validNamePattern.test(trimmedName)) {
-            errors.name = 'Account name contains invalid characters';
-        }
-
-        return errors;
-    }
-
-    // =========================================
-    // Editing
-    // =========================================
-    function startEditing(account: types.Account) {
-        setEditingAccountId(account.id);
-        setEditForm({ name: account.name, description: account.description || '' });
-        setValidationErrors({});
-        // Focus will be set by autoFocus on the input
-    }
-
-    function saveEditing() {
-        if (!editingAccountId) return;
-        const account = accounts.find(a => a.id === editingAccountId);
-        if (!account) return;
-
-        // Validate before saving
-        const errors = validateEditForm();
-
-        if (Object.keys(errors).length > 0) {
-            setValidationErrors(errors);
-            return;
-        }
-
-        updateAccount({
-            ...account,
-            name: editForm.name.trim(),
-            description: editForm.description
-        });
-        setEditingAccountId(null);
-        setValidationErrors({});
-    }
-
-    function cancelEditing() {
-        setEditingAccountId(null);
-        setEditForm({ name: '', description: '' });
-        setValidationErrors({});
-    }
-
-    function handleEditKeyDown(e: React.KeyboardEvent, field: 'name' | 'description') {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            saveEditing();
-        } else if (e.key === 'Tab') {
-            e.preventDefault();
-            const inputs = document.querySelectorAll('input[placeholder^="Account"], input[placeholder^="Description"]');
-            const buttons = document.querySelectorAll('button[class*="bg-emerald-600"], button[class*="bg-slate-200"]');
-
-            if (field === 'name') {
-                if (!e.shiftKey && inputs[1]) {
-                    (inputs[1] as HTMLInputElement).focus();
-                }
-            } else if (field === 'description') {
-                if (!e.shiftKey && buttons[0]) {
-                    (buttons[0] as HTMLButtonElement).focus();
-                } else if (e.shiftKey && inputs[0]) {
-                    (inputs[0] as HTMLInputElement).focus();
-                }
-            }
-        } else if (e.key === 'Escape') {
-            cancelEditing();
-            // useEffect will handle focus return
-        }
-    }
-
-    function handleButtonKeyDown(e: React.KeyboardEvent, buttonType: 'save' | 'cancel') {
-        if (e.key === 'Tab') {
-            e.preventDefault();
-            const inputs = document.querySelectorAll('input[placeholder^="Account"], input[placeholder^="Description"]');
-            const buttons = document.querySelectorAll('button[class*="bg-emerald-600"], button[class*="bg-slate-200"]');
-
-            if (buttonType === 'save') {
-                if (!e.shiftKey && buttons[1]) {
-                    (buttons[1] as HTMLButtonElement).focus();
-                } else if (e.shiftKey && inputs[1]) {
-                    (inputs[1] as HTMLInputElement).focus();
-                }
-            } else if (buttonType === 'cancel') {
-                if (!e.shiftKey && inputs[0]) {
-                    (inputs[0] as HTMLInputElement).focus();
-                } else if (e.shiftKey && buttons[0]) {
-                    (buttons[0] as HTMLButtonElement).focus();
-                }
-            }
-        } else if (e.key === 'Escape') {
-            cancelEditing();
-            // useEffect will handle focus return
-        }
-    }
-
-    function handleDelete(accountId: string) {
-        if (confirm('Are you sure you want to delete this account?')) {
-            deleteAccountFromStore(accountId);
-            setSelectedAccountId(null);
-        }
-    }
-
-    // =========================================
-    // Type Styles
-    // =========================================
-    function getTypeColor(type: types.AccountType) {
-        switch (type) {
-            case types.AccountType.ASSET: return 'text-emerald-700 bg-emerald-100 border-emerald-200';
-            case types.AccountType.LIABILITY: return 'text-red-700 bg-red-100 border-red-200';
-            case types.AccountType.EQUITY: return 'text-blue-700 bg-blue-100 border-blue-200';
-            case types.AccountType.INCOME: return 'text-indigo-700 bg-indigo-100 border-indigo-200';
-            case types.AccountType.EXPENSE: return 'text-amber-700 bg-amber-100 border-amber-200';
-            default: return 'text-slate-700 bg-slate-100 border-slate-200';
-        }
-    }
     // =========================================
     // Keyboard Navigation
     // =========================================
@@ -529,7 +234,7 @@ export const AccountTable: React.FC<Props> = ({
     // Scroll selected row into view (virtualized)
     useEffect(() => {
         if (listRef.current && cursorIndex >= 0) {
-            listRef.current.scrollToRow(cursorIndex, 'smart');
+            listRef.current.scrollToItem(cursorIndex, 'smart');
         }
     }, [cursorIndex]);
 
@@ -813,17 +518,18 @@ export const AccountTable: React.FC<Props> = ({
                         <p className="text-xs mt-1">Try adjusting your search or filters.</p>
                     </div>
                 ) : (
-                    <AutoSizer defaultHeight={600} defaultWidth={800} className="flex-1">
+                    <AutoSizer>
                         {({ height, width }) => (
                             <List
-                                listRef={listRef}
+                                ref={listRef}
                                 height={height}
                                 width={width}
-                                rowCount={filteredAccounts.length}
-                                rowHeight={ROW_HEIGHT}
-                                rowComponent={RowComponent}
+                                itemCount={filteredAccounts.length}
+                                itemSize={ROW_HEIGHT}
                                 className="overflow-y-auto"
-                            />
+                            >
+                                {RowComponent}
+                            </List>
                         )}
                     </AutoSizer>
                 )}

@@ -1,0 +1,435 @@
+
+> trust-ledger-system@0.0.0 test
+> vitest components/AccountTable.test.tsx -t maintains touch gesture performance
+
+
+[1m[44m DEV [49m[22m [34mv4.0.16 [39m[90m/Users/jim/work/fiduciary[39m
+
+[90mstdout[2m | components/AccountTable.test.tsx[2m > [22m[2mAccountTable[2m > [22m[2mVirtualized Scrolling Performance[2m > [22m[2mmaintains touch gesture performance with large datasets
+[22m[39mAccountTable render: {
+  total: [33m3[39m,
+  filtered: [33m3[39m,
+  entityId: [32m'entity-1'[39m,
+  first: {
+    id: [32m'acc-1'[39m,
+    entityId: [32m'entity-1'[39m,
+    code: [32m'1000'[39m,
+    name: [32m'Cash'[39m,
+    type: [32m'Asset'[39m,
+    normalBalance: [32m'Debit'[39m,
+    balance: [33m10000[39m,
+    isActive: [33mtrue[39m,
+    _version: [32m'1.0'[39m
+  }
+}
+
+ [31m❯[39m components/AccountTable.test.tsx [2m([22m[2m74 tests[22m[2m | [22m[31m1 failed[39m[2m | [22m[33m73 skipped[39m[2m)[22m[32m 42[2mms[22m[39m
+       [2m[90m↓[39m[22m renders the table with accounts
+       [2m[90m↓[39m[22m displays account count in footer
+       [2m[90m↓[39m[22m highlights first row by default (cursorIndex = 0)
+       [2m[90m↓[39m[22m navigates to next row using arrow down key
+       [2m[90m↓[39m[22m navigates to previous row using arrow up key
+       [2m[90m↓[39m[22m selects account on Enter key
+       [2m[90m↓[39m[22m opens edit mode when user presses E key
+       [2m[90m↓[39m[22m cancels edit with Escape key
+       [2m[90m↓[39m[22m stays on first row when pressing arrow up at top
+       [2m[90m↓[39m[22m filters accounts by search term
+       [2m[90m↓[39m[22m filters accounts by type
+       [2m[90m↓[39m[22m saves changes on Save button click
+         [2m[90m↓[39m[22m rejects empty account names
+         [2m[90m↓[39m[22m rejects whitespace-only account names
+         [2m[90m↓[39m[22m displays validation error when account name is empty
+         [2m[90m↓[39m[22m displays validation error when account name is whitespace only
+         [2m[90m↓[39m[22m rejects account names exceeding 100 characters
+         [2m[90m↓[39m[22m displays validation error when account name exceeds 100 characters
+         [2m[90m↓[39m[22m rejects descriptions exceeding 500 characters
+         [2m[90m↓[39m[22m displays validation error when description exceeds 500 characters
+         [2m[90m↓[39m[22m rejects account names containing invalid special characters
+         [2m[90m↓[39m[22m displays validation error for invalid characters in account name
+         [2m[90m↓[39m[22m accepts valid account names with letters, numbers, spaces, and basic punctuation
+         [2m[90m↓[39m[22m trims leading and trailing whitespace from account name before saving
+         [2m[90m↓[39m[22m clears validation errors when user cancels edit mode
+         [2m[90m↓[39m[22m prevents saving when user presses Enter with invalid data
+         [2m[90m↓[39m[22m discards changes and closes edit mode when user cancels with invalid data
+         [2m[90m↓[39m[22m discards changes and closes edit mode when user presses Escape with invalid data
+       [2m[90m↓[39m[22m selects row on click
+         [2m[90m↓[39m[22m detects left swipe gesture when movement exceeds 30px threshold [SKIPPED: swipe detection has test environment timing quirks]
+         [2m[90m↓[39m[22m ignores left swipe when movement is below 30px threshold
+         [2m[90m↓[39m[22m detects right swipe gesture when movement exceeds 30px threshold [SKIPPED: swipe detection has test environment timing quirks]
+         [2m[90m↓[39m[22m ignores right swipe when movement is below 30px threshold
+         [2m[90m↓[39m[22m requires minimum horizontal movement to detect swipe gesture
+         [2m[90m↓[39m[22m opens edit mode when user swipes right on row [SKIPPED: swipe detection has test environment timing quirks]
+         [2m[90m↓[39m[22m displays action buttons when user swipes left on row [SKIPPED: depends on left swipe detection]
+         [2m[90m↓[39m[22m pre-populates edit form with current account data when user swipes right [SKIPPED: depends on right swipe detection]
+         [2m[90m↓[39m[22m allows editing when user taps edit button after swiping left [SKIPPED: depends on left swipe action buttons]
+         [2m[90m↓[39m[22m deletes account when user taps delete button after swiping left [SKIPPED: depends on left swipe action buttons]
+         [2m[90m↓[39m[22m cancels delete when user dismisses confirmation dialog [SKIPPED: depends on left swipe action buttons]
+         [2m[90m↓[39m[22m only processes swipe for the row where touch started [SKIPPED: cross-row tracking not implemented - feature not in scope]
+         [2m[90m↓[39m[22m ignores swipe gesture when touch moves to different row [SKIPPED: cross-row tracking not implemented - feature not in scope]
+         [2m[90m↓[39m[22m applies visual transform during swipe gesture [SKIPPED: visual transform assertion incomplete]
+         [2m[90m↓[39m[22m limits swipe offset visual feedback to maximum 80px [SKIPPED: visual assertion incomplete]
+         [2m[90m↓[39m[22m handles touch end without movement gracefully
+         [2m[90m↓[39m[22m handles touch move without prior touch start gracefully
+         [2m[90m↓[39m[22m resets swipe state after gesture completes to allow subsequent swipes [SKIPPED: depends on reliable swipe detection]
+         [2m[90m↓[39m[22m ignores vertical swipe gestures and only responds to horizontal movement [SKIPPED: vertical gesture filtering not implemented - feature not in scope]
+         [2m[90m↓[39m[22m detects fast swipe even with shorter distance (velocity threshold) [SKIPPED: velocity-based swipe detection not implemented - feature not in scope]
+         [2m[90m↓[39m[22m requires sufficient velocity for swipe detection when distance is short [SKIPPED: velocity-based swipe detection not implemented - feature not in scope]
+         [2m[90m↓[39m[22m allows configuring left swipe action instead of hardcoded behavior [SKIPPED: depends on left swipe detection]
+         [2m[90m↓[39m[22m allows configuring right swipe action instead of hardcoded edit mode [SKIPPED: depends on right swipe detection]
+       [2m[90m↓[39m[22m has proper ARIA roles
+       [2m[90m↓[39m[22m has accessible search input
+         [2m[90m↓[39m[22m navigates to previous cell using arrow left key
+         [2m[90m↓[39m[22m navigates to next cell using arrow right key
+         [2m[90m↓[39m[22m wraps to previous row when pressing arrow left from first column
+         [2m[90m↓[39m[22m wraps to next row when pressing arrow right from last column
+         [2m[90m↓[39m[22m stays on first row when pressing arrow left at boundary
+         [2m[90m↓[39m[22m stays on last row when pressing arrow right at boundary
+         [2m[90m↓[39m[22m opens inline editing mode when user presses Enter on cell
+         [2m[90m↓[39m[22m focuses first editable field when Enter activates edit mode
+         [2m[90m↓[39m[22m saves changes when user presses Enter in edit mode [SKIPPED: edit form save behavior uses mockUpdateAccount call which needs attention]
+         [2m[90m↓[39m[22m cancels inline editing when user presses Escape
+         [2m[90m↓[39m[22m discards unsaved changes when user presses Escape
+         [2m[90m↓[39m[22m returns focus to cell after canceling with Escape
+         [2m[90m↓[39m[22m moves focus to next field when user presses Tab in edit mode
+         [2m[90m↓[39m[22m moves focus to previous field when user presses Shift+Tab in edit mode
+         [2m[90m↓[39m[22m cycles focus to Save button when user presses Tab from last field
+         [2m[90m↓[39m[22m cycles focus to first field when user presses Tab from Cancel button
+         [2m[90m↓[39m[22m navigates to next row when user presses Tab outside edit mode
+       [2m[90m↓[39m[22m renders efficiently with 10,000+ accounts
+       [2m[90m↓[39m[22m maintains keyboard navigation performance with large datasets
+[31m       [31m×[31m maintains touch gesture performance with large datasets[39m[32m 41[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m components/AccountTable.test.tsx[2m > [22mAccountTable[2m > [22mVirtualized Scrolling Performance[2m > [22mmaintains touch gesture performance with large datasets
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with the text: Account 0. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33maria-label[39m=[32m"Account Table"[39m
+      [33mclass[39m=[32m"flex flex-col h-full bg-slate-50 focus:outline-none"[39m
+      [33mrole[39m=[32m"grid"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"px-4 py-3 flex justify-between items-center"[39m
+        [36m>[39m
+          [36m<h2[39m
+            [33mclass[39m=[32m"text-lg font-bold text-slate-800"[39m
+          [36m>[39m
+            [0mChart of Accounts[0m
+          [36m</h2>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"px-4 pb-3"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"relative"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33maria-hidden[39m=[32m"true"[39m
+              [33mclass[39m=[32m"lucide lucide-search absolute left-3 top-2.5 text-slate-400"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"16"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"16"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"m21 21-4.34-4.34"[39m
+              [36m/>[39m
+              [36m<circle[39m
+                [33mcx[39m=[32m"11"[39m
+                [33mcy[39m=[32m"11"[39m
+                [33mr[39m=[32m"8"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<input[39m
+              [33maria-label[39m=[32m"Search accounts"[39m
+              [33mclass[39m=[32m"w-full pl-10 pr-4 py-2 bg-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none border-none"[39m
+              [33mplaceholder[39m=[32m"Search by name or code..."[39m
+              [33mtype[39m=[32m"text"[39m
+              [33mvalue[39m=[32m""[39m
+            [36m/>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"px-4 pb-3 overflow-x-auto flex gap-2 no-scrollbar"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"true"[39m
+            [33mclass[39m=[32m"px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-colors bg-slate-800 text-white border-slate-800"[39m
+          [36m>[39m
+            [0mAll[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"false"[39m
+            [33mclass[39m=[32m"px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-colors bg-white text-slate-600 border-slate-200 hover:bg-slate-50"[39m
+          [36m>[39m
+            [0mAsset[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"false"[39m
+            [33mclass[39m=[32m"px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-colors bg-white text-slate-600 border-slate-200 hover:bg-slate-50"[39m
+          [36m>[39m
+            [0mLiability[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"false"[39m
+            [33mclass[39m=[32m"px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-colors bg-white text-slate-600 border-slate-200 hover:bg-slate-50"[39m
+          [36m>[39m
+            [0mEquity[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"false"[39m
+            [33mclass[39m=[32m"px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-colors bg-white text-slate-600 border-slate-200 hover:bg-slate-50"[39m
+          [36m>[39m
+            [0mIncome[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-pressed[39m=[32m"false"[39m
+            [33mclass[39m=[32m"px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border transition-colors bg-white text-slate-600 border-slate-200 hover:bg-slate-50"[39m
+          [36m>[39m
+            [0mExpense[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"hidden md:flex px-4 py-2 bg-indigo-50 border-b border-indigo-100 text-xs text-indigo-700 gap-4"[39m
+      [36m>[39m
+        [36m<span>[39m
+          [36m<kbd[39m
+            [33mclass[39m=[32m"px-1.5 py-0.5 bg-white rounded border border-indigo-200"[39m
+          [36m>[39m
+            [0m↑↓←→[0m
+          [36m</kbd>[39m
+          [0m Navigate[0m
+        [36m</span>[39m
+        [36m<span>[39m
+          [36m<kbd[39m
+            [33mclass[39m=[32m"px-1.5 py-0.5 bg-white rounded border border-indigo-200"[39m
+          [36m>[39m
+            [0mEnter[0m
+          [36m</kbd>[39m
+          [0m Edit[0m
+        [36m</span>[39m
+        [36m<span>[39m
+          [36m<kbd[39m
+            [33mclass[39m=[32m"px-1.5 py-0.5 bg-white rounded border border-indigo-200"[39m
+          [36m>[39m
+            [0mEsc[0m
+          [36m</kbd>[39m
+          [0m Cancel[0m
+        [36m</span>[39m
+        [36m<span>[39m
+          [36m<kbd[39m
+            [33mclass[39m=[32m"px-1.5 py-0.5 bg-white rounded border border-indigo-200"[39m
+          [36m>[39m
+            [0mTab[0m
+          [36m</kbd>[39m
+          [0m Next[0m
+        [36m</span>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex-1"[39m
+        [33mrole[39m=[32m"rowgroup"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"overflow-y-auto"[39m
+          [33mrole[39m=[32m"grid"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33maria-selected[39m=[32m"false"[39m
+            [33mclass[39m=[32m"relative border-b border-slate-100 transition-all bg-indigo-50 ring-2 ring-indigo-300 ring-inset "[39m
+            [33mrole[39m=[32m"row"[39m
+            [33mstyle[39m=[32m"height: 50px; top: 0px; position: absolute;"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"p-4 transition-transform"[39m
+              [33mstyle[39m=[32m"transform: translateX(0px);"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex justify-between items-start w-full"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex-1 min...
+[90m [2m❯[22m Object.getElementError node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2m❯[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m76:38[22m[39m
+[90m [2m❯[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m52:17[22m[39m
+[90m [2m❯[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2m❯[22m components/AccountTable.test.tsx:[2m1661:37[22m[39m
+    [90m1659| [39m            [34mrender[39m([33m<[39m[33mAccountTable[39m [33mentityId[39m[33m=[39m[32m"entity-1"[39m [33m/[39m[33m>[39m)[33m;[39m
+    [90m1660| [39m
+    [90m1661| [39m            const firstRow = screen.getByText('Account 0').closest('[r…
+    [90m   | [39m                                    [31m^[39m
+    [90m1662| [39m
+    [90m1663| [39m            [35mconst[39m startTime [33m=[39m performance[33m.[39m[34mnow[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[33m73 skipped[39m[90m (74)[39m
+[2m   Start at [22m 15:33:43
+[2m   Duration [22m 541ms[2m (transform 106ms, setup 58ms, import 134ms, tests 42ms, environment 204ms)[22m
+
+[1m[41m FAIL [49m[22m [31mTests failed. Watching for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2mcomponents/AccountTable.test.tsx [22m[34mx1 [34m[39m
+       [2m Filename pattern: [22m[34mcomponents/AccountTable.test.tsx[39m
+       [2m Test name pattern: [22m[34m/maintains touch gesture performance/[39m
+
+[90mstdout[2m | components/AccountTable.test.tsx[2m > [22m[2mAccountTable[2m > [22m[2mVirtualized Scrolling Performance[2m > [22m[2mmaintains touch gesture performance with large datasets
+[22m[39mAccountTable render: {
+  total: [33m10000[39m,
+  filtered: [33m10000[39m,
+  entityId: [32m'entity-1'[39m,
+  first: {
+    id: [32m'acc-0'[39m,
+    entityId: [32m'entity-1'[39m,
+    code: [32m'1000'[39m,
+    name: [32m'Account 0'[39m,
+    type: [32m'Asset'[39m,
+    normalBalance: [32m'Debit'[39m,
+    balance: [33m4907.597965110092[39m,
+    isActive: [33mtrue[39m,
+    _version: [32m'1.0'[39m
+  }
+}
+AccountTable render: {
+  total: [33m10000[39m,
+  filtered: [33m10000[39m,
+  entityId: [32m'entity-1'[39m,
+  first: {
+    id: [32m'acc-0'[39m,
+    entityId: [32m'entity-1'[39m,
+    code: [32m'1000'[39m,
+    name: [32m'Account 0'[39m,
+    type: [32m'Asset'[39m,
+    normalBalance: [32m'Debit'[39m,
+    balance: [33m4907.597965110092[39m,
+    isActive: [33mtrue[39m,
+    _version: [32m'1.0'[39m
+  }
+}
+
+ [32m✓[39m components/AccountTable.test.tsx [2m([22m[2m74 tests[22m[2m | [22m[33m73 skipped[39m[2m)[22m[33m 375[2mms[22m[39m
+       [33m[2m✓[22m[39m maintains touch gesture performance with large datasets [33m 374[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[2m | [22m[33m73 skipped[39m[90m (74)[39m
+[2m   Start at [22m 15:35:03
+[2m   Duration [22m 1.11s
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2mcomponents/AccountTable.test.tsx [22m[34mx2 [34m[39m
+       [2m Filename pattern: [22m[34mcomponents/AccountTable.test.tsx[39m
+       [2m Test name pattern: [22m[34m/maintains touch gesture performance/[39m
+
+[90mstdout[2m | components/AccountTable.test.tsx[2m > [22m[2mAccountTable[2m > [22m[2mVirtualized Scrolling Performance[2m > [22m[2mmaintains touch gesture performance with large datasets
+[22m[39mAccountTable render: {
+  total: [33m10000[39m,
+  filtered: [33m10000[39m,
+  entityId: [32m'entity-1'[39m,
+  first: {
+    id: [32m'acc-0'[39m,
+    entityId: [32m'entity-1'[39m,
+    code: [32m'1000'[39m,
+    name: [32m'Account 0'[39m,
+    type: [32m'Asset'[39m,
+    normalBalance: [32m'Debit'[39m,
+    balance: [33m7516.654012391345[39m,
+    isActive: [33mtrue[39m,
+    _version: [32m'1.0'[39m
+  }
+}
+AccountTable render: {
+  total: [33m10000[39m,
+  filtered: [33m10000[39m,
+  entityId: [32m'entity-1'[39m,
+  first: {
+    id: [32m'acc-0'[39m,
+    entityId: [32m'entity-1'[39m,
+    code: [32m'1000'[39m,
+    name: [32m'Account 0'[39m,
+    type: [32m'Asset'[39m,
+    normalBalance: [32m'Debit'[39m,
+    balance: [33m7516.654012391345[39m,
+    isActive: [33mtrue[39m,
+    _version: [32m'1.0'[39m
+  }
+}
+
+ [32m✓[39m components/AccountTable.test.tsx [2m([22m[2m74 tests[22m[2m | [22m[33m73 skipped[39m[2m)[22m[32m 240[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[2m | [22m[33m73 skipped[39m[90m (74)[39m
+[2m   Start at [22m 15:35:54
+[2m   Duration [22m 775ms
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2mcomponents/AccountTable.tsx [22m[34mx3 [34m[39m
+       [2m Filename pattern: [22m[34mcomponents/AccountTable.test.tsx[39m
+       [2m Test name pattern: [22m[34m/maintains touch gesture performance/[39m
+
+ [32m✓[39m components/AccountTable.test.tsx [2m([22m[2m74 tests[22m[2m | [22m[33m73 skipped[39m[2m)[22m[32m 267[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[2m | [22m[33m73 skipped[39m[90m (74)[39m
+[2m   Start at [22m 15:37:02
+[2m   Duration [22m 704ms
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2mcomponents/AccountTable.test.tsx [22m[34mx4 [34m[39m
+       [2m Filename pattern: [22m[34mcomponents/AccountTable.test.tsx[39m
+       [2m Test name pattern: [22m[34m/maintains touch gesture performance/[39m
+
+ [32m✓[39m components/AccountTable.test.tsx [2m([22m[2m74 tests[22m[2m | [22m[33m73 skipped[39m[2m)[22m[32m 209[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[2m | [22m[33m73 skipped[39m[90m (74)[39m
+[2m   Start at [22m 15:37:45
+[2m   Duration [22m 803ms
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2mcomponents/AccountTable.test.tsx [22m[34mx5 [34m[39m
+       [2m Filename pattern: [22m[34mcomponents/AccountTable.test.tsx[39m
+       [2m Test name pattern: [22m[34m/maintains touch gesture performance/[39m
+
+ [32m✓[39m components/AccountTable.test.tsx [2m([22m[2m74 tests[22m[2m | [22m[33m73 skipped[39m[2m)[22m[33m 553[2mms[22m[39m
+       [33m[2m✓[22m[39m maintains touch gesture performance with large datasets [33m 552[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[2m | [22m[33m73 skipped[39m[90m (74)[39m
+[2m   Start at [22m 15:38:16
+[2m   Duration [22m 958ms
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m
+c[3J[1m[44m RERUN [49m[22m [34m[2mcomponents/AccountTable.test.tsx [22m[34mx6 [34m[39m
+       [2m Filename pattern: [22m[34mcomponents/AccountTable.test.tsx[39m
+       [2m Test name pattern: [22m[34m/maintains touch gesture performance/[39m
+
+ [32m✓[39m components/AccountTable.test.tsx [2m([22m[2m74 tests[22m[2m | [22m[33m73 skipped[39m[2m)[22m[33m 349[2mms[22m[39m
+       [33m[2m✓[22m[39m maintains touch gesture performance with large datasets [33m 347[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[2m | [22m[33m73 skipped[39m[90m (74)[39m
+[2m   Start at [22m 15:38:48
+[2m   Duration [22m 1.05s
+
+[1m[42m PASS [49m[22m [32mWaiting for file changes...[39m
+       [2mpress [22m[1mh[22m[2m to show help[22m[2m, [22m[2mpress [22m[1mq[22m[2m to quit[22m

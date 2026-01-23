@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Building2, ShieldCheck, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock, UserCog, PlusCircle, Receipt, CreditCard, ArrowRightLeft, Landmark, FileText } from 'lucide-react';
+import { Building2, ShieldCheck, Settings, LayoutDashboard, CornerDownRight, FileBadge, X, Users, Globe, Database, Network, Lock, UserCog, PlusCircle, Receipt, CreditCard, ArrowRightLeft, Landmark, FileText, Sparkles } from 'lucide-react';
 import { Entity, EntityRole, User } from '../types';
 import { TeamManagementModal } from './modals/TeamManagementModal';
 import { UseCaseLogger } from '../services/useCaseLogger';
@@ -31,6 +31,7 @@ interface SidebarProps {
   onQuickWire: () => void;
   onQuick1099?: () => void;
   onToggleLayout?: () => void;
+  onOpenScanner?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -38,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUser, users, onAddUser, onUpdateUser, onDeleteUser, onEditUser,
   onTeachModeChange,
   onQuickInvoice, onQuickReceipt, onQuickPayment, onQuickWire, onQuick1099,
-  onOpenGraph, onToggleLayout
+  onOpenGraph, onToggleLayout, onOpenScanner
 }) => {
   const [showTeamModal, setShowTeamModal] = useState(false);
 
@@ -144,6 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-4">
             <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em]">System Resources</p>
             <div className="space-y-1">
+              <NavItem label="AI Architect" icon={Sparkles} onClick={onOpenScanner} color="text-purple-400" />
               <NavItem label="Lattice Visualizer" icon={Network} onClick={onOpenGraph} color="text-indigo-400" />
               <NavItem label="Reference Library" icon={FileBadge} onClick={onOpenIRM} />
               <NavItem label="QuickBooks Mode" icon={LayoutDashboard} onClick={onToggleLayout} color="text-emerald-400" />

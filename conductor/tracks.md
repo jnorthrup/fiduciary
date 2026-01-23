@@ -25,6 +25,13 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
+## [~] Track: Settlement → NACHA Integration
+
+*Link: [./conductor/tracks/settlement_nacha_20260122/](./conductor/tracks/settlement_nacha_20260122/)*
+*Wire ledger payment orders to NACHA file generation and submission*
+
+---
+
 ## [ ] Track: JSONL LSM Persistence Layer
 
 *Link: [./conductor/tracks/jsonl_lsm_persistence_20260121/](./conductor/tracks/jsonl_lsm_persistence_20260121/)*

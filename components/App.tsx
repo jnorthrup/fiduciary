@@ -19,6 +19,8 @@ import { MobileQuickBooksLayout } from './layouts/MobileQuickBooksLayout';
 import { FractalViewer } from './FractalViewer';
 import { X, Maximize2 } from 'lucide-react';
 
+import { OrgStructureScanner } from './OrgStructureScanner';
+
 const WizardModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => (
   <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden relative">
@@ -39,6 +41,7 @@ export const App = () => {
   const [autoLaunchWizard, setAutoLaunchWizard] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showApiConsole, setShowApiConsole] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [showIRM, setShowIRM] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [quickAction, setQuickAction] = useState<QuickActionType | null>(null);
@@ -151,6 +154,7 @@ export const App = () => {
         {store.is2FAOpen && <TwoFactorAuthModal onVerify={store.verify2FA} onCancel={store.cancel2FA} />}
         {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onExport={() => JSON.stringify(store, null, 2)} onImport={store.importData} onReset={store.resetData} />}
         {showApiConsole && <IRSApiConsole transmissions={store.transmissions} systemStatus={store.apiSystemStatus} searchResults={store.searchResults} isSearching={store.isSearching} onSearch={store.performGroundingSearch} onClose={() => setShowApiConsole(false)} />}
+        {showScanner && <OrgStructureScanner onClose={() => setShowScanner(false)} />}
         <IRMTreeWidget isOpen={showIRM} onClose={() => setShowIRM(false)} entities={store.entities} documents={store.documents} onFileAll={() => { }} />
         {fullScreenGraph && (
           <div className="fixed inset-0 z-[300] bg-slate-950 flex flex-col">
@@ -185,6 +189,7 @@ export const App = () => {
         onOpenIRM={() => setShowIRM(true)}
         onOpenSettings={() => setShowSettings(true)}
         onOpenGraph={() => setFullScreenGraph(true)}
+        onOpenScanner={() => setShowScanner(true)}
         onToggleLayout={store.toggleLayoutMode}
         entities={store.entities}
         isOpen={sidebarOpen}
@@ -210,6 +215,7 @@ export const App = () => {
       {store.is2FAOpen && <TwoFactorAuthModal onVerify={store.verify2FA} onCancel={store.cancel2FA} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onExport={() => JSON.stringify(store, null, 2)} onImport={store.importData} onReset={store.resetData} />}
       {showApiConsole && <IRSApiConsole transmissions={store.transmissions} systemStatus={store.apiSystemStatus} searchResults={store.searchResults} isSearching={store.isSearching} onSearch={store.performGroundingSearch} onClose={() => setShowApiConsole(false)} />}
+      {showScanner && <OrgStructureScanner onClose={() => setShowScanner(false)} />}
       <IRMTreeWidget isOpen={showIRM} onClose={() => setShowIRM(false)} entities={store.entities} documents={store.documents} onFileAll={() => { }} />
       {editingUser && <UserProfileModal user={editingUser} currentUser={store.currentUser} onSave={(u) => { store.updateUser(u); setEditingUser(null); }} onDelete={(id) => { store.deleteUser(id); setEditingUser(null); }} onClose={() => setEditingUser(null)} />}
 

@@ -9,6 +9,22 @@ import { request as httpRequest } from 'node:http';
 import express from 'express';
 import settlementRouter from './routes/settlement.js';
 
+// Mock NACHA generator
+vi.mock('./lib/nacha-generator.js', () => ({
+    generateNachaFile: vi.fn(() => Buffer.from('mock-nacha-file-content\r\n')),
+}));
+
+// Mock sponsors
+vi.mock('./config/sponsors.js', () => ({
+    getSponsor: vi.fn(() => ({
+        id: 'test-sponsor',
+        name: 'TEST SPONSOR',
+        odfiRouting: '091000019',
+        companyId: '1234567890',
+        immediateOriginName: 'TEST SPONSOR'
+    })),
+}));
+
 // Test server port
 const TEST_PORT = 30103;
 
@@ -17,6 +33,7 @@ vi.mock('./lib/gcs-persistence.js', () => ({
     default: {
         loadData: vi.fn(),
         saveData: vi.fn(),
+        saveNachaSubmission: vi.fn(),
     }
 }));
 
@@ -59,6 +76,11 @@ describe('Settlement API (settlement.js)', () => {
         (persistence.loadData as any).mockImplementation(async () => mockStore);
         (persistence.saveData as any).mockImplementation(async (uid, key, data) => {
             mockStore = data;
+        });
+        (persistence.saveNachaSubmission as any).mockResolvedValue({
+            submissionId: 'mock-nacha-submission-id',
+            checksum: 'abc123',
+            timestamp: new Date().toISOString()
         });
     });
 
@@ -159,6 +181,101 @@ describe('Settlement API (settlement.js)', () => {
             });
             expect(status).toBe(200);
             expect(body.status).toBe('executed');
+        });
+    });
+
+    describe('ACH Payment Orders with NACHA Generation', () => {
+        it('should generate NACHA file when executing ACH payment order', async () => {
+            const { generateNachaFile } = await import('./lib/nacha-generator.js');
+
+            const orderId = 'ach-order-1';
+            mockStore.paymentOrders[orderId] = {
+                paymentOrderId: orderId,
+                status: 'created',
+                method: 'ACH',
+                amount: 411.78,
+                payee: {
+                    name: 'DTE ENERGY',
+                    routingNumber: '041000014',
+                    accountNumber: '9200549316464',
+                    id: '200046283809'
+                }
+            };
+
+            const { status, body } = await post(`/payment-orders/${orderId}/execute`, {
+                transactionRef: 'ref-ach-1'
+            });
+
+            if (status !== 200) {
+                console.error('Test failed with response:', body);
+            }
+
+            expect(status).toBe(200);
+            expect(body.status).toBe('executed');
+            expect(body.nachaSubmissionId).toBeDefined();
+            expect(generateNachaFile).toHaveBeenCalled();
+
+            // Verify NACHA submission was saved
+            expect(persistence.saveNachaSubmission).toHaveBeenCalledWith(
+                mockUser.uid,
+                expect.objectContaining({
+                    fileContent: expect.any(String),
+                    batchCount: 1,
+                    entryCount: 1,
+                    totalCredit: 41178 // Amount in cents
+                })
+            );
+        });
+
+        it('should reject ACH payment order without payee routing number', async () => {
+            const orderId = 'ach-order-invalid';
+            mockStore.paymentOrders[orderId] = {
+                paymentOrderId: orderId,
+                status: 'created',
+                method: 'ACH',
+                amount: 100.00,
+                payee: {
+                    name: 'TEST PAYEE',
+                    accountNumber: '123456789'
+                    // Missing routingNumber
+                }
+            };
+
+            const { status, body } = await post(`/payment-orders/${orderId}/execute`, {});
+
+            expect(status).toBe(400);
+            expect(body.error).toBe('Validation Error');
+            expect(body.message).toContain('routingNumber');
+        });
+
+        it('should link nachaSubmissionId to executed payment order', async () => {
+            const mockSubmissionId = 'nacha-1234567890-abcdef';
+            (persistence.saveNachaSubmission as any).mockResolvedValue({
+                submissionId: mockSubmissionId,
+                checksum: 'abc123',
+                timestamp: new Date().toISOString()
+            });
+
+            const orderId = 'ach-order-linked';
+            mockStore.paymentOrders[orderId] = {
+                paymentOrderId: orderId,
+                status: 'created',
+                method: 'ACH',
+                amount: 100.00,
+                payee: {
+                    name: 'TEST PAYEE',
+                    routingNumber: '021000021',
+                    accountNumber: '987654321'
+                }
+            };
+
+            const { status, body } = await post(`/payment-orders/${orderId}/execute`, {});
+
+            expect(status).toBe(200);
+            expect(body.nachaSubmissionId).toBe(mockSubmissionId);
+
+            // Verify the order in mock store has the nachaSubmissionId
+            expect(mockStore.paymentOrders[orderId].nachaSubmissionId).toBe(mockSubmissionId);
         });
     });
 });

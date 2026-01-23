@@ -108,6 +108,7 @@ app.use((req, res, next) => {
 
 /**
  * Middleware to verify Firebase ID Token
+ * In development mode, accepts 'dev-token' for local testing
  */
 const verifyFirebaseToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -116,6 +117,14 @@ const verifyFirebaseToken = async (req, res, next) => {
   }
 
   const idToken = authHeader.split('Bearer ')[1];
+
+  // Development mode bypass for local testing
+  if (process.env.NODE_ENV !== 'production' && idToken === 'dev-token') {
+    req.user = { uid: 'dev-user-local', email: 'dev@localhost' };
+    logger.debug('Using development mode auth bypass');
+    return next();
+  }
+
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     req.user = decodedToken;

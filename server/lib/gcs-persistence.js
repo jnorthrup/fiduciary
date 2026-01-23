@@ -1,15 +1,44 @@
 import { Storage } from '@google-cloud/storage';
 import path from 'path';
 import crypto from 'crypto';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class GCSPersistence {
     constructor() {
         this.projectId = process.env.GOOGLE_CLOUD_PROJECT || 'fiduciary-dev';
         this.bucketName = `fiduciary-persistence-${this.projectId}`;
-        this.storage = new Storage({
-            projectId: this.projectId,
-        });
-        this.bucket = this.storage.bucket(this.bucketName);
+
+        // Use local file system in development mode
+        this.useLocalStorage = process.env.USE_LOCAL_PERSISTENCE === 'true'
+            || (process.env.NODE_ENV !== 'production' && !process.env.GOOGLE_APPLICATION_CREDENTIALS);
+
+        if (this.useLocalStorage) {
+            this.localDataDir = path.join(__dirname, '..', '.data');
+            if (!fs.existsSync(this.localDataDir)) {
+                fs.mkdirSync(this.localDataDir, { recursive: true });
+            }
+            console.info('[PERSISTENCE] Using local file system storage:', this.localDataDir);
+        } else {
+            this.storage = new Storage({
+                projectId: this.projectId,
+            });
+            this.bucket = this.storage.bucket(this.bucketName);
+            console.info('[PERSISTENCE] Using GCS bucket:', this.bucketName);
+        }
+    }
+
+    // Helper to get local file path
+    _getLocalPath(fileName) {
+        const fullPath = path.join(this.localDataDir, fileName);
+        const dir = path.dirname(fullPath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        return fullPath;
     }
 
     /**
@@ -347,21 +376,33 @@ class GCSPersistence {
 
         // Store submission file with metadata
         const fileName = `${uid}/nacha/submissions/${submissionId}.ach`;
-        const file = this.bucket.file(fileName);
 
-        // Decode Base64 and save
+        // Decode Base64
         const fileBuffer = Buffer.from(submission.fileContent, 'base64');
 
-        await file.save(fileBuffer, {
-            contentType: 'text/plain',
-            metadata: {
-                ...metadata,
-                contentType: 'application/nacha',
-            },
-            resumable: false,
-        });
+        if (this.useLocalStorage) {
+            // Save to local file system
+            const filePath = this._getLocalPath(fileName);
+            const metaPath = filePath.replace('.ach', '.meta.json');
 
-        console.info(`Saved NACHA submission ${submissionId} to GCS`);
+            fs.writeFileSync(filePath, fileBuffer);
+            fs.writeFileSync(metaPath, JSON.stringify(metadata, null, 2));
+
+            console.info(`[LOCAL] Saved NACHA submission ${submissionId} to ${filePath}`);
+        } else {
+            // Save to GCS
+            const file = this.bucket.file(fileName);
+            await file.save(fileBuffer, {
+                contentType: 'text/plain',
+                metadata: {
+                    ...metadata,
+                    contentType: 'application/nacha',
+                },
+                resumable: false,
+            });
+
+            console.info(`Saved NACHA submission ${submissionId} to GCS`);
+        }
 
         return {
             submissionId,
@@ -380,6 +421,35 @@ class GCSPersistence {
         const prefix = `${uid}/nacha/submissions/`;
 
         try {
+            if (this.useLocalStorage) {
+                // Local file system listing
+                const submissionsDir = this._getLocalPath(prefix);
+                if (!fs.existsSync(submissionsDir)) {
+                    return [];
+                }
+
+                const files = fs.readdirSync(submissionsDir).filter(f => f.endsWith('.meta.json'));
+                const submissions = files.map(metaFile => {
+                    const metaPath = path.join(submissionsDir, metaFile);
+                    const metadata = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+                    return {
+                        submissionId: metadata.submissionId,
+                        filename: metadata.filename || 'unknown.ach',
+                        timestamp: metadata.timestamp,
+                        checksum: metadata.checksum || '',
+                        batchCount: metadata.batchCount || 0,
+                        entryCount: metadata.entryCount || 0,
+                        totalDebit: metadata.totalDebit || 0,
+                        totalCredit: metadata.totalCredit || 0,
+                    };
+                });
+
+                return submissions.sort((a, b) =>
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+            }
+
+            // GCS listing
             const [files] = await this.bucket.getFiles({ prefix });
 
             const submissions = await Promise.all(
@@ -417,9 +487,28 @@ class GCSPersistence {
      */
     async getNachaSubmission(uid, submissionId) {
         const fileName = `${uid}/nacha/submissions/${submissionId}.ach`;
-        const file = this.bucket.file(fileName);
 
         try {
+            if (this.useLocalStorage) {
+                // Local file system retrieval
+                const filePath = this._getLocalPath(fileName);
+                const metaPath = filePath.replace('.ach', '.meta.json');
+
+                if (!fs.existsSync(filePath) || !fs.existsSync(metaPath)) {
+                    return null;
+                }
+
+                const content = fs.readFileSync(filePath);
+                const metadata = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+
+                return {
+                    content: content.toString('base64'),
+                    metadata,
+                };
+            }
+
+            // GCS retrieval
+            const file = this.bucket.file(fileName);
             const [exists] = await file.exists();
             if (!exists) return null;
 
