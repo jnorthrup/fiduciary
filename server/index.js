@@ -16,6 +16,7 @@ import settlementRouter from './routes/settlement.js';
 import trustsRouter from './routes/trusts.js';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { connect as connectBus, subscribe } from './lib/event-bus.js';
+import { initializeSettlementConsumer } from './lib/settlement-events.js';
 import admin from 'firebase-admin';
 import persistence from './lib/gcs-persistence.js';
 import config from './config/env-config.js';
@@ -805,6 +806,11 @@ const startServer = async () => {
           logger.info('AUDIT LOG: Journal Entry Created:', data);
           // In a real implementation, we would write to the audit database here
         }, 'audit_queue');
+      }
+
+      // Setup Settlement Event Consumer (auto-create payment orders from journal entries)
+      if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'api-gateway') {
+        await initializeSettlementConsumer();
       }
     } catch (e) {
       logger.error('Failed to init Event Bus:', e);

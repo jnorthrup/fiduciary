@@ -93,10 +93,10 @@ Journal Entry → Payment Order → NACHA Generator → NACHA Submit → Storage
 ## Phase 4: Journal Entry → Payment Order (Optional)
 
 ### 4.1 Event-Driven Auto-Pay
-- [ ] Task: Subscribe to `journal.entry_posted` events
-  - [ ] Sub-task: Detect AP (Accounts Payable) account types
-  - [ ] Sub-task: Auto-create payment order for AP debits
-  - [ ] Sub-task: Link journal entry ID to payment order
+- [x] Task: Subscribe to `journal.entry_posted` events
+  - [x] Sub-task: Detect AP (Accounts Payable) account types
+  - [x] Sub-task: Auto-create payment order for AP debits
+  - [x] Sub-task: Link journal entry ID to payment order
 
 ---
 
