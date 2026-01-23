@@ -3,37 +3,37 @@
 ## Phase 1: Write Path - WAL & JSONL Append
 
 ### 1.1 JSONL Serialization Module
-- [ ] Task: Create `jsonlSerializer.ts` module
-  - [ ] Sub-task: Write failing tests for `serializeToJSONL<T>(obj)`
-  - [ ] Sub-task: Implement JSONL serialization (one JSON per line, newline-terminated)
-  - [ ] Sub-task: Write failing tests for `deserializeJSONL<T>(line)`
-  - [ ] Sub-task: Implement JSONL deserialization with JSON.parse()
-  - [ ] Sub-task: Write failing tests for `validateJSONLine(line)`
-  - [ ] Sub-task: Implement validation - must be parseable JSON
-  - [ ] Sub-task: Write tests for all entity types (Account, Journal, Transaction, NACHA, Entity)
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Create `jsonlSerializer.ts` module [119a321]
+  - [x] Sub-task: Write failing tests for `serializeToJSONL<T>(obj)`
+  - [x] Sub-task: Implement JSONL serialization (one JSON per line, newline-terminated)
+  - [x] Sub-task: Write failing tests for `deserializeJSONL<T>(line)`
+  - [x] Sub-task: Implement JSONL deserialization with JSON.parse()
+  - [x] Sub-task: Write failing tests for `validateJSONLine(line)`
+  - [x] Sub-task: Implement validation - must be parseable JSON
+  - [x] Sub-task: Write tests for all entity types (Account, Journal, Transaction, NACHA, Entity)
+  - [x] Sub-task: Verify coverage >80% (91.3% statements, 85.71% branches, 100% functions)
 
 ### 1.2 GCS Append-Only Log
-- [ ] Task: Extend `gcs-persistence.js` for JSONL WAL
-  - [ ] Sub-task: Write failing tests for `appendJSONL(uid, entityType, line)`
-  - [ ] Sub-task: Implement append with GCS `File.append()` or `compose()`
-  - [ ] Sub-task: Write failing tests for `flushWAL(uid, entityType)`
-  - [ ] Sub-task: Implement flush to ensure persistence
-  - [ ] Sub-task: Write failing tests for `getWALPath(uid, entityType, date)`
-  - [ ] Sub-task: Implement path resolution: `users/{uid}/wal/{entityType}/{YYYY-MM-DD}.jsonl`
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Extend `gcs-persistence.js` for JSONL WAL [ded6c48]
+  - [x] Sub-task: Write failing tests for `appendJSONL(uid, entityType, line)`
+  - [x] Sub-task: Implement append with GCS `File.append()` or `compose()`
+  - [x] Sub-task: Write failing tests for `flushWAL(uid, entityType)`
+  - [x] Sub-task: Implement flush to ensure persistence
+  - [x] Sub-task: Write failing tests for `getWALPath(uid, entityType, date)`
+  - [x] Sub-task: Implement path resolution: `users/{uid}/wal/{entityType}/{YYYY-MM-DD}.jsonl`
+  - [x] Sub-task: Verify coverage >80%
 
 ### 1.3 Threshold-Based Dual-Write
-- [ ] Task: Implement threshold detection and dual-write logic
-  - [ ] Sub-task: Write failing tests for count-based threshold detection
-  - [ ] Sub-task: Implement `countObjects(uid, entityType)` to determine threshold state
-  - [ ] Sub-task: Write failing tests for dual-write mode (<1000 objects)
-  - [ ] Sub-task: Implement simultaneous state.json + JSONL write
-  - [ ] Sub-task: Write failing tests for JSONL-only mode (≥1000 objects)
-  - [ ] Sub-task: Implement JSONL-only write with state.json "delegated" marker
-  - [ ] Sub-task: Verify coverage >80%
+- [x] Task: Implement threshold detection and dual-write logic [existing]
+  - [x] Sub-task: Write failing tests for count-based threshold detection
+  - [x] Sub-task: Implement `countObjects(uid, entityType)` to determine threshold state
+  - [x] Sub-task: Write failing tests for dual-write mode (<1000 objects)
+  - [x] Sub-task: Implement simultaneous state.json + JSONL write
+  - [x] Sub-task: Write failing tests for JSONL-only mode (≥1000 objects)
+  - [x] Sub-task: Implement JSONL-only write with state.json "delegated" marker
+  - [x] Sub-task: Verify coverage >80%
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 1 Write Path'
+- [~] Task: Conductor - User Manual Verification 'Phase 1 Write Path'
 
 ---
 
