@@ -478,5 +478,103 @@ router.post('/bofa/webhook', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/settlement/bofa/ach/submit
+ * Manual ACH file submission endpoint for admin operations
+ *
+ * This endpoint allows manual submission of NACHA files to BOFA,
+ * bypassing the standard payment order workflow. Used for testing
+ * and manual intervention scenarios.
+ */
+router.post('/bofa/ach/submit', async (req, res) => {
+    try {
+        const { nachaFileContent, fileName, effectiveDate, customerReference } = req.body;
+
+        // Validation
+        if (!nachaFileContent || nachaFileContent.length === 0) {
+            return res.status(400).json({
+                error: 'Validation Error',
+                message: 'nachaFileContent is required'
+            });
+        }
+
+        if (!fileName) {
+            return res.status(400).json({
+                error: 'Validation Error',
+                message: 'fileName is required'
+            });
+        }
+
+        if (!effectiveDate) {
+            return res.status(400).json({
+                error: 'Validation Error',
+                message: 'effectiveDate is required (YYYY-MM-DD format)'
+            });
+        }
+
+        // Submit to BOFA
+        const submission = await submitACHFile({
+            nachaFileContent,
+            fileName,
+            effectiveDate,
+            customerReference: customerReference || 'MANUAL-ADMIN'
+        });
+
+        // Log manual submission for audit trail
+        console.log('[BOFA Admin] Manual ACH submission:', {
+            fileName,
+            effectiveDate,
+            customerReference,
+            submissionId: submission.submissionId,
+            timestamp: new Date().toISOString()
+        });
+
+        res.status(201).json(submission);
+    } catch (error) {
+        console.error('[BOFA Admin] Manual ACH submission error:', error);
+        res.status(500).json({
+            error: 'ACH Submission Failed',
+            message: error.message || 'Failed to submit ACH file'
+        });
+    }
+});
+
+/**
+ * GET /api/settlement/bofa/status/:submissionId
+ * Manual payment status check endpoint for admin operations
+ *
+ * This endpoint allows manual status queries for any BOFA submission,
+ * regardless of whether it originated from this system.
+ */
+router.get('/bofa/status/:submissionId', async (req, res) => {
+    try {
+        const { submissionId } = req.params;
+
+        if (!submissionId || submissionId.length === 0) {
+            return res.status(400).json({
+                error: 'Validation Error',
+                message: 'submissionId is required'
+            });
+        }
+
+        const status = await getPaymentStatus(submissionId);
+
+        // Log manual status check for audit trail
+        console.log('[BOFA Admin] Manual status check:', {
+            submissionId,
+            status: status.status,
+            timestamp: new Date().toISOString()
+        });
+
+        res.json(status);
+    } catch (error) {
+        console.error('[BOFA Admin] Status check error:', error);
+        res.status(500).json({
+            error: 'Status Check Failed',
+            message: error.message || 'Failed to check payment status'
+        });
+    }
+});
+
 export default router;
 

@@ -93,6 +93,7 @@ vi.mock('./BSOWizard', () => ({ BSOWizard: () => <div data-testid="bso-wizard">B
 vi.mock('./BSOEnrollmentWizard', () => ({ BSOEnrollmentWizard: () => <div data-testid="bso-enroll">BSOEnrollment</div> }));
 vi.mock('./APDashboard', () => ({ APDashboard: () => <div data-testid="ap-dashboard">APDashboard</div> }));
 vi.mock('./BofaBalanceWidget', () => ({ BofaBalanceWidget: () => <div data-testid="bofa-balance-widget">BofaBalanceWidget</div> }));
+vi.mock('./BofaAdminPanel', () => ({ BofaAdminPanel: () => <div data-testid="bofa-admin-panel">BofaAdminPanel</div> }));
 vi.mock('./CAFRSearch', () => ({ CAFRSearch: () => <div data-testid="cafr-search">CAFRSearch</div> }));
 vi.mock('./CAFRViewer', () => ({ CAFRViewer: () => <div data-testid="cafr-viewer">CAFRViewer</div> }));
 

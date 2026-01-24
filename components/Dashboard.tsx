@@ -45,6 +45,7 @@ import { MARADAuthorityWizard } from './MARADAuthorityWizard';
 import { CAFRViewer } from './CAFRViewer';
 import { APDashboard } from './APDashboard';
 import { BofaBalanceWidget } from './BofaBalanceWidget';
+import { BofaAdminPanel } from './BofaAdminPanel';
 
 const WizardModal = ({ children, onClose }: { children?: React.ReactNode, onClose: () => void }) => (
   <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95">
@@ -108,7 +109,7 @@ const BSOTabContent = ({ entity, onOpenWizard }: { entity: Entity, onOpenWizard:
   );
 };
 
-type WizardType = 'DTCC' | 'EXCHANGE' | 'REAL_ESTATE' | 'COLLATERAL' | 'FORENSIC' | 'SETTLEMENT' | 'LEGAL' | 'RESITUS' | 'RESOLUTION' | 'CREDIT_DEFENSE' | 'CHANCERY' | '1099' | 'ACCOUNT_RECON' | 'EDGAR' | 'MARAD' | 'CAFR' | 'BSO_WIZARD' | 'BSO_ENROLL';
+type WizardType = 'DTCC' | 'EXCHANGE' | 'REAL_ESTATE' | 'COLLATERAL' | 'FORENSIC' | 'SETTLEMENT' | 'LEGAL' | 'RESITUS' | 'RESOLUTION' | 'CREDIT_DEFENSE' | 'CHANCERY' | '1099' | 'ACCOUNT_RECON' | 'EDGAR' | 'MARAD' | 'CAFR' | 'BSO_WIZARD' | 'BSO_ENROLL' | 'BOFA_ADMIN';
 
 interface Props {
   entity: Entity;
@@ -191,6 +192,7 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
                 <div className="space-y-2">
                   <button onClick={() => openWizard('1099')} className="w-full text-left text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded border">Create 1099</button>
                   <button onClick={() => openWizard('SETTLEMENT')} className="w-full text-left text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded border">Settlement Engine</button>
+                  <button onClick={() => openWizard('BOFA_ADMIN')} className="w-full text-left text-xs p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200">BOFA Admin Panel</button>
                 </div>
               </div>
               <div className="h-96">
@@ -309,6 +311,7 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
       case 'CAFR': return <div className="p-8 h-full bg-[#0f172a] overflow-y-auto"><CAFRSearch /></div>;
       case 'BSO_WIZARD': return <BSOWizard entity={entity} onComplete={() => closeWizard()} />;
       case 'BSO_ENROLL': return <BSOEnrollmentWizard entity={entity} onComplete={() => closeWizard()} />;
+      case 'BOFA_ADMIN': return <BofaAdminPanel onApiConsole={onOpenApiConsole} />;
       default: return null;
     }
   };
