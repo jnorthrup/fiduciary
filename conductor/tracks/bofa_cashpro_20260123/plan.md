@@ -116,18 +116,18 @@
 ## Phase 6: Balance Inquiry API [P2]
 
 ### 6.1 Balance Check Implementation
-- [ ] Task: Implement getBalance() function
-  - [ ] Sub-task: Write failing tests for balance inquiry
-  - [ ] Sub-task: Implement BOFA balance API call
-  - [ ] Sub-task: Parse balance response (available/current)
-  - [ ] Sub-task: Verify tests pass and coverage >80%
+- [x] Task: Implement getBalance() function [4cd0700]
+  - [x] Sub-task: Write failing tests for balance inquiry
+  - [x] Sub-task: Implement BOFA balance API call
+  - [x] Sub-task: Parse balance response (available/current)
+  - [x] Sub-task: Verify tests pass and coverage >80%
 
 ### 6.2 Dashboard Integration
-- [ ] Task: Display BOFA balance in dashboard
-  - [ ] Sub-task: Add balance widget to dashboard UI
-  - [ ] Sub-task: Call getBalance() on dashboard load
-  - [ ] Sub-task: Mask account number in display
-  - [ ] Sub-task: Verify balance displays correctly
+- [x] Task: Display BOFA balance in dashboard [b003637]
+  - [x] Sub-task: Add balance widget to dashboard UI
+  - [x] Sub-task: Call getBalance() on dashboard load
+  - [x] Sub-task: Mask account number in display
+  - [x] Sub-task: Verify balance displays correctly
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 6 Balance'
 
