@@ -557,10 +557,24 @@ export async function getPaymentStatus(
 /**
  * Gets the current balance for a BOFA account
  *
- * Phase: 6 - Balance Inquiry API
+ * Phase: 6 - Balance Inquiry API (IMPLEMENTED)
+ *
+ * Performs balance inquiry in layers:
+ * 1. Validates account ID (non-empty)
+ * 2. Gets OAuth 2.0 access token
+ * 3. GET from BOFA balance inquiry endpoint
+ * 4. Parses balance response (accountNumber, availableBalance, currentBalance, currency, asOfDate)
+ * 5. Account number is masked by BOFA API (shows last 4 digits only)
+ * 6. Retry logic for transient errors (401 token refresh, 429 rate limit, 5xx)
+ * 7. No retry on permanent errors (403 forbidden, 400 bad request, 404 not found)
  *
  * @param accountId - BOFA account ID to query
  * @returns Promise resolving to balance information
+ * @throws Error if:
+ *   - Account ID is empty or whitespace
+ *   - BOFA API returns non-retryable error (400, 403, 404)
+ *   - All retry attempts are exhausted
+ *   - Response parsing fails
  *
  * @example
  * ```typescript
@@ -568,16 +582,58 @@ export async function getPaymentStatus(
  *
  * console.log(`Available: $${balance.availableBalance}`);
  * console.log(`Current: $${balance.currentBalance}`);
+ *
+ * // Pre-transaction validation: check sufficient funds
+ * if (balance.availableBalance >= paymentAmount) {
+ *   await submitPayment(paymentAmount);
+ * }
  * ```
  */
 export async function getBalance(
   accountId: string
 ): Promise<BalanceResponse> {
-  // STUB: Implementation in Phase 6
-  // - Get auth token
-  // - GET from BOFA balance inquiry endpoint
-  // - Parse and return balance response
-  throw new Error('getBalance: Not implemented yet - scheduled for Phase 6');
+  // Step 1: Validate account ID
+  if (!accountId || accountId.trim().length === 0) {
+    throw new Error('Account ID is required');
+  }
+
+  // Step 2: Call BOFA API with retry logic
+  const { retryWithBackoff } = await import('./bofaAuthService');
+
+  try {
+    const apiResponse = await retryWithBackoff(async () => {
+      const token = await getAuthToken();
+
+      const response = await fetch(`${BOFA_ENDPOINTS.BALANCE}?accountId=${encodeURIComponent(accountId)}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        // Throw the Response object so retryWithBackoff can classify and retry
+        throw response;
+      }
+
+      return response;
+    });
+
+    // Step 3: Parse and return the balance response
+    const result = await apiResponse.json();
+
+    return {
+      accountNumber: result.accountNumber || '****0000',
+      availableBalance: typeof result.availableBalance === 'number' ? result.availableBalance : 0,
+      currentBalance: typeof result.currentBalance === 'number' ? result.currentBalance : 0,
+      currency: result.currency || 'USD',
+      asOfDate: result.asOfDate || new Date().toISOString().split('T')[0]
+    };
+  } catch (error) {
+    // If all retries exhausted, throw the error
+    throw error;
+  }
 }
 
 // ============================================================================

@@ -205,8 +205,10 @@ describe('bofaCashProService', () => {
       await expect(getPaymentStatus('SUB-12345')).rejects.toThrow(/GOOGLE_CLOUD_PROJECT|Secret Manager|credentials|Submission ID is required/);
     });
 
-    it('getBalance throws "not implemented" error (stub)', async () => {
-      await expect(getBalance('ACCT-12345')).rejects.toThrow('Not implemented yet');
+    it('getBalance is implemented (Phase 6)', async () => {
+      // getBalance is now implemented and requires auth credentials
+      // It will attempt to call getAuthToken() which needs the env var
+      await expect(getBalance('ACCT-12345')).rejects.toThrow(/GOOGLE_CLOUD_PROJECT|Secret Manager|credentials/);
     });
   });
 
