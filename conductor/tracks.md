@@ -39,6 +39,13 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
+## [ ] Track: BOFA CashPro API Integration
+
+*Link: [./conductor/tracks/bofa_cashpro_20260123/](./conductor/tracks/bofa_cashpro_20260123/)*
+*Bank of America ACH origination, automatic posting, 2-cent test transaction, OAuth 2.0*
+
+---
+
 ## [ARCHIVED] Completed & Retired Tracks
 
 Stored in `conductor/archive/` for reference:

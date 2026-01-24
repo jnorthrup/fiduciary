@@ -1,0 +1,8 @@
+{
+  "track_id": "bofa_cashpro_20260123",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-01-23T00:00:00Z",
+  "updated_at": "2026-01-23T00:00:00Z",
+  "description": "BOFA CashPro API integration with secure ledger, NACHA conveyance, automatic posting, and 2-cent test transaction"
+}
