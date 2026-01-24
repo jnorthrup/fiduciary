@@ -7,7 +7,22 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getAuthToken, clearTokenCache, getCachedToken } from './bofaAuthService';
+import {
+  getAuthToken,
+  clearTokenCache,
+  getCachedToken,
+  isUnauthorized,
+  isForbidden,
+  isRateLimited,
+  isServerError,
+  isClientError,
+  classifyError,
+  retryWithBackoff,
+  AuthErrorType,
+  AuthError,
+  getErrorLog,
+  clearErrorLog,
+} from './bofaAuthService';
 import { getBofaCredentials } from './bofaSecretManager';
 
 // Mock the Secret Manager module
@@ -507,6 +522,349 @@ describe('bofaAuthService', () => {
       expect(cached).not.toBeNull();
       expect(cached?.token).toBe(mockTokenResponse.access_token);
       expect(cached?.expiresAt).toBeGreaterThan(Date.now());
+    });
+  });
+
+  describe('Error Detection Functions', () => {
+    it('detects 401 Unauthorized responses', () => {
+      const response = new Response(null, { status: 401 });
+      expect(isUnauthorized(response)).toBe(true);
+
+      const okResponse = new Response(null, { status: 200 });
+      expect(isUnauthorized(okResponse)).toBe(false);
+    });
+
+    it('detects 403 Forbidden responses', () => {
+      const response = new Response(null, { status: 403 });
+      expect(isForbidden(response)).toBe(true);
+
+      const okResponse = new Response(null, { status: 200 });
+      expect(isForbidden(okResponse)).toBe(false);
+    });
+
+    it('detects 429 Rate Limited responses', () => {
+      const response = new Response(null, { status: 429 });
+      expect(isRateLimited(response)).toBe(true);
+
+      const okResponse = new Response(null, { status: 200 });
+      expect(isRateLimited(okResponse)).toBe(false);
+    });
+
+    it('detects 5xx Server Error responses', () => {
+      const response500 = new Response(null, { status: 500 });
+      expect(isServerError(response500)).toBe(true);
+
+      const response503 = new Response(null, { status: 503 });
+      expect(isServerError(response503)).toBe(true);
+
+      const okResponse = new Response(null, { status: 200 });
+      expect(isServerError(okResponse)).toBe(false);
+    });
+
+    it('detects 4xx Client Error responses (excluding 401, 403, 429)', () => {
+      const response400 = new Response(null, { status: 400 });
+      expect(isClientError(response400)).toBe(true);
+
+      const response404 = new Response(null, { status: 404 });
+      expect(isClientError(response404)).toBe(true);
+
+      const response422 = new Response(null, { status: 422 });
+      expect(isClientError(response422)).toBe(true);
+
+      // These should NOT be considered client errors for retry purposes
+      expect(isClientError(new Response(null, { status: 401 }))).toBe(false);
+      expect(isClientError(new Response(null, { status: 403 }))).toBe(false);
+      expect(isClientError(new Response(null, { status: 429 }))).toBe(false);
+
+      const okResponse = new Response(null, { status: 200 });
+      expect(isClientError(okResponse)).toBe(false);
+    });
+
+    describe('classifyError', () => {
+      it('classifies Response objects by status code', () => {
+        expect(classifyError(new Response(null, { status: 401 }))).toBe(AuthErrorType.UNAUTHORIZED);
+        expect(classifyError(new Response(null, { status: 403 }))).toBe(AuthErrorType.FORBIDDEN);
+        expect(classifyError(new Response(null, { status: 429 }))).toBe(AuthErrorType.RATE_LIMITED);
+        expect(classifyError(new Response(null, { status: 500 }))).toBe(AuthErrorType.SERVER_ERROR);
+        expect(classifyError(new Response(null, { status: 400 }))).toBe(AuthErrorType.CLIENT_ERROR);
+      });
+
+      it('classifies AuthError instances by their type', () => {
+        const error = new AuthError('test', AuthErrorType.UNAUTHORIZED, true, 401);
+        expect(classifyError(error)).toBe(AuthErrorType.UNAUTHORIZED);
+      });
+
+      it('classifies network errors as NETWORK_ERROR', () => {
+        const networkError = new Error('Network request failed');
+        expect(classifyError(networkError)).toBe(AuthErrorType.NETWORK_ERROR);
+
+        const fetchError = new Error('Failed to fetch');
+        expect(classifyError(fetchError)).toBe(AuthErrorType.NETWORK_ERROR);
+
+        const connRefusedError = new Error('ECONNREFUSED');
+        expect(classifyError(connRefusedError)).toBe(AuthErrorType.NETWORK_ERROR);
+      });
+
+      it('defaults to CLIENT_ERROR for unknown errors', () => {
+        const unknownError = new Error('Some other error');
+        expect(classifyError(unknownError)).toBe(AuthErrorType.CLIENT_ERROR);
+      });
+    });
+  });
+
+  describe('retryWithBackoff', () => {
+    beforeEach(() => {
+      clearErrorLog();
+    });
+
+    afterEach(() => {
+      clearErrorLog();
+    });
+
+    it('returns result on first successful attempt', async () => {
+      const fn = vi.fn().mockResolvedValue('success');
+
+      const result = await retryWithBackoff(fn);
+
+      expect(result).toBe('success');
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries on 401 Unauthorized and clears token cache', async () => {
+      vi.mocked(getBofaCredentials).mockResolvedValue(mockCredentials);
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockTokenResponse,
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ ...mockTokenResponse, access_token: 'new-token' }),
+        } as Response);
+
+      let attemptCount = 0;
+      const fn = vi.fn(async () => {
+        attemptCount++;
+        if (attemptCount === 1) {
+          throw new Response(null, { status: 401, statusText: 'Unauthorized' });
+        }
+        return new Response(null, { status: 200, statusText: 'OK' }) as any;
+      });
+
+      const result = await retryWithBackoff(fn, { maxAttempts: 3, initialBackoffMs: 1 });
+
+      expect(attemptCount).toBe(2);
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+
+    it('retries up to maxAttempts on 401', async () => {
+      let attemptCount = 0;
+      const fn = vi.fn(async () => {
+        attemptCount++;
+        throw new Response(null, { status: 401, statusText: 'Unauthorized' });
+      });
+
+      await expect(retryWithBackoff(fn, { maxAttempts: 3, initialBackoffMs: 1 })).rejects.toThrow('Max retry attempts');
+
+      expect(attemptCount).toBe(3);
+      expect(fn).toHaveBeenCalledTimes(3);
+    });
+
+    it('throws immediately on 403 Forbidden without retry', async () => {
+      const fn = vi.fn(async () => {
+        throw new Response(null, { status: 403, statusText: 'Forbidden' });
+      });
+
+      await expect(retryWithBackoff(fn)).rejects.toThrow();
+
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws immediately on 400 Bad Request without retry', async () => {
+      const fn = vi.fn(async () => {
+        throw new Response(null, { status: 400, statusText: 'Bad Request' });
+      });
+
+      await expect(retryWithBackoff(fn)).rejects.toThrow();
+
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries on 429 Rate Limited with exponential backoff', async () => {
+      let attemptCount = 0;
+      const fn = vi.fn(async () => {
+        attemptCount++;
+        if (attemptCount < 3) {
+          throw new Response(null, { status: 429, statusText: 'Too Many Requests' });
+        }
+        return new Response(null, { status: 200, statusText: 'OK' }) as any;
+      });
+
+      const result = await retryWithBackoff(fn, { maxAttempts: 3, initialBackoffMs: 1 });
+
+      expect(attemptCount).toBe(3);
+      expect(result).toBeTruthy();
+    });
+
+    it('retries on 500 Server Error with exponential backoff', async () => {
+      let attemptCount = 0;
+      const fn = vi.fn(async () => {
+        attemptCount++;
+        if (attemptCount < 3) {
+          throw new Response(null, { status: 500, statusText: 'Internal Server Error' });
+        }
+        return new Response(null, { status: 200, statusText: 'OK' }) as any;
+      });
+
+      const result = await retryWithBackoff(fn, { maxAttempts: 3, initialBackoffMs: 1 });
+
+      expect(attemptCount).toBe(3);
+      expect(result).toBeTruthy();
+    });
+
+    it('respects maxBackoffMs cap', async () => {
+      let attemptCount = 0;
+      const fn = vi.fn(async () => {
+        attemptCount++;
+        if (attemptCount < 4) {
+          throw new Response(null, { status: 429, statusText: 'Too Many Requests' });
+        }
+        return new Response(null, { status: 200, statusText: 'OK' }) as any;
+      });
+
+      // With initialBackoffMs: 1, maxBackoffMs: 2
+      // Delays would be: 1, 2, 2 (capped at 2)
+      await retryWithBackoff(fn, {
+        maxAttempts: 4,
+        initialBackoffMs: 1,
+        maxBackoffMs: 2,
+      });
+
+      expect(attemptCount).toBe(4);
+    });
+
+    it('retries on network errors', async () => {
+      let attemptCount = 0;
+      const fn = vi.fn(async () => {
+        attemptCount++;
+        if (attemptCount < 2) {
+          throw new Error('Network request failed');
+        }
+        return 'success';
+      });
+
+      const result = await retryWithBackoff(fn, { maxAttempts: 3, initialBackoffMs: 1 });
+
+      expect(attemptCount).toBe(2);
+      expect(result).toBe('success');
+    });
+
+    it('uses exponential backoff: 1s, 2s, 4s', async () => {
+      const fn = vi.fn(async () => {
+        throw new Response(null, { status: 429, statusText: 'Too Many Requests' });
+      });
+
+      await expect(retryWithBackoff(fn, {
+        maxAttempts: 3,
+        initialBackoffMs: 1,
+      })).rejects.toThrow();
+    });
+
+    it('logs errors to error log', async () => {
+      const fn = vi.fn(async () => {
+        throw new Response(null, { status: 401, statusText: 'Unauthorized' });
+      });
+
+      clearErrorLog();
+      await expect(retryWithBackoff(fn, { maxAttempts: 2, initialBackoffMs: 1 })).rejects.toThrow();
+
+      const errors = getErrorLog();
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors[0].type).toBe(AuthErrorType.UNAUTHORIZED);
+      expect(errors[0].status).toBe(401);
+    });
+
+    it('limits retry attempts to max 3 by default', async () => {
+      let attemptCount = 0;
+      const fn = vi.fn(async () => {
+        attemptCount++;
+        throw new Response(null, { status: 401, statusText: 'Unauthorized' });
+      });
+
+      await expect(retryWithBackoff(fn)).rejects.toThrow('Max retry attempts (3) exceeded');
+
+      expect(attemptCount).toBe(3);
+    });
+  });
+
+  describe('Error Logging', () => {
+    beforeEach(() => {
+      clearErrorLog();
+    });
+
+    afterEach(() => {
+      clearErrorLog();
+    });
+
+    it('gets empty error log initially', () => {
+      const log = getErrorLog();
+      expect(log).toEqual([]);
+    });
+
+    it('clears error log', async () => {
+      // Force some errors
+      const fn = vi.fn(async () => {
+        throw new Response(null, { status: 401, statusText: 'Unauthorized' });
+      });
+      await retryWithBackoff(fn, { maxAttempts: 2, initialBackoffMs: 1 }).catch(() => {});
+
+      // Log should have entries
+      const log1 = getErrorLog();
+      expect(log1.length).toBeGreaterThan(0);
+
+      // Clear it
+      clearErrorLog();
+      const log2 = getErrorLog();
+      expect(log2).toEqual([]);
+    });
+
+    it('maintains error log entries with correct structure', async () => {
+      const fn = vi.fn(async () => {
+        throw new Response(null, { status: 401, statusText: 'Unauthorized' });
+      });
+
+      clearErrorLog();
+      await expect(retryWithBackoff(fn, { maxAttempts: 2, initialBackoffMs: 1 })).rejects.toThrow();
+
+      const log = getErrorLog();
+      expect(log.length).toBeGreaterThan(0);
+      expect(log[0]).toMatchObject({
+        type: AuthErrorType.UNAUTHORIZED,
+        status: 401,
+        attempt: expect.any(Number),
+        maxAttempts: 2,
+        recovered: false,
+      });
+      expect(log[0].timestamp).toBeDefined();
+    });
+  });
+
+  describe('AuthError class', () => {
+    it('creates AuthError with correct properties', () => {
+      const error = new AuthError('Test error', AuthErrorType.UNAUTHORIZED, true, 401);
+
+      expect(error.message).toBe('Test error');
+      expect(error.type).toBe(AuthErrorType.UNAUTHORIZED);
+      expect(error.retryable).toBe(true);
+      expect(error.status).toBe(401);
+      expect(error.name).toBe('AuthError');
+    });
+
+    it('supports optional cause error', () => {
+      const cause = new Error('Original error');
+      const error = new AuthError('Wrapped error', AuthErrorType.NETWORK_ERROR, true, undefined, cause);
+
+      expect(error.cause).toBe(cause);
     });
   });
 });
