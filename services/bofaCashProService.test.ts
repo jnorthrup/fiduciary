@@ -174,17 +174,19 @@ describe('bofaCashProService', () => {
       await expect(getAuthToken()).rejects.toThrow(/GOOGLE_CLOUD_PROJECT|Secret Manager|credentials/);
     });
 
-    it('validateAccount throws "not implemented" error (stub)', async () => {
+    it('validateAccount is implemented (Phase 3)', async () => {
       const request: AccountValidationRequest = {
         routingNumber: '021000021',
         accountNumber: '123456789',
         accountType: 'checking'
       };
 
-      await expect(validateAccount(request)).rejects.toThrow('Not implemented yet');
+      // validateAccount is now implemented and requires GOOGLE_CLOUD_PROJECT
+      // It will attempt to call getAuthToken() which needs the env var
+      await expect(validateAccount(request)).rejects.toThrow(/GOOGLE_CLOUD_PROJECT|Secret Manager|credentials/);
     });
 
-    it('submitACHFile throws "not implemented" error (stub)', async () => {
+    it('submitACHFile is implemented (Phase 4)', async () => {
       const request: ACHSubmissionRequest = {
         nachaFileContent: '101 021000021...',
         fileName: 'ACH-20260123.txt',
@@ -192,11 +194,15 @@ describe('bofaCashProService', () => {
         customerReference: 'REF-12345'
       };
 
-      await expect(submitACHFile(request)).rejects.toThrow('Not implemented yet');
+      // submitACHFile is now implemented and requires auth credentials
+      // It will attempt to call getAuthToken() which needs the env var
+      await expect(submitACHFile(request)).rejects.toThrow(/GOOGLE_CLOUD_PROJECT|Secret Manager|credentials|NACHA/);
     });
 
-    it('getPaymentStatus throws "not implemented" error (stub)', async () => {
-      await expect(getPaymentStatus('SUB-12345')).rejects.toThrow('Not implemented yet');
+    it('getPaymentStatus is implemented (Phase 5)', async () => {
+      // getPaymentStatus is now implemented and requires auth credentials
+      // It will attempt to call getAuthToken() which needs the env var
+      await expect(getPaymentStatus('SUB-12345')).rejects.toThrow(/GOOGLE_CLOUD_PROJECT|Secret Manager|credentials|Submission ID is required/);
     });
 
     it('getBalance throws "not implemented" error (stub)', async () => {
