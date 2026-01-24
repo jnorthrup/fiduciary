@@ -96,8 +96,8 @@
   - [x] Sub-task: Test journal posting updates balances (postJournal validates + updates)
   - [x] Sub-task: Test balance sheet calculation (getAccountTotals)
   - [x] Sub-task: Test income statement calculation (net income = income - expense)
-- [ ] Task: Document account management (deferred)
-  - [ ] Sub-task: API documentation for accountService
-  - [ ] Sub-task: User guide for account management UI
-  - [ ] Sub-task: Chart of Accounts best practices
+- [x] Task: Document account management (deferred) [ef95038]
+  - [x] Sub-task: API documentation for accountService
+  - [x] Sub-task: User guide for account management UI
+  - [x] Sub-task: Chart of Accounts best practices
 
