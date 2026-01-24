@@ -136,22 +136,22 @@
 ## Phase 7: 2-Cent Test Transaction [P0]
 
 ### 7.1 Test Payment Order Creation
-- [ ] Task: Create test payment order helper
-  - [ ] Sub-task: Write failing tests for test order creation
-  - [ ] Sub-task: Implement createTestPaymentOrder($0.02)
-  - [ ] Sub-task: Use test routing: 021000021, account: 9999999999
-  - [ ] Sub-task: Generate NACHA file for test order
-  - [ ] Sub-task: Verify tests pass
+- [x] Task: Create test payment order helper [b36eb56]
+  - [x] Sub-task: Write failing tests for test order creation
+  - [x] Sub-task: Implement createTestPaymentOrder($0.02)
+  - [x] Sub-task: Use test routing: 021000021, account: 9999999999
+  - [x] Sub-task: Generate NACHA file for test order
+  - [x] Sub-task: Verify tests pass
 
 ### 7.2 End-to-End Test Flow
-- [ ] Task: Execute 2-cent test transaction
-  - [ ] Sub-task: Create test payment order in ledger
-  - [ ] Sub-task: Generate NACHA file
-  - [ ] Sub-task: Submit to BOFA sandbox
-  - [ ] Sub-task: Poll status until settled
-  - [ ] Sub-task: Reconcile ledger balance vs BOFA settled amount
-  - [ ] Sub-task: Log full trace with timestamps
-  - [ ] Sub-task: Verify test passes
+- [x] Task: Execute 2-cent test transaction [b36eb56]
+  - [x] Sub-task: Create test payment order in ledger
+  - [x] Sub-task: Generate NACHA file
+  - [x] Sub-task: Submit to BOFA sandbox
+  - [x] Sub-task: Poll status until settled
+  - [x] Sub-task: Reconcile ledger balance vs BOFA settled amount
+  - [x] Sub-task: Log full trace with timestamps
+  - [x] Sub-task: Verify test passes
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 7 2-Cent Test'
 
