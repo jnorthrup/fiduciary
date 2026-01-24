@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import persistence from '../lib/gcs-persistence.js';
 import { generateNachaFile } from '../lib/nacha-generator.js';
 import { getSponsor } from '../config/sponsors.js';
+import { validateAccount, submitACHFile, getPaymentStatus } from '../services/bofaCashProService.js';
 
 const router = express.Router();
 
@@ -52,6 +53,46 @@ function isValidTransition(currentStatus, newStatus) {
 // ============================================================================
 // ROUTES
 // ============================================================================
+
+/**
+ * POST /api/settlement/validate-account
+ * Validate routing number and account number via BOFA API
+ */
+router.post('/validate-account', async (req, res) => {
+    try {
+        const { routingNumber, accountNumber, accountType } = req.body;
+
+        // Validation
+        if (!routingNumber || !accountNumber || !accountType) {
+            return res.status(400).json({
+                error: 'Validation Error',
+                message: 'routingNumber, accountNumber, and accountType are required'
+            });
+        }
+
+        // Validate accountType
+        if (accountType !== 'checking' && accountType !== 'savings') {
+            return res.status(400).json({
+                error: 'Validation Error',
+                message: 'accountType must be "checking" or "savings"'
+            });
+        }
+
+        const result = await validateAccount({
+            routingNumber,
+            accountNumber,
+            accountType
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error('Account validation error:', error);
+        res.status(500).json({
+            error: 'Validation Failed',
+            message: error.message || 'Failed to validate account'
+        });
+    }
+});
 
 /**
  * POST /api/settlement/payment-orders
@@ -193,6 +234,28 @@ router.post('/payment-orders/:paymentOrderId/execute', async (req, res) => {
 
             // Update order with NACHA submission details
             order.nachaSubmissionId = submission.submissionId;
+
+            // Auto-post to BOFA: Submit NACHA file to Bank of America
+            // Fire-and-forget pattern: Try to submit and store ID, but log errors without blocking
+            try {
+                const nachaContent = nachaBuffer.toString('ascii');
+                const effectiveDateIso = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+                    .toISOString().slice(0, 10); // YYYY-MM-DD
+
+                const bofaSubmission = await submitACHFile({
+                    nachaFileContent: nachaContent,
+                    fileName: `payment-${paymentOrderId}.ach`,
+                    effectiveDate: effectiveDateIso,
+                    customerReference: paymentOrderId
+                });
+
+                // Store BOFA submission ID with the payment order
+                order.bofaSubmissionId = bofaSubmission.submissionId;
+            } catch (error) {
+                // Log error but don't fail the payment order execution
+                // The payment order can still be executed even if BOFA submission fails
+                console.error('[BOFA Auto-posting] Failed to submit payment order:', paymentOrderId, error);
+            }
         }
 
         // Update State
@@ -209,6 +272,185 @@ router.post('/payment-orders/:paymentOrderId/execute', async (req, res) => {
         res.json(order);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/settlement/poll
+ * Background polling endpoint for payment status updates
+ *
+ * This endpoint is designed to be called by Cloud Scheduler cron every 5 minutes.
+ * It polls BOFA for status updates on all payments that have been submitted.
+ */
+router.get('/poll', async (req, res) => {
+    try {
+        const uid = req.user.uid;
+
+        // Load all payment orders
+        const state = await getSettlementState(uid);
+        const paymentOrders = state.paymentOrders || {};
+
+        // Filter for payments that have been submitted to BOFA
+        const submittedPayments = Object.values(paymentOrders).filter(
+            order => order.bofaSubmissionId && order.status === 'executed'
+        );
+
+        if (submittedPayments.length === 0) {
+            return res.json({
+                processed: 0,
+                updated: 0,
+                errors: 0
+            });
+        }
+
+        let updatedCount = 0;
+        let errorCount = 0;
+
+        // Poll each payment for status updates
+        for (const order of submittedPayments) {
+            try {
+                const status = await getPaymentStatus(order.bofaSubmissionId);
+
+                // Store BOFA status for tracking
+                order.bofaStatus = status.status;
+
+                // Map BOFA status to payment order status
+                const previousStatus = order.status;
+
+                switch (status.status) {
+                    case 'settled':
+                        order.status = 'reconciled';
+                        order.settledDate = status.settledDate;
+                        break;
+                    case 'returned':
+                        order.status = 'failed';
+                        order.returnCode = status.returnCode;
+                        order.returnReason = status.returnReason;
+                        break;
+                    case 'rejected':
+                        order.status = 'failed';
+                        order.returnReason = status.returnReason;
+                        break;
+                    case 'processing':
+                    case 'submitted':
+                        // Keep 'executed' status - still in flight
+                        break;
+                }
+
+                // Only count as updated if status actually changed
+                if (order.status !== previousStatus) {
+                    updatedCount++;
+                }
+
+                order.updatedAt = new Date().toISOString();
+            } catch (error) {
+                // Log error but continue processing other payments
+                console.error('[Polling] Error checking payment status:', order.paymentOrderId, error.message);
+                errorCount++;
+            }
+        }
+
+        // Save updated state
+        await saveSettlementState(uid, state);
+
+        res.json({
+            processed: submittedPayments.length,
+            updated: updatedCount,
+            errors: errorCount
+        });
+    } catch (error) {
+        console.error('Polling error:', error);
+        res.status(500).json({
+            error: 'Polling Failed',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/settlement/bofa/webhook
+ * Webhook endpoint for BOFA payment status notifications
+ *
+ * This endpoint accepts webhook payloads from BOFA for real-time status updates.
+ * It validates the payload and updates payment orders accordingly.
+ *
+ * Future enhancement: Add webhook signature validation for security.
+ */
+router.post('/bofa/webhook', async (req, res) => {
+    try {
+        const { submissionId, status, settledDate, returnCode, returnReason } = req.body;
+
+        // Validate required fields
+        if (!submissionId) {
+            return res.status(400).json({
+                error: 'Validation Error',
+                message: 'submissionId is required'
+            });
+        }
+
+        if (!status) {
+            return res.status(400).json({
+                error: 'Validation Error',
+                message: 'status is required'
+            });
+        }
+
+        const uid = req.user.uid;
+        const state = await getSettlementState(uid);
+        const paymentOrders = state.paymentOrders || {};
+
+        // Find payment order by BOFA submission ID
+        const order = Object.values(paymentOrders).find(
+            o => o.bofaSubmissionId === submissionId
+        );
+
+        if (!order) {
+            return res.status(404).json({
+                error: 'Not Found',
+                message: `Payment order with submissionId ${submissionId} not found`
+            });
+        }
+
+        // Store BOFA status
+        order.bofaStatus = status;
+
+        // Map BOFA status to payment order status
+        switch (status) {
+            case 'settled':
+                order.status = 'reconciled';
+                order.settledDate = settledDate;
+                break;
+            case 'returned':
+                order.status = 'failed';
+                order.returnCode = returnCode;
+                order.returnReason = returnReason;
+                break;
+            case 'rejected':
+                order.status = 'failed';
+                order.returnReason = returnReason;
+                break;
+            case 'processing':
+            case 'submitted':
+                // Keep current status
+                break;
+        }
+
+        order.updatedAt = new Date().toISOString();
+
+        // Save updated state
+        await saveSettlementState(uid, state);
+
+        res.json({
+            received: true,
+            paymentOrderId: order.paymentOrderId,
+            status: order.status
+        });
+    } catch (error) {
+        console.error('Webhook error:', error);
+        res.status(500).json({
+            error: 'Webhook Processing Failed',
+            message: error.message
+        });
     }
 });
 
