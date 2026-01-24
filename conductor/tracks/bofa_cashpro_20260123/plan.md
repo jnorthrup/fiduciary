@@ -3,11 +3,11 @@
 ## Phase 1: Project Setup & Configuration [P0]
 
 ### 1.1 Initialize BOFA Service Module
-- [ ] Task: Create `services/bofaCashProService.ts` module
-  - [ ] Sub-task: Write failing tests for module structure and exports
-  - [ ] Sub-task: Implement module skeleton with TypeScript interfaces
-  - [ ] Sub-task: Add TypeScript types for BOFA API contracts
-  - [ ] Sub-task: Verify tests pass
+- [x] Task: Create `services/bofaCashProService.ts` module [8c6f410]
+  - [x] Sub-task: Write failing tests for module structure and exports
+  - [x] Sub-task: Implement module skeleton with TypeScript interfaces
+  - [x] Sub-task: Add TypeScript types for BOFA API contracts
+  - [x] Sub-task: Verify tests pass
 
 ### 1.2 Google Secret Manager Setup
 - [ ] Task: Configure secret storage for BOFA credentials
