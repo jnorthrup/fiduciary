@@ -171,7 +171,14 @@ export const BOFA_ENDPOINTS = {
 /**
  * Gets OAuth 2.0 access token for BOFA API authentication
  *
- * Phase: 1 - OAuth 2.0 Authentication
+ * Phase: 2 - OAuth 2.0 Authentication (IMPLEMENTED)
+ *
+ * Delegates to bofaAuthService for actual implementation.
+ * The auth service handles:
+ * - Credential retrieval from Secret Manager
+ * - Token request to BOFA auth endpoint
+ * - Token caching with 55 minute TTL
+ * - Automatic token refresh on expiry
  *
  * @returns Promise resolving to access token string
  *
@@ -182,12 +189,9 @@ export const BOFA_ENDPOINTS = {
  * ```
  */
 export async function getAuthToken(): Promise<string> {
-  // STUB: Implementation in Phase 2
-  // - Fetch from Google Secret Manager
-  // - Request token from BOFA auth endpoint
-  // - Cache with TTL (55 min)
-  // - Return cached token if valid
-  throw new Error('getAuthToken: Not implemented yet - scheduled for Phase 2');
+  // Import auth service dynamically to avoid circular dependencies
+  const { getAuthToken: fetchToken } = await import('./bofaAuthService');
+  return fetchToken();
 }
 
 /**

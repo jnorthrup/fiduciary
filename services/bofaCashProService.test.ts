@@ -167,8 +167,11 @@ describe('bofaCashProService', () => {
   });
 
   describe('Function Stubs - Return Types', () => {
-    it('getAuthToken throws "not implemented" error (stub)', async () => {
-      await expect(getAuthToken()).rejects.toThrow('Not implemented yet');
+    it('getAuthToken is implemented and delegates to bofaAuthService', async () => {
+      // getAuthToken is now implemented (Phase 2.1)
+      // It delegates to bofaAuthService which requires GOOGLE_CLOUD_PROJECT
+      // We expect it to throw an error about the missing env var when not properly configured
+      await expect(getAuthToken()).rejects.toThrow(/GOOGLE_CLOUD_PROJECT|Secret Manager|credentials/);
     });
 
     it('validateAccount throws "not implemented" error (stub)', async () => {
