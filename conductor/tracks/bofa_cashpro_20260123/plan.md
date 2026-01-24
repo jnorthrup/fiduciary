@@ -10,17 +10,17 @@
   - [x] Sub-task: Verify tests pass
 
 ### 1.2 Google Secret Manager Setup
-- [ ] Task: Configure secret storage for BOFA credentials
-  - [ ] Sub-task: Write failing tests for secret retrieval
-  - [ ] Sub-task: Implement Secret Manager client initialization
-  - [ ] Sub-task: Add helper functions: getSecret(), getBofaCredentials()
-  - [ ] Sub-task: Verify tests pass and coverage >80%
+- [x] Task: Configure secret storage for BOFA credentials [a04eb02]
+  - [x] Sub-task: Write failing tests for secret retrieval
+  - [x] Sub-task: Implement Secret Manager client initialization
+  - [x] Sub-task: Add helper functions: getSecret(), getBofaCredentials()
+  - [x] Sub-task: Verify tests pass and coverage >80%
 
 ### 1.3 Environment Configuration
-- [ ] Task: Add BOFA environment variables
-  - [ ] Sub-task: Update `.env.example` with BOFA variables
-  - [ ] Sub-task: Add BOFA config to `server/config.ts`
-  - [ ] Sub-task: Document egress IP whitelisting requirement
+- [x] Task: Add BOFA environment variables [449147a]
+  - [x] Sub-task: Update `.env.example` with BOFA variables
+  - [x] Sub-task: Add BOFA config to `server/config.ts`
+  - [x] Sub-task: Document egress IP whitelisting requirement
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 1 Setup'
 
@@ -29,19 +29,19 @@
 ## Phase 2: OAuth 2.0 Authentication [P0]
 
 ### 2.1 Token Management
-- [ ] Task: Implement OAuth client credentials flow
-  - [ ] Sub-task: Write failing tests for getAuthToken()
-  - [ ] Sub-task: Implement token request to BOFA auth endpoint
-  - [ ] Sub-task: Add token cache with TTL (55 min)
-  - [ ] Sub-task: Implement automatic token refresh
-  - [ ] Sub-task: Verify tests pass and coverage >80%
+- [x] Task: Implement OAuth client credentials flow [6f9a25a]
+  - [x] Sub-task: Write failing tests for getAuthToken()
+  - [x] Sub-task: Implement token request to BOFA auth endpoint
+  - [x] Sub-task: Add token cache with TTL (55 min)
+  - [x] Sub-task: Implement automatic token refresh
+  - [x] Sub-task: Verify tests pass and coverage >80%
 
 ### 2.2 Error Handling for Auth
-- [ ] Task: Handle authentication errors
-  - [ ] Sub-task: Write failing tests for 401, 403 responses
-  - [ ] Sub-task: Implement retry logic with token refresh
-  - [ ] Sub-task: Add error logging for auth failures
-  - [ ] Sub-task: Verify tests pass
+- [x] Task: Handle authentication errors [9d6ba07]
+  - [x] Sub-task: Write failing tests for 401, 403 responses
+  - [x] Sub-task: Implement retry logic with token refresh
+  - [x] Sub-task: Add error logging for auth failures
+  - [x] Sub-task: Verify tests pass
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 2 OAuth'
 
