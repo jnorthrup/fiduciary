@@ -1,0 +1,664 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "description": "Returns previous day CashPro Information Reporting account transaction details for a date range.",
+    "version": "1.0.0",
+    "title": "Previous Day Transaction Inquiry",
+    "contact": {},
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Transaction Inquiries",
+      "description": ""
+    }
+  ],
+  "paths": {
+    "/cashpro/reporting/v1/transaction-inquiries/previous-day": {
+      "post": {
+        "tags": [
+          "transaction inquiries"
+        ],
+        "summary": "Previous Day inquiries provide the prior business day transaction data back to the full two year client retention.",
+        "description": "",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Content-Type",
+            "description": "Identifying the content of the payload as JSON. </br> ex. application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "description": "A unique access token to be used for a single reporting request. </br> ex. Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Previous Day Transaction Inquiry Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "requestBody": {
+        "type": "object",
+        "required": [
+          "fromDate"
+        ],
+        "properties": {
+          "fromDate": {
+            "type": "string",
+            "description": "First date of requested transactions in YYYY-MM-DD format",
+            "example": "2017-11-21"
+          },
+          "toDate": {
+            "type": "string",
+            "description": "Last date of requested transactions in YYYY-MM-DD format. Only a date range up to 60 days is supported in a single call.",
+            "example": "2017-11-21"
+          },
+          "accounts": {
+            "type": "array",
+            "description": "Accounts requested",
+            "xml": {
+              "name": "accounts",
+              "wrapped": true
+            },
+            "items": {
+              "$ref": "#/components/schemas/accounts"
+            }
+          }
+        }
+      },
+      "response": {
+        "type": "object",
+        "required": [
+          "accountTransactions"
+        ],
+        "properties": {
+          "accountTransactions": {
+            "$ref": "#/components/schemas/txAccount"
+          }
+        }
+      },
+      "accounts": {
+        "type": "object",
+        "required": [
+          "accountNumber"
+        ],
+        "properties": {
+          "accountNumber": {
+            "type": "string",
+            "description": "Account number. Length : 1 - 35",
+            "example": "601022222222"
+          },
+          "bankId": {
+            "type": "string",
+            "description": "BIC or routing number of the account. Length : 1 - 12",
+            "example": "BOFAFRPP"
+          }
+        }
+      },
+      "txAccount": {
+        "type": "object",
+        "description": "Accounts returned with transaction details",
+        "required": [
+          "accountNumber"
+        ],
+        "properties": {
+          "accountNumber": {
+            "type": "string",
+            "description": "Account number. Length : 1 - 35",
+            "example": "601022222222"
+          },
+          "bankId": {
+            "type": "string",
+            "description": "BIC or routing number of the account. Length : 1 - 12",
+            "example": "BOFAFRPP"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code of the account, as documented by ISO 4217 Codes for the representation of currencies and funds.",
+            "example": "EUR"
+          },
+          "transactions": {
+            "type": "array",
+            "description": "Transaction details returned",
+            "xml": {
+              "name": "transactions",
+              "wrapped": true
+            },
+            "items": {
+              "$ref": "#/components/schemas/transactions"
+            }
+          }
+        }
+      },
+      "transactions": {
+        "type": "object",
+        "required": [
+          "asOfDate"
+        ],
+        "properties": {
+          "asOfDate": {
+            "type": "string",
+            "description": "Date of the transaction reported in YYYY-MM-DD format.",
+            "example": "2017-11-21"
+          },
+          "transactionCode": {
+            "type": "string",
+            "description": "BAI code of the transaction amount reported. Ex: 010, 015, 143, 145, etc.",
+            "example": "400"
+          },
+          "transactionDescription": {
+            "type": "string",
+            "description": "A description of the BAI code being reported. </br> Ex: Opening Ledger Balance, Closing Ledger Balance, Item in ACH Deposit Credit, ACH Concentration Credit, etc. Length : 1 - 35",
+            "example": "Total Debits"
+          },
+          "transactionType": {
+            "type": "string",
+            "description": "Summary or Detail",
+            "example": "Summary"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Balance amount represented as 999999999999999999.99 Length: 1-21",
+            "example": "1.00"
+          },
+          "creditDebitIndicator": {
+            "type": "string",
+            "description": "Credit or Debit",
+            "example": "Debit"
+          },
+          "availabilityImmediateAmount": {
+            "type": "string",
+            "description": "Immediate available amount represented as 99999999999999999.999 Length: 1-21 </br> Usage: US accounts only"
+          },
+          "availability1DayAmount": {
+            "type": "string",
+            "description": "One day available amount represented as 99999999999999999.999 Length: 1-21 </br> Usage: US accounts only"
+          },
+          "availability2PlusDayAmount": {
+            "type": "string",
+            "description": "Two plus day available amount represented as 99999999999999999.999 Length: 1-21 </br> Usage: US accounts only"
+          },
+          "itemCount": {
+            "type": "string",
+            "description": "Count of items contained within the transaction. Length: 1-12",
+            "example": "1"
+          },
+          "valueDate": {
+            "type": "string",
+            "description": "Value date of the transaction being reported in YYYY-MM-DD format",
+            "example": "2017-11-21"
+          },
+          "customerReference": {
+            "type": "string",
+            "description": "Customer reference number associated with the transaction. Length: 1-50 ",
+            "example": "CUSTREF123"
+          },
+          "bankReference": {
+            "type": "string",
+            "description": "Bank reference number associated with the transaction. Length: 1-30",
+            "example": "555555555555"
+          },
+          "detailText": {
+            "type": "string",
+            "description": "Additional details associated with the transaction. Length: 1-3600",
+            "example": "BENEFICIARY UNSTRUCTURED DETAIL TEXT"
+          }
+        }
+      },
+      "error400": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/transaction-inquiries/previous-day",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Bad Request"
+          }
+        }
+      },
+      "error401": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/transaction-inquiries/previous-day",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "error403": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/transaction-inquiries/previous-day",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "error404": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/transaction-inquiries/previous-day",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "error405": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/reporting/v1/transaction-inquiries/previous-day",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "error406": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/transaction-inquiries/previous-day",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "error408": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/transaction-inquiries/previous-day",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "error415": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/transaction-inquiries/previous-day",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "error500": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/transaction-inquiries/previous-day",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": " Internal Server Error "
+          }
+        }
+      },
+      "error503": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/transaction-inquiries/previous-day",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

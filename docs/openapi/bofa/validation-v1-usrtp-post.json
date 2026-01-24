@@ -1,0 +1,668 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "US RTP Validation",
+    "description": "The US RTP Validation API allows you to determine whether a US financial institution is a member of The Clearing House and supports U.S. real-time payments, prior to payment initiation.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "US RTP Validation",
+      "description": ""
+    }
+  ],
+  "paths": {
+    "/validation/v1/usrtp": {
+      "post": {
+        "tags": [
+          ""
+        ],
+        "summary": "",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "An unexpired access token to be used for this request (ex. \"Bearer [value]\").",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request received successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/statusesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "requestBody": {
+        "type": "object",
+        "required": [
+          "memberBankId",
+          "schemeName",
+          "countryCode"
+        ],
+        "properties": {
+          "memberBankId": {
+            "type": "string",
+            "description": "A value that can uniquely identify the Financial Institution based on a specific scheme<br>Length 9 - 9<br> Format : 0 \ufffd 9",
+            "minLength": 9,
+            "maxLength": 9,
+            "pattern": "0 \ufffd 9"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Identification scheme within which the identifier is unique.<br>enum: USRTP"
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "ISO country code of the identification scheme<br>enum: US"
+          }
+        },
+        "example": {
+          "memberBankId": "123456789",
+          "schemeName": "USRTP",
+          "countryCode": "US"
+        }
+      },
+      "reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "description": "This contains the reason code."
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "This contains the description."
+          }
+        }
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "description": "Error reason code. Length: 1-5"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "Description of the error. Length: 1-256"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "statusesResponse": {
+        "type": "object",
+        "required": [
+          "memberBankId",
+          "schemeName",
+          "countryCode"
+        ],
+        "properties": {
+          "memberBankId": {
+            "type": "string",
+            "description": "A value that can uniquely identify the Financial Institution based on a specific scheme<br>Length 9 - 9<br> Format : 0 \ufffd 9"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Identification scheme within which the identifier is unique.<br>enum: USRTP"
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "ISO country code of the identification scheme<br>enum: US"
+          },
+          "reason": {
+            "type": "array",
+            "description": "List of errors for given payment",
+            "items": {
+              "$ref": "#/components/schemas/reason"
+            }
+          }
+        },
+        "example": {
+          "memberBankId": "123456789",
+          "schemeName": "USRTP",
+          "countryCode": "US",
+          "isMember": true,
+          "reason": [
+            {
+              "reasonCode": "000",
+              "reasonDescription": "Success"
+            }
+          ]
+        }
+      },
+      "StatusError400": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "array",
+            "description": "List of errors for given payment",
+            "items": {
+              "$ref": "#/components/schemas/400Reason"
+            }
+          }
+        },
+        "example": {
+          "reason": [
+            {
+              "reasonCode": "AV_TYPE_201",
+              "reasonDescription": "Missing or Incorrect Validation Type"
+            }
+          ]
+        }
+      },
+      "StatusError401": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/usrtp",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "StatusError403": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/usrtp",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "StatusError404": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/usrtp1",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "StatusError405": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/validation/v1/usrtp",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "StatusError406": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/usrtp",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "StatusError408": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/usrtp",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "StatusError415": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/usrtp",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "StatusError500": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/usrtp",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "StatusError503": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/usrtp",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

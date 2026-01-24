@@ -1,0 +1,770 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Prime Brokerage SFTR",
+    "description": "Securities Financing Transaction Regulation (SFTR) is to facilitate clients to query their Loan and Collateral data.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Prime Brokerage",
+      "description": "Prime Brokerage APIs"
+    }
+  ],
+  "paths": {
+    "/prime/financing/v1/sftr": {
+      "get": {
+        "tags": [
+          "Prime Brokerage"
+        ],
+        "summary": "Securities Financing Transaction Regulation (SFTR) is to facilitate clients to query their Loan and Collateral data.",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Bearer token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "businessDate",
+            "in": "query",
+            "description": "Business date the user is requesting. Expected format YYYY-MM-DD. All numbers.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "margingrp",
+            "in": "query",
+            "description": "User needs to provide the specific Margin Group. Underline data is by client ID and margin group.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/403ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/404ErrorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/405ErrorResponse"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/406ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/408ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/503ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "response": {
+        "required": [
+          "results"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "description": "Results contains the JSON response of the user request.",
+            "items": {
+              "$ref": "#/components/schemas/responseDetails"
+            }
+          }
+        },
+        "example": {
+          "results": [
+            {
+              "AussieDomiciledFlag": "N",
+              "BaseCurrencyofMarginLoan": "EUR",
+              "BloombergCode": "ABCDEF123",
+              "BofaEntity": "18589",
+              "BofaEntitySource": "XYZABC",
+              "ChargingGroup": "ABCM",
+              "ClientRequestIdentifier": "ABCDEFDZP1UYGU9STUHRDP4802008050512345",
+              "CollateralSide": "COLLATERAL_TAKER",
+              "DayCountConvention": "A004",
+              "EventActionType": "NEWT",
+              "EventDate": "2020-07-20",
+              "FXRate": 1,
+              "FixedRate": 0,
+              "FloatingRate": -0.034,
+              "FloatingRatePaymentFreqMultiplier": 1,
+              "FloatingRatePaymentFreqTimeperiod": "MONTH",
+              "FloatingRateRefMultiplier": 1,
+              "FloatingRateRefTimeperiod": "DAYS",
+              "FloatingRateResetFreqMultiplier": 1,
+              "FloatingRateResetFreqTimeperiod": "DAYS",
+              "MarginGroup": "LEEM",
+              "MarginLendingCurrency": "JPY",
+              "MarginLendingCurrencyAmount": 1666370900,
+              "MarginLendingProduct": 92319,
+              "MarginLoanProduct": 91112,
+              "Method": "UNSPECIFIED",
+              "ModifiedArrangedFlag": "N",
+              "OutstandingMarginLoan": 1666370900,
+              "ProductReuseFlag": "N",
+              "ShortMarket": 0,
+              "Spread": 0,
+              "TypeofSFT": "MARGIN_LENDING",
+              "UniqueTransactionIdentifier": "ABCDEFGGDZP1UYGU9STUHRDP48",
+              "type": "Loan"
+            },
+            {
+              "AussieDomiciledFlag": "N",
+              "BofaEntity": "18589",
+              "BofaEntitySource": "XYZIUM",
+              "CollateralSide": "COLLATERAL_TAKER",
+              "CurrencyofNominalAmount": "EUR",
+              "EventDate": "2020-07-20",
+              "FXRate": 1,
+              "Margin": 37.15847,
+              "MarginGroup": "ABCM",
+              "MarketValue": 152570369.4,
+              "ModifiedArrangedFlag": "N",
+              "NominalAmount": 488069,
+              "PmeID": "19123695281",
+              "PriceCurrency": "SEK",
+              "PricePerUnit": 312.6,
+              "ProductReuseFlag": "N",
+              "Security": 2852666810,
+              "UniqueTransactionIdentifier": "ABCDEFGGDZP1UYGU9STUHRDP48",
+              "type": "Coll"
+            }
+          ]
+        }
+      },
+      "responseDetails": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "AussieDomiciledFlag": {
+            "type": "string",
+            "description": "Australian domicile indicator flag."
+          },
+          "BaseCurrencyofMarginLoan": {
+            "type": "string",
+            "description": "Base currency of Margin loan."
+          },
+          "BloombergCode": {
+            "type": "string",
+            "description": "Bloomberg Ticker that identifies the Security."
+          },
+          "BofaEntity": {
+            "type": "string",
+            "description": "Bofa Entity ID."
+          },
+          "BofaEntitySource": {
+            "type": "string",
+            "description": "Bofa Entity Source."
+          },
+          "ChargingGroup": {
+            "type": "string",
+            "description": "Charging group."
+          },
+          "ClientRequestIdentifier": {
+            "type": "string",
+            "description": "Reference to identify the client\u2019s request."
+          },
+          "CollateralSide ": {
+            "type": "string",
+            "description": "Collateral Side whether taker or lender."
+          },
+          "DayCountConvention": {
+            "type": "string",
+            "description": "Method of calculating the accrued interest on the principal amount for a rate."
+          },
+          "EventActionType": {
+            "type": "string",
+            "description": "Event Action Type."
+          },
+          "EventDate": {
+            "type": "string",
+            "description": "Date on which the reportable event relating to the SFT."
+          },
+          "FXRate": {
+            "type": "number",
+            "description": "Foreign Exchange Rate."
+          },
+          "FixedRate": {
+            "type": "number",
+            "description": "Annualized interest rate on the loan value that the borrower pays to the lender."
+          },
+          "FloatingRate": {
+            "type": "number",
+            "description": "Indication of the reference interest rate used which is reset at predetermined intervals by reference to a market reference rate."
+          },
+          "FloatingRatePaymentFreqMultiplier": {
+            "type": "number",
+            "description": "Multiplier for the time period describing the payment frequency for the floating rate."
+          },
+          "FloatingRatePaymentFreqTimeperiod": {
+            "type": "string",
+            "description": "Time period describing the frequency of payments subject to the floating rate."
+          },
+          "FloatingRateRefMultiplier": {
+            "type": "number",
+            "description": "Multiplier for the time period describing reference period of the floating rate."
+          },
+          "FloatingRateRefTimeperiod": {
+            "type": "string",
+            "description": "Time period describing reference period of the floating rate."
+          },
+          "FloatingRateResetFreqMultiplier": {
+            "type": "number",
+            "description": "Multiplier for the time period describing the frequency for the floating rate resets."
+          },
+          "FloatingRateResetFreqTimeperiod": {
+            "type": "string",
+            "description": "Time period describing the frequency of the floating rate resets."
+          },
+          "MarginGroup": {
+            "type": "string",
+            "description": "Margin Group."
+          },
+          "MarginLendingCurrency": {
+            "type": "string",
+            "description": "Currency of the margin loan."
+          },
+          "MarginLendingCurrencyAmount": {
+            "type": "number",
+            "description": "Amount of a margin loan in a given currency."
+          },
+          "MarginLendingProduct": {
+            "type": "number",
+            "description": "Security that is lent."
+          },
+          "Method": {
+            "type": "string",
+            "description": "Method used to Provide Collateral."
+          },
+          "ModifiedArrangedFlag": {
+            "type": "string",
+            "description": "Modified Arranged financing indicator."
+          },
+          "OutstandingMarginLoan": {
+            "type": "number",
+            "description": "Total amount of margin loans, in the base currency."
+          },
+          "ProductReuseFlag": {
+            "type": "string",
+            "description": "ProductReuseFlag."
+          },
+          "ShortMarket": {
+            "type": "number",
+            "description": "Market value of the short position, in the base currency."
+          },
+          "Spread": {
+            "type": "number",
+            "description": "Number of basis points to be added to or subtracted from the floating interest rate in order to determine the interest rate of the loan."
+          },
+          "TypeofSFT": {
+            "type": "string",
+            "description": "Type of SFT transaction."
+          },
+          "UniqueTransactionIdentifier": {
+            "type": "string",
+            "description": "Unique reference assigned to the SFT in order to identify the trade"
+          },
+          "NominalAmount": {
+            "type": "number",
+            "description": "Quantity or nominal amount of the security."
+          },
+          "PMEID": {
+            "type": "string",
+            "description": "A Unique Id generated for every security in PME."
+          },
+          "PriceCurrency": {
+            "type": "string",
+            "description": "Pricing Currency."
+          },
+          "PricePerUnit": {
+            "type": "number",
+            "description": "Price of unit of collateral component."
+          },
+          "CurrencyofNominalAmount": {
+            "type": "string",
+            "description": "Collateral base Currency."
+          },
+          "MarketValue": {
+            "type": "number",
+            "description": "Total long notional value of all TRS swap positions in the margin group."
+          },
+          "Margin": {
+            "type": "number",
+            "description": "Actual Margin Value."
+          },
+          "Quality": {
+            "type": "string",
+            "description": "Code that classifies the risk of the security used as collateral."
+          },
+          "Maturity": {
+            "type": "string",
+            "description": "Maturity Date of Collateral."
+          },
+          "IssuerJurisdiction": {
+            "type": "string",
+            "description": "Jurisdiction of the issuer of the security used as collateral."
+          },
+          "IssuerLEI": {
+            "type": "string",
+            "description": "Legal Entity Identifier for the Issuer"
+          },
+          "SecurityType ": {
+            "type": "string",
+            "description": "Code that classifies the type of the security"
+          },
+          "MarginLoanProduct": {
+            "type": "number",
+            "description": "Security used for Margin loan"
+          },
+          "AdjustedRate": {
+            "type": "string",
+            "description": "The annualized Adjusted rate on the loan value that the borrower pays to the lender."
+          },
+          "CFICode": {
+            "type": "string",
+            "description": "Collateral Code Indicator"
+          },
+          "Security": {
+            "type": "string",
+            "description": "The Instrument on which the transaction happens"
+          },
+          "type": {
+            "type": "string",
+            "description": "Identification of displaying data - loan or collateral"
+          }
+        }
+      },
+      "401ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/sftr",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "403ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/sftr",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "404ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/sftr",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "405ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/prime/financing/v1/sftr",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "406ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/sftr",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Server could not produce a response"
+          }
+        }
+      },
+      "408ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/sftr",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "500ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/sftr",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "503ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/sftr",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

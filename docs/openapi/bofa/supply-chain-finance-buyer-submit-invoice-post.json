@@ -1,0 +1,690 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Submit Invoice",
+    "description": "Invoice submissions which allows the client to submit their invoices and credit memos to CashPro Trade for financing. A response will be sent back to the client advising the status of their submitted invoices",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": "supply-chain-finance-buyer-submit-invoice-post-overview.json"
+      }
+    }
+  },
+  "paths": {
+    "/trade/v1/invoice-submission": {
+      "post": {
+        "tags": [
+          "Supply Chain Finance"
+        ],
+        "summary": "This API would be used by the CashPro Client to submit invoices to CashPro Trade for financing",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifies the payload content as JSON. Notes: application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "An unexpired access token to be used for this request (ex. \u201cBearer [value]). Notes: Token that client receives after calling the OAuth service.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The IP Address is invalid ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "requestBody": {
+        "required": [
+          "invoiceIdentification",
+          "SubmitterId",
+          "requestedMaturityDate",
+          "amount",
+          "Buyer",
+          "Seller"
+        ],
+        "type": "object",
+        "properties": {
+          "invoiceIdentification": {
+            "$ref": "#/components/schemas/invoiceIdentification"
+          },
+          "SubmitterId": {
+            "type": "string",
+            "description": "Submitter Company Key. Notes: This is the CashPro Clients Company ID.  This field is case sensitive and should match the id provided by the bank.",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "requestedMaturityDate": {
+            "type": "string",
+            "description": "Date the Invoice matures. Format: mmddyyyy. Example: 11232021. Notes: This is the maturity date of the invoice or credit memo.",
+            "minLength": 1,
+            "maxLength": 8
+          },
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "baseRate": {
+            "type": "string",
+            "description": "Base Rate of the Third Party Numeric field (9,6) Max 99.999999 Allow 2 decimals to the left and 6 decimals to the right. Notes: Base Rate can be included for informational use only, but will not be used for financing the invoices."
+          },
+          "spread": {
+            "type": "string",
+            "description": "Spread Rate of the Third Party Numeric field (9,6) Max 99.999999 Allow 2 decimals to the left and 6 decimals to the right. Notes: Spread Rate can be included for informational use only. Bank of America spread will be used for financing the invoices."
+          },
+          "Buyer": {
+            "$ref": "#/components/schemas/buyer"
+          },
+          "Seller": {
+            "$ref": "#/components/schemas/seller"
+          },
+          "Userdefined01": {
+            "type": "string",
+            "description": "User Defined field 1. Notes: User Defined fields can be used for further informational purpose only.",
+            "minLength": 1,
+            "maxLength": 65
+          },
+          "Userdefined02": {
+            "type": "string",
+            "description": "User Defined field 2",
+            "minLength": 1,
+            "maxLength": 65
+          },
+          "Userdefined03": {
+            "type": "string",
+            "description": "User Defined field 3",
+            "minLength": 1,
+            "maxLength": 65
+          },
+          "Userdefined04": {
+            "type": "string",
+            "description": "User Defined field 4",
+            "minLength": 1,
+            "maxLength": 65
+          },
+          "Userdefined05": {
+            "type": "string",
+            "description": "User Defined field 5",
+            "minLength": 1,
+            "maxLength": 65
+          },
+          "Userdefined06": {
+            "type": "string",
+            "description": "User Defined field 6",
+            "minLength": 1,
+            "maxLength": 65
+          },
+          "Userdefined07": {
+            "type": "string",
+            "description": "User Defined field 7",
+            "minLength": 1,
+            "maxLength": 65
+          },
+          "Userdefined08": {
+            "type": "string",
+            "description": "User Defined field 8",
+            "minLength": 1,
+            "maxLength": 65
+          },
+          "Userdefined09": {
+            "type": "string",
+            "description": "User Defined field 9",
+            "minLength": 1,
+            "maxLength": 65
+          },
+          "Userdefined10": {
+            "type": "string",
+            "description": "User Defined Date. Format: mmddyyyy. Example: 05272021. Notes: This is an additional date field that will be used for informational purposes only.",
+            "minLength": 1,
+            "maxLength": 8
+          }
+        },
+        "example": {
+          "invoiceIdentification": {
+            "invoiceNumber": "INVOICE123",
+            "submitterRef": "SENDERREF123"
+          },
+          "submitterId": " buycomid",
+          "requestedMaturityDate": "11232021",
+          "amount": {
+            "value": "6593.29",
+            "type": "INVOICE",
+            "currency": "USD"
+          },
+          "baseRate": "1.123",
+          "spread": "1.075",
+          "buyer": {
+            "name": "Buyer Company Name",
+            "buyerIdentifier": "buycomid",
+            "party": "buyerparty"
+          },
+          "seller": {
+            "name": "Seller Company Name",
+            "address": "Street address, city",
+            "country": "CN",
+            "taxId": "999999999",
+            "party": "sellerpartyid"
+          },
+          "userDefined01": "UD01 extra details from invoice",
+          "userDefined02": "UD02 extra details from invoice",
+          "userDefined03": "UD03 extra details from invoice",
+          "userDefined04": "UD04 extra details from invoice",
+          "userDefined05": "UD05 extra details from invoice",
+          "userDefined06": "UD06 extra details from invoice",
+          "userDefined07": "UD07 extra details from invoice",
+          "userDefined08": "UD08 extra details from invoice",
+          "userDefined09": "UD09 extra details from invoice",
+          "userDefined10": "05272021"
+        }
+      },
+      "invoiceIdentification": {
+        "description": "Object to identify request",
+        "type": "object",
+        "required": [
+          "InvoiceNumber",
+          "submitterRef"
+        ],
+        "properties": {
+          "InvoiceNumber": {
+            "type": "string",
+            "description": "Buyers Invoice Number. Notes: The following characters are not allowed in the field: * ; < > @ &quot; # $ % & ! ~ ` ^ _ = | { } [ ] \\ \u2019",
+            "minLength": 1,
+            "maxLength": 35
+          },
+          "submitterRef": {
+            "type": "string",
+            "description": "Submitter reference number",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      },
+      "amount": {
+        "description": "Object with value, type and currency",
+        "type": "object",
+        "required": [
+          "Value",
+          "Type",
+          "Currency"
+        ],
+        "properties": {
+          "Value": {
+            "type": "string",
+            "description": "Amount max 12 digits to the left of the decimal max 2 digits to the right of the decimal for all currencies except JPY which does not have any decimals. Max:999999999999.99. Notes: The amount:value field can be a positive number for invoices and should be a negative number for credit memos."
+          },
+          "Type": {
+            "type": "string",
+            "description": "Invoice or Credit Memo. Notes: The amount:type field shall be \u201cInvoice\u201d for positive amount and \u201cCredit Memo\u201d for negative amounts.",
+            "minLength": 1,
+            "maxLength": 16
+          },
+          "Currency": {
+            "type": "string",
+            "description": "Currency of the Invoice. Notes: The currency code should be the three digit ISO currency code. For example: USD, JPY, EUR",
+            "minLength": 3,
+            "maxLength": 3
+          }
+        }
+      },
+      "buyer": {
+        "description": "Object for Buyer information",
+        "type": "object",
+        "required": [
+          "buyerIdentifier",
+          "party"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the CashPro Entity. Notes: The following characters are not allowed in the field: * ; < > @ &quot; # $ % & ! ~ ` ^ _ = | { } [ ] \\ \u2019",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "buyerIdentifier": {
+            "type": "string",
+            "description": "Buyer Company\u2019s CashPro id. Notes: This is the CashPro Client\u2019s Company id.  This field is case sensitive and should match the id provided by the bank.",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "party": {
+            "type": "string",
+            "description": "Buyer Party id in the Invoice. Notes: This is the CashPro Client\u2019s buyer party ID.  Party id\u2019s will be provided by the CashPro Trade team. This field is case sensitive and should match the id provided by the bank.",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        }
+      },
+      "seller": {
+        "description": "Object for Seller Information",
+        "type": "object",
+        "required": [
+          "party"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Seller Name on Invoice. Notes: The following characters are not allowed in the name field: * ; < > @ &quot; # $ % & ! ~ ` ^ _ = | { } [ ] \\ \u2019",
+            "minLength": 1,
+            "maxLength": 35
+          },
+          "address": {
+            "type": "string",
+            "description": "Seller address. Notes: The following characters are not allowed in the address field: * ; < > @ &quot; # $ % & ! ~ ` ^ _ = | { } [ ] \\ \u2019",
+            "minLength": 1,
+            "maxLength": 105
+          },
+          "country": {
+            "type": "string",
+            "description": "Seller country. Notes: This represents the two digit ISO country code of the Seller Party.",
+            "minLength": 2,
+            "maxLength": 2
+          },
+          "taxId": {
+            "type": "string",
+            "description": "Seller Tax ID",
+            "minLength": 1,
+            "maxLength": 14
+          },
+          "party": {
+            "type": "string",
+            "description": "Seller Party ID. Notes: Seller Party ID provided by the CashPro Trade team. This field is case sensitive and should match the id provided by the bank.",
+            "minLength": 1,
+            "maxLength": 20
+          }
+        }
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Success",
+          "statuscode": 200,
+          "statusDescription": "Invoice submitted successfully",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      },
+      "errorResponse400": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string",
+            "description": "Reason Code: 400<br>Reason Message: Bad Request<br> Description: JSON message not properly formatted<br><br>Reason Code: 400<br>Reason Message: Required field/fields &lt;name of fields&gt; is/are not present<br> Description: Required field not present<br><br>Reason Code: 400<br>Reason Message: Field/Fields &lt;Name of  field&gt; should have  numeric value<br> Description: Numeric field contains non-numeric characters<br><br>Reason Code: 400<br>Reason Message: Invalid MaturityDate format<br> Description: Maturity date is not in proper MMDDYYYY format<br><br>Reason Code: 400<br>Reason Message: Field/Fields &lt;name of field&gt; is/are not within the required length<br> Description: Specified field exceeds maximum length<br><br>Reason Code: 400<br>Reason Message: Invoice amount less than minimum amount allowed<br> Description: Invoice amount less than minimum amount allowed<br><br>Reason Code: 400<br>Reason Message: Duplicate Invoice Number &lt;Invoicenumber&gt; for Buyer Party<br> Description: Duplicate Invoice Number for Buyer Party<br><br>Reason Code: 400<br>Reason Message: Invalid Rate<br> Description: Specified rate exceeds maximum allowed value or is too precise<br><br>Reason Code: 400<br>Reason Message: Invalid Spread<br> Description: Specified spread exceeds maximum allowed value or is too precise<br><br>Reason Code: 400<br>Reason Message: Invalid User Defined10<br> Description: User defined date field must be in a valid date format<br><br>Reason Code: 400<br>Reason Message: Field Spread should have numeric value<br> Description: Spread Rate cannot be negative<br><br>Reason Code: 400<br>Reason Message: Seller Country code &lt;seller:country&gt; not a valid country code<br> Description: Seller Country code is not a valid code<br><br>Reason Code: 400<br>Reason Message: Invalid amount:type<br> Description: Invalid amount type<br><br>Reason Code: 400<br>Reason Message: Invoice Number has illegal characters<br> Description: Invoice number has one or more of the following illegal characters: * ; < > @ &quot; # $ % & ! ~ ` ^ _ = | { } [ ] \\ \u2019<br><br>Reason Code: 400<br>Reason Message: Seller party field required for buyer submitted invoices<br> Description: Seller Party fields is not in the POST request<br><br>Reason Code: 400<br>Reason Message: Invalid seller party<br> Description: The specified seller party is not configured correctly in CashPro Trade<br><br>Reason Code: 400<br>Reason Message: Buyer party &lt;buyer:party&gt; and Seller Party &lt;seller:party&gt; set up is incomplete<br> Description: No instructions found to route specified buyer party/seller party pair to a Bank of America branch<br><br>Reason Code: 400<br>Reason Message: Submitterref field exceeds maximum length<br> Description: Submitter reference exceeds maximum allowed length of 128 characters<br><br>Reason Code: 400<br>Reason Message: Duplicate Submitterref<br> Description: Submitter reference has already been used for a successfully submitted invoice <br><br>Reason Code: 400<br>Reason Message: Invalid Seller party &lt;Seller:party&gt; country &lt;Seller:country&gt; combination<br> Description: Seller party and the seller party country are not a valid combination"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 400,
+          "statusDescription": "Required Field &lt;name of field&gt; not present",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      },
+      "errorResponse401": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 401,
+          "statusDescription": "Authentication Failure",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      },
+      "errorResponse403": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string",
+            "description": "Reason Code: 403<br>Reason Message: Submitter &lt;Submitter id&gt; not set up in CashPro Trade to submit invoices<br> Description: Submitter is not set up in CashPro Trade to submit invoices<br><br>Reason Code: 403<br>Reason Message: Buyer Company &lt;Buyer Company ID&gt; is not set up in CashPro Trade<br> Description: Buyer Company cannot be found in CashPro Trade<br><br>Reason Code: 403<br>Reason Message: Buyer Company &lt;Buyer Company ID&gt; is not set up for Supply Chain Finance Buyer Services<br> Description: Buyer is not set up in CashPro for Supply Chain Finance Buyer Services<br><br>Reason Code: 403<br>Reason Message: Buyer party &lt;Buyer party&gt; not set up <br> Description: Specified buyer party not found"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 403,
+          "statusDescription": "The IP Address is invalid",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      },
+      "errorResponse404": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 404,
+          "statusDescription": "Resource Not Found",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      },
+      "errorResponse405": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 405,
+          "statusDescription": "Method Not Allowed",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      },
+      "errorResponse406": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 406,
+          "statusDescription": "Not Acceptable",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      },
+      "errorResponse408": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 408,
+          "statusDescription": "HTTP Timeout Exception",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      },
+      "errorResponse415": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 415,
+          "statusDescription": "Unsupported Media Type",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      },
+      "errorResponse500": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 500,
+          "statusDescription": "Internal Server Error",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      },
+      "errorResponse503": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "statuscode": {
+            "type": "integer"
+          },
+          "statusDescription": {
+            "type": "string"
+          },
+          "submissionIdentification": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 503,
+          "statusDescription": "Service Unavailable",
+          "submissionIdentification": "oKr6EdeqRnC8g05212021171521"
+        }
+      }
+    }
+  }
+}

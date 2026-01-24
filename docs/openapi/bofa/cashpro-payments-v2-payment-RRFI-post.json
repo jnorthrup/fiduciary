@@ -1,0 +1,643 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Payment V2 RRFI",
+    "description": "Responds to a US RTP Request for Information message.",
+    "termsOfService": "",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "paths": {
+    "/cashpro/payments/v2/payment-RRFI": {
+      "post": {
+        "tags": [
+          "Payments V2 API"
+        ],
+        "summary": "Responds to a US RTP Request for Information message.",
+        "operationId": "intents",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON. </br> ex. application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request. </br> ex. Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "description": "A unique identifier to be used for a single payment. Length: 1 - 256 </br> ex. ABC123",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "TransactionIdentification",
+            "in": "header",
+            "description": "Bank assigned identifier for the payment at the transaction level<br>Length: 1-36 ",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "RRFI API Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/rfiRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiError401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiError403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiError404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiError405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiError406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiError408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiError415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiError500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rfiError503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "rfiRequest": {
+        "type": "object",
+        "properties": {
+          "rfiId": {
+            "type": "string",
+            "description": "Identification number of the request for information being responded to. Length: 35",
+            "example": "RFIsample00001"
+          },
+          "rfiText": {
+            "type": "string",
+            "description": "Request for information response details. Length: 1 - 140 ",
+            "example": "This transaction was submitted for invoice ABC12345."
+          }
+        }
+      },
+      "rfiResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": "Unique transaction identifier as assigned by the bank. Length:1 - 36",
+            "example": "T0b58053-f379-44c2-8999-21f1f7a706ac"
+          },
+          "rfiId": {
+            "type": "string",
+            "description": "Identification number of the request for information being responded to. Length: 35",
+            "example": "RFIsample00001"
+          },
+          "requestID": {
+            "type": "string",
+            "description": "Unique identifier specific to the response to request for information. Length: 35 ",
+            "example": "12345678902234567890323456789042345"
+          }
+        }
+      },
+      "rfiErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": "Unique transaction identifier as assigned by the bank. Length:1 - 36",
+            "example": "T0b58053-f379-44c2-8999-21f1f7a706ac"
+          },
+          "rfiId": {
+            "type": "string",
+            "description": "Identification number of the request for information being responded to. Length: 35",
+            "example": "RFIsample00001"
+          },
+          "requestID": {
+            "type": "string",
+            "description": "Unique identifier specific to the response to request for information. Length: 35 "
+          },
+          "reason": {
+            "type": "array",
+            "description": "List of errors for given payment. ",
+            "items": {
+              "$ref": "#/components/schemas/rfiReason"
+            }
+          }
+        }
+      },
+      "rfiReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "description": "This contains the error reason code. Length: 1 - 5",
+            "example": "CP401"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "This contains the description of the error. Length: 1 - 256 ",
+            "example": "Invalid Element in request."
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "rfiError401": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/payments/v2/payment-RRFI",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "rfiError403": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/payments/v2/payment-RRFI",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "rfiError404": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/payments/v2/payment-RRFI",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "rfiError405": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/payments/v2/payment-RRFI",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "rfiError406": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/payments/v2/payment-RRFI",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "rfiError408": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/payments/v2/payment-RRFI",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "rfiError415": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST /cashpro/payments/v2/payment-RRFI",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "rfiError500": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/payments/v2/payment-RRFI",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "rfiError503": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/payments/v2/payment-RRFI",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

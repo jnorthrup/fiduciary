@@ -1,0 +1,822 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Global Markets \u2013 Search Client Offer",
+    "description": "Search the current set of external offers by Clients to BofA.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Global Markets \u2013 Search Client Offer"
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://api.bofa.com/muni/v1/munibonds/externaloffer",
+      "description": "Production Gateway Base URL"
+    },
+    {
+      "url": "https://api-sb.bofa.com/muni/v1/munibonds/externaloffer",
+      "description": "Sandbox Base URL"
+    }
+  ],
+  "paths": {
+    "/muni/v1/munibonds/externaloffer": {
+      "post": {
+        "tags": [
+          "Global Markets \u2013 Search Client Offer"
+        ],
+        "summary": "",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identify the content of the payload as JSON. Use 'Content-Type: application/json'. This is the only content type supported as of now. Content-Types cannot be negotiated programmatically at this time. Future versions might provide that facility.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. 'Bearer [value]')",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "UserId",
+            "in": "header",
+            "description": "User who is interacting with this service from a company. User should be on boarded on the Bofa Securities Mercury<sup>TM</sup> platform and obtain UserId.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "header",
+            "description": "A token provided by client to identify their request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/searchClientOfferAPI"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/searchClientOfferResponseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/403ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/404ErrorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/405ErrorResponse"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/406ErrorResponse"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/408ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/415ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/429ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/503ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "searchClientOfferAPI": {
+        "required": [
+          "searchRequest"
+        ],
+        "type": "object",
+        "description": "",
+        "properties": {
+          "searchRequest": {
+            "$ref": "#/components/schemas/searchRequest"
+          }
+        },
+        "example": {
+          "searchRequest": {
+            "criteria": [
+              {
+                "field": "accountNumberOrEbn",
+                "operand": "=",
+                "value": "89A30051"
+              },
+              {
+                "field": "cusip",
+                "operand": "=",
+                "value": "007266KS7"
+              },
+              {
+                "field": "offerReferenceNumberFrom",
+                "operand": ">=",
+                "value": "0"
+              },
+              {
+                "field": "offerReferenceNumberTo",
+                "operand": "<=",
+                "value": "100"
+              },
+              {
+                "field": "offerCreateTimeFrom",
+                "operand": ">=",
+                "value": "2023-03-31T05:00:00-04:00"
+              },
+              {
+                "field": "offerCreateTimeTo",
+                "operand": "<=",
+                "value": "2023-03-31T07:00:00-04:00"
+              }
+            ]
+          }
+        }
+      },
+      "searchRequest": {
+        "type": "object",
+        "description": "External Offers Search Request",
+        "required": [
+          "criteria"
+        ],
+        "properties": {
+          "criteria": {
+            "type": "array",
+            "description": "Array of offer search criteria",
+            "items": {
+              "$ref": "#/components/schemas/criteria"
+            }
+          }
+        }
+      },
+      "criteria": {
+        "type": "object",
+        "properties": {
+          "Field": {
+            "type": "string",
+            "description": "Type of data that is to be sent or received as part of the search request.<br><br>'field': 'accountNumberOrEbn'<br>'description': Your firm\u2019s account number at BofA Securities if you are an Institutional customer. If you are a broker/dealer, it will be your EBN symbol prefixed with \u201cEBN\u201d.<br>If you are a broker/dealer, your operations team will be able to provide you the EBN symbol to use. For (a possibly out of date) list, see DTCC. Ex. Merrill Lynch, Pierce, Fenner & Smith Inc. has MLCO as the symbol and you would provide \u201cEBNMLCO\u201d in the request.<br>'type': 'string'<br><br>'field': 'cusip'<br>'description': CUSIP with or without the 9th check digit<br>'type': 'string'<br><br>'field': 'offerReferenceNumberFrom'<br>'description': Your (BofA Securities generated) Offer  reference number.<br>Only the \u201c>=\u201d operand supported for offerReferenceNumberFrom.<br>'type': 'integer'<br><br>'field': 'offerReferenceNumberTo'<br>'description': Your (BofA Securities generated) Offer  reference number.<br>Only the \u201c<=\u201d operand supported for offerReferenceNumberTo.<br>'type': 'integer'<br><br>'field': 'offerCreateTimeFrom'<br>'description': The time the offer was created by the client to the milliseconds. This would be used to identify the latest offer for a CUSIP. <br>Only the \u201c>=\u201d operand supported for offerCreateTimeFrom.<br>Time expected in \u201cAmerica/New_York\u201d timezone<br>Format -  yyyy-MM-dd'T'HH:mm:ssXXX<br>Example - 2001-07-04T12:08:56-04:00<br>'type': 'string'<br><br>'field': 'offerCreateTimeTo'<br>'description':The time the offer was created by the client to the milliseconds. This would be used to identify the latest offer for a CUSIP. <br>Only the \u201c<=\u201d operand supported for offerCreateTimeTo.<br>Time expected in \u201cAmerica/New_York\u201d timezone<br>Format -  yyyy-MM-dd'T'HH:mm:ssXXX<br>Example - 2001-07-04T12:08:56-04:00<br>'type': 'string'"
+          },
+          "Value": {
+            "type": "string",
+            "description": "Value of the data that is to be sent or received as part of the search request."
+          },
+          "Operand": {
+            "type": "string",
+            "description": "Object of a mathematical operation.<br>i.e., Equal to \u201c=\u201d, less than or equal to \u201c<=\u201d"
+          }
+        }
+      },
+      "searchClientOfferResponseBody": {
+        "type": "object",
+        "properties": {
+          "searchResponse": {
+            "type": "array",
+            "description": "Array of offers as search response for the given criteria",
+            "items": {
+              "$ref": "#/components/schemas/searchResponse"
+            }
+          }
+        },
+        "example": {
+          "searchResponse": [
+            {
+              "quantity": 50000,
+              "settlementDate": "2020-04-23",
+              "subjectFirmInd": "FIRM",
+              "tradeIncrement": 5000,
+              "minimumQuantity": 50000,
+              "accruedInterest": 1166.67,
+              "offerCreateTime": "2023-03-22T05:36:49.193-04:00",
+              "cusip": "007266KS7",
+              "price": 113.419,
+              "accountNumberOrEbn": "89A30051"
+            }
+          ]
+        }
+      },
+      "searchResponse": {
+        "type": "object",
+        "properties": {
+          "accountNumberOrEbn": {
+            "type": "string",
+            "description": "Your firm\u2019s account number at BofA Securities if you are an Institutional customer. If you are a broker/dealer, it will be your EBN symbol prefixed with \u201cEBN\u201d.<br>If you are a broker/dealer, your operations team will be able to provide you the EBN symbol to use. For (a possibly out of date) list, see DTCC. Ex. Merrill Lynch, Pierce, Fenner & Smith Inc. has MLCO as the symbol and you would provide \u201cEBNMLCO\u201d in the request."
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Transaction quantity.<br>In 1000s. If 50 bonds are required, 50000 should be specified. In words that number is \u201cfifty thousand\u201d."
+          },
+          "settlementDate": {
+            "type": "string",
+            "description": "Date when the transaction must settle on Expected format YYYY-MM-DD. All numbers."
+          },
+          "subjectFirmInd": {
+            "type": "string",
+            "description": "Indicates the type of offer \u2018FIRM\u2019 \u2013 firm price that can be executed electronically \u2018SUBJ\u2019 \u2013 price subject to negotiation, no electronic execution."
+          },
+          "tradeIncrement": {
+            "type": "integer",
+            "description": "The Multiples in which trade quantity will be allowed. <br>Ex, if this value is 5000, trade quantity can be 5000,10000,15000 and so on."
+          },
+          "minimumQuantity": {
+            "type": "integer",
+            "description": "The minimum trade quantity that the customer would allow."
+          },
+          "accruedInterest": {
+            "type": "number",
+            "description": "Accrued Interest to settlement date."
+          },
+          "offerCreateTime": {
+            "type": "string",
+            "description": "The time the offer was created by the client to the milliseconds. This would be used to identify the latest offer for a CUSIP.<br>Time expected in \u201cAmerica/New_York\u201d Timezone<br>Format - yyyy-MM-dd'T'HH:mm:ss.SSSXXX<br>Example - 2001-07-04T12:08:56.235-04:00"
+          },
+          "cusip": {
+            "type": "string",
+            "description": "CUSIP with or without the 9th check digit"
+          },
+          "price": {
+            "type": "number",
+            "description": "The Offer price entered by the customer"
+          }
+        }
+      },
+      "400ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:123",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Validation error:Incomplete/Incorrect Request : Missing or Extra fields"
+          }
+        }
+      },
+      "401ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "d7df57b0-37b8-11ea-8715-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "403ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "404ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "29804110-37b9-11ea-99c7-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "405ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1649682845",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Validation error:Request method 'PUT' not supported"
+          }
+        }
+      },
+      "406ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "408ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "415ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1649684545",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Validation error:Content type 'application/javascript' not supported"
+          }
+        }
+      },
+      "429ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/429Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1234",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 429,
+            "reasonDescription": "API Hit Rate Error:Maximum number of times this API can be called per second has been exceeded"
+          }
+        }
+      },
+      "500ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "ae18f4d0-37b9-11ea-8ce3-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "503ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/externaloffer",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "429Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

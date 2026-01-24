@@ -1,0 +1,649 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Payments V2 Status - JSON",
+    "description": "Returns the status of the JSON payment request.",
+    "termsOfService": "",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "paths": {
+    "/cashpro/payments/v2/payment-initiations/status": {
+      "get": {
+        "tags": [
+          "Payments V2 API"
+        ],
+        "summary": "Obtains the status of a payment request.",
+        "operationId": "globalDigitalDisbursementsStatuses",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single reporting request. </br>ex. Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. </br>Token that client receives after calling the Auth service. ",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "TransactionIdentification",
+            "in": "header",
+            "description": "Bank assigned identifier for the payment at the transaction level<br>Length: 1-36",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request received successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/statusesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusError503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "description": "This contains the error reason code."
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "This contains the description of the error."
+          }
+        }
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "description": "Error reason code. Length: 1-5"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "Description of the error. Length: 1-256"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "statusesResponse": {
+        "type": "object",
+        "required": [
+          "transactionIdentification",
+          "endToEndIdentification",
+          "paymentStatus"
+        ],
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": "Bank assigned identifier for the payment at the transaction level"
+          },
+          "endToEndIdentification": {
+            "type": "string",
+            "description": "Unique identification assigned by the initiating party to unambiguously identify the transaction. This identification is passed on, unchanged,  throughout the entire end-to-end chain. Length : 1 - 16"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "description": "Status of the transaction <br>Received By Bank <br>Cancelled <br>Pending BeneVerification <br>Processing By Bank <br>Rejected By Bank <br>Confirmed By Bank <br>Settlement Complete"
+          },
+          "reason": {
+            "type": "array",
+            "description": "List of errors for given payment",
+            "items": {
+              "$ref": "#/components/schemas/reason"
+            }
+          }
+        },
+        "example": {
+          "transactionIdentification": "1234567890ABC",
+          "endToEndIdentification": "SenderRefSIT18",
+          "paymentStatus": "Rejected By Bank",
+          "reason": [
+            {
+              "reasonCode": "CP700",
+              "reasonDescription": "Invalid transaction status for cancel"
+            }
+          ]
+        }
+      },
+      "StatusError400": {
+        "required": [
+          "transactionIdentification",
+          "paymentStatus",
+          "paymentType",
+          "endToEndIdentification"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": "Unique transaction identifier as assigned by the bank. Length: 1-36"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "description": "Status of the transaction:<br> &#149; Processing by Bank<br> &#149; Rejected by Bank<br> &#149; Settlement Complete <br> &#149; Approved <br> &#149; Cancelled <br> &#149; Received by Bank <br> &#149; Pending Bene Verification <br> &#149; Confirmed by Bank"
+          },
+          "paymentType": {
+            "type": "string",
+            "description": "Payment types: PAYPAL, ZELLE, US RTP, US ACH"
+          },
+          "endToEndIdentification": {
+            "type": "string",
+            "description": "Unique identification assigned by the initiating party to unambiguously identify the transaction. This identification is passed on, unchanged, throughout the entire end-to-end chain. Length : 1-16"
+          },
+          "reason": {
+            "type": "array",
+            "description": "List of errors for given payment",
+            "items": {
+              "$ref": "#/components/schemas/400Reason"
+            }
+          }
+        },
+        "example": {
+          "transactionIdentification": "A0JALX03YQTC6NII",
+          "rfiId": "SITEportalTESTING022371",
+          "requestId": null,
+          "reason": [
+            {
+              "reasonCode": "CP401",
+              "reasonDescription": "Invalid element in request"
+            }
+          ]
+        }
+      },
+      "StatusError401": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/payments/v2/payment-initiations/status",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "StatusError403": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/payments/v2/payment-initiations/status",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "StatusError404": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/payments/v2/payment-initiations/status",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "StatusError405": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/cashpro/payments/v2/payment-initiations/status",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "StatusError406": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/payments/v2/payment-initiations/status",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "StatusError408": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/payments/v2/payment-initiations/status",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "StatusError415": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/payments/v2/payment-initiations/status",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "StatusError500": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/payments/v2/payment-initiations/status",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "StatusError503": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/payments/v2/payment-initiations/status",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

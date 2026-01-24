@@ -1,0 +1,720 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Global Markets \u2013 Create Portfolio",
+    "description": "Muni Bond Portfolio Services API 1 of 2: The Create Portfolio API allows a user to create a Muni portfolio based on selectable criteria.",
+    "termsOfService": "",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "paths": {
+    "/muni/v1/portfolio/createPortfolio": {
+      "post": {
+        "tags": [
+          "Muni Services"
+        ],
+        "summary": "Muni Bond Portfolio Services API 1 of 2: The Create Portfolio API allows one to create a Muni portfolio based on selectable criteria",
+        "operationId": "currentDayFundChecks",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identify the content of the payload as JSON. Use 'Content-Type: application/json'. This is the only content type supported as of now. Content-Types cannot be negotiated programmatically at this time. Future versions might provide that facility",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. \u201cBearer [value])",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "header",
+            "description": "User who is interacting with this service from a company. User should be on boarded on the Bofa Securities Mercury\u2122 platform and obtain userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "header",
+            "description": "A token provided by client to identify their request",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Create Portfolio Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/createPortfolioAPI"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioError401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioError403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioError404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioError405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioError406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioError408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioError415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioError500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createPortfolioError503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "createPortfolioAPI": {
+        "type": "object",
+        "required": [
+          "portfolioName"
+        ],
+        "properties": {
+          "portfolioName": {
+            "type": "string",
+            "description": "A unique name to create portfolio",
+            "example": "MyCustomPortfolio 1.0"
+          },
+          "criteria": {
+            "$ref": "#/components/schemas/criteriaDescription"
+          }
+        }
+      },
+      "createPortfolioResponse": {
+        "required": [
+          "portfolioName",
+          "clientRequestId",
+          "token",
+          "errorMessage"
+        ],
+        "type": "object",
+        "properties": {
+          "portfolioName": {
+            "type": "string",
+            "description": "Echo back of the Portfolio name",
+            "example": "MyCustomPortfolio 1.0"
+          },
+          "clientRequestId": {
+            "type": "string",
+            "description": "This is the clientRequestId provided in the request header",
+            "example": "4a251a2ef9bbf4ccc35f97aba2c9cbda"
+          },
+          "token": {
+            "type": "string",
+            "description": "A token provided to help retrieve the portfolio in a subsequent request, the Get Portfolio API. The portfolio may take time to construct and client code would need to poll at a reasonable interval to retrieve the constructed portfolio. Future versions of the API would be enhanced with advice on the estimated time of completion which can be used to adjust polling interval",
+            "example": "9572d7f4e812df12cd8c0d26e7308864c33cbb51b004cbe962ad545bc377a4a2"
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "Any errors in creating the portfolio. If there is an error, there will be no portfolio to retrieve",
+            "example": null
+          },
+          "status": {
+            "type": "string",
+            "description": "Portfolio creation status",
+            "example": "PENDING"
+          },
+          "portfolio ": {
+            "type": "string",
+            "description": "It will be null in create portfolio response. See \u201ctoken\u201d above. Future versions of the API will respond with the portfolio or provide a token if the portfolio needs to be retrieved with the Get Portfolio API",
+            "example": null
+          }
+        }
+      },
+      "createPortfolioError400": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:123",
+          "status": "Failure",
+          "apiName": "muni/v1/portfolio/createPortfolio",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Validation error:Incomplete/Incorrect Request : Missing or Extra fields"
+          }
+        }
+      },
+      "createPortfolioError401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "d7df57b0-37b8-11ea-8715-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/portfolio/createPortfolio",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "createPortfolioError403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/portfolio/createPortfolio",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "createPortfolioError404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/portfolio/createPortfolio",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "createPortfolioError405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/portfolio/createPortfolio",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "createPortfolioError406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/portfolio/createPortfolio",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "createPortfolioError408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/portfolio/createPortfolio",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "createPortfolioError415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/portfolio/createPortfolio",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "createPortfolioError500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/portfolio/createPortfolio",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "createPortfolioError503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/portfolio/createPortfolio",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "criteriaDescription": {
+        "type": "object",
+        "description": "Purpose of criteria",
+        "required": [
+          "name",
+          "selectedValue"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Criteria name",
+            "example": "advanced_Option"
+          },
+          "valueType": {
+            "type": "string",
+            "description": "Data type for criteria, this is just for reference so client knows what is valid data type for selectedValue, not mandatory",
+            "example": "stringListMultiSelect"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Meaningful name of the criteria, it is just for reference and not required in create portfolio request",
+            "example": "Exclude States"
+          },
+          "Required": {
+            "type": "string",
+            "description": "True=criteria is mandatory, false=criteria is optional, it is just for reference and not required in create portfolio request",
+            "example": "false"
+          },
+          "listOfValues": {
+            "type": "string",
+            "description": "If this is present in criteria template then selected value has to be from list of values, it is just for reference and not required in create portfolio request",
+            "example": "['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC', 'PR', 'VI', 'AS', 'GU', 'MP'],"
+          },
+          "minValue": {
+            "type": "string",
+            "description": "What can be the minimum value of criteria, it is just for reference and not required in create portfolio request",
+            "example": "null"
+          },
+          "maxValue": {
+            "type": "string",
+            "description": "What can be the maximum value of criteria, it is just for reference and not required in create portfolio request",
+            "example": "null"
+          },
+          "defaultValue": {
+            "type": "string",
+            "description": "Default suggested value for criteria, it is just for reference and not required in create portfolio request",
+            "example": "null"
+          },
+          "selectedValue": {
+            "type": "string",
+            "description": "User selected value of criteria, if valueType is stringListMultiSelect then user can selected multiple values using \u201c|\u201ddelimiter",
+            "example": "null"
+          }
+        }
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

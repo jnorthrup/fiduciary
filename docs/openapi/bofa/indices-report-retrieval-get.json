@@ -1,0 +1,640 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Investible Indices \u2013 Report Retrieval",
+    "description": "Retrieves the content of a client report.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Markets - Investible Indices"
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://api.bofa.com/commodities/v1/investible-indices/reports/{reportId}/{clientId}",
+      "description": "Production Gateway Base URL"
+    },
+    {
+      "url": "https://api-sb.bofa.com/commodities/v1/investible-indices/reports/{reportId}/{clientId}",
+      "description": "Sandbox Base URL"
+    }
+  ],
+  "paths": {
+    "/commodities/v1/investible-indices/reports/{reportId}/{clientId}": {
+      "get": {
+        "tags": [
+          "Markets - Investible Indices"
+        ],
+        "summary": "Retrieves the content of a client report.",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "An unexpired access token to be used for this request (ex. \u201cBearer [value]\u201d).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reportDate",
+            "in": "query",
+            "description": "The date of the report to retrieve.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "The ID of the report to retrieve.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientId",
+            "in": "path",
+            "description": "A unique id to identify a client.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/200Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The IP Address is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/403Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/404Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/405Error"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/406Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Timeout exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/408Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/503Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "200Response": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": ""
+          },
+          "reportData": {
+            "type": "string",
+            "description": ""
+          },
+          "data": {
+            "$ref": "#/components/schemas/account"
+          }
+        },
+        "example": {
+          "success": true,
+          "reportData": "2023-10-23",
+          "data": [
+            {
+              "IndexName": "MLCXSX6L_INDEX",
+              "IndexLevel": "276.9449263854040169",
+              "CobDate": "10/23/2023",
+              "Notional": "29971732.2237862534821033",
+              "BB Ticker": "BOF4 Comdty",
+              "Description": "Soybean Oil",
+              "Contract Size": "60000.0000000000000000",
+              "EOD Percent": "-0.0337503449952163",
+              "EOD Hedge Position": "-18.2095983054396271",
+              "EOD Notional Contribution": "-1,011,556.399031149",
+              "Price": "0.5133000000000000",
+              "EOD Lots": "-32.844873012"
+            },
+            {
+              "IndexName": "MLCXSX6L_INDEX",
+              "IndexLevel": "276.9449263854040169",
+              "CobDate": "10/23/2023",
+              "Notional": "29971732.2237862534821033",
+              "BB Ticker": "BOK4 Comdty",
+              "Description": "Soybean Oil",
+              "Contract Size": "60000.0000000000000000",
+              "EOD Percent": "0.0343455194221454",
+              "EOD Hedge Position": "18.7646820833192471",
+              "EOD Notional Contribution": "1,029,394.809281036",
+              "Price": "0.5069000000000000",
+              "EOD Lots": "33.846084345"
+            }
+          ]
+        }
+      },
+      "account": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "IndexName": {
+            "type": "string",
+            "description": "",
+            "example": "MLCXSX6L_INDEX"
+          },
+          "IndexLevel": {
+            "type": "string",
+            "description": "",
+            "example": "276.9449263854040169"
+          },
+          "CobDate": {
+            "type": "string",
+            "description": "",
+            "example": "10/23/2023"
+          },
+          "Notional": {
+            "type": "string",
+            "description": "",
+            "example": "29971732.2237862534821033"
+          },
+          "BB Ticker": {
+            "type": "string",
+            "description": "",
+            "example": "BOK4 Comdty"
+          },
+          "Description": {
+            "type": "string",
+            "description": "",
+            "example": "Soybean Oil"
+          },
+          "Contract Size": {
+            "type": "string",
+            "description": "",
+            "example": "60000.0000000000000000"
+          },
+          "EOD Percent": {
+            "type": "string",
+            "description": "",
+            "example": "0.0343455194221454"
+          },
+          "EOD Hedge Position": {
+            "type": "string",
+            "description": "",
+            "example": "18.7646820833192471"
+          },
+          "EOD Notional Contribution": {
+            "type": "string",
+            "description": "",
+            "example": "1,029,394.809281036"
+          },
+          "Price": {
+            "type": "string",
+            "description": "",
+            "example": "0.5069000000000000"
+          },
+          "EOD Lots": {
+            "type": "string",
+            "description": "",
+            "example": "33.846084345"
+          }
+        }
+      },
+      "400Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": ""
+          },
+          "reportData": {
+            "type": "string",
+            "description": ""
+          },
+          "data": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "description": "",
+        "example": {
+          "success": false,
+          "reportData": null,
+          "data": null
+        }
+      },
+      "401Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "61547d90-80e4-11ee-abb9-005056a71594",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/investible-indices/reports/Decomposition/Capstone",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "403Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "description": "",
+        "example": {
+          "error": "The IP Address is invalid: 11.22.333.44"
+        }
+      },
+      "404Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "81079230-69dd-11ee-9e2e-005056954efa",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/investible-indices/reportsA/Decomposition/Capstone",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "405Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "753cecc0-69dd-11ee-9e2e-005056954efa",
+          "status": "Failure",
+          "apiName": "POST/commodities/v1/investible-indices/reports/Decomposition/Capstone",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "406Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4ad2c540-69dd-11ee-9e2e-005056954efa",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/investible-indices/reports/Decomposition/Capstone",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "408Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "e3d3a021-80e4-11ee-ba7e-005056a782a4",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/investible-indices/reports/Decomposition/Capstone",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "Timeout exceeded"
+          }
+        }
+      },
+      "500Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4ad2c540-69dd-11ee-9e2e-005056954efa",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/investible-indices/reports/Decomposition/Capstone",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "503Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4ad2c540-69dd-11ee-9e2e-005056954efa",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/investible-indices/reports/Decomposition/Capstone",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

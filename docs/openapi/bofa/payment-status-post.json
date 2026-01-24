@@ -1,0 +1,206 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Payment Status Push Notification",
+    "description": "Sends status updates for Payment requests.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Push Notification for Payments v2 APIs",
+      "description": "Payment Status"
+    }
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "tags": [
+          ""
+        ],
+        "summary": "Provides status updates for Payment requests",
+        "operationId": "webhookAPI",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON. </br> ex. application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request .</br> ex. Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX . </br> This field will be used for the Access Token for clients electing to use the OAuth authentication model.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "header",
+            "description": "User ID provided during onboarding </br> This field will be used for clients electing to use the basic authentication model. </br> Eg. 123898733525554444",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAuthKey",
+            "in": "header",
+            "description": "Password provided during onboarding </br> This field will be used for clients electing to use the basic authentication model.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Payload that will  be sent to client ",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/paymentStatusRequest"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {}
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {}
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {}
+          },
+          "405": {
+            "description": "Invalid method",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {}
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "paymentStatusRequest": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": "Unique transaction identifier as assigned by the bank Length: 1-32",
+            "example": "1234567890ABC"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the transaction </br> Cancelled, Pending Bene Verification, Processing By Bank, Rejected By Bank, Confirmed By Bank ,Settlement Complete",
+            "example": "Rejected By Bank"
+          },
+          "endToEndIdentification": {
+            "type": "string",
+            "description": "Unique identification assigned by the initiating party to unambiguously identify the transaction. This identification is passed on, unchanged, throughout the entire end-to-end chain Length : 1-16 ",
+            "example": "SenderRef18"
+          },
+          "reason": {
+            "type": "array",
+            "xml": {
+              "name": "reason",
+              "wrapped": true
+            },
+            "items": {
+              "$ref": "#/components/schemas/paymtStatusReason"
+            }
+          }
+        },
+        "description": "Bad request"
+      },
+      "paymtStatusReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "description": "Error reason code Length: 1 - 5",
+            "example": "CP502"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "Description of the error Length: 1 - 256 ",
+            "example": "Cannot process due to compliance. Please contact your treasury team."
+          }
+        }
+      },
+      "PaymentStatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "SUCCESS"
+          }
+        },
+        "description": "Bad request"
+      },
+      "PaymentErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ERROR"
+          },
+          "reasonCode": {
+            "type": "string",
+            "description": "This contains the Error Code.",
+            "example": "903"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "This contains the error description.",
+            "example": "Client error description"
+          }
+        },
+        "description": "Bad request"
+      }
+    }
+  }
+}

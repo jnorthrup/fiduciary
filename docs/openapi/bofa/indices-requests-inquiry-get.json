@@ -1,0 +1,445 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Investible Indices \u2013 Requests Inquiry",
+    "description": "Returns a list of the Ids of current and previous managed requests created by the user.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Markets - Investible Indices"
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://api.bofa.com/commodities/v1/investible-indices/requests",
+      "description": "Production Gateway Base URL"
+    },
+    {
+      "url": "https://api-sb.bofa.com/commodities/v1/investible-indices/requests",
+      "description": "Sandbox Base URL"
+    }
+  ],
+  "paths": {
+    "/commodities/v1/investible-indices/requests": {
+      "get": {
+        "tags": [
+          "Markets - Investible Indices"
+        ],
+        "summary": "Returns a list of the Ids of current and previous managed requests created by the user (PATCH actions against an Index resource, see \"Edit an Index Definition\").",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "An unexpired access token to be used for this request (ex. \u201cBearer [value]\u201d).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/401Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The IP Address is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/403Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/404Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/405Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Timeout exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/408Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/500Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/503Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "",
+            "example": "true"
+          },
+          "requests": {
+            "type": "array",
+            "description": "",
+            "example": [
+              20082,
+              20083,
+              20084
+            ],
+            "items": {}
+          }
+        },
+        "description": "",
+        "example": {
+          "success": true,
+          "requests": [
+            20082,
+            20083,
+            20084,
+            20085,
+            20086,
+            20087
+          ]
+        }
+      },
+      "401Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "a83a3490-6a0d-11ee-a440-005056a73ca1",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/investible-indices/requests",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "403Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "description": "",
+        "example": {
+          "error": "The IP Address is invalid: 11.22.333.44"
+        }
+      },
+      "404Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "77e1f2e1-69ce-11ee-ac3a-005056a73ca1",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/investible-indices/requestsXYZ",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "405Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "64917da0-69ce-11ee-a488-005056a73ca1",
+          "status": "Failure",
+          "apiName": "POST/commodities/v1/investible-indices/requests",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "408Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "72c40370-8058-11ee-a144-005056a75082",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/investible-indices/requests",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "Timeout exceeded"
+          }
+        }
+      },
+      "500Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "77e1f2e1-69ce-11ee-ac3a-005056a73ca1",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/inv1estible-indices/requests",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "503Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "77e1f2e1-69ce-11ee-ac3a-005056a73ca1",
+          "status": "Failure",
+          "apiName": "GET/commodities/v1/inv1estible-indices/requests",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,388 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Check Issues and Cancels",
+    "description": "Submits one or more check issues and cancels (voids); issues and cancels in \u201cProcessing by Bank\u201d status will be confirmed on the next business day.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Check Services",
+      "description": ""
+    }
+  ],
+  "paths": {
+    "/cashpro/checkmanagement/v1/check-issues": {
+      "post": {
+        "tags": [
+          "Check Services"
+        ],
+        "summary": "This service allows for the submission of one or more check issues and cancels (voids). Issues and cancels in \u201cProcessing by Bank\u201d status will be confirmed on the next business day. Access CashPro Check Management to update, cancel or view the status of successfully processed items. Updates to Teller Positive Pay occur every 30 minutes from 9 a.m. to 9 p.m. Eastern Time Monday through Friday and will be available at our banking centers within one hour of being processed.",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "An unexpired access token to be used for this request (ex. 'Bearer [value]'). Length: 1-256",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifies the content of the payload as JSON. Value = application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyId",
+            "in": "header",
+            "description": "Unique company identifier - CashPro Company  ID. Length: 1-15",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/checkIssueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkIssueResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkIssueErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {}
+          },
+          "403": {
+            "description": "The IP Address is invalid",
+            "content": {}
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {}
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {}
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {}
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {}
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {}
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {}
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "checkIssueRequest": {
+        "required": [
+          "issueList"
+        ],
+        "type": "object",
+        "properties": {
+          "issueList": {
+            "type": "array",
+            "description": "List of \u201cAdd Issues or Cancels\u201d to be submitted",
+            "items": {
+              "$ref": "#/components/schemas/issueListDetail"
+            }
+          }
+        },
+        "example": {
+          "issueList": [
+            {
+              "accountNumber": "000000000280",
+              "issueAction": "add_Issue",
+              "checkNumber": "4452",
+              "amount": "1231.00",
+              "issueDate": "2020-07-16",
+              "payee": "John Smith"
+            }
+          ]
+        }
+      },
+      "issueListDetail": {
+        "type": "object",
+        "required": [
+          "accountNumber",
+          "issueAction",
+          "checkNumber",
+          "amount",
+          "issueDate"
+        ],
+        "properties": {
+          "accountNumber": {
+            "type": "string",
+            "description": "The account number associated with the check issue or cancel <br> Length: 1 \u2013 12 digits"
+          },
+          "issueAction": {
+            "type": "string",
+            "description": "Action to be performed <br> Value = \u201cadd Issue\u201d or  \u201ccancel Issue\u201d"
+          },
+          "checkNumber": {
+            "type": "string",
+            "description": "Check Number <br> Length: 1 \u2013 10 digits"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Check Amount <br> Value =  .01 \u2013 99999999.99"
+          },
+          "issueDate": {
+            "type": "string",
+            "description": "Check Issue Date <br> Format:  YYYY-MM-DD"
+          },
+          "payee": {
+            "type": "string",
+            "description": "Payee Name <br> Required for accounts subscribing to Payee Positive Pay <br> Length: 1 \u2013 256"
+          }
+        }
+      },
+      "checkIssueResponse": {
+        "type": "object",
+        "required": [
+          "totalItems",
+          "processedItems",
+          "unProcessedItems",
+          "issueList"
+        ],
+        "properties": {
+          "totalItems": {
+            "type": "integer",
+            "description": "Total number of items in the input list"
+          },
+          "processedItems": {
+            "type": "integer",
+            "description": "Total number of items processed"
+          },
+          "unProcessedItems": {
+            "type": "integer",
+            "description": "Total number of unprocessed items"
+          },
+          "issueList": {
+            "type": "array",
+            "description": "List of items submitted",
+            "items": {
+              "$ref": "#/components/schemas/issueListResponse"
+            }
+          }
+        },
+        "example": {
+          "totalItems": 1,
+          "processedItems": 1,
+          "unprocessedItems": 0,
+          "issueList": [
+            {
+              "accountNumber": "000000000280",
+              "amount": "1231.00",
+              "checkNumber": "4452",
+              "issueAction": "add_Issue",
+              "issueDate": "2020-07-16",
+              "message": "Processing by Bank",
+              "payee": "John Smith",
+              "status": "200"
+            }
+          ]
+        }
+      },
+      "checkIssueErrorResponse": {
+        "type": "object",
+        "required": [
+          "totalItems",
+          "processedItems",
+          "unProcessedItems",
+          "issueList"
+        ],
+        "properties": {
+          "totalItems": {
+            "type": "integer",
+            "description": "Total number of items in the input list"
+          },
+          "processedItems": {
+            "type": "integer",
+            "description": "Total number of items processed"
+          },
+          "unProcessedItems": {
+            "type": "integer",
+            "description": "Total number of unprocessed items"
+          },
+          "issueList": {
+            "type": "array",
+            "description": "List of items submitted",
+            "items": {
+              "$ref": "#/components/schemas/issueListErrorResponse"
+            }
+          }
+        },
+        "example": {
+          "totalItems": 1,
+          "processedItems": 0,
+          "unprocessedItems": 1,
+          "issueList": [
+            {
+              "accountNumber": "000000000280",
+              "amount": "1231.00",
+              "checkNumber": "0",
+              "issueAction": "add_Issue",
+              "issueDate": "2020-07-16",
+              "message": "Check Number is invalid",
+              "payee": "John Doe",
+              "status": "10092"
+            }
+          ]
+        }
+      },
+      "issueListResponse": {
+        "type": "object",
+        "required": [
+          "accountNumber",
+          "issueAction",
+          "checkNumber",
+          "amount",
+          "issueDate",
+          "message",
+          "status"
+        ],
+        "properties": {
+          "accountNumber": {
+            "type": "string",
+            "description": "The account number associated with the item submitted"
+          },
+          "amount": {
+            "type": "string",
+            "description": "The check amount associated with the item submitted"
+          },
+          "checkNumber": {
+            "type": "string",
+            "description": "The check number associated with the item submitted"
+          },
+          "issueAction": {
+            "type": "string",
+            "description": "The action to be performed with the item submitted"
+          },
+          "issueDate": {
+            "type": "string",
+            "description": "The check issue date associated with the item submitted"
+          },
+          "message": {
+            "type": "string",
+            "description": "Response Message \u201cProcessing by Bank\u201d or see list of Reason Codes and Messages.There may be multiple messages per item separated by a comma."
+          },
+          "payee": {
+            "type": "string",
+            "description": "The payee name associated with the item submitted"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of item.See list of Reason Codes and Messages.There may be multiple reason codes per item separated by a comma"
+          }
+        }
+      },
+      "issueListErrorResponse": {
+        "type": "object",
+        "required": [
+          "accountNumber",
+          "issueAction",
+          "checkNumber",
+          "amount",
+          "issueDate",
+          "message",
+          "status"
+        ],
+        "properties": {
+          "accountNumber": {
+            "type": "string",
+            "description": "The account number associated with the item submitted"
+          },
+          "amount": {
+            "type": "string",
+            "description": "The check amount associated with the item submitted"
+          },
+          "checkNumber": {
+            "type": "string",
+            "description": "The check number associated with the item submitted"
+          },
+          "issueAction": {
+            "type": "string",
+            "description": "The action to be performed with the item submitted"
+          },
+          "issueDate": {
+            "type": "string",
+            "description": "The check issue date associated with the item submitted"
+          },
+          "message": {
+            "type": "string",
+            "description": "Response Message \u201cProcessing by Bank\u201d or see list of Reason Codes and Messages.There may be multiple messages per item separated by a comma."
+          },
+          "payee": {
+            "type": "string",
+            "description": "The payee name associated with the item submitted"
+          },
+          "status": {
+            "type": "string",
+            "description": "The status of the item. There may be multiple reason codes per item separated by a comma. See list of all reason codes.<br><br>'code' : 10040 <br>'message' : Duplicate Item <br>'description' : Duplicate item submitted in issueList.<br>'typeOfResponse' : 400 <br><br>'code' : 10042  <br>'message' : issueAction is invalid <br>'description' : issueAction is not valid.<br>'typeOfResponse' : 400<br><br>'code' : 10049  <br>'message' : Account Not Entitled <br>'description' : Account is not entitled within company id to CashPro Check Management Reconciliation.<br>'typeOfResponse' : 400 <br><br>'code' : 10083  <br>'message' : Company Not Entitled<br>'description' : Company is not entitled to CashPro Check Management Reconciliation.<br>'typeOfResponse' : 400 <br><br>'code' : 10090  <br>'message' : Item not processed due to failure of one or more items in issueList <br>'description' : Item has passed validation but bank is unable to process due to issue with one or more items in issueList.<br>'typeOfResponse' : 400<br><br>'code' : 10091  <br>'message' : Account Number is invalid<br>'description' : Account number is not numeric.<br>'typeOfResponse' : 400  <br><br>'code' : 10092  <br>'message' : Check Number is invalid<br>'description' : Check Number is not numeric.<br>Check Number is not between 1 and 999999999.<br>'typeOfResponse' : 400 <br><br>'code' : 10094  <br>'message' : Check Amount is invalid<br>'description' : Check Amount is not numeric.<br>Check Amount is equal to zero.<br>Check Amount is greater than 99,999,999.99.<br>'typeOfResponse' : 400<br><br>'code' : 10095  <br>'message' : Issue Date Invalid Format (YYYY-MM-DD)<br>'description' : Check Issue Date is not formatted as YYYY-MM-DD.<br>'typeOfResponse' : 400 <br><br>'code' : 10096  <br>'message' : This item has already been submitted: Processing by Bank<br>'description' : Item was previously submitted and is in \u201cProcessing by Bank\u201d status.<br>'typeOfResponse' : 400 <br><br>'code' : 10097  <br>'message' : This item has already been submitted: Paid - No Issue<br>'description' : Item was previously submitted and is in \u201cPaid \u2013 No Issue\u201c status.<br>'typeOfResponse' : 400   <br><br>'code' : 10098  <br>'message' : This item has already been submitted: Outstanding Issue<br>'description' : Item was previously submitted and is in \u201cOutstanding Issue\u201d status.<br>'typeOfResponse' : 400  <br><br>'code' : 10099  <br>'message' : This item has already been submitted: Issue Cancelled <br>'description' : Item was previously submitted and is in \u201cIssue Cancelled\u201d status.<br>'typeOfResponse' : 400  <br><br>'code' : 10100  <br>'message' : Payee field cannot exceed 256 characters. (Length: XXX)<br>'description' : The Payee Name exceeds the maximum limit of 256 characters.<br>XXX = Length submitted.<br>'typeOfResponse' : 400<br><br>'code' : 10101  <br>'message' : XXXXX cannot be empty<br>'description' : issueList contains empty or null field <br> XXXXX = field name.<br>'typeOfResponse' : 400 <br><br>'code' : 10102  <br>'message' : Number of items submitted exceeds limit of XXXX<br>'description' : The number of issues submitted exceeds the limit as specified where XXXX = limit.<br>'typeOfResponse' : 400 <br><br>'code' : 10104  <br>'message' : Empty header key found : XXXXX<br>'description' : Mandatory header is empty.<br>XXXXX = Header field name.<br>'typeOfResponse' : 400"
+          }
+        }
+      }
+    }
+  }
+}

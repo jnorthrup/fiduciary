@@ -1,0 +1,603 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Current Day Balance Inquiry",
+    "description": "Returns CashPro Information Reporting account balance data for a single date in time.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Balance inquiries"
+    }
+  ],
+  "paths": {
+    "/cashpro/reporting/v1/balance-inquiries/current-day": {
+      "post": {
+        "tags": [
+          "Balance inquiries"
+        ],
+        "summary": "  Balance inquiries return CashPro Information Reporting account balance data for a single date in time.",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON .</br> ex. application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single reporting request. </br> ex. Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Current Day Balance Inquiry Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/balanceAPI"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiriesCurrentDay400Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiriesCurrentDay401Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiriesCurrentDay403Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiriesCurrentDay404Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiriesCurrentDay405Error"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiriesCurrentDay406Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiriesCurrentDay408Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiriesCurrentDay415Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiriesCurrentDay500Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceInquiriesCurrentDay503Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BalanceResponse": {
+        "required": [
+          "accountBalances"
+        ],
+        "type": "object",
+        "properties": {
+          "accountBalances": {
+            "$ref": "#/components/schemas/account"
+          }
+        }
+      },
+      "account": {
+        "required": [
+          "accountNumber"
+        ],
+        "type": "object",
+        "description": "Accounts returned with balance details.",
+        "properties": {
+          "accountNumber": {
+            "type": "string",
+            "description": "Account number. Length : 1 - 35",
+            "example": "600811111111"
+          },
+          "bankId": {
+            "type": "string",
+            "description": "BIC or routing number of the account. Length : 1 - 12",
+            "example": "BOFAGB22"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code of the account, as documented by ISO 4217 Codes for the representation of currencies and funds.",
+            "example": "EUR"
+          },
+          "balances": {
+            "type": "array",
+            "description": "Balance details returned",
+            "items": {
+              "$ref": "#/components/schemas/balances"
+            }
+          }
+        }
+      },
+      "balanceAPI": {
+        "required": [
+          "accounts",
+          "balanceAsOfDate"
+        ],
+        "type": "object",
+        "properties": {
+          "balanceAsOfDate": {
+            "type": "string",
+            "description": "Date of requested balances in YYYY-MM-DD format.",
+            "example": "2017-07-04"
+          },
+          "accounts": {
+            "type": "array",
+            "description": "Accounts requested",
+            "items": {
+              "$ref": "#/components/schemas/accounts"
+            }
+          }
+        }
+      },
+      "balances": {
+        "required": [
+          "transactionDescription"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionDescription": {
+            "type": "string",
+            "description": "A description of the BAI code balance being reported. Ex: Opening Ledger Balance, Closing Ledger Balance, Opening Available Balance, Collected/Closing Available Balance.",
+            "example": "Opening Ledger Balance"
+          },
+          "transactionCode": {
+            "type": "string",
+            "description": "BAI code of the balance amount reported. </br> Ex: 010, 015, 040, 045",
+            "example": "010"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Balance amount represented as 999999999999999999.99 Length: 1-21",
+            "example": "983.97"
+          },
+          "lastUpdatedDate": {
+            "type": "string",
+            "description": "Date of the balance reported in YYYY-MM-DD format, which may be different than the requested balance if weekend or not working day was requested.",
+            "example": "2017-07-04"
+          }
+        }
+      },
+      "accounts": {
+        "required": [
+          "accountNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "accountNumber": {
+            "type": "string",
+            "description": "Account number. Length : 1 - 35",
+            "example": "601022222222"
+          },
+          "bankId": {
+            "type": "string",
+            "description": "BIC or routing number of the account. Length : 1 - 12",
+            "example": "BOFAFRPP"
+          }
+        }
+      },
+      "reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "BalanceInquiriesCurrentDay400Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/balance-inquiries/current-day",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Bad Request"
+          }
+        }
+      },
+      "BalanceInquiriesCurrentDay401Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/balance-inquiries/current-day",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "BalanceInquiriesCurrentDay403Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/balance-inquiries/current-day",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "BalanceInquiriesCurrentDay404Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/balance-inquiries/current-day",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "BalanceInquiriesCurrentDay405Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/reporting/v1/balance-inquiries/current-day",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "BalanceInquiriesCurrentDay406Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/balance-inquiries/current-day",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "BalanceInquiriesCurrentDay408Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/balance-inquiries/current-day",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "BalanceInquiriesCurrentDay415Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/balance-inquiries/current-day",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "BalanceInquiriesCurrentDay500Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/balance-inquiries/current-day",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": " Internal Server Error "
+          }
+        }
+      },
+      "BalanceInquiriesCurrentDay503Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/reporting/v1/balance-inquiries/current-day",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

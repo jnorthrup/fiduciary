@@ -1,0 +1,1173 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Prime Brokerage Transaction Activity",
+    "description": "Sends daily transaction activity.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Prime Brokerage",
+      "description": "Prime Brokerage APIs"
+    }
+  ],
+  "paths": {
+    "/prime/transaction/v1/activity": {
+      "get": {
+        "tags": [
+          ""
+        ],
+        "summary": "The Transaction API allows clients to capture their daily transaction activity via API.",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "businessDate",
+            "in": "query",
+            "description": "Business date the client is requesting data for. Ex: Format is  YYYY-MM-DD",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dateBasis",
+            "in": "query",
+            "description": "The client is requesting data via Trade Date(TD) or Settle Date(SD), Posting Date (PD) our default is TD.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "apiMap",
+            "in": "query",
+            "description": "Transaction type for retrieving the data. ACT1  - Activity Report SWP \u2013 Swap Report",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reportCcy",
+            "in": "query",
+            "description": "Report transaction report by currency type. The default is USD.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse408"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "response": {
+        "type": "object",
+        "required": [
+          "Client Id",
+          "Client Name",
+          "Beneficial Owner Id",
+          "Beneficial Owner Name",
+          "Account ID",
+          "Account Name",
+          "Account Alias ID",
+          "Account Alias Name",
+          "Investment Manager Name",
+          "Investment Manager Id",
+          "Custodian ID",
+          "Custodian Name",
+          "Trader Name",
+          "Desk Name",
+          "Strategy Name",
+          "Account Region",
+          "Full Product Description",
+          "Short Product Description",
+          "Client Product ID",
+          "SEDOL",
+          "ISIN",
+          "CUSIP",
+          "CINS",
+          "TICKER",
+          "QUICK",
+          "OKEY",
+          "OCC KEY",
+          "Primary RIC Code",
+          "Primary Exchange",
+          "ISO CCY Code",
+          "Currency Name",
+          "Underlying Client Product ID",
+          "Underlying SEDOL",
+          "Underlying ISIN",
+          "Underlying CUSIP",
+          "Underlying CINS",
+          "Underlying TICKER",
+          "Underlying QUICK",
+          "Underlying Primary RIC Code",
+          "Country of Trading Code",
+          "Country of Issuer Code",
+          "GICS Industry Group",
+          " GICS Industry",
+          "GICS Sub Industry",
+          "GICS Sector",
+          "Pricing CCY",
+          "Price Factor",
+          "Trading Factor",
+          "Amortization Factor",
+          "CCY Of Issue",
+          "Asset Class",
+          "Product Type",
+          "Product Sub Type",
+          "Put Call Indicator",
+          "Strike Price",
+          "Expiration Date",
+          "Base CCY",
+          "Reporting CCY",
+          "BAML Transaction ID",
+          "Client Transaction ID",
+          "BAML Bulk Reference",
+          "Client Bulk Reference",
+          "Transaction Status",
+          "Buy/Sell Code",
+          "Open/Close",
+          "Transaction Category Code",
+          "Transaction Category Description",
+          "Transaction Sub Category Code",
+          "Transaction Sub Category Description",
+          "Transaction Type Code",
+          "Transaction Type Description",
+          "Source Transaction Description",
+          "Transaction Description",
+          "As Of Indicator",
+          "Same Day Cancel Indicator",
+          "FX/Pre-advised Posting Code",
+          "Financing Type",
+          "Security Holding Type Code",
+          "Client Broker Code",
+          "Client Broker Name",
+          " BAML Broker Code",
+          "BAML Broker Name",
+          "Exchange",
+          "Settlement Mechanism Description",
+          "Trade Date",
+          "Settlement Date",
+          "Posting Date",
+          "Posting Time",
+          "Activity Date",
+          "Cancel Date",
+          "Quantity",
+          "Amortized Quantity",
+          "Trade Price",
+          "Net Amount",
+          "Principal Amount",
+          "Interest Purchased/Sold",
+          "Commission",
+          "Ticket Charges",
+          "Base CCY Net Amount",
+          "Reporting CCY Net Amount",
+          "Client Deal ID",
+          "BAML Deal ID",
+          "Deal Type Code",
+          "Record Date",
+          "Ex-Dividend Date",
+          "Pay Date",
+          "Gross Amount",
+          "Withholding Tax Rate",
+          "Withholding Tax Amount"
+        ],
+        "properties": {
+          "Client Id": {
+            "type": "string",
+            "description": "Client Id"
+          },
+          "Client Name": {
+            "type": "string",
+            "description": "Client Name"
+          },
+          "Beneficial Owner Id": {
+            "type": "string",
+            "description": "Beneficial Owner Id"
+          },
+          "Beneficial Owner Name": {
+            "type": "string",
+            "description": "Beneficial Owner Name"
+          },
+          "Account ID": {
+            "type": "string",
+            "description": "Account Id"
+          },
+          "Account Name": {
+            "type": "string",
+            "description": "Account Name"
+          },
+          "Account Alias ID": {
+            "type": "string",
+            "description": "Account Alias ID"
+          },
+          "Account Alias Name": {
+            "type": "string",
+            "description": "Account Alias Name"
+          },
+          "Investment Manager Name": {
+            "type": "string",
+            "description": "Investment Manager Name"
+          },
+          "Investment Manager Id": {
+            "type": "string",
+            "description": "Investment Manager Id"
+          },
+          "Custodian ID": {
+            "type": "string",
+            "description": "Custodian ID"
+          },
+          "Custodian Name": {
+            "type": "string",
+            "description": "Custodian Name"
+          },
+          "Trader Name": {
+            "type": "string",
+            "description": "Trader Name"
+          },
+          "Desk Name": {
+            "type": "string",
+            "description": "Desk Name"
+          },
+          "Strategy Name": {
+            "type": "string",
+            "description": "Strategy Name"
+          },
+          "Account Region": {
+            "type": "string",
+            "description": "Account Region"
+          },
+          "Full Product Description": {
+            "type": "string",
+            "description": "Product Full Description"
+          },
+          "Short Product Description": {
+            "type": "string",
+            "description": "Product Short Description"
+          },
+          "Client Product ID": {
+            "type": "string",
+            "description": "Client Product ID"
+          },
+          "SEDOL": {
+            "type": "string",
+            "description": "SEDOL"
+          },
+          "ISIN": {
+            "type": "string",
+            "description": "ISIN"
+          },
+          "CUSIP": {
+            "type": "string",
+            "description": "CUSIP"
+          },
+          "CINS": {
+            "type": "string",
+            "description": "CINS"
+          },
+          "TICKER": {
+            "type": "string",
+            "description": "TICKER"
+          },
+          "QUICK": {
+            "type": "string",
+            "description": "QUICK"
+          },
+          "OCC KEY": {
+            "type": "string",
+            "description": "OCC KEY"
+          },
+          "Primary RIC Code": {
+            "type": "string",
+            "description": "Primary RIC Code"
+          },
+          "Primary Exchange": {
+            "type": "string",
+            "description": "Primary Exchange"
+          },
+          "ISO CCY Code": {
+            "type": "string",
+            "description": "ISO Currency Code"
+          },
+          "Currency Name": {
+            "type": "string",
+            "description": "Currency Name"
+          },
+          "Underlying Client Product ID": {
+            "type": "string",
+            "description": "Underlying Client Product ID"
+          },
+          "Underlying SEDOL": {
+            "type": "string",
+            "description": "Underlying SEDOL"
+          },
+          "Underlying ISIN": {
+            "type": "string",
+            "description": "Underlying ISIN"
+          },
+          "Underlying CUSIP": {
+            "type": "string",
+            "description": "Underlying CUSIP"
+          },
+          "Underlying CINS": {
+            "type": "string",
+            "description": "Underlying CINS"
+          },
+          "Underlying TICKER": {
+            "type": "string",
+            "description": "Underlying TICKER"
+          },
+          "Underlying QUICK": {
+            "type": "string",
+            "description": "Underlying QUICK"
+          },
+          "Underlying Primary RIC Code": {
+            "type": "string",
+            "description": "Underlying Primary RIC Code"
+          },
+          "Country of Trading Code": {
+            "type": "string",
+            "description": "Country of Trading Code"
+          },
+          "Country of Issuer Code": {
+            "type": "string",
+            "description": "Country of Issuer Code"
+          },
+          "Country of Issuer Name": {
+            "type": "string",
+            "description": "Country of Issuer Name"
+          },
+          "GICS Industry Group": {
+            "type": "string",
+            "description": "GICS Industry Group"
+          },
+          "GICS Industry": {
+            "type": "string",
+            "description": "GICS Industry"
+          },
+          "GICS Sub Industry": {
+            "type": "string",
+            "description": "GICS Sub Industry"
+          },
+          "GICS Sector": {
+            "type": "string",
+            "description": "GICS Sector"
+          },
+          "Pricing CCY": {
+            "type": "string",
+            "description": "Pricing Currency"
+          },
+          "Price Factor": {
+            "type": "string",
+            "description": "Price Factor"
+          },
+          "Trading Factor": {
+            "type": "string",
+            "description": "Trading Factor"
+          },
+          "Amortization Factor": {
+            "type": "string",
+            "description": "Amortization Factor"
+          },
+          "CCY Of Issue": {
+            "type": "string",
+            "description": "CCY Of Issue"
+          },
+          "Asset Class": {
+            "type": "string",
+            "description": "Asset Class"
+          },
+          "Product Type": {
+            "type": "string",
+            "description": "Product Type"
+          },
+          "Product Sub Type": {
+            "type": "string",
+            "description": "Product Sub Type"
+          },
+          "Put Call Indicator": {
+            "type": "string",
+            "description": "Put Call Indicator"
+          },
+          "Strike Price": {
+            "type": "string",
+            "description": "Strike Price"
+          },
+          "Expiration Date": {
+            "type": "string",
+            "description": "Expiration Date"
+          },
+          "Base CCY": {
+            "type": "string",
+            "description": "Base CCY"
+          },
+          "Reporting CCY": {
+            "type": "string",
+            "description": "Reporting CCY"
+          },
+          "BAML Transaction ID": {
+            "type": "string",
+            "description": "BAML Transaction ID"
+          },
+          "Client Transaction ID": {
+            "type": "string",
+            "description": "Client Transaction ID"
+          },
+          "BAML Bulk Reference": {
+            "type": "string",
+            "description": "BAML Bulk Reference"
+          },
+          "Client Bulk Reference": {
+            "type": "string",
+            "description": "Client Bulk Reference"
+          },
+          "Transaction Status": {
+            "type": "string",
+            "description": "Transaction Status"
+          },
+          "Buy/Sell Code": {
+            "type": "string",
+            "description": "Buy/Sell Code"
+          },
+          "Open/Close": {
+            "type": "string",
+            "description": "Open/Close"
+          },
+          "Transaction Category Code": {
+            "type": "string",
+            "description": "Transaction Category Code"
+          },
+          "Transaction Category Description": {
+            "type": "string",
+            "description": "Transaction Category Description"
+          },
+          "Transaction Sub Category Code": {
+            "type": "string",
+            "description": "Transaction Sub Category Code"
+          },
+          "Transaction Sub Category Description": {
+            "type": "string",
+            "description": "Transaction Sub Category Description"
+          },
+          "Transaction Type Code": {
+            "type": "string",
+            "description": "Transaction Type Code"
+          },
+          "Transaction Type Description": {
+            "type": "string",
+            "description": "Transaction Type Description"
+          },
+          "Source Transaction Description": {
+            "type": "string",
+            "description": "Source Transaction Description"
+          },
+          "Transaction Description": {
+            "type": "string",
+            "description": "Transaction Description"
+          },
+          "As Of Indicator": {
+            "type": "string",
+            "description": "As Of Indicator"
+          },
+          "Same Day Cancel Indicator": {
+            "type": "string",
+            "description": "Same Day Cancel Indicator"
+          },
+          "FX/Pre-advised Posting Code": {
+            "type": "string",
+            "description": "FX/Pre-advised Posting Code"
+          },
+          "Financing Type": {
+            "type": "string",
+            "description": "Financing Type"
+          },
+          "Security Holding Type Code": {
+            "type": "string",
+            "description": "Security Holding Type Code"
+          },
+          "Client Broker Code": {
+            "type": "string",
+            "description": "Client Broker Code"
+          },
+          "Client Broker Name": {
+            "type": "string",
+            "description": "Client Broker Name"
+          },
+          "BAML Broker Code": {
+            "type": "string",
+            "description": "ML Broker Code"
+          },
+          "BAML Broker Name": {
+            "type": "string",
+            "description": "ML Broker Name"
+          },
+          "Exchange": {
+            "type": "string",
+            "description": "Exchange"
+          },
+          "Settlement Mechanism Description": {
+            "type": "string",
+            "description": "Settlement Mechanism Description"
+          },
+          "Trade Date": {
+            "type": "string",
+            "description": "Trade Date"
+          },
+          "Settlement Date": {
+            "type": "string",
+            "description": "Settlement Date"
+          },
+          "Posting Date": {
+            "type": "string",
+            "description": "Posting Date"
+          },
+          "Posting Time": {
+            "type": "string",
+            "description": "Posting Time"
+          },
+          "Activity Date": {
+            "type": "string",
+            "description": "Activity Date"
+          },
+          "Cancel Date": {
+            "type": "string",
+            "description": "Cancel Date"
+          },
+          "Quantity": {
+            "type": "string",
+            "description": "Quantity"
+          },
+          "Amortized Quantity": {
+            "type": "string",
+            "description": "Amortized Quantity"
+          },
+          "Trade Price": {
+            "type": "string",
+            "description": "Trade Price"
+          },
+          "Net Amount": {
+            "type": "string",
+            "description": "Net Amount"
+          },
+          "Principal Amount": {
+            "type": "string",
+            "description": "Principal Amount"
+          },
+          "Interest Purchased/Sold": {
+            "type": "string",
+            "description": "Interest Purchased/Sold"
+          },
+          "Commission": {
+            "type": "string",
+            "description": "Commission"
+          },
+          "Ticket Charges": {
+            "type": "string",
+            "description": "Ticket Charges"
+          },
+          "Base CCY Net Amount": {
+            "type": "string",
+            "description": "Base CCY Net Amount"
+          },
+          "Reporting CCY Net Amount": {
+            "type": "string",
+            "description": "Reporting CCY Net Amount"
+          },
+          "Client Deal ID": {
+            "type": "string",
+            "description": "Client Deal ID"
+          },
+          "BAML Deal ID": {
+            "type": "string",
+            "description": "BAML Deal ID"
+          },
+          "Deal Type Code": {
+            "type": "string",
+            "description": "Deal Type Code"
+          },
+          "Record Date": {
+            "type": "string",
+            "description": "Record Date"
+          },
+          "Ex-Dividend Date": {
+            "type": "string",
+            "description": "Ex-Dividend Date"
+          },
+          "Pay Date": {
+            "type": "string",
+            "description": "Pay Date"
+          },
+          "Gross Amount": {
+            "type": "string",
+            "description": "Gross Amount"
+          },
+          "Withholding Tax Rate": {
+            "type": "string",
+            "description": "Withholding Tax Rate"
+          },
+          "Withholding Tax Amount": {
+            "type": "string",
+            "description": "Withholding Tax Amount"
+          }
+        },
+        "example": {
+          "results": [
+            {
+              "Client Id": "C - 1070329857",
+              "Client Name": "John Doe Partners ABC-XYZ",
+              "Beneficial Owner Id": "123456789",
+              "Beneficial Owner Name": "John Doe Partners ABC-XYZ",
+              "Account ID": "ZLAN331",
+              "Account Name": "John Doe Partners ABC-XYZ",
+              "Account Alias ID": "ZLAN331",
+              "Account Alias Name": "John Doe Partners ABC-XYZ ",
+              "Investment Manager Name": "",
+              "Investment Manager Id": "",
+              "Custodian ID": "ML",
+              "Custodian Name": "John Doe 123456",
+              "Trader Name": "",
+              "Desk Name": "",
+              "Strategy Name": "",
+              "Account Region": "A2",
+              "Full Product Description": "FULL Product Description value",
+              "Short Product Description": "FULL Product Description value",
+              "Client Product ID": "5821505",
+              "SEDOL": "5889505",
+              "ISIN": "DE0006231004",
+              "CUSIP": "D35415104",
+              "CINS": "D35415104",
+              "TICKER": "IFX",
+              "QUICK": "",
+              "OCC KEY": "",
+              "Primary RIC Code": "IFXGn.DE",
+              "Primary Exchange": "GER",
+              "ISO CCY Code": "",
+              "Currency Name": "",
+              "Underlying Client Product ID": "",
+              "Underlying SEDOL": "",
+              "Underlying ISIN": "",
+              "Underlying CUSIP": "",
+              "Underlying CINS": "",
+              "Underlying TICKER": "",
+              "Underlying QUICK": "",
+              "Underlying Primary RIC Code": "",
+              "Country of Trading Code": "DE",
+              "Country of Issuer Code": "DE",
+              "Country of Issuer Name": "GERMANY",
+              "GICS Industry Group": "4530",
+              "GICS Industry": "453010",
+              "GICS Sub Industry": "45301020",
+              "GICS Sector": "45",
+              "Pricing CCY": "EUR",
+              "Price Factor": "1",
+              "Trading Factor": "1",
+              "Amortization Factor": "1",
+              "CCY of Issue": "EUR",
+              "Asset Class": "Equities",
+              "Product Type": "Common Stock",
+              "Product Sub Type": "Common Stock",
+              "Put Call Indicator": "",
+              "Strike Price": "",
+              "Expiration Date": "",
+              "Base CCY": "USD",
+              "Reporting CCY": "USD",
+              "BAML Transaction ID": "5129556519",
+              "Client Transaction ID": "4086102",
+              "BAML Bulk Reference": "",
+              "Client Bulk Reference": "",
+              "Transaction Status": "CXL",
+              "Buy / Sell Code": "BR",
+              "Open / Close": "Not Specified",
+              "Transaction Category Code": "T",
+              "Transaction Category Description": "Trade",
+              "Transaction Sub Category Code": "TB",
+              "Transaction Sub Category Description": "Buy",
+              "Transaction Type Code": "TB",
+              "Transaction Type Description": "Buy",
+              "Source Transaction Description": "Security Purchase/Sale",
+              "Transaction Description": "",
+              "As Of Indicator": "N",
+              "Same Day Cancel Indicator": "N",
+              "FX / Pre-Advised Posting Code": "Standard Txn",
+              "Financing Type": "Unspecified",
+              "Security Holding Type Code": "HC",
+              "Client Broker Code": "",
+              "Client Broker Name": "",
+              "BAML Broker Code": "ABCD1234",
+              "BAML Broker Name": "John Doe Partners ABC-XYZ.",
+              "Exchange": "GER",
+              "Settlement Mechanism Description": "German Domestic",
+              "Trade Date": "2020-03-31",
+              "Settlement Date": "2020-04-02",
+              "Posting Date": "2020-04-01",
+              "Posting Time": "00:00:00",
+              "Activity Date": "2020-04-01",
+              "Cancel Date": "2020-04-01",
+              "Quantity": -8861996,
+              "Amortized Quantity": -8861996,
+              "Trade Price": "13.982873",
+              "Net Amount": "123978123.72",
+              "Principal Amount": "123916165.56",
+              "Interest Purchased / Sold": "0",
+              "Commission": "61958.16",
+              "Ticket Charges": "0",
+              "Base CCY Net Amount": "136816058.431206",
+              "Reporting CCY Net Amount": "136816058.431206",
+              "Client Deal ID": "",
+              "BAML Deal Id": "",
+              "Deal Type Code": "",
+              "Record Date": "",
+              "Ex Dividend Date": "",
+              "Pay Date": "",
+              "Gross Amount": "0",
+              "Withholding Tax Rate": "",
+              "Withholding Tax Amount": ""
+            }
+          ]
+        }
+      },
+      "errorResponse401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET /prime/transaction/v1/activity",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "errorResponse403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET /prime/transaction/v1/activity",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "errorResponse404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET /prime/transaction/v1/activity",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "errorResponse405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "POST /prime/transaction/v1/activity",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "errorResponse406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET /prime/transaction/v1/activity",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "errorResponse408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET /prime/transaction/v1/activity",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "errorResponse500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET /prime/transaction/v1/activity",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "errorResponse503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET /prime/transaction/v1/activity",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

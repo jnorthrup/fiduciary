@@ -1,0 +1,937 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Global Markets \u2013 Place New Issue Deal Order",
+    "description": "Place an order on new issue deal.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.bofa.com/muni/v1/newissues/newissuedeal/order",
+      "description": "Production Gateway Base URL"
+    },
+    {
+      "url": "https://api-sb.bofa.com/muni/v1/newissues/newissuedeal/order",
+      "description": "Sandbox Base URL"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Global Markets \u2013 new issue deal order"
+    }
+  ],
+  "paths": {
+    "/muni/v1/newissues/newissuedeal/order": {
+      "put": {
+        "tags": [
+          "Global Markets \u2013 new issue deal order",
+          "Muni services"
+        ],
+        "summary": "APIs that allow BofA Securities customers of Municipal Banking and Markets to transact Municipal securities. This API provides the customer the ability to place an order on new issue deal.",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identify the content of the payload as JSON. Use 'Content-Type: application/json'. This is the only content type supported as of now. Content-Types cannot be negotiated programmatically at this time. Future versions might provide that facility.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. 'Bearer [value]')",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "header",
+            "description": "User who is interacting with this service from a company. User should be on boarded on the Bofa Securities Mercury&#153; platform and obtain userId.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "header",
+            "description": "A token provided by client to identify their request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/issueDealAPI"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/orderResponseTrade"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError429"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "issueDealAPI": {
+        "required": [
+          "orderRequest"
+        ],
+        "type": "object",
+        "properties": {
+          "orderRequest": {
+            "type": "array",
+            "description": "This is an array which holds the order details to be placed.<br>The order details request fields are given in the below table.",
+            "items": {
+              "$ref": "#/components/schemas/orderRequestTrade"
+            }
+          }
+        },
+        "example": {
+          "orderRequest": [
+            {
+              "orderType": "Member",
+              "accountType": "Dealer",
+              "accountName": "VANGUARD",
+              "clearsThrough": "Test",
+              "repNo": 243465679,
+              "zip": "989980989",
+              "brokerCode": "test",
+              "salesOffice": "testsales",
+              "dealComments": "deal comments",
+              "bonds": [
+                {
+                  "maturity": "2024-08-08",
+                  "orderAmount": 100000,
+                  "coupon": 100000,
+                  "priceYield": 5.15,
+                  "credit": 0.2,
+                  "comments": "new issue order"
+                }
+              ],
+              "confirmations": []
+            }
+          ]
+        }
+      },
+      "orderRequestTrade": {
+        "type": "object",
+        "required": [
+          "orderType",
+          "accountType",
+          "accountName",
+          "clearsThrough",
+          "repNo",
+          "salesOffice",
+          "zip",
+          "brokerCode",
+          "dealComments",
+          "bonds"
+        ],
+        "properties": {
+          "orderType": {
+            "type": "string",
+            "description": "Type of order being taken <br> \"Member\" , \"External\" \u2013 this is not controlled, as firms can use different terminology"
+          },
+          "accountType": {
+            "type": "string",
+            "description": "Type of account: <br> \"Dealer\" , \"Institutional\" \u2013 this is not controlled, as firms can use different terminology"
+          },
+          "accountName": {
+            "type": "string",
+            "description": "Name on the trading account as used by BofA"
+          },
+          "clearsThrough": {
+            "type": "string",
+            "description": "Indicating whether the account clears through a separate firm"
+          },
+          "repNo": {
+            "type": "integer",
+            "format": "Whole Number",
+            "description": "Sales representative number \u2013 this should be the BofA sales person covering the account"
+          },
+          "zip": {
+            "type": "string",
+            "description": "Zip Code of the account holder"
+          },
+          "brokerCode": {
+            "type": "string",
+            "description": "BofA code from the broker"
+          },
+          "salesOffice": {
+            "type": "string",
+            "description": "BofA sales office order comes from"
+          },
+          "dealComments": {
+            "type": "string",
+            "description": "Comments related to the deal itself"
+          },
+          "bonds": {
+            "type": "array",
+            "description": "Holds six fields <br><br>Maturity (date) <br>Order Amount (whole number) <br>Coupon (decimal) <br>PriceYield (decimal) <br>Credit (decimal) <br>Comments (String)",
+            "items": {
+              "$ref": "#/components/schemas/bonds"
+            }
+          },
+          "confirmations": {
+            "type": "array",
+            "description": "Array of confirmations - For Future use",
+            "items": {}
+          }
+        }
+      },
+      "bonds": {
+        "type": "object",
+        "required": [
+          ""
+        ],
+        "properties": {
+          "maturity": {
+            "type": "string",
+            "format": "date"
+          },
+          "orderAmount": {
+            "type": "integer",
+            "format": "Whole Number"
+          },
+          "coupon": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "priceYield": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "credit": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "comments": {
+            "type": "string"
+          }
+        }
+      },
+      "orderResponseTrade": {
+        "type": "object",
+        "properties": {
+          "orderResponse": {
+            "type": "array",
+            "description": "This is an array which holds the order details response.<br>The order details Response fields are given in the below table.",
+            "items": {
+              "$ref": "#/components/schemas/orderResponseTradeDetails"
+            }
+          }
+        },
+        "description": "Response successfully retrieved",
+        "example": {
+          "orderResponse": [
+            {
+              "orderType": "Member",
+              "accountType": "Dealer",
+              "accountName": "VANGUARD",
+              "clearsThrough": "Test",
+              "repNo": 243465679,
+              "zip": "989980989",
+              "brokerCode": "test",
+              "salesOffice": "testsales",
+              "dealComments": "deal comments",
+              "bonds": [
+                {
+                  "maturity": "2024-08-08",
+                  "orderAmount": 100000,
+                  "coupon": 100000,
+                  "priceYield": 5.15,
+                  "credit": 0.2,
+                  "comments": "new issue order"
+                }
+              ],
+              "status": "Submitted",
+              "referenceNumber": 0,
+              "hasError": true,
+              "errorMessage": "Available offer amount: 0",
+              "errorType": "ERRORTYPE_QUANTITY",
+              "validationErrors": [],
+              "confirmations": [],
+              "systemErrors": null
+            }
+          ]
+        }
+      },
+      "orderResponseTradeDetails": {
+        "type": "object",
+        "properties": {
+          "orderType": {
+            "type": "string",
+            "description": "Type of order being taken<br> \u201cMember\u201d , \u201cExternal\u201d \u2013 this is not controlled, as firms can use different terminology"
+          },
+          "accountType": {
+            "type": "string",
+            "description": "Type of account:<br><br>\u201cDealer\u201d , \u201cInstitutional\u201d \u2013 this is not controlled, as firms can use different terminology"
+          },
+          "accountName": {
+            "type": "string",
+            "description": "Name on the trading account as used by BofA"
+          },
+          "clearsThrough": {
+            "type": "string",
+            "description": "Indicating whether the account clears through a separate firm"
+          },
+          "repNo": {
+            "type": "integer",
+            "format": "Whole Number",
+            "description": "Sales representative number \u2013 this should be the BofA sales person covering the account"
+          },
+          "zip": {
+            "type": "string",
+            "description": "Zip Code of the account holder"
+          },
+          "brokerCode": {
+            "type": "string",
+            "description": "BofA code from the broker"
+          },
+          "salesOffice": {
+            "type": "string",
+            "description": "BofA sales office order comes from"
+          },
+          "dealComments": {
+            "type": "string",
+            "description": "Comments related to the deal itself"
+          },
+          "bonds": {
+            "type": "array",
+            "description": "Holds six fields <br><br>Maturity (date) <br>Order Amount (whole number) <br>Coupon (decimal) <br>PriceYield (decimal) <br>Credit (decimal) <br>Comments (String)",
+            "items": {
+              "$ref": "#/components/schemas/bonds"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "BofA Status on the order"
+          },
+          "referenceNumber": {
+            "type": "integer",
+            "format": "Whole Number",
+            "description": "BofA reference number on the order"
+          },
+          "hasError": {
+            "type": "boolean",
+            "description": "If there were errors when processing the request<br><br>True/False"
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "Messages if hasError is true. While every effort will be made to notify and co-ordinate when these error message text change, BofA Securities reserves the right to change the text without notice."
+          },
+          "errorType": {
+            "type": "string",
+            "description": "Future use"
+          },
+          "validationErrors": {
+            "type": "array",
+            "description": "Future Use",
+            "items": {}
+          },
+          "confirmations": {
+            "type": "array",
+            "description": "Future Use",
+            "items": {}
+          },
+          "systemErrors": {
+            "type": "string",
+            "description": "Technical failures on BofA Securities end. These could be transient or permanent. You do not have to correct your input if you retry."
+          }
+        }
+      },
+      "temmsTradeError400": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:123",
+          "status": "Failure",
+          "apiName": "muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Validation error:Incomplete/Incorrect Request : Missing or Extra fields"
+          }
+        }
+      },
+      "temmsTradeError401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "d7df57b0-37b8-11ea-8715-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "temmsTradeError403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "temmsTradeError404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "29804110-37b9-11ea-99c7-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "temmsTradeError405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "temmsTradeError406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "temmsTradeError408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "temmsTradeError415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "008030e0-37b9-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "temmsTradeError429": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/429Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1234",
+          "status": "Failure",
+          "apiName": "muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 429,
+            "reasonDescription": "API Hit Rate Error:Maximum number of times this API can be called per second has been exceeded"
+          }
+        }
+      },
+      "temmsTradeError500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "ae18f4d0-37b9-11ea-8ce3-005056a74762",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "temmsTradeError503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "PUT/ muni/v1/newissues/newissuedeal/order",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "429Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

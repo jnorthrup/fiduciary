@@ -1,0 +1,211 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Payment Request for Information",
+    "description": "Notifies when a U.S. real-time payment request for information (RFI) is received.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Push Notification for Payments v2 APIs",
+      "description": "Payment Request for Information"
+    }
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "tags": [
+          ""
+        ],
+        "summary": "Notifies when a U.S. real-time payment request for information(RFI) is received",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON. </br> ex. application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request .</br> ex. Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX . </br> This field will be used for the Access Token for clients electing to use the OAuth authentication model.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "header",
+            "description": "User ID provided during onboarding </br> This field will be used for clients electing to use the basic authentication model. </br> Eg. 123898733525554444",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAuthKey",
+            "in": "header",
+            "description": "Password provided during onboarding </br> This field will be used for clients electing to use the basic authentication model.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Payload that will  be sent to client ",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/paymentInfoRequest"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {}
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {}
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {}
+          },
+          "405": {
+            "description": "Invalid method",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {}
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "paymentInfoRequest": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": "Unique transaction identifier as assigned by the bank Length: 1-32",
+            "example": "1f64ceaf-6a70-45ef-8adb-17182f809ac6"
+          },
+          "rfiId ": {
+            "type": "string",
+            "description": "Identification number of the request for information Length: 35 ",
+            "example": "12345678902234567890323456789042345"
+          },
+          "createdDateTime": {
+            "type": "string",
+            "description": "Date and time when the request for information was processed by the bank in 'YYYY-MM-DD HH:MM:SS GMT+HH:MM' format ",
+            "example": "2019-05-22 09:25:30 GMT+00:00"
+          },
+          "senderName": {
+            "type": "string",
+            "description": "Name of the acknowledgement by receiver sender. Length : 1-140 ",
+            "example": "Sample Sender Name"
+          },
+          "rfiCodeNText": {
+            "type": "array",
+            "description": "Request for information details provided",
+            "xml": {
+              "name": "reason",
+              "wrapped": true
+            },
+            "items": {
+              "$ref": "#/components/schemas/rfiCodeNTextObj"
+            }
+          }
+        },
+        "description": "Bad request"
+      },
+      "PaymentStatusResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "SUCCESS"
+          }
+        },
+        "description": "Bad request"
+      },
+      "PaymentErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ERROR"
+          },
+          "reasonCode": {
+            "type": "string",
+            "description": "This contains the Error Code.",
+            "example": "903"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "This contains the error description.",
+            "example": "Client error description"
+          }
+        },
+        "description": "Bad request"
+      },
+      "rfiCodeNTextObj": {
+        "type": "object",
+        "properties": {
+          "rfiCode": {
+            "type": "string",
+            "description": "Error reason code Length: 1 - 5",
+            "example": "XX01"
+          },
+          "rfiText": {
+            "type": "string",
+            "description": " Additional text provided by the sender. Length : 1 - 140 ",
+            "example": "Additional information provided with the request for information."
+          }
+        }
+      }
+    }
+  }
+}

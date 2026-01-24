@@ -1,0 +1,751 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Check Image Retrieval",
+    "description": "Obtain images for paid checks within the retention period associated with a check disbursement account.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": "cashpro-checkmanagement-v1-images-post-overview.json"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Check Services",
+      "description": ""
+    }
+  ],
+  "paths": {
+    "/cashpro/checkmanagement/v1/images": {
+      "post": {
+        "tags": [
+          "Check Services"
+        ],
+        "summary": "Our Check Image Retrieval service allows you to obtain images for paid checks within the retention period associated with a check disbursement account",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "An unexpired access token to be used for this request (ex. 'Bearer [value]'). Length: 256",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "traceId",
+            "in": "header",
+            "description": "unique per request. Length: 50",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyId",
+            "in": "header",
+            "description": "Unique company identifier - CashPro Company  ID. Length: 15",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyType",
+            "in": "header",
+            "description": "Static text. Value = External",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "description": "Static text. Value = application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifies the content of the payload as JSON. Value = application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxImageCount",
+            "in": "header",
+            "description": "Maximum number of images returned from API. Length: 4",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Check image related parameters. Contains the account number and its related filters.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/inquiryCheckInModel"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Request received successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseEntity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkImageRetrievalError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkImageRetrievalError401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkImageRetrievalError403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkImageRetrievalError404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkImageRetrievalError405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkImageRetrievalError406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkImageRetrievalError408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkImageRetrievalError415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkImageRetrievalError500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/checkImageRetrievalError503"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name": "body"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "inquiryCheckInModel": {
+        "type": "object",
+        "required": [
+          "accountNumber",
+          "fromDate",
+          "toDate"
+        ],
+        "properties": {
+          "accountNumber": {
+            "type": "string",
+            "description": "The account number associated with check images to be retrieved. Max Length: 12 digits "
+          },
+          "fromCheckNumber": {
+            "type": "string",
+            "description": "Starting check number within desired range. Max Length: 12 digits"
+          },
+          "toCheckNumber": {
+            "type": "string",
+            "description": "Ending check number within desired range. Max Length: 12 digits"
+          },
+          "fromAmount": {
+            "type": "string",
+            "description": "Starting check amount within desired range. Format: 9999999.99"
+          },
+          "toAmount": {
+            "type": "string",
+            "description": "Ending check amount within desired range. Format: 9999999.99"
+          },
+          "fromDate": {
+            "type": "string",
+            "description": "Starting check paid date. Format: YYYY-MM-DD. Cannot be future dated; fromDate and toDate should not be more than 90 days "
+          },
+          "toDate": {
+            "type": "string",
+            "description": "Ending check paid date. Format: YYYY-MM-DD. Cannot be future dated; fromDate and toDate should not be more than 90 days"
+          }
+        },
+        "example": {
+          "accountNumber": "1416000004",
+          "fromCheckNumber": "1000",
+          "toCheckNumber": "5000",
+          "fromAmount": "1000.00",
+          "toAmount": "15000.00",
+          "fromDate": "2019-05-08",
+          "toDate": "2019-07-30"
+        }
+      },
+      "ResponseEntity": {
+        "type": "object",
+        "required": [
+          "totalItems",
+          "imagesReturned",
+          "Message",
+          "Status"
+        ],
+        "properties": {
+          "totalItems": {
+            "type": "integer",
+            "description": "Total number of images found based upon the query parameters. Length: 4"
+          },
+          "imagesReturned": {
+            "type": "integer",
+            "description": "Total number of images returned in the response. Length: 4"
+          },
+          "Message": {
+            "type": "string",
+            "description": "Response message. SUCCESS or see list of possible response messages"
+          },
+          "Status": {
+            "type": "string",
+            "description": "Response code"
+          },
+          "unProcessedItems": {
+            "type": "integer",
+            "description": "Total number of unprocessed images Length: 4"
+          },
+          "processedList": {
+            "type": "array",
+            "description": "List of processed checks; Viewer entity",
+            "items": {
+              "$ref": "#/components/schemas/CheckViewerOutModel"
+            }
+          },
+          "unProcessedList": {
+            "type": "array",
+            "description": "List of unprocessed checks; Viewer entity",
+            "items": {
+              "$ref": "#/components/schemas/CheckViewerOutModel"
+            }
+          }
+        },
+        "example": {
+          "imagesReturned": 17,
+          "message": "SUCCESS",
+          "processedList": [
+            {
+              "frontImage": "iVBORw0KGgoAAAANSUhEUgAAB+AAAAM+AQAAAAACsSUNAAAACXBIWXMAACTpAAAk6QFQJ",
+              "backImage": "iVBORw0KGgoAAAANSUhEUgAAB+AAAAM+AQAAAAACsSUNAAAACXBIWXMAACTpAAAk6QFQJO",
+              "amount": "4103.15",
+              "checkNumber": "3107",
+              "id": "2582274843",
+              "message": "SUCCESS",
+              "paidDate": "2019-07-30",
+              "status": "200"
+            },
+            {
+              "frontImage": "iVBORw0KGgoAAAANSUhEUgAAB+AAAAM+AQAAAAACsSUNAAAACXBIWXMAACTpAAAk6QFQJ",
+              "backImage": "iVBORw0KGgoAAAANSUhEUgAAB+AAAAM+AQAAAAACsSUNAAAACXBIWXMAACTpAAAk6QFQJO",
+              "amount": "11088.87",
+              "checkNumber": "1234",
+              "id": "2582274769",
+              "message": "SUCCESS",
+              "paidDate": "2019-07-30",
+              "status": "200"
+            },
+            {
+              "amount": "1358.87",
+              "checkNumber": "1234",
+              "message": "Image Not Available",
+              "status": "10043"
+            }
+          ],
+          "status": "200",
+          "totalItems": 45,
+          "unProcessedItems": 25,
+          "unProcessedList": [
+            {
+              "amount": "402.74",
+              "checkNumber": "4022",
+              "id": "2672009520",
+              "paidDate": "2019-06-19"
+            },
+            {
+              "amount": "4103.39",
+              "checkNumber": "3107",
+              "id": "2582274881",
+              "paidDate": "2019-07-30"
+            }
+          ]
+        }
+      },
+      "CheckViewerOutModel": {
+        "type": "object",
+        "required": [
+          "Id",
+          "Status",
+          "Message",
+          "Amount",
+          "CheckNumber",
+          "imageCount"
+        ],
+        "properties": {
+          "Id": {
+            "type": "string",
+            "description": "unique id per image. Length: 12"
+          },
+          "Status": {
+            "type": "string",
+            "description": "Status of image"
+          },
+          "Message": {
+            "type": "string",
+            "description": "Response Message"
+          },
+          "Amount": {
+            "type": "string",
+            "description": "Check amount. Format: 9999999.99"
+          },
+          "CheckNumber": {
+            "type": "string",
+            "description": "Check Number. Max Length: 12"
+          },
+          "frontImage": {
+            "type": "string",
+            "description": "Contains the scanned copy of face of check. Image in base64 format. Size: 50KB"
+          },
+          "backImage": {
+            "type": "string",
+            "description": "Contains the scanned copy of back of check. Image in base64 format. Size: 50KB"
+          },
+          "imageCount": {
+            "type": "string",
+            "description": "Number of retrieved images out of available images that matched the query parameters. Length: 4"
+          },
+          "paidDate": {
+            "type": "string",
+            "description": "Date check was paid. Format: YYYY-MM-DD"
+          }
+        }
+      },
+      "reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "checkImageRetrievalError400": {
+        "type": "object",
+        "properties": {
+          "imagesReturned": {
+            "type": "integer",
+            "description": "Total number of images returned in the response. Length: 4"
+          },
+          "Message": {
+            "type": "string",
+            "description": "Response message. SUCCESS or see list of possible response messages"
+          },
+          "processedList": {
+            "type": "array",
+            "description": "List of processed checks; Viewer entity,",
+            "items": {
+              "$ref": "#/components/schemas/CheckViewerOutModel"
+            }
+          },
+          "Status": {
+            "type": "string",
+            "description": "Response code"
+          },
+          "totalItems": {
+            "type": "integer",
+            "description": "Total number of images found based upon the query parameters. Length: 4"
+          },
+          "unProcessedItems": {
+            "type": "integer",
+            "description": "Total number of unprocessed images Length: 4"
+          },
+          "unProcessedList": {
+            "type": "array",
+            "description": "List of processed checks; Viewer entity,",
+            "items": {
+              "$ref": "#/components/schemas/CheckViewerOutModel"
+            }
+          }
+        },
+        "description": "",
+        "example": {
+          "imagesReturned": null,
+          "message": "fromCheckNumber :100 should not be greater than toCheckNumber :1",
+          "processedList": null,
+          "status": "400",
+          "totalItems": null,
+          "unProcessedItems": null,
+          "unProcessedList": null
+        }
+      },
+      "checkImageRetrievalError401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/checkmanagement/v1/images",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "checkImageRetrievalError403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/checkmanagement/v1/images",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "checkImageRetrievalError404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/checkmanagement/v1/images",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "checkImageRetrievalError405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/checkmanagement/v1/images",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "checkImageRetrievalError406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/checkmanagement/v1/images",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "checkImageRetrievalError408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/checkmanagement/v1/images",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "checkImageRetrievalError415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/checkmanagement/v1/images",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "checkImageRetrievalError500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/checkmanagement/v1/images",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": " Internal Server Error "
+          }
+        }
+      },
+      "checkImageRetrievalError503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/checkmanagement/v1/images",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

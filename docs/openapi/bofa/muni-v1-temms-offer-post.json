@@ -1,0 +1,1009 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Global Markets \u2013 TEMMS Offer",
+    "description": "Allows a user to retrieve BofA inventory available.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Muni Services"
+    }
+  ],
+  "paths": {
+    "/muni/v1/temms/offer": {
+      "post": {
+        "tags": [
+          "Muni Services"
+        ],
+        "summary": "APIs that allow BofA Securities customers of Municipal Banking and Markets to transact Municipal securities. This API provides the customer the ability to retrieve BofA inventory available.",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identify the content of the payload as JSON. Use 'Content-Type: application/json'. This is the only content type supported as of now. Content-Types cannot be negotiated programmatically at this time. Future versions might provide that facility.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. 'Bearer [value]')",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "header",
+            "description": "User who is interacting with this service from a company. User should be on boarded on the Bofa Securities Mercury\u2122 platform and obtain userId.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "header",
+            "description": "A token provided by client to identify their request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "requestBody": {
+        "required": [
+          "searchRequest"
+        ],
+        "type": "object",
+        "properties": {
+          "searchRequest": {
+            "$ref": "#/components/schemas/searchRequestOffer"
+          }
+        },
+        "example": {
+          "searchRequest": {
+            "criteria": [
+              {
+                "field": "cusip",
+                "operand": "=",
+                "value": "00037NJS6"
+              },
+              {
+                "field": "privatePlacement",
+                "operand": "=",
+                "value": "N"
+              },
+              {
+                "field": "resetMode",
+                "operand": "=",
+                "value": "DAILY"
+              },
+              {
+                "field": "productType",
+                "operand": "=",
+                "value": "VRDO"
+              },
+              {
+                "field": "federalTaxProvision",
+                "operand": "=",
+                "value": "T"
+              },
+              {
+                "field": "creditProvider",
+                "operand": "=",
+                "value": "'abdc_co_1234"
+              },
+              {
+                "field": "excludeCreditProvider",
+                "operand": "=",
+                "value": "false"
+              },
+              {
+                "field": "liquidityProvider",
+                "operand": "=",
+                "value": "'abdc_co_1234"
+              },
+              {
+                "field": "excludeLiquidityProvider",
+                "operand": "=",
+                "value": "false"
+              },
+              {
+                "field": "states",
+                "operand": "=",
+                "value": "AZ,CA"
+              },
+              {
+                "field": "rate",
+                "operand": ">=",
+                "value": "0.1"
+              },
+              {
+                "field": "rate",
+                "operand": "<=",
+                "value": "0.9"
+              },
+              {
+                "field": "offerSizeDollarAmount",
+                "operand": ">=",
+                "value": "10000"
+              },
+              {
+                "field": "offerSizeDollarAmount",
+                "operand": "<=",
+                "value": "100000"
+              },
+              {
+                "field": "spShortRating",
+                "operand": ">=",
+                "value": "AMinus1Plus"
+              },
+              {
+                "field": "spShortRating",
+                "operand": "<=",
+                "value": "AMinus1Plus"
+              },
+              {
+                "field": "fitchShortRating",
+                "operand": ">=",
+                "value": "AAA"
+              },
+              {
+                "field": "fitchShortRating",
+                "operand": "<=",
+                "value": "AAA"
+              },
+              {
+                "field": "moodysShortRating",
+                "operand": ">=",
+                "value": "A"
+              },
+              {
+                "field": "moodysShortRating",
+                "operand": "<=",
+                "value": "A"
+              },
+              {
+                "field": "settlementDate",
+                "operand": ">=",
+                "value": "2020-04-16"
+              },
+              {
+                "field": "settlementDate",
+                "operand": "<=",
+                "value": "2020-04-21"
+              }
+            ]
+          }
+        }
+      },
+      "searchRequestOffer": {
+        "type": "object",
+        "description": "Offer search request",
+        "properties": {
+          "criteria": {
+            "type": "array",
+            "description": "Array of offer search criteria",
+            "items": {
+              "$ref": "#/components/schemas/criteriaOffer"
+            }
+          }
+        }
+      },
+      "criteriaOffer": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Field represent different offer criteria properties. <br><br>'field': 'cusip'<br>'description': CUSIP with or without the 9th check digit<br>'type': 'string'<br>'additional': Only the \u201c=\u201d operand supported. It can be a comma separated list.<br><br>'field': 'privatePlacement'<br>'description': Indicator whether deal is a private placement<br>'type': 'string'<br>'additional': Values are \u201cY\u201d or \u201cN\u201d<br><br>'field': 'resetMode'<br>'description': Rate reset mode - please see Code Table API to retrieve permissible values<br>'type': 'string'<br>'additional': Only the \u201c=\u201d operand supported.<br><br>'field': 'productType'<br>'description': Type of TEMMS product - please see Code Table API to retrieve permissible values<br>'type': 'string'<br>'additional': Only the \u201c=\u201d operand supported. For example VRDO or tender option bond.<br><br>'field': 'federalTaxProvision'<br>'description': Federal tax status of the issue - please see Code Table API to retrieve permissible values<br>'type': 'string'<br>'additional': Only the \u201c=\u201d operand supported.<br><br>'field': 'creditProvider'<br>'description': Description of the issue\u2019s credit provider<br>'type': 'string'<br>'additional': Only the \u201c=\u201d operand supported.<br><br>'field': 'excludeCreditProvider'<br>'description': Flag to exclude a specific credit provider<br>'type': 'boolean'<br>'additional': Only the \u201c=\u201d operand supported.<br><br>'field': 'liquidityProvider'<br>'description': Description of the issue\u2019s liquidity provided<br>'type': 'string'<br>'additional': Only the \u201c=\u201d operand supported.<br><br>'field': 'excludeLiquidityProvider'<br>'description': Flag to exclude a specific liquidity provider<br>'type': 'boolean'<br>'additional': Only the \u201c=\u201d operand supported.<br><br>'field': 'states'<br>'description': State of issuance of the bond. See <a href='https://pe.usps.com/text/pub28/28apb.htm' target='_blank'>USPS</a> for state abbreviations honored<br>'type': 'string'<br>'additional': Only operand \u201c=\u201d supported. It can be a comma separated list<br><br>'field': 'rate'<br>'description': Interest rate applied to the issue<br>'type': 'number'<br>'additional': Only operand \u201c>=\u201d is supported.<br><br>'field': 'rate'<br>'description': Interest rate applied to the issue<br>'type': 'number'<br>'additional': Only operand \u201c<=\u201d is supported.<br><br>'field': 'offerSizeDollarAmount'<br>'description': Size of the offer available<br>'type': 'integer'<br>'additional': Only operand \u201c>=\u201d is supported.<br><br>'field': 'offerSizeDollarAmount'<br>'description': Size of the offer available<br>'type': 'integer'<br>'additional': Only operand \u201c<=\u201d is supported.<br><br>'field': 'spShortRating'<br>'description': Moody Long term rating of the bond. See <a href='https://www.moodys.com/sites/products/productattachments/ap075378_1_1408_ki.pdf' target='_blank'>Moodys</a> for allowed enumerations of rating. Section \u201cMoody\u2019s Long-Term Rating Definitions\u201d. <br>'type': 'string'<br>'additional': Only operand \u201c>=\u201d is supported.<br><br>'field': 'spShortRating'<br>'description': (Details above)<br>'type': 'string'<br>'additional': Only operand \u201c<=\u201d supported<br><br>'field': 'fitchShortRating'<br>'description': Fitch rating of the bond. See <a href='https://en.wikipedia.org/wiki/Fitch_Ratings' target='_blank'>Wikipedia Fitch</a> for allowed enumeration of ratings. See section \u201cInvestment Scale\u201d. See code table for allowable values<br>'type': 'string'<br>'additional': Only operand \u201c>=\u201d is supported.<br><br>'field': 'fitchShortRating'<br>'description': (Details above)<br>'type': 'string'<br>'additional': Only operand \u201c<=\u201d supported<br><br>'field': 'moodysShortRating'<br>'description': Moody Long term rating of the bond. See <a href='https://www.moodys.com/sites/products/productattachments/ap075378_1_1408_ki.pdf' target='_bank' >Moodys</a> for allowed enumerations of rating. Section \u201cMoody\u2019s Long-Term Rating Definitions\u201d. See code table for allowable values<br>'type': 'string'<br>'additional': Only operands \u201c>=\u201d supported<br><br>'field': 'moodysShortRating'<br>'description': (Details above)<br>'type': 'string'<br>'additional': Only operand \u201c<=\u201d supported<br><br>'field': 'settlementDate'<br>'description': Settlement date expected. Should match settlement dates offered by BofA Securities. Expected format YYYY-MM-DD. All numbers.<br>'type': 'string'<br>'additional': Only operands \u201c>=\u201d supported.<br><br>'field': 'settlementDate'<br>'description': (Details above)<br>'type': 'string'<br>'additional': Only operand \u201c<=\u201d supported<br><br>Note that all fields may be empty in the request, and this will return all offers available to the user with no filters"
+          },
+          "value": {
+            "type": "string",
+            "description": "Value set for criteria field"
+          },
+          "operand": {
+            "type": "string",
+            "description": "Valid operand corresponding to field."
+          }
+        }
+      },
+      "response": {
+        "type": "object",
+        "properties": {
+          "searchResponse": {
+            "type": "array",
+            "description": "Search response",
+            "items": {
+              "$ref": "#/components/schemas/searchResponseDetailsOffer"
+            }
+          }
+        },
+        "example": {
+          "searchResponse": [
+            {
+              "security": {
+                "cusip": "95648VAW9",
+                "issueState": "WV",
+                "taxExemptInd": "AMT",
+                "moodyRatingShort": "P-2",
+                "moodyRatingLong": "Baa1",
+                "resetMode": "WEEKLY",
+                "issueCode": "WVAPPALACHIAN08A",
+                "minimumDenomination": 100000,
+                "multiples": 5000,
+                "interestPaidFrequency": "MONTHLY",
+                "maturityDate": "2036-02-01",
+                "privatePlacement": "N",
+                "sellSettlementDate": "2020-05-04",
+                "liquiditySupport": "SELF",
+                "product": "VRDO",
+                "obligor": "Appalachian Power Company",
+                "creditProvider": "Appalachian Pwr Co",
+                "datedDate": "2008-06-06",
+                "issueDescription": "West Virginia Eco Dev Appalachian Power Compa",
+                "outstandingSizeDollarAmount": 76000000,
+                "liquidityDescription": [
+                  "Appalachian Pwr Co"
+                ],
+                "creditDescription": [
+                  "Appalachian Pwr Co"
+                ]
+              },
+              "resetDate": "2020-04-29",
+              "tender": "N",
+              "offerDetails": [
+                {
+                  "accruedInterestFactor": 3.836,
+                  "couponRate": 12,
+                  "settlementDate": "2020-04-27",
+                  "subjectFirmBuy": "F",
+                  "subjectFirmSell": "F",
+                  "offerSizeDollarAmount": 0
+                },
+                {
+                  "accruedInterestFactor": 4.164,
+                  "couponRate": 12,
+                  "settlementDate": "2020-04-28",
+                  "subjectFirmBuy": "F",
+                  "subjectFirmSell": "F",
+                  "offerSizeDollarAmount": 100000
+                },
+                {
+                  "accruedInterestFactor": 4.492,
+                  "couponRate": 12,
+                  "settlementDate": "2020-04-29",
+                  "subjectFirmBuy": "F",
+                  "subjectFirmSell": "F",
+                  "offerSizeDollarAmount": 0
+                },
+                {
+                  "accruedInterestFactor": 4.82,
+                  "couponRate": null,
+                  "settlementDate": "2020-04-30",
+                  "subjectFirmBuy": "F",
+                  "subjectFirmSell": "F",
+                  "offerSizeDollarAmount": 0
+                },
+                {
+                  "accruedInterestFactor": null,
+                  "couponRate": null,
+                  "settlementDate": "2020-05-01",
+                  "subjectFirmBuy": "F",
+                  "subjectFirmSell": "F",
+                  "offerSizeDollarAmount": 0
+                },
+                {
+                  "accruedInterestFactor": null,
+                  "couponRate": null,
+                  "settlementDate": "2020-05-04",
+                  "subjectFirmBuy": "F",
+                  "subjectFirmSell": "F",
+                  "offerSizeDollarAmount": 0
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "searchResponseDetailsOffer": {
+        "type": "object",
+        "properties": {
+          "security": {
+            "$ref": "#/components/schemas/security"
+          },
+          "resetDate": {
+            "type": "string",
+            "description": "Date of the next interest rate reset. Expected format YYYY-MM-DD. All numbers."
+          },
+          "tender": {
+            "type": "string",
+            "description": "Indicates whether an offer can be sold or tendered. Permissible values are \u201cY\u201d or \u201cN\u201d"
+          },
+          "offerDetails": {
+            "type": "array",
+            "description": "Array of the available dates of the offers",
+            "items": {
+              "$ref": "#/components/schemas/temmsOfferDetails"
+            }
+          }
+        }
+      },
+      "security": {
+        "type": "object",
+        "description": "security details",
+        "properties": {
+          "cusip": {
+            "type": "string",
+            "description": "CUSIP with or without the 9th check digit"
+          },
+          "issueState": {
+            "type": "string",
+            "description": "State of issuance of the bond. See <a href='https://pe.usps.com/text/pub28/28apb.htm' target='_blank'>USPS</a> for state abbreviations honored"
+          },
+          "taxExemptInd": {
+            "type": "string",
+            "description": "Indicator of tax status of the bond. Please see Code Table API to retrieve permissible values"
+          },
+          "resetMode": {
+            "type": "string",
+            "description": "Rate reset mode. Please see Code Table API to retrieve permissible values"
+          },
+          "issueCode": {
+            "type": "string",
+            "description": "Internal deal code for issue"
+          },
+          "minimumDenomination": {
+            "type": "integer",
+            "description": "Minimum trade denomination in number of bonds"
+          },
+          "multiples": {
+            "type": "integer",
+            "description": "Increment of trade denomination"
+          },
+          "interestPaidFrequency": {
+            "type": "string",
+            "description": "Frequency of the interest paid. Please see Code Table API to retrieve permissible values"
+          },
+          "maturityDate": {
+            "type": "string",
+            "description": "Maturity date of the security. Expected format YYYY-MM-DD. All numbers."
+          },
+          "privatePlacement": {
+            "type": "string",
+            "description": "Indicator whether deal is a private placement. Values are \u201cY\u201d or \u201cN\u201d "
+          },
+          "sellSettlementDate": {
+            "type": "string",
+            "description": "Expected settlement date of a sale of the security. Expected format YYYY-MM-DD. All numbers."
+          },
+          "liquiditySupport": {
+            "type": "string",
+            "description": "Description of the issue\u2019s liquidity support"
+          },
+          "product": {
+            "type": "string",
+            "description": "Type of TEMMS product. Please see Code Table API to retrieve permissible values"
+          },
+          "obligor": {
+            "type": "string",
+            "description": "Obligor of the issue"
+          },
+          "creditProvider": {
+            "type": "string",
+            "description": "Description of the issue\u2019s credit provider"
+          },
+          "datedDate": {
+            "type": "string",
+            "description": "Original issue date of the security. Expected format YYYY-MM-DD. All numbers."
+          },
+          "issueDescription": {
+            "type": "string",
+            "description": "Description of the issue"
+          },
+          "outstandingSizeDollarAmount": {
+            "type": "integer",
+            "description": "Remaining size of the offer available"
+          },
+          "liquidityDescription": {
+            "type": "array",
+            "description": "Description of the liquidity support",
+            "items": {
+              "type": "string"
+            }
+          },
+          "creditDescription": {
+            "type": "array",
+            "description": "Description of the credit support",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "temmsOfferDetails": {
+        "type": "object",
+        "properties": {
+          "accruedInterestFactor": {
+            "type": "number",
+            "description": "Accrued interest rate factor for the specific settlement date "
+          },
+          "couponRate": {
+            "type": "number",
+            "description": "Coupon rate of the issue"
+          },
+          "settlementDate": {
+            "type": "string",
+            "description": "Settlement date for this offer. Expected format YYYY-MM-DD. All numbers."
+          },
+          "subjectFirmBuy": {
+            "type": "string",
+            "description": "Indication of whether offer is firm (\u2018F\u2019) or Subject (\u2018S\u2019)"
+          },
+          "subjectFirmSell": {
+            "type": "string",
+            "description": "Indication of whether offer is firm (\u2018F\u2019) or Subject (\u2018S\u2019)"
+          },
+          "offerSizeDollarAmount": {
+            "type": "integer",
+            "description": "Size of the offer available for the specific settlement date"
+          }
+        }
+      },
+      "errorResponse400": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:123",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/temms/offer",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Validation error:Incomplete/Incorrect Request : Missing or Extra fields"
+          }
+        }
+      },
+      "errorResponse401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "d7df57b0-37b8-11ea-8715-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/temms/offer",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "errorResponse403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/temms/offer",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "errorResponse404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "29804110-37b9-11ea-99c7-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/temms/offer",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "errorResponse405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/temms/offer",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "errorResponse406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/temms/offer",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "errorResponse408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/temms/offer",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "errorResponse415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "008030e0-37b9-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/temms/offer",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "errorResponse500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "ae18f4d0-37b9-11ea-8ce3-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/temms/offer",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "errorResponse503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/temms/offer",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

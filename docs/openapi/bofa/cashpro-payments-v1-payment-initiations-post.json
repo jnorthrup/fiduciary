@@ -1,0 +1,488 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Payments V1 Initiation",
+    "description": "Initiates a single payment request that is required to be reviewed and approved on CashPro Online or CashPro Mobile.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Payments V1 API (PSD2)",
+      "description": "This is a sample Payment Initiation server. For this sample, you can use the api key 'special-key' to test the authorization filters."
+    }
+  ],
+  "paths": {
+    "/cashpro/payments/v1/payment-initiations": {
+      "post": {
+        "tags": [
+          "Payments V1 API (PSD2)"
+        ],
+        "summary": " Initiates a single payment request that must be subsequently reviewed and approved on CashPro Online or CashPro Mobile.",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON. </br> ex. application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request. </br> ex. Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "description": "A unique identifier to be used for a single payment. Length: 1 - 256 </br> ex. ABC123",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pmt_intent_id",
+            "in": "header",
+            "description": "The intent ID generated with the /intents resource. </br> ex. 11111111-AAAA-AAAA-AAAA-111111111111",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Payment Initiation Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {}
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {}
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {}
+          },
+          "405": {
+            "description": "Invalid method",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {}
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "requestBody": {
+        "type": "object",
+        "required": [
+          "paymentIdentification",
+          "paymentMethod",
+          "requestedExecutionDate",
+          "amount",
+          "debtorAccount",
+          "debtorAgent",
+          "creditor",
+          "creditorAccount",
+          "creditorAgent",
+          "paymentType"
+        ],
+        "properties": {
+          "paymentIdentification": {
+            "$ref": "#/components/schemas/paymentIdentification"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "The means of payment, static value \"TRF\"",
+            "example": "TRF"
+          },
+          "requestedExecutionDate": {
+            "type": "string",
+            "description": "Date on which payment should be made in YYYY-MM-DD format",
+            "example": "2018-01-13"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "debtorAccount": {
+            "$ref": "#/components/schemas/debtorAccount"
+          },
+          "debtorAgent": {
+            "$ref": "#/components/schemas/debtorAgent"
+          },
+          "creditor": {
+            "$ref": "#/components/schemas/creditor"
+          },
+          "creditorAccount": {
+            "$ref": "#/components/schemas/creditorAccount"
+          },
+          "creditorAgent": {
+            "$ref": "#/components/schemas/creditorAgent"
+          },
+          "paymentType": {
+            "$ref": "#/components/schemas/paymentType"
+          },
+          "unstructuredRemittance": {
+            "type": "string",
+            "description": "Unstructured information to be conveyed to the receiver. Length : 1 - 140",
+            "example": "Beneficiary unstructured addenda"
+          }
+        }
+      },
+      "paymentIdentification": {
+        "type": "object",
+        "required": [
+          "instructionIdentification",
+          "endToEndIdentification"
+        ],
+        "properties": {
+          "instructionIdentification": {
+            "type": "string",
+            "description": "Unique identification as assigned by an instructing party for an instructed party to unambiguously identify the instruction. Length : 1 - 35",
+            "example": "instrId123"
+          },
+          "endToEndIdentification": {
+            "type": "string",
+            "description": "Unique identification assigned by the initiating party to unumbiguously identify the transaction. This identification is passed on, unchanged, throughout the entire end-to-end chain.  Length : 1 - 35",
+            "example": "e2eId123"
+          }
+        }
+      },
+      "amount": {
+        "type": "object",
+        "description": "Amount of the transaction",
+        "required": [
+          "value",
+          "type"
+        ],
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "Amount of the transaction represented as 9999999999.99. Length: 1 - 13",
+            "example": "1.00"
+          },
+          "type": {
+            "type": "string",
+            "description": "Specifies whether the payment is a fixed debit (equivalent) or fixed credit (instructed) payment. enum: \"CREDIT\", \"DEBIT\"",
+            "example": "CREDIT"
+          }
+        }
+      },
+      "debtorAccount": {
+        "type": "object",
+        "required": [
+          "identification",
+          "schemeName"
+        ],
+        "description": "The account that will be debited to satisfy the payment",
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "Account number or identification. Length : 1 - 34",
+            "example": "601011111111"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Name of the identification scheme. enum: \"IBAN\", \"BBAN\"",
+            "example": "BBAN"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code of the account, as documented by ISO 4217 Codes for the representation of currencies and funds .</br> Required for creditor account."
+          }
+        }
+      },
+      "debtorAgent": {
+        "type": "object",
+        "description": "The Financial Institution holding the debit account",
+        "properties": {
+          "institution": {
+            "$ref": "#/components/schemas/institution"
+          }
+        }
+      },
+      "institution": {
+        "required": [
+          "identifiers"
+        ],
+        "type": "object",
+        "description": "The Financial Institution holding the debit account",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the Financial Institution. Length : 1 - 35"
+          },
+          "identifiers": {
+            "type": "array",
+            "description": "Name of the identification scheme enum: \"IBAN\", \"BBAN\"",
+            "items": {
+              "$ref": "#/components/schemas/identifiers"
+            }
+          }
+        }
+      },
+      "identifiers": {
+        "type": "object",
+        "required": [
+          "identification",
+          "schemeName"
+        ],
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "An alpha numeric value that can uniquely identify the Financial Institution based on a specific Scheme",
+            "example": "BOFAFRPP"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Identification scheme within which the identifier is unique enum: \"BIC\", \"UKSORT\", \"USABA\"",
+            "example": "BIC"
+          }
+        }
+      },
+      "creditor": {
+        "type": "object",
+        "required": [
+          "name",
+          "postalAddress"
+        ],
+        "description": "Party to which the payment will be made",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the party. Length : 1 - 140 ",
+            "example": "Beneficiary Name"
+          },
+          "postalAddress": {
+            "$ref": "#/components/schemas/postalAddress"
+          }
+        }
+      },
+      "postalAddress": {
+        "type": "object",
+        "required": [
+          "addressLine",
+          "city",
+          "country"
+        ],
+        "description": "Address of the party",
+        "properties": {
+          "addressLine": {
+            "type": "array",
+            "description": "Address of the party Length : 1 - 70 Min: 1 Max: 2",
+            "items": {
+              "$ref": "#/components/schemas/addressLine"
+            }
+          },
+          "city": {
+            "type": "string",
+            "description": "City of the party Length : 1 - 35",
+            "example": "Beneficiary City"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO country code of the party Length : 2",
+            "example": "GB"
+          }
+        }
+      },
+      "addressLine": {
+        "required": [
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "",
+            "example": "Beneficiary Address Line 1"
+          }
+        }
+      },
+      "creditorAgent": {
+        "type": "object",
+        "description": "The Financial Institution holding the credit account",
+        "properties": {
+          "institution": {
+            "$ref": "#/components/schemas/creditorinstitution"
+          }
+        }
+      },
+      "creditorinstitution": {
+        "required": [
+          "identifiers"
+        ],
+        "type": "object",
+        "description": "The Financial Institution holding the debit account",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the Financial Institution. Length : 1 - 35"
+          },
+          "identifiers": {
+            "type": "array",
+            "description": "Name of the identification scheme enum: \"IBAN\", \"BBAN\"",
+            "items": {
+              "$ref": "#/components/schemas/creditoridentifiers"
+            }
+          }
+        }
+      },
+      "creditoridentifiers": {
+        "type": "object",
+        "required": [
+          "identification",
+          "schemeName"
+        ],
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "An alpha numeric value that can uniquely identify the Financial Institution based on a specific Scheme",
+            "example": "BOFAGB22XXX"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Identification scheme within which the identifier is unique enum: \"BIC\", \"UKSORT\", \"USABA\"",
+            "example": "BIC"
+          }
+        }
+      },
+      "creditorAccount": {
+        "type": "object",
+        "required": [
+          "identification",
+          "schemeName"
+        ],
+        "description": "The account that will be credited to satisfy the payment",
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "Account number or identification. Length : 1 - 34",
+            "example": "GB11BOFA11111111111111"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Name of the identification scheme. enum: \"IBAN\", \"BBAN\"",
+            "example": "IBAN"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code of the account, as documented by ISO 4217 Codes for the representation of currencies and funds .Required for creditor account.",
+            "example": "EUR"
+          }
+        }
+      },
+      "paymentType": {
+        "required": [
+          "serviceLevel"
+        ],
+        "type": "object",
+        "description": "Indication of the type of payment being initiated",
+        "properties": {
+          "serviceLevel": {
+            "type": "string",
+            "description": "Agreement under which or rules under which the transaction should be processed enum: \"URG\", \"LOW\", </br> Usage: \"URG\" indicates high value wire transaction. \"LOW\" indicates local low value transaction, e.g. SEPA.",
+            "example": "URG"
+          }
+        }
+      },
+      "response": {
+        "type": "object",
+        "required": [
+          "mid",
+          "paymentStatus"
+        ],
+        "properties": {
+          "mid": {
+            "type": "string",
+            "description": "Unique transaction identifier as assigned by the bank",
+            "example": "1234567890ABC"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "description": "Status of the payment initiation </br> PEND_APPROV - Payment is in approval queue for release</br> REPAIR - Payment is in repair queue",
+            "example": "PEND_APPROV"
+          }
+        }
+      },
+      "errorResponse400": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/error400"
+            }
+          }
+        }
+      },
+      "error400": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "CPS_API_016"
+          },
+          "description": {
+            "type": "string",
+            "example": "INTENTID MISSING"
+          }
+        }
+      }
+    }
+  }
+}

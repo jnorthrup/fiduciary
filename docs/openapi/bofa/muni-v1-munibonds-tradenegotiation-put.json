@@ -1,0 +1,844 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Global Markets \u2013 Counter Muni Bond Offer",
+    "description": "Negotiate On Muni Bonds Offer. Use this API to counter a muni bond offer by price/yield and negotiate/trade on it.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.bofa.com/muni/v1/munibonds/tradenegotiation",
+      "description": "Production Gateway Base URL"
+    },
+    {
+      "url": "https://api-sb.bofa.com/muni/v1/munibonds/tradenegotiation",
+      "description": "Sandbox Base URL"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Global Markets \u2013 new trade negotiation"
+    }
+  ],
+  "paths": {
+    "/muni/v1/munibonds/tradenegotiation": {
+      "put": {
+        "tags": [
+          "Global Markets \u2013 new trade negotiation",
+          "Muni Services"
+        ],
+        "summary": "APIs that allow BofA Securities customers of Municipal Banking and Markets to transact Municipal securities. This API provides the customer the ability to counter a muni bond offer by price/yield and negotiate/trade on it.",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identify the content of the payload as JSON. Use 'Content-Type: application/json'. This is the only content type supported as of now. Content-Types cannot be negotiated programmatically at this time. Future versions might provide that facility.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. 'Bearer [value]')",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "header",
+            "description": "User who is interacting with this service from a company. User should be on boarded on the Bofa Securities Mercury&#153; platform and obtain userId.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "header",
+            "description": "A token provided by client to identify their request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TradeNegotiationRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeNegotiationResponseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError429"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TradeNegotiationRequestBody": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "negotiationRequest": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/negotiationRequestItem"
+            }
+          }
+        },
+        "example": {
+          "negotiationRequest": [
+            {
+              "accountNumberOrEbn": "89A30051",
+              "cusip": "007266KS7",
+              "referenceNumber": 0,
+              "price": 113.419,
+              "yield": 2,
+              "quantity": 50000,
+              "negotiationType": "PRICE",
+              "negotiationAction": "COUNTER"
+            }
+          ]
+        }
+      },
+      "negotiationRequestItem": {
+        "type": "object",
+        "required": [
+          "accountNumberOrEbn",
+          "cusip",
+          "price",
+          "yield",
+          "quantity",
+          "negotiationType",
+          "negotiationAction"
+        ],
+        "properties": {
+          "accountNumberOrEbn": {
+            "type": "string",
+            "description": "Your firm\u2019s account number at BofA Securities if you are an Institutional customer. If you are a broker/dealer, it will be your EBN symbol prefixed with \u201cEBN\u201d<br><br>If you are a broker/dealer, your operations team will be able to provide you the EBN symbol to use. For (a possibly out of date) list, see DTCC. Ex. Merrill Lynch, Pierce, Fenner & Smith Inc. has MLCO as the symbol and you would provide \u201cEBNMLCO\u201d in the request."
+          },
+          "cusip": {
+            "type": "string",
+            "description": "CUSIP with or without the 9th check digit"
+          },
+          "referenceNumber": {
+            "type": "integer",
+            "description": "Your BofA Securities generated negotiation reference number"
+          },
+          "price": {
+            "type": "number",
+            "description": "Price entered for negotiation"
+          },
+          "yield": {
+            "type": "number",
+            "description": "Yield entered for negotiation"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Transaction quantity<br><br>In 1000s. If 50 bonds are required, 50000 should be specified. In words that number is \u201cfifty thousand\u201d"
+          },
+          "negotiationType": {
+            "type": "string",
+            "description": "Whether negotiation is Price-based or Yield-based<br><br>Must contain \u201cPRICE\u201d or \u201cYIELD\u201d"
+          },
+          "negotiationAction": {
+            "type": "string",
+            "description": "Action of this negotiation \u2013 i.e. \u201cCOUNTER\u201d"
+          }
+        }
+      },
+      "TradeNegotiationResponseBody": {
+        "type": "object",
+        "properties": {
+          "negotiationResponse": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/negotiationResponseItems"
+            }
+          }
+        },
+        "description": "Response successfully retrieved",
+        "example": {
+          "negotiationResponse": [
+            {
+              "negotiationType": "PRICE",
+              "negotiationAction": "COUNTER",
+              "cusip": "007266KS7",
+              "quantity": 50000,
+              "price": 113.419,
+              "yield": 2,
+              "referenceNumber": 166,
+              "accountNumberOrEbn": "89A30051",
+              "hasError": true,
+              "errorMessage": "No offer found for cusip 64578CAH4.",
+              "errorType": null,
+              "validationErrors": [],
+              "confirmations": [],
+              "systemErrors": null
+            }
+          ]
+        }
+      },
+      "negotiationResponseItems": {
+        "type": "object",
+        "properties": {
+          "negotiationType": {
+            "type": "string",
+            "description": "Whether negotiation is Price-based or Yield-based<br><br>Contains \u201cPRICE\u201d or \u201cYIELD\u201d"
+          },
+          "negotiationAction": {
+            "type": "string",
+            "description": "Echo back from the request"
+          },
+          "cusip": {
+            "type": "string",
+            "description": "Echo back from the request"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Echo back from the request"
+          },
+          "price": {
+            "type": "number",
+            "description": "Echo back from the request"
+          },
+          "yield": {
+            "type": "number",
+            "description": "Echo back from the request"
+          },
+          "referenceNumber": {
+            "type": "integer",
+            "description": "Your (BofA Securities generated) trade reference number"
+          },
+          "settlementDate": {
+            "type": "string",
+            "description": "Settlement date for the security"
+          },
+          "accountNumberOrEbn": {
+            "type": "string",
+            "description": "Echo back from the request"
+          },
+          "hasError": {
+            "type": "boolean",
+            "description": "If there were errors when processing the request<br><br>True/False"
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "Messages if hasError is true. While every effort will be made to notify and co-ordinate when these error message text change, BofA Securities reserves the right to change the text without notice."
+          },
+          "errorType": {
+            "type": "string",
+            "description": "Future use"
+          },
+          "validationErrors": {
+            "type": "array",
+            "description": "Future Use",
+            "items": {}
+          },
+          "confirmations": {
+            "type": "array",
+            "description": "Future Use",
+            "items": {}
+          },
+          "systemErrors": {
+            "type": "string",
+            "description": "Technical failures on BofA Securities end. These could be transient or permanent. You do not have to correct your input if you retry."
+          }
+        }
+      },
+      "temmsTradeError400": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:123",
+          "status": "Failure",
+          "apiName": "muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Validation error:Incomplete/Incorrect Request : Missing or Extra fields"
+          }
+        }
+      },
+      "temmsTradeError401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "d7df57b0-37b8-11ea-8715-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "temmsTradeError403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "temmsTradeError404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "29804110-37b9-11ea-99c7-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "temmsTradeError405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1649682845",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Validation error:Request method 'POST' not supported"
+          }
+        }
+      },
+      "temmsTradeError406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "temmsTradeError408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "temmsTradeError415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1649684545",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Validation error:Content type 'application/javascript' not supported"
+          }
+        }
+      },
+      "temmsTradeError429": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/429Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1234",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 429,
+            "reasonDescription": "API Hit Rate Error:Maximum number of times this API can be called per second has been exceeded"
+          }
+        }
+      },
+      "temmsTradeError500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "ae18f4d0-37b9-11ea-8ce3-005056a74762",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "temmsTradeError503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/tradenegotiation",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "429Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

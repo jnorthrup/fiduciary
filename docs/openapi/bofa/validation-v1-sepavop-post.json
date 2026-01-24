@@ -1,0 +1,901 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "SEPA Verification of Payee",
+    "description": "SEPA Verification of Payee is a beneficiary validation service designed to help reduce misdirected payments and certain types of fraud and provides greater assurance that SEPA payments are being collected by or sent to the intended account holder.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": "validation-v1-sepavop-post-overview.json"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "SEPA Verification of Payee",
+      "description": ""
+    }
+  ],
+  "paths": {
+    "/validation/v1/accounts": {
+      "post": {
+        "tags": [
+          ""
+        ],
+        "summary": "",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON. Charsets need to be mandatorily supplied to support special characters in the party name.<br>application/json; charset=UTF-8",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "An unique access token to be used for a single request (ex. \"Bearer [value]\").",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "description": "A unique identifier to be used for a single request <br>Length: 1 \u2013 256",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "BOFAML-ID",
+            "in": "header",
+            "description": "BOFA CPO Company Id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The IP Address is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "requestBody": {
+        "type": "object",
+        "required": [
+          "endToEndId",
+          "account",
+          "accountOwner"
+        ],
+        "properties": {
+          "endToEndId": {
+            "type": "string",
+            "description": "Co-relation id for the call back.<br>Length 1 - 36",
+            "minLength": 1,
+            "maxLength": 36
+          },
+          "account": {
+            "type": "object",
+            "description": "Details about the Account that needs to be validated.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/account"
+              }
+            ]
+          },
+          "accountAgent": {
+            "type": "object",
+            "description": "The Financial Institution holding the credit account.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/accountAgent"
+              }
+            ]
+          },
+          "accountOwner": {
+            "type": "object",
+            "description": "Details about owner of the account.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/accountOwner"
+              }
+            ]
+          }
+        },
+        "example": {
+          "endToEndId": "44ce1a1e-3728-2d1c-a9af-b3a1Test44",
+          "account": {
+            "identification": "IE47EBSI93902145720398"
+          },
+          "accountAgent": {
+            "country": "IE"
+          },
+          "accountOwner": {
+            "name": {
+              "fullName": "SACHA JANICKOVICOVA"
+            }
+          }
+        }
+      },
+      "account": {
+        "required": [
+          "identification"
+        ],
+        "type": "object",
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "Account number.<br>Length : 15 \u2013 35<br>User will be supplying the Party IBAN here which is mandatory for SEPA VOP",
+            "minLength": 15,
+            "maxLength": 35
+          }
+        }
+      },
+      "accountAgent": {
+        "required": [
+          "country"
+        ],
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "description": "Bank Resident country. 2 digit ISO Country Code.<br>SEPA Country List : \"AD\", \"AT\", \"AX\", \"BE\", \"BG\", \"CH\", \"CZ\", \"CY\",\"DE\", \"DK\", \"EE\", \"ES\", \"FI\", \"FR\", \"GI\", \"GR\", \"GF\", \"GP\", \"HR\", \"HU\", \"IE\", \"IS\", \"IT\", \"LT\", \"LV\", \"NL\",\"NO\", \"PL\", \"PT\", \"RO\", \"SE\", \"SK\", \"LU\", \"MT\", \"SI\", \"MC\", \"MF\", \"MQ\", \"YT\", \"RE\", \"LI\", \"BL\", \"PM\", \"VA\",\"SM\", \"ME\", \"AL\", \"MD\", \"MK\"<br>Account Agent Country will be used to determine the Scheme against which verification will be performed. For SEPA list of countries are mentioned as above"
+          }
+        }
+      },
+      "accountOwner": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "object",
+            "description": "Name of the party",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/name"
+              }
+            ]
+          }
+        }
+      },
+      "name": {
+        "required": [
+          "fullName"
+        ],
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "description": "Full Name of the Party"
+          }
+        }
+      },
+      "response": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "endToEndId": {
+            "type": "string",
+            "description": "Co-relation id for the call back.<br> Length 1 - 36",
+            "minLength": 1,
+            "maxLength": 36
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Context id from application for reference.<br> Length 36 UUID",
+            "maxLength": 36
+          },
+          "validatedDateTime": {
+            "type": "string",
+            "description": "Date and time stamp when the Verification of payee was performed"
+          },
+          "originalRequest": {
+            "type": "object",
+            "description": "Original details supplied in the request",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/originalRequest"
+              }
+            ]
+          },
+          "VerificationOfPayeeResponse": {
+            "type": "object",
+            "description": "Response Object containing the result of the Verification of Payee",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Response"
+              }
+            ]
+          }
+        },
+        "example": {
+          "requestId": "P61e214f-3305-481c-9a79-7e9e41760S2B",
+          "validatedDateTime": "2025-08-05T14:06:45.524Z",
+          "endToEndId": "44ce1a1e-3728-2d1c-a9af-b3a1Test44",
+          "originalRequest": {
+            "verificationScheme": "SEPAVOP",
+            "account": {
+              "identification": "IE47EBSI93902145720398"
+            },
+            "accountAgent": {
+              "country": "IE"
+            },
+            "accountOwner": {
+              "name": {
+                "fullName": "SACHA JANICKOVICOVA"
+              }
+            }
+          },
+          "response": {
+            "match": "Y",
+            "reason": [
+              {
+                "code": "00",
+                "serviceProviderCode": "MTCH",
+                "description": "Exact Match. The beneficiary information provided is an exact match."
+              }
+            ]
+          }
+        }
+      },
+      "originalRequest": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "verificationScheme": {
+            "type": "string",
+            "description": "Verification Scheme against which verification is done by the service provider"
+          },
+          "account": {
+            "type": "object",
+            "description": "Account details as supplied in the Original Request",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/account"
+              }
+            ]
+          },
+          "accountOwner": {
+            "type": "object",
+            "description": "Details about owner of the account as supplied in the Original Request",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/accountOwner"
+              }
+            ]
+          },
+          "accountAgent": {
+            "type": "object",
+            "description": "The Financial Institution details that were supplied in the original Request",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/accountAgent"
+              }
+            ]
+          }
+        }
+      },
+      "Response": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "match": {
+            "type": "string",
+            "description": "Match Status to indicate if the Full Name supplied by the customer has Completely, Partially or Not Matched with the Owner details associated with the Credit Account.<br>Enum<br>Y - Matched<br>N - Not Matched<br>C - Close Match<br>P - Partial Match<br>U - Match could not be performed",
+            "enum": [
+              "Y",
+              "N",
+              "C",
+              "P",
+              "U"
+            ]
+          },
+          "verifiedAccountOwner": {
+            "type": "object",
+            "description": "Verified details of the Account Owner as received from the Service Provider",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/verifiedAccountOwner"
+              }
+            ]
+          },
+          "Reason": {
+            "type": "object",
+            "description": "List of the Reason Codes if the Verification is not possible. Will be populated when the match status is U or N",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Reason"
+              }
+            ]
+          }
+        }
+      },
+      "verifiedAccountOwner": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "object",
+            "description": "Verified Name of the party",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/name"
+              }
+            ]
+          }
+        }
+      },
+      "Reason": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code as provided by CPS subsystem"
+          },
+          "serviceProviderCode": {
+            "type": "string",
+            "description": "Error Code as returned by the Service Provider"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the error"
+          },
+          "longDescription": {
+            "type": "string",
+            "description": "Long Description of the Error"
+          }
+        }
+      },
+      "errorResponse400": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "description": "Context id from application for reference.<br> Length 36 UUID",
+            "maxLength": 36
+          },
+          "validatedDateTime": {
+            "type": "string",
+            "description": "Date and time stamp when the Verification of payee was performed"
+          },
+          "originalRequest": {
+            "type": "object",
+            "description": "Original details supplied in the request",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/originalRequest"
+              }
+            ]
+          },
+          "VerificationOfPayeeResponse": {
+            "type": "object",
+            "description": "Response Object containing the result of the Verification of Payee",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/400Response"
+              }
+            ]
+          }
+        },
+        "example": {
+          "requestId": "44ce1a1e-3728-2d1c-a9af-b3a1Test44",
+          "validatedDateTime": "2025-08-12T05:46:03.569",
+          "originalRequest": {
+            "verificationScheme": "SEPAVOP",
+            "account": {
+              "identification": "IT14S0200801177000004831650fghdfgdf"
+            },
+            "accountAgent": {
+              "country": "ES"
+            },
+            "accountOwner": {
+              "name": {
+                "fullName": "SACHA JANICKOVICOVA"
+              }
+            }
+          },
+          "response": {
+            "match": "U",
+            "reason": [
+              {
+                "code": "CP300",
+                "serviceProviderCode": "Party Account",
+                "longDescription": "Party Account is invalid or missing"
+              }
+            ]
+          }
+        }
+      },
+      "400Response": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "Reason": {
+            "type": "object",
+            "description": "List of the Reason Codes if the Verification is not possible. Will be populated when the match status is U or N",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/400Reason"
+              }
+            ]
+          }
+        }
+      },
+      "400Reason": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code as provided by CPS subsystem"
+          },
+          "serviceProviderCode": {
+            "type": "string",
+            "description": "Error Code as returned by the Service Provider"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the error"
+          }
+        }
+      },
+      "errorResponse401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999999-9999-9999-9999-999999999999",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/accounts",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "reason401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        }
+      },
+      "errorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "description": ""
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": ""
+          }
+        }
+      },
+      "errorResponse403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999999-9999-9999-9999-999999999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "errorResponse404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999999-9999-9999-9999-999999999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts1",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "errorResponse405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999999-9999-9999-9999-999999999999",
+          "status": "Failure",
+          "apiName": " GET /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "errorResponse406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999999-9999-9999-9999-999999999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "errorResponse408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "errorResponse415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999999-9999-9999-9999-999999999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "errorResponse500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999999-9999-9999-9999-999999999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "errorResponse503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999999-9999-9999-9999-999999999999",
+          "status": "Failure",
+          "apiName": "POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

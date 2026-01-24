@@ -1,0 +1,1036 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Global Markets \u2013 Trade Negotiation History",
+    "description": "Get the status on single or multiple trade negotiation(s) by giving a set of criteria.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Global Markets \u2013 trade Negotiation history"
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://api.bofa.com/muni/v1/munibonds/tradenegotiation/history",
+      "description": "Production Gateway Base URL"
+    },
+    {
+      "url": "https://api-sb.bofa.com/muni/v1/munibonds/tradenegotiation/history",
+      "description": "Sandbox Base URL"
+    }
+  ],
+  "paths": {
+    "/muni/v1/munibonds/tradenegotiation/history": {
+      "post": {
+        "tags": [
+          "Global Markets \u2013 trade Negotiations history",
+          "Muni Services"
+        ],
+        "summary": "APIs that allow BofA Securities customers of Municipal Banking and Markets to transact Municipal securities. This API provides the customer the ability to Get the status on single or multiple trade negotiation(s) by giving a set of criteria.",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identify the content of the payload as JSON. Use 'Content-Type: application/json'. This is the only content type supported as of now. Content-Types cannot be negotiated programmatically at this time. Future versions might provide that facility.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. 'Bearer [value]')",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "header",
+            "description": "User who is interacting with this service from a company. User should be on boarded on the Bofa Securities Mercury&#153; platform and obtain userId.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "header",
+            "description": "A token provided by client to identify their request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/tradeNegotiationAPI"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeResponseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError429"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/temmsTradeError503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "tradeNegotiationAPI": {
+        "required": [
+          "searchRequest"
+        ],
+        "type": "object",
+        "description": "",
+        "properties": {
+          "searchRequest": {
+            "$ref": "#/components/schemas/searchRequest"
+          }
+        },
+        "example": {
+          "searchRequest": {
+            "criteria": [
+              {
+                "field": "negotiationIdFrom",
+                "operand": ">=",
+                "value": "1274"
+              },
+              {
+                "field": "negotiationIdTo",
+                "operand": "<=",
+                "value": "1274"
+              },
+              {
+                "field": "cusip",
+                "operand": "=",
+                "value": "016059DT1"
+              },
+              {
+                "field": " accountNumberOrEbn ",
+                "operand": "=",
+                "value": "89A30051"
+              },
+              {
+                "field": "investorSymbol",
+                "operand": "=",
+                "value": "OLDKENT"
+              },
+              {
+                "field": "negotiationStatus",
+                "operand": "=",
+                "value": "Denied"
+              },
+              {
+                "field": "creationDateFrom",
+                "operand": ">=",
+                "value": "2022-03-23"
+              },
+              {
+                "field": "creationDateTo",
+                "operand": "<=",
+                "value": "2022-03-23"
+              }
+            ]
+          }
+        }
+      },
+      "searchRequest": {
+        "type": "object",
+        "description": "Trade Negotiation History search request <br><br>See \u201cSample Request\u201d below",
+        "properties": {
+          "criteria": {
+            "type": "array",
+            "description": "Array of Trade negotiation history search criteria See \u201cSample Request\u201d below.",
+            "items": {
+              "$ref": "#/components/schemas/criteriaItem"
+            }
+          }
+        }
+      },
+      "criteriaItem": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Field represent different offer criteria properties. <br><br>'field': 'negotiationIdFrom'<br>'description': Your BofA Securities generated negotiation reference number <br><br>Only the \u201c>=\u201d operand supported for negotiationIdFrom <br>Only the \u201c<=\u201d operand supported for negotiationIdTo <br>'type': 'integer'<br><br>'field': 'negotiationIdTo'<br>'description': Your BofA Securities generated negotiation reference number <br><br>Only the \u201c>=\u201d operand supported for negotiationIdFrom <br>Only the \u201c<=\u201d operand supported for negotiationIdTo <br>'type': 'integer'<br><br>'field': 'cusip'<br>'description': CUSIP with or without the 9th check digit <br><br>Only the \u201c=\u201d operand supported. <br>'type': 'string'<br><br>'field': 'accountNumberOrEbn'<br>'description': Your firm\u2019s account number at BofA Securities if you are an Institutional customer. If you are a broker/dealer, it will be your EBN symbol prefixed with \u201cEBN\u201d. <br><br>Only the \u201c=\u201d operand supported.<br><br>If you are a broker/dealer, your operations team will be able to provide you the EBN symbol to use. For (a possibly out of date) list, see DTCC. Ex. Merrill Lynch, Pierce, Fenner & Smith Inc. has MLCO as the symbol and you would provide \u201cEBNMLCO\u201d in the request <br>'type': 'string'<br><br>'field': 'investorSymbol'<br>'description': Internal symbol related to the account group \u2013 please see Code Table API to retrieve permissible values <br><br>Only the \u201c=\u201d operand supported. <br>'type': 'string'<br><br>'field': 'negotiationStatus'<br>'description': Indicator of the status of the negotiation <br><br>Only the \u201c=\u201d operand supported <br><br>Permissible values: <ul><li>\u201cCountered\u201d</li><li>\u201cTrader Accepted\u201d</li><li>\u201cTrader Countered\u201d</li><li>\u201cAccepted\u201d</li><li>\u201cTrader Counter Expired\u201d</li><li>\u201cDenied\u201d</li><li>\u201cExecuted\u201d</li></ul> <br>'type': 'string' <br>'notes': <ul><li>\u201cCountered\u201d \u2013 Customer has countered the BofA offering</li><li>\u201cTrader Accepted\u201d \u2013 BofA securities has accepted the customer\u2019s counter and may trade at the counter price.</li><li>\u201cTrader Countered\u201d \u2013 BofA securities has countered back to the customer with a counter price or yield</li><li>\u201cAccepted\u201d \u2013 Customer has accepted the BofA securities\u2019 counte</li><li>\u201cTrader Counter Expired\u201d \u2013 The timer after BofA securities countered  expired </li><li>\u201cDenied\u201d \u2013 The counter request was denied due to technical error.</li><li>\u201cExecuted\u201d \u2013 The negotiation resulted in a trade securities has countered back to the customer with a counter price or yield</li><li>\u201cAccepted\u201d \u2013 Customer has accepted the BofA securities\u2019 counter</li><li>\u201cTrader Counter Expired\u201d \u2013 The timer after BofA securities countered  expired.</li><li>\u201cDenied\u201d \u2013 The counter request was denied due to technical error.</li><li>\u201cExecuted\u201d \u2013 The negotiation resulted in a trade.</li></ul><br><br>'field': 'creationDateFrom'<br>'description': Date of Negotiation <br><br>Only the \u201c>=\u201d operand supported for creationDateFrom <br>Only the \u201c<=\u201d operand supported for creationDateTo <br><br>Expected format YYYY-MM-DD. All numbers \u2013 range of dates trades were done by <br>'type': 'string'<br><br>'field': 'creationDateTo'<br>'description': Date of Negotiation <br><br>Only the \u201c>=\u201d operand supported for creationDateFrom <br>Only the \u201c<=\u201d operand supported for creationDateTo <br><br>Expected format YYYY-MM-DD. All numbers \u2013 range of dates trades were done by <br>'type': 'string'"
+          },
+          "operand": {
+            "type": "string",
+            "description": "Valid operand corresponding to field."
+          },
+          "value": {
+            "type": "string",
+            "description": "Value set for criteria field."
+          }
+        }
+      },
+      "TradeResponseBody": {
+        "type": "object",
+        "properties": {
+          "searchResponse": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/searchResponse"
+            }
+          }
+        },
+        "description": "Response successfully retrieved",
+        "example": {
+          "searchResponse": [
+            {
+              "negotiationId": 10,
+              "negotiationStatus": "Executed",
+              "quantity": 50000,
+              " accountNumberOrEbn": "89A30233",
+              "cusip": "64986AY39",
+              "counterPrice": null,
+              "counterYield": null,
+              "side": "BUY",
+              "accruedInterest": 284.72,
+              "settlementDate": "2021-04-22",
+              "longtermTrade": {
+                "tradeId": 1402652,
+                "side": "BUY",
+                "quantity": 50000,
+                "tradeStatus": "Executed",
+                "tsMemo": null,
+                "tradeDate": "2021-04-20",
+                "settlementDate": "2021-04-22",
+                "principal": 116936,
+                "accruedInterest": 211.46,
+                "tsAccruedInterest": 211.46,
+                "totalCost": 117147.46,
+                "tradePrice": 100.873,
+                "tradeYield": null,
+                "tradeCredit": null,
+                "worstYield": 4.34,
+                "currentYield": 3.1,
+                "taxEqvYield": 1.541,
+                "premiumCallDate": null,
+                "premiumCallPrice": null,
+                "premiumCallYield": null,
+                "parCallDate": "2027-10-01",
+                "parCallPrice": null,
+                "parCallYield": 0.912,
+                "maturityYield": 2.074,
+                "maturityDate": null,
+                "maturityPrice": null,
+                "priceToIndicator": "PAR CALL",
+                "priceToPrice": 100,
+                "priceToDate": "2027-10-01",
+                "stepOutIndicator": false,
+                "user": null,
+                "updateTimeStamp": "2021-07-02T04:38:24-05:00",
+                "cusip": "64986AY39",
+                "accountNumberOrEbn": "89A30233"
+              },
+              "tsMemo": "",
+              "negotiationExpireTime": "",
+              "negotiationType": "Yield",
+              "isOfferBestAndFinal": false
+            }
+          ]
+        }
+      },
+      "searchResponse": {
+        "type": "object",
+        "properties": {
+          "negotiationId": {
+            "type": "integer",
+            "description": "Your BofA Securities generated negotiation reference number"
+          },
+          "negotiationStatus": {
+            "type": "string",
+            "description": "The various states that a negotiation can be in<br><br><br>\u2022\u201cCountered\u201d \u2013 Customer has countered the BofA offering<br>\u2022\"Trader Accepted\" \u2013 BofA securities has accepted the customer\u2019s counter and may trade at the counter price.<br>\u2022\"Trader Countered\" \u2013 BofA securities has countered back to the customer with a counter price or yield<br>\u2022\"Accepted\" \u2013 Customer has accepted the BofA securities\u2019 counter<br>\u2022\"Trader Counter Expired\" \u2013 The timer after BofA securities countered  expired <br>\u2022\"Denied\" \u2013 The counter request was denied due to technical error.<br>\u2022\"Executed\" \u2013 The negotiation resulted in a trade <br>"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Transaction quantity<br><br>In 1000s. If 50 bonds are required, 50000 should be specified. In words that number is \u201cfifty thousand\u201d<br>"
+          },
+          "accountNumberOrEbn": {
+            "type": "string",
+            "description": "Your firm\u2019s account number at BofA Securities if you are an Institutional customer. If you are a broker/dealer, it will be your EBN symbol prefixed with \u201cEBN\u201d.<br><br>If you are a broker/dealer, your operations team will be able to provide you the EBN symbol to use. For (a possibly out of date) list, see DTCC. Ex. Merrill Lynch, Pierce, Fenner & Smith Inc. has MLCO as the symbol and you would provide \u201cEBNMLCO\u201d in the request<br>"
+          },
+          "cusip": {
+            "type": "string",
+            "description": "CUSIP with or without the 9th check digit"
+          },
+          "counterPrice": {
+            "type": "number",
+            "description": "Price of the Counter on the Trade"
+          },
+          "counterYield": {
+            "type": "number",
+            "description": "Yield on the Counter of the Trade"
+          },
+          "side": {
+            "type": "string",
+            "description": "Indication if trade is Buy or Sell<br><br>Side is from your perspective. You, the customer, are BUYing from or SELLing to BofA Securities<br>"
+          },
+          "accruedInterest": {
+            "type": "number",
+            "description": "Accrued interest to settlement date"
+          },
+          "settlementDate": {
+            "type": "string",
+            "description": "Settlement date expected. Should match settlement dates offered by BofA Securities.<br><br>Expected format YYYY-MM-DD. All numbers.<br>"
+          },
+          "longtermTrade": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/longtermTrade"
+            }
+          },
+          "tsMemo": {
+            "type": "string",
+            "description": "Reason text of status is Denied"
+          },
+          "negotiationExpireTime": {
+            "type": "string",
+            "description": "The time at which the negotiation with expire"
+          },
+          "negotiationType": {
+            "type": "string",
+            "description": "Indicates whether negotiation is a Price or Yield"
+          },
+          "isOfferBestAndFinal": {
+            "type": "string",
+            "description": "Indicates whether offer is further negotiable"
+          }
+        }
+      },
+      "longtermTrade": {
+        "type": "object",
+        "description": "Details of the trade itself<br>",
+        "properties": {
+          "tradeId": {
+            "type": "integer",
+            "description": "Your (BofA Securities generated) trade reference number<br>"
+          },
+          "side": {
+            "type": "string",
+            "description": "Indication if trade is Buy or Sell<br><br>Side is from your perspective. You, the customer, are BUYing from or SELLing to BofA Securities<br>"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Transaction quantity<br><br>In 1000s. If 50 bonds are required, 50000 should be specified. In words that number is \u201cfifty thousand\u201d<br>"
+          },
+          "tradeStatus": {
+            "type": "string",
+            "description": "The various states that a trade can be in<br><br>Trade status changes state in the below order:<br>1.Submitted<br>2.Pending<br>3.Executed<br>4.Denied<br><br>When the trade has been received by BofA Securities via the trade request API, its state will be Submitted. When it is queued for execution but has not yet been executed, it will be in the state Pending. Executed or Denied are the end states depending on the whether the trade has completed successfully or not<br>"
+          },
+          "tsMemo": {
+            "type": "string",
+            "description": "Deprecated"
+          },
+          "tradeDate": {
+            "type": "string",
+            "description": "Date the trade was executed<br><br>Expected format YYYY-MM-DD. All numbers.<br>"
+          },
+          "settlementDate": {
+            "type": "string",
+            "description": "Settlement date expected. Should match settlement dates offered by BofA Securities.<br><br>Expected format YYYY-MM-DD. All numbers.<br>"
+          },
+          "principal": {
+            "type": "number",
+            "description": "Trade principal based on the par and price"
+          },
+          "accruedInterest": {
+            "type": "number",
+            "description": "Accrued interest to settlement date"
+          },
+          "tsAccruedInterest": {
+            "type": "number",
+            "description": "Deprecated"
+          },
+          "totalCost": {
+            "type": "number",
+            "description": "Total cost of the trade including principal and accrued interest"
+          },
+          "tradePrice": {
+            "type": "number",
+            "description": "Price the trade is executed at"
+          },
+          "tradeYield": {
+            "type": "number",
+            "description": "Yield the trade is executed at"
+          },
+          "tradeCredit": {
+            "type": "number",
+            "description": "Future use"
+          },
+          "worstYield": {
+            "type": "number",
+            "description": "Yield to worst"
+          },
+          "currentYield": {
+            "type": "number",
+            "description": "Current yield of the bond"
+          },
+          "taxEqvYield": {
+            "type": "number",
+            "description": "Tax-equivalent yield at trade level"
+          },
+          "premiumCallDate": {
+            "type": "string",
+            "description": "Call date to the premium<br><br>Expected format YYYY-MM-DD. All numbers.<br>"
+          },
+          "premiumCallPrice": {
+            "type": "number",
+            "description": "Price to the premium call"
+          },
+          "premiumCallYield": {
+            "type": "number",
+            "description": "yield to the premium call"
+          },
+          "parCallDate": {
+            "type": "string",
+            "description": "Date of the Par Call<br><br>Expected format YYYY-MM-DD. All numbers."
+          },
+          "parCallPrice": {
+            "type": "number",
+            "description": "Price to the Par Call date"
+          },
+          "parCallYield": {
+            "type": "number",
+            "description": "Yield to the Par Call date"
+          },
+          "maturityYield": {
+            "type": "number",
+            "description": "Yield to Maturity"
+          },
+          "maturityDate": {
+            "type": "string",
+            "description": "Maturity date of the bond<br><br>Expected format YYYY-MM-DD. All numbers."
+          },
+          "maturityPrice": {
+            "type": "number",
+            "description": "Price to Maturity"
+          },
+          "priceToIndicator": {
+            "type": "string",
+            "description": "An indicator of the workout date for the yield to worst<br><br>\u2018MATURITY\u2019 or \u2018CALL\u2019"
+          },
+          "priceToPrice": {
+            "type": "number",
+            "description": "The price corresponding to the priceToIndicator"
+          },
+          "priceToDate": {
+            "type": "string",
+            "description": "The workout date corresponding to the yield to worst<br><br>Expected format YYYY-MM-DD. All numbers."
+          },
+          "stepOutIndicator": {
+            "type": "boolean",
+            "description": "Is BofA Securities stepping out of this trade<br><br>Talk to your operations team for this type of trade, a custodian is usually involved to take possession of the securities"
+          },
+          "user": {
+            "type": "string",
+            "description": "Echo back of the calling BofA Securities user\u2019s ID"
+          },
+          "updateTimeStamp": {
+            "type": "string",
+            "description": "Time the trade record was updated<br><br>ISO 8601 date time format specifying date and time with HH, MM, SS and without time zone offsets. Time zone is always expected to be US Eastern. See Wikipedia (<a href='https://en.wikipedia.org/wiki/ISO_8601' target='_blank'>Link</a>) for ISO 8601. If caller uses Java, it is this (<a href='https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/time/DateFormatUtils.html#ISO_8601_EXTENDED_DATE_FORMAT' target='_blank'>Link</a>) Apache Commons Lang date time format (<br>ISO_8601_EXTENDED_DATE_FORMAT)"
+          },
+          "cusip": {
+            "type": "string",
+            "description": "CUSIP with or without the 9th check digit"
+          },
+          "accountNumberOrEbn": {
+            "type": "string",
+            "description": "Your firm\u2019s account number at BofA Securities if you are an Institutional customer. If you are a broker/dealer, it will be your EBN symbol prefixed with \u201cEBN\u201d<br><br>If you are a broker/dealer, your operations team will be able to provide you the EBN symbol to use. For (a possibly out of date) list, see DTCC. Ex. Merrill Lynch, Pierce, Fenner & Smith Inc. has MLCO as the symbol and you would provide \u201cEBNMLCO\u201d in the request."
+          }
+        }
+      },
+      "temmsTradeError400": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:123",
+          "status": "Failure",
+          "apiName": "muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Validation error:Incomplete/Incorrect Request : Missing or Extra fields"
+          }
+        }
+      },
+      "temmsTradeError401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "d7df57b0-37b8-11ea-8715-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "temmsTradeError403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "temmsTradeError404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "29804110-37b9-11ea-99c7-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "temmsTradeError405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1649682845",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Validation error:Request method 'PUT' not supported"
+          }
+        }
+      },
+      "temmsTradeError406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "temmsTradeError408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "temmsTradeError415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1649684545",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Validation error:Content type 'application/javascript' not supported"
+          }
+        }
+      },
+      "temmsTradeError429": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/429Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1234",
+          "status": "Failure",
+          "apiName": "muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 429,
+            "reasonDescription": "API Hit Rate Error:Maximum number of times this API can be called per second has been exceeded"
+          }
+        }
+      },
+      "temmsTradeError500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "ae18f4d0-37b9-11ea-8ce3-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "temmsTradeError503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/tradenegotiation/history",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "429Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

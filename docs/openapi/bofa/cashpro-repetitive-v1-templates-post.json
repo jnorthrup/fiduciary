@@ -1,0 +1,683 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Repetitive Payments V1 Template Information (all)",
+    "description": "Retrieve information on all templates maintained in CashPro Global Payments.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Repetitive Payments"
+    }
+  ],
+  "paths": {
+    "/cashpro/repetitive/v1/templates": {
+      "post": {
+        "tags": [
+          "Repetitive Payments"
+        ],
+        "summary": "Payment Initiations provides facility to retrieve all the templates maintained in CashPro Global Payments.",
+        "operationId": "pymtInitTemp2",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single reporting request (ex. 'Bearer [value]')",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "description": "A unique identifier to be used for a single payment<br>Length: 1 - 256)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/templateSearchobject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/templateSearchResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationRetrieveAll400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationRetrieveAll401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The IP Address is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationRetrieveAll403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationRetrieveAll404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationRetrieveAll405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationRetrieveAll406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationRetrieveAll408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationRetrieveAll415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationRetrieveAll500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationRetrieveAll503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "templateSearchobject": {
+        "required": [
+          "templateStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "templateStatus": {
+            "type": "string",
+            "description": "Status Criteria used to fetch the resource items with the agreed fields <br>minItems:1<br>maxItems: 10"
+          }
+        },
+        "description": "",
+        "example": {
+          "templateStatus": "PENDING_APPROVAL"
+        }
+      },
+      "templateSearchResp": {
+        "type": "object",
+        "properties": {
+          "templateSearchResparray": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/templateSearchRespItem"
+            }
+          }
+        },
+        "description": "Templates Response array",
+        "example": [
+          {
+            "templatePk": "196S01751PHM0J18",
+            "templateCode": "11111",
+            "templateName": "Test Template",
+            "receivingPartyName": "BeneName",
+            "receivingBankAccountNumber": null,
+            "creditAccountCurrency": "EUR",
+            "receivingBankIdentifier": "BOFAGB22XXX",
+            "schedulePk": null,
+            "scheduleStatus": "",
+            "additionalProperties": {}
+          },
+          {
+            "templatePk": "197UD040875M3792",
+            "templateCode": "Salwa_001",
+            "templateName": "Salwa_00",
+            "receivingPartyName": "test",
+            "receivingBankAccountNumber": null,
+            "creditAccountCurrency": "USD",
+            "receivingBankIdentifier": "122016066",
+            "schedulePk": null,
+            "scheduleStatus": "",
+            "additionalProperties": {}
+          }
+        ]
+      },
+      "templateSearchRespItem": {
+        "type": "object",
+        "properties": {
+          "templatePk": {
+            "type": "string",
+            "description": "Unique template identification generated by CashPro Global Payments<br>Length: 1 - 35"
+          },
+          "templateCode": {
+            "type": "string",
+            "description": "Code of the template provided by the customer for reference. <br>Length: 1 - 35"
+          },
+          "templateName": {
+            "type": "string",
+            "description": "Name of the template provided by the customer for reference<br>Length: 1 \u2013 35"
+          },
+          "receivingPartyName": {
+            "type": "string",
+            "description": "Crediting party name"
+          },
+          "receivingBankAccountnumber": {
+            "type": "string",
+            "description": "Crediting party account number"
+          },
+          "creditAccountCurrency": {
+            "type": "string",
+            "description": "Currency of crediting party account number"
+          },
+          "receivingBankIdentifier": {
+            "type": "string",
+            "description": "Bank identification number of a receiving party"
+          },
+          "schedulePk": {
+            "type": "string",
+            "description": "Unique identifier for the scheduled payment"
+          },
+          "scheduleStatus": {
+            "type": "string",
+            "description": "Status of a schedule attached to the template"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "description": "List of additional properties",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "description": ""
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "paymentInitiationRetrieveAll400": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "8a2ff130-2012-11eb-949d-005056a7f7ea",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/templates",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Bad Request"
+          }
+        }
+      },
+      "paymentInitiationRetrieveAll401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/templates",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "paymentInitiationRetrieveAll403": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": ""
+          },
+          "description": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "description": "",
+        "example": {
+          "error": "invalid_ip",
+          "description": "The IP Address is invalid."
+        }
+      },
+      "paymentInitiationRetrieveAll404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/templates",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "paymentInitiationRetrieveAll405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "PUT/cashpro/repetitive/v1/templates",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "paymentInitiationRetrieveAll406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/templates",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "paymentInitiationRetrieveAll408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/templates",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "paymentInitiationRetrieveAll415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/templates",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "paymentInitiationRetrieveAll500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/templates",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "paymentInitiationRetrieveAll503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/templates",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

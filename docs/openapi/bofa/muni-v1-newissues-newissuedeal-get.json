@@ -1,0 +1,1019 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Global Markets \u2013 Get New Issue Deal",
+    "description": "Get the details of a single new issue deal given the deal id.",
+    "termsOfService": "",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "paths": {
+    "/muni/v1/newissues/newissuedeal/{dealID}": {
+      "get": {
+        "tags": [
+          "Muni Services"
+        ],
+        "summary": "Get the details of a single new issue deal given the deal id.",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identify the content of the payload as JSON. Use 'Content-Type: application/json'. This is the only content type supported as of now. Content-Types cannot be negotiated programmatically at this time. Future versions might provide that facility.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. \u201cBearer [value])",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "UserId",
+            "in": "header",
+            "description": "User who is interacting with this service from a company. User should be on boarded on the Bofa Securities MercuryTM platform and obtain UserId.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "header",
+            "description": "A token provided by client to identify their request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse429"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "400ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 400
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Validation error:Incomplete/Incorrect Request : Missing or Extra field"
+          }
+        }
+      },
+      "401ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 401
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Authentication Failure"
+          }
+        }
+      },
+      "403ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 403
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Forbidden"
+          }
+        }
+      },
+      "404ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 404
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Resource Not Found"
+          }
+        }
+      },
+      "405ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 405
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Method Not Allowed"
+          }
+        }
+      },
+      "406ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 406
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Not Acceptable"
+          }
+        }
+      },
+      "408ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 408
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "415ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 415
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Unsupported Media Type"
+          }
+        }
+      },
+      "429ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 429
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "API Hit Rate Error:Maximum number of times this API can be called per second has been exceeded"
+          }
+        }
+      },
+      "500ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 500
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Internal Server Error"
+          }
+        }
+      },
+      "503ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 503
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Service Unavailable"
+          }
+        }
+      },
+      "responseBody": {
+        "type": "object",
+        "properties": {
+          "newIssueDealDetails": {
+            "$ref": "#/components/schemas/newIssueDealDetails"
+          }
+        },
+        "description": "Array describing the new Issue deal \u2013 this is the highest level of the issuance and is the container for the deal itself",
+        "example": {
+          "newIssueDealDetails": {
+            "dealVersion": 7,
+            "dealId": "1448303321",
+            "dealDescription": "Dormitory Authority Of The State Of New York, New York State Personal Income Tax Revenue Bonds (general Purpose), Series 2021e  Bidding Group 5 Bonds",
+            "seniorManager": "BofA Securities, NY",
+            "expectedPricingDate": null,
+            "dealStatus": "Allotments Available",
+            "dealSize": 365855000,
+            "dealMoodysRating": null,
+            "dealSPRating": "AA+",
+            "dealFitchRating": "AA+",
+            "firstMaturityDate": "2047-03-15",
+            "finalMaturityDate": "2051-03-15",
+            "state": "NY",
+            "taxStatus": "Tax Exempt",
+            "series": [
+              {
+                "seriesCode": "21-E",
+                "seriesDescription": null,
+                "taxable": false,
+                "moodysRatings": null,
+                "sandPRating": "AA+",
+                "fitchRatingCode": "AA+",
+                "callFeatureDescription": "CALLABLE 03/15/2032 @100.0",
+                "firstCouponDate": "2022-03-15",
+                "datedDate": "2021-12-17",
+                "maturities": [
+                  {
+                    "maturityDate": "2047-03-15",
+                    "maturityAmount": 67690,
+                    "coupon": 4,
+                    "price": 119.052,
+                    "yield": 1.94,
+                    "cusip": "64990FL93",
+                    "spread": null,
+                    "maturityDescription": "",
+                    "maturityStatus": "ACTIVE",
+                    "maturityHistory": [
+                      {
+                        "maturityVersion": 7,
+                        "sourceSystemTimestamp": "2021-12-10T08:03:05-05:00",
+                        "coupon": 4,
+                        "price": 119.052,
+                        "yield": 1.94,
+                        "spread": null,
+                        "maturityAmount": 0
+                      }
+                    ]
+                  },
+                  {
+                    "maturityDate": "2048-03-15",
+                    "maturityAmount": 70400,
+                    "coupon": 4,
+                    "price": 118.95,
+                    "yield": 1.95,
+                    "cusip": "64990FM27",
+                    "spread": null,
+                    "maturityDescription": "",
+                    "maturityStatus": "ACTIVE",
+                    "maturityHistory": [
+                      {
+                        "maturityVersion": 7,
+                        "sourceSystemTimestamp": "2021-12-10T08:03:05-05:00",
+                        "coupon": 4,
+                        "price": 118.95,
+                        "yield": 1.95,
+                        "spread": null,
+                        "maturityAmount": 0
+                      }
+                    ]
+                  },
+                  {
+                    "maturityDate": "2049-03-15",
+                    "maturityAmount": 73210,
+                    "coupon": 4,
+                    "price": 118.848,
+                    "yield": 1.96,
+                    "cusip": "64990FM35",
+                    "spread": null,
+                    "maturityDescription": "",
+                    "maturityStatus": "ACTIVE",
+                    "maturityHistory": [
+                      {
+                        "maturityVersion": 7,
+                        "sourceSystemTimestamp": "2021-12-10T08:03:05-05:00",
+                        "coupon": 4,
+                        "price": 118.848,
+                        "yield": 1.96,
+                        "spread": null,
+                        "maturityAmount": 0
+                      }
+                    ]
+                  },
+                  {
+                    "maturityDate": "2050-03-15",
+                    "maturityAmount": 76135,
+                    "coupon": 3,
+                    "price": 106.166,
+                    "yield": 2.32,
+                    "cusip": "64990FM43",
+                    "spread": null,
+                    "maturityDescription": "",
+                    "maturityStatus": "ACTIVE",
+                    "maturityHistory": [
+                      {
+                        "maturityVersion": 7,
+                        "sourceSystemTimestamp": "2021-12-10T08:03:05-05:00",
+                        "coupon": 3,
+                        "price": 106.166,
+                        "yield": 2.32,
+                        "spread": null,
+                        "maturityAmount": 0
+                      }
+                    ]
+                  },
+                  {
+                    "maturityDate": "2051-03-15",
+                    "maturityAmount": 78420,
+                    "coupon": 3,
+                    "price": 106.072,
+                    "yield": 2.33,
+                    "cusip": "64990FM50",
+                    "spread": null,
+                    "maturityDescription": "",
+                    "maturityStatus": "ACTIVE",
+                    "maturityHistory": [
+                      {
+                        "maturityVersion": 7,
+                        "sourceSystemTimestamp": "2021-12-10T08:03:05-05:00",
+                        "coupon": 3,
+                        "price": 106.072,
+                        "yield": 2.33,
+                        "spread": null,
+                        "maturityAmount": 0
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "newIssueDealDetails": {
+        "type": "object",
+        "description": "",
+        "properties": {
+          "dealVersion": {
+            "type": "integer",
+            "description": "Version number of the deal, which indicates how many times the deal has changed"
+          },
+          "dealId": {
+            "type": "integer",
+            "description": "BofA generated numeric identifier for the deal"
+          },
+          "dealDescription": {
+            "type": "string",
+            "description": "Description of the deal itself"
+          },
+          "seniorManager": {
+            "type": "string",
+            "description": "The lead firm responsible for the deal <br><br>e.g. \u201cBofA Securities, NY\u201d"
+          },
+          "expectedPricingDate": {
+            "type": "string",
+            "description": "Date the deal is expected to be priced <br><br>Expected format YYYY-MM-DD <br>Can be null"
+          },
+          "dealStatus": {
+            "type": "string",
+            "description": "Status within the deal lifecycle <br><br>Example:  \u201cAllotments Available\u201d, \u201cAwaiting Allotments\u201d, \u201cNot Published\u201d, \u201cPreliminary Pricing\u201d, \u201cRetail Order Period\u201d, \u201cVerbal Award/CXL Window\u201d, \u201cDay-to-Day\u201d, \u201cPrice Ideas\u201d"
+          },
+          "dealSize": {
+            "type": "integer",
+            "description": "Overall size in actual dollar amount of the deal"
+          },
+          "dealMoodysRating": {
+            "type": "string",
+            "description": "Overall Moodys Long term rating of the issue <br><br>See <a href='https://www.moodys.com/sites/products/productattachments/ap075378_1_1408_ki.pdf' target='_blank'>Moodys</a> for allowed enumerations of rating. Section \u201cMoody\u2019s Long-Term Rating Definitions\u201d"
+          },
+          "dealSPRating": {
+            "type": "string",
+            "description": "Overall S&P rating of the issue. <br>See <a href='https://disclosure.spglobal.com/ratings/en/regulatory/article/-/view/sourceId/504352' target='_blank'>S&P</a> for allowed enumeration of ratings. See section \u201cLong-Term Issue Credit Ratings*\u201d."
+          },
+          "dealFitchRating": {
+            "type": "string",
+            "description": "Overall Fitch rating of the issue <br>See <a href='https://en.wikipedia.org/wiki/Fitch_Ratings' target='_blank'>Wikipedia Fitch</a> for allowed enumeration of ratings. See section \u201cInvestment Scale\u201d"
+          },
+          "firstMaturityDate": {
+            "type": "string",
+            "description": "Initial maturity date of components within of the deal <br><br>Expected format YYYY-MM-DD <br>Can be null"
+          },
+          "finalMaturityDate": {
+            "type": "string",
+            "description": "Initial maturity date of components within of the deal <br><br>Expected format YYYY-MM-DD <br>Can be null"
+          },
+          "state": {
+            "type": "string",
+            "description": "US state or territory <br><br>Expected format is two-letter code (\u201cNY\u201d, \u201cCA\u201d, \u201cHI\u201d)"
+          },
+          "taxStatus": {
+            "type": "string",
+            "description": "Indication of whether the deal has interest coupons that are taxable or tax-exempt or various"
+          },
+          "series": {
+            "type": "array",
+            "description": "Array describe the tranches/series within the deal <br><br>Minimum is one, can be many",
+            "items": {
+              "$ref": "#/components/schemas/series"
+            }
+          }
+        }
+      },
+      "series": {
+        "type": "object",
+        "description": "Array describing one or more tranches/series within the deal \u2013 these are specific structures",
+        "properties": {
+          "seriesCode": {
+            "type": "string",
+            "description": "Issuer generated code identifying the specific series"
+          },
+          "seriesDescription": {
+            "type": "string",
+            "description": "Description of the specific series"
+          },
+          "taxable": {
+            "type": "boolean",
+            "description": "Indicates whether the deal is taxable <br><br>True or False"
+          },
+          "moodysRating": {
+            "type": "string",
+            "description": "Moodys Long term rating of the series <br><br>See <a href='https://www.moodys.com/sites/products/productattachments/ap075378_1_1408_ki.pdf' target='_blank'>Moodys</a> for allowed enumerations of rating. Section \u201cMoody\u2019s Long-Term Rating Definitions\u201d"
+          },
+          "sandPRating": {
+            "type": "string",
+            "description": "S&P rating of the series <br><br>See <a href='https://disclosure.spglobal.com/ratings/en/regulatory/article/-/view/sourceId/504352' target='_blank'>S&P</a> for allowed enumeration of ratings. See section \u201cLong-Term Issue Credit Ratings*\u201d."
+          },
+          "fitchRatingCode": {
+            "type": "string",
+            "description": "Fitch rating of the series <br><br>See <a href='https://en.wikipedia.org/wiki/Fitch_Ratings' target='_blank'>Wikipedia Fitch</a> for allowed enumeration of ratings. See section \u201cInvestment Scale\u201d"
+          },
+          "callFeatureDescription": {
+            "type": "string",
+            "description": "Freeform text describing the call features of the series"
+          },
+          "firstCouponDate": {
+            "type": "string",
+            "description": "First maturity date of components within of the series <br><br>Expected format YYYY-MM-DD <br>Can be null"
+          },
+          "datedDate": {
+            "type": "string",
+            "description": "Date the issue is expected to be locked down <br><br>Expected format YYYY-MM-DD"
+          },
+          "maturities": {
+            "type": "array",
+            "description": "Array describe the maturities within the series  <br><br>Minimum is one, can be many",
+            "items": {
+              "$ref": "#/components/schemas/maturities"
+            }
+          }
+        }
+      },
+      "maturities": {
+        "type": "object",
+        "description": "Array describing one or more series within the deal \u2013 these are specific structures",
+        "properties": {
+          "maturityDate": {
+            "type": "string",
+            "description": "Initial maturity date of the bond <br><br>Expected format YYYY-MM-DD <br>Can be null"
+          },
+          "maturityAmount": {
+            "type": "integer",
+            "description": "Size of the bond <br><br>In 1000s. If 50 bonds are required, 50,000 should be specified (In words, that number is \u201cfifty thousand\u201d)."
+          },
+          "coupon": {
+            "type": "number",
+            "description": "Coupon of the bond"
+          },
+          "price": {
+            "type": "number",
+            "description": "Current price of the bond"
+          },
+          "yield": {
+            "type": "number",
+            "description": "Current yield of the bond"
+          },
+          "cusip": {
+            "type": "string",
+            "description": "CUSIP with or without the 9th check digit"
+          },
+          "spread": {
+            "type": "number",
+            "description": "Current spread against bond\u2019s benchmark"
+          },
+          "maturityDescription": {
+            "type": "string",
+            "description": "Description of the bond <br><br>May be null or blank"
+          },
+          "maturityStatus": {
+            "type": "string",
+            "description": "Indicates whether the maturity is active <br><br>Note:  This will normally be marked as \u201cACTIVE\u201d, and is reserved for future use"
+          },
+          "maturityHistory": {
+            "type": "array",
+            "description": "Array describe number of versions of the bond.   This shows changes over time in pricing, yield, quantity and other economic factors <br><br>Minimum is one, can be many",
+            "items": {
+              "$ref": "#/components/schemas/maturityHistory"
+            }
+          }
+        }
+      },
+      "maturityHistory": {
+        "type": "object",
+        "description": "Array describing one or more series within the deal \u2013 these are specific structures",
+        "properties": {
+          "maturityVersion": {
+            "type": "integer",
+            "description": "Version number of the bond, incidcating how many times it has updated"
+          },
+          "sourceSystemTimestamp": {
+            "type": "string",
+            "description": "Timestamp of the version change <br><br>Format is YYYY-MM-DDTHH:MM:SS-HH:MM\u201d <br>The final HH:MM is the differential for GMT"
+          },
+          "coupon": {
+            "type": "number",
+            "description": "Coupon of the bond at time of the change <br><br>Can be null"
+          },
+          "price": {
+            "type": "number",
+            "description": "Price of the bond at time of the change <br><br>Can be null"
+          },
+          "yield": {
+            "type": "number",
+            "description": "Yield of the bond at time of the change <br><br>Can be null"
+          },
+          "spread": {
+            "type": "number",
+            "description": "Spread at time of the change <br><br>Can be null"
+          },
+          "maturityAmount": {
+            "type": "integer",
+            "description": "Size of the bond <br><br>In 1000s. If 50 bonds are required, 50,000 should be specified (In words, that number is \u201cfifty thousand\u201d)<br><br>Can be null"
+          }
+        }
+      },
+      "newIssueDealErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:123",
+          "status": "Failure",
+          "apiName": "muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Validation error:Incomplete/IncorrectRequest: Missing or Extra fields"
+          }
+        }
+      },
+      "newIssueDealErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "d7df57b0-37b8-11ea-8715-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "newIssueDealErrorResponse403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "newIssueDealErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "29804110-37b9-11ea-99c7-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "newIssueDealErrorResponse405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1649682845",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Validation error:Request method 'PUT' not supported"
+          }
+        }
+      },
+      "newIssueDealErrorResponse406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "newIssueDealErrorResponse408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "newIssueDealErrorResponse415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1649684545",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Validation error:Content type 'application/javascript' not supported"
+          }
+        }
+      },
+      "newIssueDealErrorResponse429": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/429ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1234",
+          "status": "Failure",
+          "apiName": "muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 429,
+            "reasonDescription": "API Hit Rate Error:Maximum number of times this API can be called per second has been exceeded"
+          }
+        }
+      },
+      "newIssueDealErrorResponse500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "ae18f4d0-37b9-11ea-8ce3-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "newIssueDealErrorResponse503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/newissues/newissuedeal/1448303321",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

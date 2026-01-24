@@ -1,0 +1,513 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Payment Credit Advice Push Notification",
+    "description": "Notifies when a U.S. or Brazil real-time payment is received.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Push Notification for Payments v2 APIs",
+      "description": "Payment Credit Advice"
+    }
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "tags": [
+          ""
+        ],
+        "summary": "Notifies when a U.S. real-time payment is received",
+        "operationId": "webhookAPI ",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON. </br> ex. application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request .</br> ex. Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "header",
+            "description": "User id which will be provided at the time of onboarding </br> Eg. 123898733525554444",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userAuthKey",
+            "in": "header",
+            "description": "This will contain the encrypted password; which will be used to authenticate user",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Payload that will  be sent to client ",
+          "content": {
+            "application/json": {}
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditAdviceNotificationsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {}
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {}
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {}
+          },
+          "405": {
+            "description": "Invalid method",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {}
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreditAdviceNotificationsResponse": {
+        "type": "object",
+        "properties": {
+          "paymentIdentification": {
+            "$ref": "#/components/schemas/paymentIdentification"
+          },
+          "paymentType": {
+            "$ref": "#/components/schemas/paymentType"
+          },
+          "settlementDate": {
+            "type": "string",
+            "description": "Date on which payment is  settled in YYYY-MM-DD format",
+            "example": "2018-01-13"
+          },
+          "creditAmount": {
+            "type": "string",
+            "description": "The amount that was credited into the account. The currency of the amount is the currency of the account. Note: The decimal separator is a dot.",
+            "example": "209"
+          },
+          "initiatingParty": {
+            "description": "Party who is sending the payment",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/partyIdentification"
+              }
+            ]
+          },
+          "debtor": {
+            "description": "Party that owes the debt or is making the payment on behalf of an ultimate debtor",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/partyIdentification"
+              }
+            ]
+          },
+          "debtorAgent": {
+            "description": "The Financial Institution holding the debit account",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/financialInstitution"
+              }
+            ]
+          },
+          "ultimateDebtor": {
+            "description": "Party on whose behalf the payment is being made",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/partyIdentification"
+              }
+            ]
+          },
+          "creditor": {
+            "description": "Party to which the payment will be made",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/partyIdentification"
+              }
+            ]
+          },
+          "ultimateCreditor": {
+            "description": "Party to which the debt is owed in a \"Receive on Behalf of\" scenario.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/partyIdentification"
+              }
+            ]
+          },
+          "creditorAccount": {
+            "$ref": "#/components/schemas/account"
+          },
+          "creditorAgent": {
+            "description": "The Financial Institution holding the credit account",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/financialInstitution"
+              }
+            ]
+          },
+          "chargesBearer": {
+            "type": "string",
+            "description": "Specifies which party/parties will bear the charges associated with the processing of the payment transaction Enum:  \"DEBT\", \"CRED\", \"SHAR\", \"SLEV\""
+          },
+          "relatedRemittance": {
+            "type": "string",
+            "description": "Provides information related to the handling of the remittance information by any of the agents in the transaction processing chain."
+          },
+          "unstructuredRemittance": {
+            "type": "string",
+            "description": "Unstructured information to be conveyed to the receiver. Length : 1 - 140",
+            "example": "Beneficiary unstructured addenda"
+          },
+          "structuredRemittance": {
+            "$ref": "#/components/schemas/structuredRemittance"
+          }
+        }
+      },
+      "CreditErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errorDetails": {
+            "type": "array",
+            "xml": {
+              "name": "errorDetails",
+              "wrapped": true
+            },
+            "items": {
+              "$ref": "#/components/schemas/errorResponse400"
+            }
+          },
+          "errorType": {
+            "type": "string",
+            "example": "GATEWAY_VALIDATION"
+          }
+        }
+      },
+      "errorResponse400": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "608"
+          },
+          "description": {
+            "type": "string",
+            "example": "B2BI Gateway Authorization Error"
+          }
+        }
+      },
+      "paymentIdentification": {
+        "type": "object",
+        "description": "Payment identification references",
+        "properties": {
+          "instructionIdentification": {
+            "type": "string",
+            "description": "Unique identification as assigned by an instructing party for an instructed party to unambiguously identify the instruction. Length : 1 - 35",
+            "example": "20170712000000010B1B000000000005164"
+          },
+          "endToEndIdentification": {
+            "type": "string",
+            "description": "Unique identification assigned by the initiating party to unumbiguously identify the transaction. This identification is passed on, unchanged, throughout the entire end-to-end chain.  Length : 1 - 35",
+            "example": "MYREF123"
+          },
+          "clearingSystemReference": {
+            "type": "string",
+            "description": "Unique identification assigned by the initiating party to unumbiguously identify the transaction. This identification is passed on, unchanged, throughout the entire end-to-end chain.  Length : 1 - 35",
+            "example": "001"
+          }
+        }
+      },
+      "paymentType": {
+        "type": "object",
+        "description": "Payment Type information",
+        "properties": {
+          "priority": {
+            "type": "string",
+            "description": "Indicator of the urgency or order of importance that the instructing party would like the instructed party to apply to the processing of the instruction. : 1 - 4 "
+          },
+          "serviceLevel": {
+            "type": "string",
+            "description": "Agreement under which or rules under which the transaction should be processed. : Length: 1 - 35",
+            "example": "SDVA"
+          },
+          "categoryOfPurpose": {
+            "type": "string",
+            "description": "Specifies the high level purpose of the instruction based on a set of pre-defined categories. Usage: This is used by the initiating party to provide information concerning the processing of the payment. It is likely to trigger special processing by any of the agents involved in the payment chain Length: 1 - 35"
+          },
+          "localInstrument": {
+            "type": "string",
+            "description": "User community specific instrument Length: 1 - 35 ",
+            "example": "CONSUMER"
+          }
+        }
+      },
+      "partyIdentification": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the party. : 1 - 140 ",
+            "example": "000000010"
+          },
+          "type": {
+            "type": "string",
+            "description": "Enumeration indicating whether the party is an organization or a private individual. \"enum\": \"ORG\",\"IND\"",
+            "example": "URG"
+          },
+          "postalAddress": {
+            "type": "string",
+            "description": "Address of the party"
+          },
+          "contactDetail": {
+            "type": "string",
+            "description": "Contact detail"
+          },
+          "identifiers": {
+            "type": "string",
+            "description": "An alpha numeric value that can uniquely identify a party within the specified issuer. Length : 1 - 35 ",
+            "example": "URG"
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "Date of Birth of an Individual. : Length: 1 - 35",
+            "example": "Dec 6, 1980 12:00:00 AM"
+          },
+          "countrySubDivisionOfBirth": {
+            "type": "string",
+            "description": "State, Province or County of Birth of an Individual. Length : 1 - 35",
+            "example": "URG"
+          },
+          "cityOfBirth": {
+            "type": "string",
+            "description": "City of Birth of an Individual. Length: 1 - 35 ",
+            "example": "NY"
+          },
+          "countryOfBirth": {
+            "type": "string",
+            "description": "Country of Birth of an Individual. Length: 2 ",
+            "example": "US"
+          },
+          "countryOfResidence": {
+            "type": "string",
+            "description": "The country in which the party resides. Length: 2",
+            "example": "URG"
+          }
+        }
+      },
+      "financialInstitution": {
+        "type": "object",
+        "properties": {
+          "institution": {
+            "$ref": "#/components/schemas/institution"
+          },
+          "branch": {
+            "$ref": "#/components/schemas/branch"
+          }
+        }
+      },
+      "institution": {
+        "type": "object",
+        "description": "Financial Institution Information",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the Financial Institution. Length : 1 - 35"
+          },
+          "identification": {
+            "type": "string",
+            "description": "An alpha numeric value that can uniquely identify the Financial Institution based on a specific Scheme. Length: 1 - 35",
+            "example": "8932873711"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "AIdentification scheme within which the identifier is unique enum: \"BIC\", \"UKSORT\", \"USABA\""
+          }
+        }
+      },
+      "branch": {
+        "type": "object",
+        "description": "The Branch details",
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "Branch Identification Number. Length : 1 - 35"
+          },
+          "name": {
+            "type": "string",
+            "description": "An alpha numeric value that can uniquely identify the Financial Institution based on a specific Scheme. Length: 1 - 140"
+          },
+          "postalAddress": {
+            "$ref": "#/components/schemas/postalAddress"
+          }
+        }
+      },
+      "structuredRemittance": {
+        "type": "object",
+        "description": "Information supplied to enable the matching/reconciliation of an entry with the items that the payment is intended to settle, such as commercial invoices in an accounts' receivable system, in a structured form.",
+        "properties": {
+          "referredDocument ": {
+            "type": "array",
+            "description": "Contains the location details",
+            "xml": {
+              "name": "referredDocument ",
+              "wrapped": true
+            },
+            "items": {
+              "$ref": "#/components/schemas/structuredRemittanceItems"
+            }
+          }
+        }
+      },
+      "structuredRemittanceItems": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type of the remittance document. Length : 1 - 35"
+          },
+          "number": {
+            "type": "string",
+            "description": "Unique and unambiguous identification of the referred document. Length : 1 - 35"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date associated with the referred document. Length 1 - 35"
+          }
+        }
+      },
+      "postalAddress": {
+        "type": "object",
+        "description": "Address of the party",
+        "properties": {
+          "addressLine": {
+            "type": "array",
+            "description": "Address of the party Length : 1 - 70 Min: 1 Max: 2",
+            "xml": {
+              "name": "addressLine",
+              "wrapped": true
+            },
+            "items": {
+              "$ref": "#/components/schemas/addressLine"
+            }
+          },
+          "city": {
+            "type": "string",
+            "description": "Identifies a subdivision of a country, for instance state, region, or province : 1 - 35",
+            "example": "LA"
+          },
+          "countrySubDivision": {
+            "type": "string",
+            "description": "City of the party Length : 1 - 35",
+            "example": "Beneficiary City"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO country code of the party Length : 2",
+            "example": "US"
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "Zip code or postal code Length : 16",
+            "example": "123456"
+          }
+        }
+      },
+      "account": {
+        "type": "object",
+        "description": "The account that was credited",
+        "properties": {
+          "Name": {
+            "type": "string",
+            "description": "Name of the account, as assigned by the account servicing institution, in agreement with the account owner in order to provide an additional means of identification of the account. Length : 1 - 70"
+          },
+          "identification": {
+            "type": "string",
+            "description": "Account identification. Per RFC3696 the max length of an email alias for an account is 256. Length : 1 - 256",
+            "example": "Beneficiary City"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Name of the Identification scheme \"enum\": \"IBAN\", \"BBAN\", \"EMAIL\", \"PHONE\", \"CARD\" ",
+            "example": "Beneficiary City"
+          },
+          "type": {
+            "type": "string",
+            "description": "Identifies the type of the account, such as Deposit, Savings, Digital Wallet, etc.",
+            "example": "GB"
+          },
+          "currency": {
+            "type": "string",
+            "description": "The Currency of the account",
+            "example": "GB"
+          }
+        }
+      },
+      "addressLine": {
+        "type": "object",
+        "required": [
+          "address"
+        ],
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "",
+            "example": "66 Route"
+          }
+        }
+      }
+    }
+  }
+}

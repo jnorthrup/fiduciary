@@ -1,0 +1,812 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Global Markets \u2013 Munibonds Bid",
+    "description": "Allows a user to submit a bond to BofA soliciting a bid price.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "paths": {
+    "/muni/v1/munibonds/bid": {
+      "put": {
+        "tags": [
+          "Muni Services"
+        ],
+        "summary": "APIs that allow BofA Securities customers of Municipal Banking and Markets to transact Municipal securities. This API provides the customer the ability to submit a bond to BofA soliciting a bid price",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identify the content of the payload as JSON. Use 'Content-Type: application/json'. This is the only content type supported as of now. Content-Types cannot be negotiated programmatically at this time. Future versions might provide that facility",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. \u201cBearer [value])",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "header",
+            "description": "User who is interacting with this service from a company. User should be on boarded on the Bofa Securities Mercury\u2122 platform and obtain userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "header",
+            "description": "A token provided by client to identify their request",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Submit Bid Body Description",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/bidBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bid400Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bid401Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bid403Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bid404Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bid405Error"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bid406Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bid408Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bid415Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API Calls Exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bid500Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bid503Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "bidBody": {
+        "required": [
+          "bidRequest"
+        ],
+        "type": "object",
+        "properties": {
+          "bidRequest": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/bidRequest"
+            }
+          }
+        },
+        "example": {
+          "bidRequest": [
+            {
+              "accountNumberOrEbn": "123456789",
+              "bidByTime": "2020-02-05T21:45:12.000Z",
+              "competitive": true,
+              "confirmations": [],
+              "cusip": "123456789",
+              "firmTillTime": "2020-02-05T21:55:12.000Z",
+              "quantity": 5000,
+              "settlementDate": "2020-02-07",
+              "userMemo": ""
+            }
+          ]
+        }
+      },
+      "bidRequest": {
+        "type": "object",
+        "required": [
+          "accountNumberOrEbn",
+          "bidByTime",
+          "competitive",
+          "confirmations",
+          "cusip",
+          "firmTillTime",
+          "quantity",
+          "settlementDate",
+          "userMemo"
+        ],
+        "properties": {
+          "accountNumberOrEbn": {
+            "type": "string",
+            "description": "Your firm\u2019s account number at BofA Securities if you are an Institutional customer. If you are a broker/dealer, it will be your EBN symbol prefixed with \u201cEBN\u201d. If you are a broker/dealer, your operations team will be able to provide you the EBN symbol to use. For (a possibly out of date) list, see DTCC. Ex. Merrill Lynch, Pierce, Fenner & Smith Inc. has MLCO as the symbol and you would provide \u201cEBNMLCO\u201d in the request"
+          },
+          "bidByTime": {
+            "type": "string",
+            "format": "DateTime",
+            "description": "The earliest time in the business day that a bid request can be submitted.ISO 8601 date time format specifying date and time with HH, MM, SS and without time zone offsets. Time zone is always expected to be US Eastern. See Wikipedia (<a href=\"https://en.wikipedia.org/wiki/ISO_8601\" target=\"_blank\" rel=\"noopener noreferrer\">Link</a>) for ISO 8601. If caller uses Java, it is this (<a href=\"https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/time/DateFormatUtils.html#ISO_8601_EXTENDED_DATE_FORMAT\" target=\"_blank\" rel=\"noopener noreferrer\">Link</a>) for Apache Commons Lang date time format (ISO_8601_EXTENDED_DATE_FORMAT) that provides a reference for the format"
+          },
+          "competitive": {
+            "type": "boolean",
+            "description": "Future use"
+          },
+          "confirmations": {
+            "type": "array",
+            "description": "Future use",
+            "items": {
+              "$ref": "#/components/schemas/Confirmation"
+            }
+          },
+          "cusip": {
+            "type": "string",
+            "description": "CUSIP with or without the 9th check digit"
+          },
+          "firmTillTime": {
+            "type": "string",
+            "format": "Date",
+            "description": "The latest time the quoted price will be firm after which it becomes subject and cannot be executed electronically. See \u201cAdditional Notes\u201d for <b>bidByTime</b> for format and expectations"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Transaction quantity of the bid desired (in 1000s). If 50 bonds are required, 50000 should be specified. In words that number is \u201cfifty thousand\u201d"
+          },
+          "settlementDate": {
+            "type": "string",
+            "format": "Date",
+            "description": "Future use"
+          },
+          "userMemo": {
+            "type": "string",
+            "description": "Memo to self for the person submitting the bid request. Optional"
+          }
+        }
+      },
+      "BidResponse": {
+        "type": "object",
+        "properties": {
+          "bidResponse": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/bidResponseObject"
+            }
+          }
+        },
+        "example": {
+          "bidResponse": [
+            {
+              "accountNumberOrEbn": "123456789",
+              "bidByTime": "2020-02-05T21:45:12.000Z",
+              "competitive": true,
+              "confirmations": [],
+              "cusip": "123456789",
+              "firmTillTime": "2020-02-05T21:55:12.000Z",
+              "quantity": 5000,
+              "settlementDate": "2020-02-07",
+              "userMemo": "",
+              "hasError": false,
+              "errorMessage": "",
+              "errorType": null,
+              "validationErrors": [],
+              "systemErrors": ""
+            }
+          ]
+        }
+      },
+      "bidResponseObject": {
+        "type": "object",
+        "properties": {
+          "cusip": {
+            "type": "string",
+            "description": "Echo back from the request",
+            "example": "123456789"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Echo back from the request",
+            "example": 1234
+          },
+          "settlementDate": {
+            "type": "string",
+            "description": "Echo back from the request",
+            "example": "2020-02-05T21:55:12.000Z"
+          },
+          "bidByTime": {
+            "type": "string",
+            "description": "Echo back from the request",
+            "example": "2020-02-05T21:55:12.000Z"
+          },
+          "firmTillTime": {
+            "type": "string",
+            "description": "Echo back from the request",
+            "example": "2020-02-05T21:55:12.000Z"
+          },
+          "competitive": {
+            "type": "boolean",
+            "description": "Echo back from the request",
+            "example": false
+          },
+          "confirmations": {
+            "type": "array",
+            "description": "Future use",
+            "items": {
+              "$ref": "#/components/schemas/Confirmation"
+            }
+          },
+          "userMemo": {
+            "type": "string",
+            "description": "Future use",
+            "example": ""
+          },
+          "accountNumberOrEbn": {
+            "type": "string",
+            "description": "Echo back from the request",
+            "example": "123456789"
+          },
+          "hasError": {
+            "type": "boolean",
+            "description": "If there were errors when processing the request. True/False"
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "Messages if hasError is true. While every effort will be made to notify and co-ordinate when these error message text change, BofA Securities reserves the right to change the text without notice"
+          },
+          "errorType": {
+            "type": "string",
+            "description": "Future use"
+          },
+          "validationErrors": {
+            "type": "array",
+            "description": "Future use",
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          },
+          "systemErrors": {
+            "type": "string",
+            "description": "Technical failures on BofASecurities end. These could be transient or permanent. You do not have to correct your input if you retry"
+          }
+        }
+      },
+      "Confirmation": {
+        "type": "object",
+        "description": "Future use",
+        "example": {}
+      },
+      "ValidationError": {
+        "type": "object",
+        "description": "Future use",
+        "example": {}
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "Bid400Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:123",
+          "status": "Failure",
+          "apiName": "muni/v1/munibonds/bid",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Validation error:Incomplete/Incorrect Request : Missing or Extra fields"
+          }
+        }
+      },
+      "Bid401Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/bid",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "Bid403Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/bid",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "Bid404Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/bid",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "Bid405Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/munibonds/bid",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "Bid406Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/bid",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "Bid408Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/bid",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "Bid415Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/bid",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "Bid500Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/bid",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "Bid503Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/munibonds/bid",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

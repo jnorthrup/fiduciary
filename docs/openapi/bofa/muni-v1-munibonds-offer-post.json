@@ -1,0 +1,1120 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Global Markets \u2013 Munibonds Offer",
+    "description": "APIs that allow BofA Securities customers of Municipal Banking and Markets to transact Municipal securities, and to retrieve BofA available inventory.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Muni Services"
+    }
+  ],
+  "paths": {
+    "/muni/v1/munibonds/offer": {
+      "post": {
+        "tags": [
+          "Muni Services"
+        ],
+        "summary": "APIs that allow BofA Securities customers of Municipal Banking and Markets to transact Municipal securities. This API provides the customer the ability to retrieve BofA inventory available",
+        "operationId": "offerId",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identify the content of the payload as JSON. Use 'Content-Type: application/json'. This is the only content type supported as of now. Content-Types cannot be negotiated programmatically at this time. Future versions might provide that facility",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. \u201cBearer [value])",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "header",
+            "description": "User who is interacting with this service from a company. User should be on boarded on the Bofa Securities Mercury\u2122 platform and obtain userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "header",
+            "description": "A token provided by client to identify their request",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferAPI"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer400Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer401Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer403Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer404Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer405Error"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer406Error"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer408Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer415Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer500Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer503Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "OfferAPI": {
+        "required": [
+          "searchRequest"
+        ],
+        "type": "object",
+        "properties": {
+          "searchRequest": {
+            "$ref": "#/components/schemas/OfferSearchRequest"
+          }
+        },
+        "description": "",
+        "example": {
+          "searchRequest": {
+            "criteria": [
+              {
+                "value": "123456789",
+                "field": "cusip",
+                "operand": "="
+              },
+              {
+                "value": "10",
+                "field": "coupon",
+                "operand": ">="
+              },
+              {
+                "value": "5",
+                "field": "coupon",
+                "operand": "<="
+              },
+              {
+                "value": "120",
+                "field": "offerPrice",
+                "operand": "<="
+              },
+              {
+                "value": "100",
+                "field": "offerPrice",
+                "operand": ">="
+              },
+              {
+                "value": "5000",
+                "field": "offerSize",
+                "operand": ">="
+              },
+              {
+                "value": "50000",
+                "field": "offerSize",
+                "operand": "<="
+              },
+              {
+                "value": "1",
+                "field": "offerYield",
+                "operand": ">="
+              },
+              {
+                "value": "10",
+                "field": "offerYield",
+                "operand": "<="
+              },
+              {
+                "value": "C",
+                "field": "moodyRatingLong",
+                "operand": ">="
+              },
+              {
+                "value": "Aaa",
+                "field": "moodyRatingLong",
+                "operand": "<="
+              },
+              {
+                "value": "CCC",
+                "field": "spRatingLong",
+                "operand": ">="
+              },
+              {
+                "value": "AAA",
+                "field": "spRatingLong",
+                "operand": "<="
+              },
+              {
+                "value": "DD",
+                "field": "fitchRatingLong",
+                "operand": ">="
+              },
+              {
+                "value": "AAA",
+                "field": "fitchRatingLong",
+                "operand": "<="
+              },
+              {
+                "value": "C",
+                "field": "moodyRatingUnderlying",
+                "operand": ">="
+              },
+              {
+                "value": "Aaa",
+                "field": "moodyRatingUnderlying",
+                "operand": "<="
+              },
+              {
+                "value": "CCC",
+                "field": "spRatingUnderlying",
+                "operand": ">="
+              },
+              {
+                "value": "AAA",
+                "field": "spRatingUnderlying",
+                "operand": "<="
+              },
+              {
+                "value": "CCC",
+                "field": "fitchRatingUnderlying",
+                "operand": ">="
+              },
+              {
+                "value": "AAA",
+                "field": "fitchRatingUnderlying",
+                "operand": "<="
+              },
+              {
+                "value": "AL",
+                "field": "statesIssuance",
+                "operand": "="
+              },
+              {
+                "value": "true",
+                "field": "amt",
+                "operand": "="
+              },
+              {
+                "value": "true",
+                "field": "bankQualified",
+                "operand": "="
+              },
+              {
+                "value": "true",
+                "field": "callable",
+                "operand": "="
+              },
+              {
+                "value": "true",
+                "field": "cpiFloating",
+                "operand": "="
+              },
+              {
+                "value": "true",
+                "field": "escrow",
+                "operand": "="
+              },
+              {
+                "value": "true",
+                "field": "insurance",
+                "operand": "="
+              },
+              {
+                "value": "true",
+                "field": "prerefunded",
+                "operand": "="
+              },
+              {
+                "value": "true",
+                "field": "taxable",
+                "operand": "="
+              },
+              {
+                "value": "true",
+                "field": "whenIssued",
+                "operand": "="
+              },
+              {
+                "value": "GO",
+                "field": "paySource",
+                "operand": "="
+              },
+              {
+                "value": "AGYG",
+                "field": "sector",
+                "operand": "="
+              },
+              {
+                "value": "2020-02-14",
+                "field": "maturityDate",
+                "operand": ">="
+              }
+            ]
+          }
+        }
+      },
+      "OfferSearchRequest": {
+        "type": "object",
+        "properties": {
+          "criteria": {
+            "type": "array",
+            "description": "Array of offer search criteria",
+            "items": {
+              "$ref": "#/components/schemas/OfferCriteriaItem"
+            }
+          }
+        },
+        "description": "Offer search request"
+      },
+      "OfferCriteriaItem": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Field represent different offer criteria properties.<br><br>'field': 'Cusip'<br> 'description': CUSIP with or without the 9th check digit<br>'type': 'string' <br> 'additional': Only the \u201c=\u201d operand supported. It can be a comma separated list<br><br> 'field': 'Coupon' <br> 'description': Coupon of the bond<br>'type': 'number' <br> 'additional': Operands \u201c<=\u201d, \u201c>=\u201d and \u201c=\u201c supported<br><br> 'field': 'offerPrice' <br> 'description': Offering price of a bond<br>'type': 'number'<br>'additional': Operands \u201c<=\u201d, \u201c>=\u201d and \u201c=\u201c supported<br><br> 'field': 'offerSize' <br> 'description': Size of the available inventory of the bond<br>'type': 'integer'<br>'minimum': 0 <br> 'additional': In 1000s. If 50 bonds are required, 50,000 should be specified. (In words that number is fifty thousand).<br><br> 'field': 'offerYield' <br> 'description': Yield of the bond<br>'type': 'number'<br>'format':'float' <br> 'additional': Operands \u201c<=\u201d, \u201c>=\u201d and \u201c=\u201c supported<br><br> 'field': 'maturityDate' <br> 'description': Maturity date of the bond<br>'type': 'string' <br> 'additional': Expected format YYYY-MM-DD. All numbers.<br><br> 'field': 'moodyRatingLong' <br> 'description': Moody Long term rating of the bond<br>'type': 'string' <br> 'additional': See <a href='https://www.moodys.com/sites/products/productattachments/ap075378_1_1408_ki.pdf' target='_blank'>Moodys </a>for allowed enumerations of rating. Section \u201cMoody\u2019s Long-Term Rating Definitions\u201d. Operands \u201c<=\u201d, \u201c>=\u201d and \u201c=\u201c supported.<br><br> 'field': 'spRatingLong' <br> 'description': S&P rating of the bond<br>'type': 'string' <br> 'additional': See <a href='https://www.standardandpoors.com/en_US/web/guest/article/-/view/sourceId/504352' target='_blank'>S&P</a> for allowed enumeration of ratings. See section \u201cLong-Term Issue Credit Ratings*\u201d. Operands \u201c<=\u201d, \u201c>=\u201d and \u201c=\u201c supported.<br><br> 'field': 'fitchRatingLong' <br> 'description': Fitch rating of the bond<br>'type': 'string' <br> 'additional': See <a href='https://en.wikipedia.org/wiki/Fitch_Ratings' target='_blank'>Wikipedia Fitch</a> for allowed enumeration of ratings. See section \u201cInvestment Scale\u201d. Operands \u201c<=\u201d, \u201c>=\u201d and \u201c=\u201c supported.<br><br> 'field': 'moodyUnderlyingIncludeOther' <br> 'description': Underlying rating of the bond<br>'type': 'string' <br> 'additional': See moodyRatingLong above<br><br> 'field': 'spUnderlyingIncludeOther' <br> 'description': Underlying rating of the bond<br>'type': 'string' <br> 'additional': See spRatingLong above<br><br> 'field': 'fitchUnderlyingIncludeOther' <br> 'description': Underlying rating of the bond<br>'type': 'string' <br> 'additional': See fitchRatingLong above<br><br> 'field': 'statesIssuance' <br> 'description': State of issuance of the bond<br>'type': 'string' <br> 'additional': See <a href='https://pe.usps.com/text/pub28/28apb.htm' target='_blank'>USPS</a> for state abbreviations honored<br><br> 'field': 'Amt' <br> 'description': Amortized bond<br>'type': 'Boolean' <br> 'additional': true/false. Only the \u201c=\u201d operand supported<br><br> 'field': 'bankQualified' <br> 'description': Bank qualified bond<br>'type': 'Boolean' <br> 'additional': true/false. Only the \u201c=\u201d operand supported<br><br> 'field': 'callable' <br> 'description': Is bond callable?<br>'type': 'Boolean' <br> 'additional': true/false. Only the \u201c=\u201d operand supported<br><br> 'field': 'cpiFloating' <br> 'description': Floater<br>'type': 'Boolean' <br> 'additional': true/false. Only the \u201c=\u201d operand supported<br><br> 'field': 'escrow' <br> 'description': Escrowed to maturity?<br>'type': 'Boolean' <br> 'additional': true/false. Only the \u201c=\u201d operand supported<br><br> 'field': 'insurance' <br> 'description': Insured?<br>'type': 'Boolean' <br> 'additional': true/false. Only the \u201c=\u201d operand supported<br><br> 'field': 'prerefunded' <br> 'description': Pre-refunded?<br>'type': 'Boolean' <br> 'additional': true/false. Only the \u201c=\u201d operand supported<br><br> 'field': 'taxable' <br> 'description': Taxable?<br>'type': 'Boolean' <br> 'additional': true/false. Only the \u201c=\u201d operand supported<br><br> 'field': 'whenIssued' <br> 'description': When and If Issued?<br>'type': 'Boolean' <br> 'additional': true/false. Only the \u201c=\u201d operand supported<br><br> 'field': 'paySource' <br> 'description': Bond pay source<br>'type': 'string' <br> 'additional': GO. etc. Only the \u201c=\u201d operand supported. It can be a comma separated list<br><br> 'field': 'sector' <br> 'description': Bond sector<br>'type': 'string' <br> 'additional': Only the \u201c=\u201d operand supported. It can be a comma separated list<br>"
+          },
+          "value": {
+            "type": "string",
+            "description": "Value set for criteria field"
+          },
+          "operand": {
+            "type": "string",
+            "description": "Valid operand corresponding to field"
+          }
+        }
+      },
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "SearchResponse": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/offerResponse"
+            }
+          }
+        },
+        "description": "Successful response",
+        "example": {
+          "searchResponse": [
+            {
+              "offerSize": 145000,
+              "offerPrice": 101.769,
+              "offerYield": 1.702,
+              "offerCredit": null,
+              "minimumDenomination": 5000,
+              "multiples": 5000,
+              "settlementDate": "2018-11-16",
+              "security": {
+                "cusip": "123456789",
+                "obligor": "SAMPLE HEALTHCARE ORGANIZATION",
+                "coupon": 5,
+                "belowInvestmentGrade": false,
+                "issuer": "STATE HEFA HLTH",
+                "description1": "STATE HEFA HLTH",
+                "description2": "SAMPLE GROUP",
+                "issueDate": "2010-05-13",
+                "statesIssuance": "MO",
+                "maturityDate": "2019-06-01",
+                "refundingDate": null,
+                "premiumCallDate": null,
+                "parCallDate": null,
+                "premiumCallPrice": null,
+                "insurer": null,
+                "callable": false,
+                "bankQualified": false,
+                "spRatingLong": "NR",
+                "moodyRatingUnderlying": null,
+                "spRatingUnderlying": null,
+                "fitchRatingLong": "AA-",
+                "fitchRatingUnderlying": "AA-",
+                "taxable": false,
+                "whenIssued": false,
+                "insurance": false,
+                "preRefunded": false,
+                "consumerPriceIndex": false,
+                "amtBond": false,
+                "escrowToMaturity": true,
+                "paySource": "RV",
+                "sector": "Health"
+              },
+              "priceToDate": "2019-06-01",
+              "priceToIndicator": "MATURITY",
+              "subjectFirm": "Firm",
+              "maturityYield": 101.769
+            }
+          ]
+        }
+      },
+      "offerResponse": {
+        "type": "object",
+        "properties": {
+          "maturityYield": {
+            "type": "number",
+            "format": "float",
+            "description": "Yield to Maturity of security"
+          },
+          "minimumDenomination": {
+            "type": "integer",
+            "description": "Minimum denomination of bond to trade. For example, 50000 of quantity",
+            "example": 5000
+          },
+          "multiples": {
+            "type": "integer",
+            "description": "Minimum denomination of bond to trade. For example 5000 increments of quantity beyond 50000",
+            "example": 5000
+          },
+          "offerCredit": {
+            "type": "number",
+            "format": "float",
+            "description": "Production credit on the offer"
+          },
+          "offerPrice": {
+            "type": "number",
+            "format": "float",
+            "description": "Offering price of a bond"
+          },
+          "offerSize": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Size of the available inventory of the bond. In 1000s. If 50 bonds are required, 50,000 should be specified (In words, that number is \u201cfifty thousand\u201d)",
+            "example": 145000
+          },
+          "offerYield": {
+            "type": "number",
+            "format": "float",
+            "description": "Yield of the bond"
+          },
+          "priceToDate": {
+            "type": "string",
+            "description": "The workout date corresponding to the yield to worst Expected. format YYYY-MM-DD. All numbers.",
+            "example": "2019-06-01"
+          },
+          "priceToIndicator": {
+            "type": "string",
+            "description": "An indicator of the workout date for the yield to worst \u2018MATURITY\u2019 or \u2018CALL\u2019",
+            "example": "MATURITY"
+          },
+          "subjectFirm": {
+            "type": "string",
+            "description": "Indicates the type of offer \n\u2018FIRM\u2019 \u2013 firm price that can be executed electronically \n\u2018SUBJ\u2019 \u2013 price subject to negotiation, no electronic execution",
+            "example": "Firm"
+          },
+          "security": {
+            "type": "array",
+            "description": "Details below",
+            "items": {
+              "$ref": "#/components/schemas/securityDetails"
+            }
+          }
+        }
+      },
+      "securityDetails": {
+        "type": "object",
+        "properties": {
+          "amtBond": {
+            "type": "boolean",
+            "description": "Indicates if the bond is amortizing",
+            "example": false
+          },
+          "bankQualified": {
+            "type": "boolean",
+            "description": "Indicates if the bond is bank qualified",
+            "example": false
+          },
+          "belowInvestmentGrade": {
+            "type": "boolean",
+            "description": "Indicates if bond is below investment grade",
+            "example": false
+          },
+          "callable": {
+            "type": "boolean",
+            "description": "Indicates if bond is callable",
+            "example": false
+          },
+          "consumerPriceIndex": {
+            "type": "boolean",
+            "description": "Indicates is bond is linked to the CPI",
+            "example": false
+          },
+          "coupon": {
+            "type": "number",
+            "description": "Bond coupon",
+            "example": 5
+          },
+          "cusip": {
+            "type": "string",
+            "description": "CUSIP with or without the 9th check digit",
+            "example": "123456789"
+          },
+          "description1": {
+            "type": "string",
+            "description": "Bond issue description (Part 1)",
+            "example": "STATE HEFA HLTH"
+          },
+          "description2": {
+            "type": "string",
+            "description": "Bond issue description (Part 2)",
+            "example": "SAMPLE GROUP"
+          },
+          "escrowToMaturity": {
+            "type": "boolean",
+            "description": "Escrowed to maturity?",
+            "example": true
+          },
+          "fitchRatingLong": {
+            "type": "string",
+            "description": "Fitch rating of the bonds",
+            "example": "AA-"
+          },
+          "fitchRatingUnderlying": {
+            "type": "string",
+            "description": "Underlying rating of the bond",
+            "example": "AA-"
+          },
+          "insurance": {
+            "type": "boolean",
+            "description": "Indicates if the bond is insured",
+            "example": false
+          },
+          "insurer": {
+            "type": "string",
+            "description": "Description of the insurer, if the bond is insured",
+            "example": null
+          },
+          "issueDate": {
+            "type": "string",
+            "description": "Issue Date of the bond. Expected format YYYY-MM-DD. All numbers.",
+            "example": "2010-05-13"
+          },
+          "issuer": {
+            "type": "string",
+            "description": "Description of the bond issuer",
+            "example": "STATE HEFA HLTH"
+          },
+          "maturityDate": {
+            "type": "string",
+            "description": "Maturity Date of the bond.Expected format YYYY-MM-DD. All numbers.",
+            "example": "2019-06-01"
+          },
+          "moodyRatingLong": {
+            "type": "string",
+            "description": "Moody\u2019s rating of the bonds",
+            "example": null
+          },
+          "moodyRatingUnderlying": {
+            "type": "string",
+            "description": "Underlying rating of the bond",
+            "example": null
+          },
+          "obligor": {
+            "type": "string",
+            "description": "Description of the bond obligor",
+            "example": "SAMPLE HEALTHCARE ORGANIZATIO"
+          },
+          "parCallDate": {
+            "type": "string",
+            "description": "Date of par call",
+            "example": null
+          },
+          "paySource": {
+            "type": "string",
+            "description": "Abbreviation of the payment source. For example, \u201cGO\u201d, RV\u201d",
+            "example": "RV"
+          },
+          "preRefunded": {
+            "type": "boolean",
+            "description": "Is the bond pre-refunded?",
+            "example": false
+          },
+          "premiumCallDate": {
+            "type": "string",
+            "description": "Call date to the premium. Expected format YYYY-MM-DD. All numbers.",
+            "example": null
+          },
+          "premiumCallPrice": {
+            "type": "number",
+            "description": "Price to the premium call",
+            "example": null
+          },
+          "refundingDate": {
+            "type": "string",
+            "description": "Date to next refunding",
+            "example": null
+          },
+          "whenIssued": {
+            "type": "boolean",
+            "description": "When and If Issued?",
+            "example": false
+          },
+          "sector": {
+            "type": "string",
+            "description": "Bond sector",
+            "example": "HEALTH"
+          },
+          "spRatingLong": {
+            "type": "string",
+            "description": "S&P rating of the bonds",
+            "example": "NR"
+          },
+          "spRatingUnderlying": {
+            "type": "string",
+            "description": "Underlying rating of the bond",
+            "example": null
+          },
+          "statesIssuance": {
+            "type": "string",
+            "description": "State of issuance of the bond.",
+            "example": "MD"
+          },
+          "taxable": {
+            "type": "boolean",
+            "description": "Taxable?",
+            "example": false
+          }
+        }
+      },
+      "Offer400Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:123",
+          "status": "Failure",
+          "apiName": "muni/v1/munibonds/offer",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Validation error:Incomplete/Incorrect Request : Missing or Extra fields"
+          }
+        }
+      },
+      "Offer401Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "d7df57b0-37b8-11ea-8715-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/offer",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "Offer403Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/offer",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "Offer404Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/offer",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "Offer405Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/muni/v1/munibonds/offer",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "Offer406Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/offer",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "Offer408Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/offer",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "Offer415Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/offer",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "Offer500Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/offer",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "Offer503Error": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/munibonds/offer",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

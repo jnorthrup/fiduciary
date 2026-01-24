@@ -1,0 +1,1320 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Repetitive Payments V1 Template Initiation",
+    "description": "Initiate a single repetitive payment instruction through CashPro Global Payments with or without schedule information, and must be approved in CashPro Online.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Repetitive Payments"
+    }
+  ],
+  "paths": {
+    "/cashpro/repetitive/v1/template": {
+      "post": {
+        "tags": [
+          "Repetitive Payments"
+        ],
+        "summary": "Payment Initiations Template allows creation of a single repetitive payment instruction through CashPro Global Payments with or without schedule information. Upon delivery the template information is entered with the basic details required in Global Payments workflow for approvals or repair.",
+        "operationId": "template-create",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "description": "A unique identifier to be used for a single payment  <br>Length: 1 - 256",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single reporting request (ex. 'Bearer [value]')",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/paymentInitiationTemplateCreation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreation400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreation401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The IP Address is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreation403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreation404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreation405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreation406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreation408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreation415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreation500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/paymentInitiationTemplateCreation503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "paymentIdentification": {
+        "required": [
+          "instructionIdentification",
+          "endToEndIdentification"
+        ],
+        "type": "object",
+        "description": "Identifier for type of payment",
+        "properties": {
+          "instructionIdentification": {
+            "type": "string",
+            "description": "Identifier for type of payment"
+          },
+          "endToEndIdentification": {
+            "type": "string",
+            "description": "Identifier for type of payment"
+          }
+        }
+      },
+      "creditInitiation": {
+        "required": [
+          "paymentMethod",
+          "Amount",
+          "debtorAccount",
+          "debtorAgent",
+          "Creditor",
+          "creditorAccount",
+          "creditorAgent",
+          "instructionForCreditorAgent",
+          "paymentType",
+          "Purpose"
+        ],
+        "type": "object",
+        "description": "Credit transfer initiation details",
+        "properties": {
+          "paymentIdentification": {
+            "$ref": "#/components/schemas/paymentIdentification"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "Method of payment"
+          },
+          "requestedExecutionDate": {
+            "type": "string",
+            "description": "Execution timestamp for the payment"
+          },
+          "Amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "debtorAccount": {
+            "$ref": "#/components/schemas/debtoraccount"
+          },
+          "debtorAgent": {
+            "$ref": "#/components/schemas/debtorAgent"
+          },
+          "Creditor": {
+            "$ref": "#/components/schemas/creditor"
+          },
+          "creditorAccount": {
+            "$ref": "#/components/schemas/creditoraccount"
+          },
+          "creditorAgent": {
+            "$ref": "#/components/schemas/creditorAgent"
+          },
+          "instructionForCreditorAgent": {
+            "type": "array",
+            "description": "Info for the receiver",
+            "items": {
+              "type": "object"
+            }
+          },
+          "paymentType": {
+            "$ref": "#/components/schemas/PaymentType"
+          },
+          "Purpose": {
+            "$ref": "#/components/schemas/purpose"
+          },
+          "unstructuredRemittance": {
+            "type": "string",
+            "description": "Information of the beneficiary"
+          }
+        }
+      },
+      "Period": {
+        "required": [
+          "countPerPeriod"
+        ],
+        "type": "object",
+        "description": "Count of executions during the period",
+        "properties": {
+          "countPerPeriod": {
+            "type": "number",
+            "description": "number of instructions to be created and processed during the specified period"
+          }
+        }
+      },
+      "templateIdentification": {
+        "required": [
+          "templateCode"
+        ],
+        "type": "object",
+        "description": "Unique identifier for the template",
+        "properties": {
+          "templateRequestIdentification": {
+            "type": "number",
+            "description": "Identifier for the template"
+          },
+          "templateCode": {
+            "type": "number",
+            "description": "Code of the template provided by the customer for reference <br>Length: 1 - 35"
+          },
+          "templateName": {
+            "type": "string",
+            "description": "Name of the template provided by the customer for reference <br>Length: 1 - 35"
+          },
+          "isTemplateInternal": {
+            "type": "boolean",
+            "description": "Flag for checking if the template is internal"
+          }
+        }
+      },
+      "templateLimit": {
+        "type": "object",
+        "description": "Limit the usage of the template",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "Limit the usage to specified currency Pattern: [A-Z] {3}"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Limit the usage to specified amount"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Limit the usage of template with specified percentage"
+          }
+        }
+      },
+      "Amount": {
+        "type": "object",
+        "description": "Type and value of the payment amount",
+        "properties": {
+          "Value": {
+            "type": "number",
+            "description": "Amount value in numeric"
+          },
+          "Type": {
+            "type": "string",
+            "description": "Type of amount i.e: credit"
+          }
+        }
+      },
+      "debtoraccount": {
+        "required": [
+          "identification",
+          "schemeName",
+          "Currency"
+        ],
+        "type": "object",
+        "description": "Identifier, name  and currency for debtor account",
+        "properties": {
+          "identification": {
+            "type": "number",
+            "description": "Identifier for debtor account"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Identifier for scheme name"
+          },
+          "Currency": {
+            "type": "string",
+            "description": "Identifier for currency"
+          }
+        }
+      },
+      "debtorAgent": {
+        "required": [
+          "Institution",
+          "Postal Address"
+        ],
+        "type": "object",
+        "description": "Identifier and address for the debtor agent",
+        "properties": {
+          "Institution": {
+            "$ref": "#/components/schemas/Institution"
+          },
+          "Postal Address": {
+            "$ref": "#/components/schemas/PostalAddress"
+          }
+        }
+      },
+      "Institution": {
+        "required": [
+          "identification",
+          "Scheme name"
+        ],
+        "type": "object",
+        "description": "Identifier for debtor account",
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "Identifier for debtor agent"
+          },
+          "Scheme name": {
+            "type": "string",
+            "description": "Identifier for scheme name"
+          }
+        }
+      },
+      "PostalAddress": {
+        "required": [
+          "Address line",
+          "Postal code",
+          "City",
+          "Country subdivision",
+          "Country"
+        ],
+        "type": "object",
+        "description": "Address of the agent",
+        "properties": {
+          "Address line": {
+            "type": "string",
+            "description": "Address of the debtor agent"
+          },
+          "Postal code": {
+            "type": "string",
+            "description": "Postal code of the debtor agent"
+          },
+          "City": {
+            "type": "string",
+            "description": "city of the debtor agent"
+          },
+          "Country subdivision": {
+            "type": "string",
+            "description": "Country sub division of the debtor agent"
+          },
+          "Country": {
+            "type": "string",
+            "description": "Country of the debtor agent"
+          }
+        }
+      },
+      "creditor": {
+        "type": "object",
+        "description": "Creditor information for the payment",
+        "properties": {
+          "Name": {
+            "type": "string",
+            "description": "Identifier for creditor account"
+          },
+          "Postal Address": {
+            "$ref": "#/components/schemas/PostalAddressCreditor"
+          }
+        }
+      },
+      "PostalAddressCreditor": {
+        "type": "object",
+        "description": "Address of the agent",
+        "properties": {
+          "Address line": {
+            "type": "string",
+            "description": "Address of the creditor"
+          },
+          "City": {
+            "type": "string",
+            "description": "city of the creditor"
+          },
+          "Country": {
+            "type": "string",
+            "description": "Country of the creditor"
+          }
+        }
+      },
+      "creditoraccount": {
+        "required": [
+          "identification",
+          "schemeName",
+          "Currency"
+        ],
+        "type": "object",
+        "description": "Account identifier and currency for creditor account",
+        "properties": {
+          "identification": {
+            "type": "number",
+            "description": "Identifier for creditor account"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Identifier for scheme name"
+          },
+          "Currency": {
+            "type": "string",
+            "description": "Identifier for currency "
+          }
+        }
+      },
+      "creditorAgent": {
+        "required": [
+          "Institution",
+          "Postal Address"
+        ],
+        "type": "object",
+        "description": "Identifier and address for the creditor agent",
+        "properties": {
+          "Institution": {
+            "$ref": "#/components/schemas/InstitutionCreditor"
+          },
+          "Postal Address": {
+            "$ref": "#/components/schemas/PostalAddressCreditorAgent"
+          }
+        }
+      },
+      "InstitutionCreditor": {
+        "required": [
+          "Scheme name"
+        ],
+        "type": "object",
+        "description": "Identifier for creditor account",
+        "properties": {
+          "Name": {
+            "type": "string",
+            "description": "Name of the creditor Agent"
+          },
+          "identification": {
+            "type": "string",
+            "description": "Identifier for creditor agent"
+          },
+          "Scheme name": {
+            "type": "string",
+            "description": "Identifier for scheme name"
+          }
+        }
+      },
+      "PostalAddressCreditorAgent": {
+        "required": [
+          "Address line",
+          "City",
+          "Country"
+        ],
+        "type": "object",
+        "description": "Address of the agent",
+        "properties": {
+          "Address line": {
+            "type": "string",
+            "description": "Address of the creditor agent"
+          },
+          "City": {
+            "type": "string",
+            "description": "city of the creditor agent"
+          },
+          "Country": {
+            "type": "string",
+            "description": "Country of the creditor agent"
+          }
+        }
+      },
+      "PaymentType": {
+        "type": "object",
+        "description": "Define the priority and purpose of payment",
+        "properties": {
+          "priority": {
+            "type": "string",
+            "description": "Priority for the payment"
+          },
+          "serviceLevel": {
+            "type": "string",
+            "description": "Service level assigned to the payment"
+          },
+          "categoryOfPurpose": {
+            "type": "string",
+            "description": "Purpose of the payment"
+          }
+        }
+      },
+      "purpose": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "description": " Describes the purpose of the payment",
+        "properties": {
+          "code": {
+            "type": "number",
+            "description": "Identifier for the purpose of payment"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description for the purpose of payment"
+          }
+        }
+      },
+      "scheduleInformation": {
+        "required": [
+          "requestIdentification",
+          "scheduleStatus",
+          "firstScheduleDate",
+          "Frequency",
+          "Duration",
+          "processingOnHoliday"
+        ],
+        "type": "object",
+        "description": "Schedule information of a template",
+        "properties": {
+          "requestIdentification": {
+            "type": "number",
+            "description": "Unique identifier for the schedule"
+          },
+          "scheduleStatus": {
+            "type": "string",
+            "description": "Status of the schedule"
+          },
+          "firstScheduleDate": {
+            "type": "string",
+            "description": "First day in the schedule"
+          },
+          "frequencyType": {
+            "type": "string",
+            "description": "Frequency of the schedule"
+          },
+          "Frequency": {
+            "$ref": "#/components/schemas/Frequency"
+          },
+          "Duration": {
+            "$ref": "#/components/schemas/Duration"
+          },
+          "processingOnHoliday": {
+            "type": "string",
+            "description": "Flag to process or skip processing on holiday"
+          }
+        }
+      },
+      "Frequency": {
+        "type": "object",
+        "description": "Frequency of the schedule",
+        "properties": {
+          "weekly": {
+            "$ref": "#/components/schemas/weekly"
+          },
+          "Monthly": {
+            "$ref": "#/components/schemas/monthly"
+          },
+          "Daily": {
+            "$ref": "#/components/schemas/daily"
+          },
+          "Custom": {
+            "$ref": "#/components/schemas/custom"
+          }
+        }
+      },
+      "daily": {
+        "required": [
+          "onEvery"
+        ],
+        "type": "object",
+        "description": "Parameters for daily scheduling",
+        "properties": {
+          "onEvery": {
+            "type": "number",
+            "description": "Date of the month for execution"
+          }
+        }
+      },
+      "weekly": {
+        "required": [
+          "weekCount",
+          "dayOfWeek"
+        ],
+        "type": "object",
+        "description": "Parameters for weekly scheduling",
+        "properties": {
+          "weekCount": {
+            "type": "number",
+            "description": "number of weeks"
+          },
+          "dayOfWeek": {
+            "type": "string",
+            "description": "MON,TUE,WED,THU,FRI,SAT,SUN"
+          }
+        }
+      },
+      "custom": {
+        "required": [
+          "Dates"
+        ],
+        "type": "object",
+        "description": "Parameters for custom scheduling",
+        "properties": {
+          "Dates": {
+            "type": "array",
+            "description": "Dates of execution i.e. [\"2019-07-11\", \"2019-07-21\", \"2019-07-25\"]",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "monthly": {
+        "required": [
+          "monthCount",
+          "monthRepeatChoice"
+        ],
+        "type": "object",
+        "description": "Parameters for monthly scheduling",
+        "properties": {
+          "monthCount": {
+            "type": "number",
+            "description": "number of months"
+          },
+          "monthRepeatChoice": {
+            "$ref": "#/components/schemas/monthRepeatChoice"
+          }
+        }
+      },
+      "monthRepeatChoice": {
+        "required": [
+          "dayOfMonth"
+        ],
+        "type": "object",
+        "properties": {
+          "dayOfMonth": {
+            "type": "number",
+            "description": "Day of the month for repeating"
+          }
+        }
+      },
+      "Duration": {
+        "type": "object",
+        "description": "Duration of the schedule",
+        "properties": {
+          "finalScheduleDate": {
+            "type": "string",
+            "description": "Last day in the schedule",
+            "format": "date"
+          },
+          "isNoEnd": {
+            "type": "boolean",
+            "description": "To schedule with no end date"
+          },
+          "Period": {
+            "$ref": "#/components/schemas/Period"
+          }
+        }
+      },
+      "paymentInitiationTemplateCreation": {
+        "type": "object",
+        "properties": {
+          "templateIdentification": {
+            "$ref": "#/components/schemas/templateIdentification"
+          },
+          "templateLimit": {
+            "$ref": "#/components/schemas/templateLimit"
+          },
+          "creditInitiation": {
+            "$ref": "#/components/schemas/creditInitiation"
+          },
+          "lockedFields": {
+            "type": "array",
+            "description": "Fields which can be locked when the payment is initiated with template",
+            "items": {
+              "type": "object"
+            }
+          },
+          "scheduleInformation": {
+            "$ref": "#/components/schemas/scheduleInformation"
+          }
+        },
+        "example": {
+          "templateIdentification": {
+            "templateRequestIdentification": "2345786",
+            "templateCode": "123456924",
+            "templateName": "Test Template",
+            "isTemplateInternal": true
+          },
+          "templateLimit": {
+            "currency": "USD",
+            "amount": "100",
+            "percentage": ""
+          },
+          "creditInitiation": {
+            "paymentIdentification": {
+              "instructionIdentification": "SR_Jan03",
+              "endToEndIdentification": "SenderRefSIT18"
+            },
+            "paymentMethod": "TRF",
+            "requestedExecutionDate": "2019-07-01",
+            "amount": {
+              "value": "5",
+              "type": "CREDIT"
+            },
+            "debtorAccount": {
+              "identification": "000000093185",
+              "schemeName": "IBAN",
+              "currency": "USD"
+            },
+            "debtorAgent": {
+              "institution": {
+                "identification": "BOFAFRPP",
+                "schemeName": "BIC",
+                "postalAddress": {
+                  "addressLine": [
+                    "a",
+                    "a"
+                  ],
+                  "postalCode": "a",
+                  "city": "a",
+                  "countrySubDivision": "a",
+                  "country": "AA"
+                }
+              }
+            },
+            "creditor": {
+              "name": "BeneName",
+              "postalAddress": {
+                "addressLine": [
+                  "Beneficiary Address 01"
+                ],
+                "city": "Beneficiary City 01",
+                "country": "GB"
+              }
+            },
+            "creditorAccount": {
+              "identification": "123456789",
+              "schemeName": "IBAN",
+              "currency": "USD"
+            },
+            "creditorAgent": {
+              "institution": {
+                "name": "Bank Name",
+                "identification": "026009593",
+                "schemeName": "OTHERS",
+                "postalAddress": {
+                  "addressLine": [
+                    "Bank Address"
+                  ],
+                  "city": "London",
+                  "country": "GB"
+                }
+              }
+            },
+            "instructionForCreditorAgent": [
+              "/PAYEFT",
+              "//receiver info 2",
+              "//receiver info 3",
+              "//receiver info 4"
+            ],
+            "paymentType": {
+              "priority": "",
+              "serviceLevel": "",
+              "categoryOfPurpose": "INTERNAL"
+            },
+            "purpose": {
+              "code": "10030",
+              "description": "Family Maintenance"
+            },
+            "unstructuredRemittance": "Beneficiary Info 1"
+          },
+          "lockedFields": [
+            "CreditAccountName",
+            "UltimateDebtorPartyName",
+            "CreditAccountCurrency",
+            "ReceivingBankIdentifier"
+          ],
+          "scheduleInformation": {
+            "requestIdentification": "",
+            "scheduleStatus": "ON",
+            "processingOnHoliday": "NEXT",
+            "firstScheduleDate": "2019-07-05",
+            "frequencyType": "DAIL",
+            "frequency": {
+              "daily": {
+                "onEvery": "1"
+              }
+            },
+            "duration": {
+              "period": {
+                "countPerPeriod": "10"
+              }
+            }
+          },
+          "duration": {
+            "isNoEnd": true
+          },
+          "processingOnHoliday": "NEXT"
+        }
+      },
+      "paymentInitiationTemplateCreationResponse": {
+        "required": [
+          "templateIdentification",
+          "templateCode",
+          "templateName",
+          "templateStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "templateIdentification": {
+            "type": "string",
+            "description": "Unique template identification generated by CashPro Global Payments <br>Length: 1 - 35"
+          },
+          "templateCode": {
+            "type": "string",
+            "description": "Template Code provided by the client<br>Length: 1 - 35"
+          },
+          "templateName": {
+            "type": "string",
+            "description": "Template Name provided by the client <br>Length: 1 - 35"
+          },
+          "templateStatus": {
+            "type": "string",
+            "description": "Status of the template in CashPro Global Payments application"
+          },
+          "reason": {
+            "type": "array",
+            "description": "Reason for the request rejection",
+            "items": {
+              "$ref": "#/components/schemas/reason"
+            }
+          },
+          "Additional properties": {
+            "type": "array",
+            "description": "Additional properties",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "example": {
+          "templateRequestIdentification": null,
+          "templatePk": "999999999999999",
+          "templateStatus": "PEND_APPROV",
+          "templateCode": "12349751",
+          "templateName": "Test Template",
+          "reason": [],
+          "additionalProperties": {}
+        }
+      },
+      "reason": {
+        "required": [
+          "reasonCode"
+        ],
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "description": "Unique reject reason code"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "Description of the reason code"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "paymentInitiationTemplateCreation400": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "templateStatus": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/reason"
+            }
+          }
+        },
+        "description": "",
+        "example": {
+          "templateIdentification": null,
+          "templateStatus": null,
+          "reason": [
+            {
+              "reasonCode": "1001",
+              "reasonDescription": "Invalid beneficiary bank"
+            }
+          ]
+        }
+      },
+      "paymentInitiationTemplateCreation401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/template",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "paymentInitiationTemplateCreation403": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": ""
+          },
+          "description": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "description": "",
+        "example": {
+          "error": "invalid_ip",
+          "description": "The IP Address is invalid."
+        }
+      },
+      "paymentInitiationTemplateCreation404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/template",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "paymentInitiationTemplateCreation405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "GET/cashpro/repetitive/v1/template",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "paymentInitiationTemplateCreation406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/template",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "paymentInitiationTemplateCreation408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/template",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "paymentInitiationTemplateCreation415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/template",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "paymentInitiationTemplateCreation500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/template",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "paymentInitiationTemplateCreation503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/repetitive/v1/template",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

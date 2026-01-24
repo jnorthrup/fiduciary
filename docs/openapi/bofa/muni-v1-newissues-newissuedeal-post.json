@@ -1,0 +1,855 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Global Markets \u2013 All New Issue Deals",
+    "description": "Get list of all new issue deals based on a criteria.",
+    "termsOfService": "",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "paths": {
+    "/muni/v1/newissues/newissuedeal": {
+      "post": {
+        "tags": [
+          "Muni Services"
+        ],
+        "summary": "Get list of all new issue deals based on a criteria.",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identify the content of the payload as JSON. Use 'Content-Type: application/json'. This is the only content type supported as of now. Content-Types cannot be negotiated programmatically at this time. Future versions might provide that facility.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. \u201cBearer [value])",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "UserId",
+            "in": "header",
+            "description": "User who is interacting with this service from a company. User should be on boarded on the Bofa Securities MercuryTM platform and obtain UserId.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientRequestId",
+            "in": "header",
+            "description": "A token provided by client to identify their request.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse429"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/newIssueDealErrorResponse503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "400ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 400
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Validation error:Incomplete/Incorrect Request : Missing or Extra field"
+          }
+        }
+      },
+      "401ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 401
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Authentication Failure"
+          }
+        }
+      },
+      "403ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 403
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Forbidden"
+          }
+        }
+      },
+      "404ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 404
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Resource Not Found"
+          }
+        }
+      },
+      "405ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 405
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Method Not Allowed"
+          }
+        }
+      },
+      "406ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 406
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Not Acceptable"
+          }
+        }
+      },
+      "408ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 408
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "415ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 415
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Unsupported Media Type"
+          }
+        }
+      },
+      "429ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 429
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "API Hit Rate Error:Maximum number of times this API can be called per second has been exceeded"
+          }
+        }
+      },
+      "500ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 500
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Internal Server Error"
+          }
+        }
+      },
+      "503ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 503
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Service Unavailable"
+          }
+        }
+      },
+      "requestBody": {
+        "required": [
+          "searchRequest"
+        ],
+        "type": "object",
+        "properties": {
+          "searchRequest": {
+            "$ref": "#/components/schemas/searchRequest"
+          }
+        },
+        "description": "",
+        "example": {
+          "searchRequest": {
+            "criteria": [
+              {
+                "field": "taxStatus",
+                "operand": "=",
+                "value": "TAX_EXEMPT"
+              },
+              {
+                "field": "dealStatus",
+                "operand": "=",
+                "value": "RETAIL_ORDER_PERIOD"
+              },
+              {
+                "field": "states",
+                "operand": "=",
+                "value": "AL"
+              },
+              {
+                "field": "dealSizeFrom",
+                "operand": ">=",
+                "value": "100000"
+              },
+              {
+                "field": "dealSizeTo",
+                "operand": "<=",
+                "value": "2000000"
+              },
+              {
+                "field": "expectedPricingDateFrom",
+                "operand": ">=",
+                "value": "2022/03/10"
+              },
+              {
+                "field": "expectedPricingDateTo",
+                "operand": "<=",
+                "value": "2022/03/18"
+              }
+            ]
+          }
+        }
+      },
+      "searchRequest": {
+        "type": "object",
+        "properties": {
+          "Criteria": {
+            "type": "array",
+            "description": "Array of New Issue search criteria",
+            "items": {
+              "$ref": "#/components/schemas/criteriaItem"
+            }
+          }
+        },
+        "description": "New Issue search request"
+      },
+      "criteriaItem": {
+        "type": "object",
+        "properties": {
+          "Field": {
+            "type": "string",
+            "description": "Field represent different offer criteria properties. <br><br>'field': 'taxStatus'<br>'description': Indication of whether the deal has interest coupons that are taxable or tax-exempt <br>Only the \u201c=\u201d operand supported. It can be a comma separated list <br>'type': 'string'<br><br>'field': 'dealStatus'<br>'description': Status within the deal lifecycle <br>Only the \u201c=\u201d operand supported. It can be a comma separated list<br>'type': 'string'<br><br>'field': 'States'<br>'description': <br>Only the \u201c=\u201d operand supported. It can be a comma separated list<br>'type': 'string'<br><br>'field': 'dealSizeFrom'<br>'description': Overall size in actual dollar amount of the deal <br>Operand \u201c>=\u201d supported in From <br>Operands, \u201c<=\u201d supported in To<br>'type': 'string'<br><br>'field': 'dealSizeTo'<br>'description': Overall size in actual dollar amount of the deal <br>Operand \u201c>=\u201d supported in From <br>Operands, \u201c<=\u201d supported in To<br>'type': 'string'<br><br>'field': 'expectedPricingDateFrom'<br>'description': Expected date when the deal will be priced <br>Operand \u201c>=\u201d supported in From <br>Operands, \u201c<=\u201d supported in To<br>'type': 'string'<br><br>'field': 'expectedPricingDateTo'<br>'description': Expected date when the deal will be priced <br>Operand \u201c>=\u201d supported in From <br>Operands, \u201c<=\u201d supported in To<br>'type': 'string'"
+          },
+          "Value": {
+            "type": "string",
+            "description": "Value set for criteria field."
+          },
+          "Operand": {
+            "type": "string",
+            "description": "Valid operand corresponding to field."
+          }
+        }
+      },
+      "responseBody": {
+        "type": "object",
+        "properties": {
+          "searchResponse": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/searchResponse"
+            }
+          }
+        },
+        "description": "",
+        "example": {
+          "searchResponse": [
+            {
+              "dealVersion": 1,
+              "dealId": "2048077616",
+              "dealDescription": "31022t3jv",
+              "seniorManager": "BA Merrill",
+              "expectedPricingDate": "2022-03-10",
+              "dealStatus": "Retail Order Period",
+              "dealSize": 100000,
+              "dealMoodysRating": null,
+              "dealSPRating": null,
+              "dealFitchRating": null,
+              "firstMaturityDate": "2030-05-20",
+              "finalMaturityDate": "2030-05-20",
+              "state": "AL",
+              "taxStatus": "Tax Exempt"
+            }
+          ]
+        }
+      },
+      "searchResponse": {
+        "type": "object",
+        "properties": {
+          "dealVersion": {
+            "type": "integer",
+            "description": "Version number of the deal, which indicates how many times the deal has changed"
+          },
+          "dealId": {
+            "type": "integer",
+            "description": "BofA generated numeric identifier for the deal"
+          },
+          "dealDescription": {
+            "type": "string",
+            "description": "Description of the deal itself"
+          },
+          "seniorManager": {
+            "type": "string",
+            "description": "The lead firm responsible for the deal <br><br>e.g. \u201cBofA Securities, NY\u201d"
+          },
+          "expectedPricingDate": {
+            "type": "string",
+            "description": "Date the deal is expected to be priced <br><br>Expected format YYYY-MM-DD <br>Can be null"
+          },
+          "dealStatus": {
+            "type": "string",
+            "description": "Status within the deal lifecycle <br><br>Example:  \u201cAllotments Available\u201d, \u201cAwaiting Allotments\u201d, \u201cNot Published\u201d, \u201cPreliminary Pricing\u201d, \u201cRetail Order Period\u201d, \u201cVerbal Award/CXL Window\u201d, \u201cDay-to-Day\u201d, \u201cPrice Ideas\u201d"
+          },
+          "dealSize": {
+            "type": "integer",
+            "description": "Overall size in actual dollar amount of the deal"
+          },
+          "dealMoodysRating": {
+            "type": "string",
+            "description": "Overall Moodys Long term rating of the issue <br><br>See <a href='https://www.moodys.com/sites/products/productattachments/ap075378_1_1408_ki.pdf' target='_blank'>Moodys</a> for allowed enumerations of rating. Section \u201cMoody\u2019s Long-Term Rating Definitions\u201d"
+          },
+          "dealSPRating": {
+            "type": "string",
+            "description": "Overall S&P rating of the issue. <br><br>See <a href='https://disclosure.spglobal.com/ratings/en/regulatory/article/-/view/sourceId/504352' target='_blank'>S&P</a> for allowed enumeration of ratings. See section \u201cLong-Term Issue Credit Ratings*\u201d."
+          },
+          "dealFitchRating": {
+            "type": "string",
+            "description": "Overall Fitch rating of the issue <br><br>See <a href='https://en.wikipedia.org/wiki/Fitch_Ratings' target='_blank'>Wikipedia Fitch</a> for allowed enumeration of ratings. See section \u201cInvestment Scale\u201d"
+          },
+          "firstMaturityDate": {
+            "type": "string",
+            "description": "Initial maturity date of components within of the deal <br><br>Expected format YYYY-MM-DD <br>Can be null"
+          },
+          "finalMaturityDate": {
+            "type": "string",
+            "description": "Initial maturity date of components within of the deal <br><br>Expected format YYYY-MM-DD <br>Can be null"
+          },
+          "state": {
+            "type": "string",
+            "description": "US state or territory <br><br>Expected format is two-letter code (\u201cNY\u201d, \u201cCA\u201d, \u201cHI\u201d)"
+          },
+          "taxStatus": {
+            "type": "string",
+            "description": "Indication of whether the deal has interest coupons that are taxable or tax-exempt or various"
+          }
+        },
+        "description": ""
+      },
+      "newIssueDealErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:123",
+          "status": "Failure",
+          "apiName": "muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Validation error:Incomplete/IncorrectRequest: Missing or Extra fields"
+          }
+        }
+      },
+      "newIssueDealErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "d7df57b0-37b8-11ea-8715-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "newIssueDealErrorResponse403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "newIssueDealErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "29804110-37b9-11ea-99c7-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "newIssueDealErrorResponse405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1649682845",
+          "status": "Failure",
+          "apiName": "PUT/muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Validation error:Request method 'PUT' not supported"
+          }
+        }
+      },
+      "newIssueDealErrorResponse406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "newIssueDealErrorResponse408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "newIssueDealErrorResponse415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1649684545",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Validation error:Content type 'application/javascript' not supported"
+          }
+        }
+      },
+      "newIssueDealErrorResponse429": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/429ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "clientRequestId:1234",
+          "status": "Failure",
+          "apiName": "muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 429,
+            "reasonDescription": "API Hit Rate Error:Maximum number of times this API can be called per second has been exceeded"
+          }
+        }
+      },
+      "newIssueDealErrorResponse500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "ae18f4d0-37b9-11ea-8ce3-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "newIssueDealErrorResponse503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/muni/v1/newissues/newissuedeal",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

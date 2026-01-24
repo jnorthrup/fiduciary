@@ -1,0 +1,1173 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "US Account Validation",
+    "description": "Account Validation allows you to pre-authenticate the owner or status of a bank account, prior to sending a U.S. ACH credit, debit, real-time payment, or wire transfer. This can help reduce payments to unintended receivers and returned transaction (for invalid account, no account, unauthorized debit, etc.). You must also give us access to an endpoint that will allow us to asynchronously notify you of the validation results. This is a separate implementation, and is sometimes known as a webhook, push notification, or callback.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": "validation-v1-accounts-post-overview.json"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Account Validation",
+      "description": ""
+    }
+  ],
+  "paths": {
+    "/validation/v1/accounts": {
+      "post": {
+        "tags": [
+          ""
+        ],
+        "summary": "",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "An unexpired access token to be used for this request (ex. \"Bearer [value]\").",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "description": "A unique identifier to be used for a single payment <br>Length: 1 \u2013 256",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The IP Address is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "requestBody": {
+        "type": "object",
+        "required": [
+          "endToEndId",
+          "validationType",
+          "account",
+          "accountAgent"
+        ],
+        "properties": {
+          "endToEndId": {
+            "type": "string",
+            "description": "Unique identification assigned by the initiating party to unambiguously identify the transaction. This identification is passed on, unchanged, throughout the entire end-to-end chain<br>Length 1 - 16 <br> Format : A Z, 0 \u2013 9",
+            "minLength": 1,
+            "maxLength": 16,
+            "pattern": "A Z, 0 \u2013 9"
+          },
+          "validationType": {
+            "type": "string",
+            "description": "Type of the Validation Requested.<br>enum: STATUS, STATUSANDOWNER",
+            "enum": [
+              "STATUS",
+              "STATUSANDOWNER"
+            ]
+          },
+          "account": {
+            "type": "object",
+            "description": "Account number that needs to be validated.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/account"
+              }
+            ]
+          },
+          "accountAgent": {
+            "type": "object",
+            "description": "The Financial Institution holding the account",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/accountAgent"
+              }
+            ]
+          },
+          "accountOwner": {
+            "type": "object",
+            "description": "The owner of the account.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/accountOwner"
+              }
+            ]
+          }
+        },
+        "example": {
+          "endToEndId": "account1",
+          "validationType": "STATUS",
+          "account": {
+            "identification": "1234567890"
+          },
+          "accountAgent": {
+            "identification": "987654321",
+            "idType": "USABA",
+            "country": "US"
+          },
+          "accountOwner": {
+            "name": {
+              "namePrefix": "Mr",
+              "nameSuffix": "Jr",
+              "firstName": "First",
+              "middleName": "M",
+              "lastName": "Name"
+            },
+            "postalAddress": {
+              "addressLine": [
+                "Address Line 1",
+                "Address Line 2"
+              ],
+              "city": "New York",
+              "countrySubDivision": "NY",
+              "postalCode": "12345",
+              "country": "US"
+            },
+            "contactDetails": {
+              "workPhoneNumber": "1212121212",
+              "homePhoneNumber": "9898989898"
+            }
+          }
+        }
+      },
+      "account": {
+        "required": [
+          "identification"
+        ],
+        "type": "object",
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "Account number.<br>Length : 1 \u2013 17",
+            "minLength": 1,
+            "maxLength": 17
+          }
+        }
+      },
+      "accountAgent": {
+        "required": [
+          "identification"
+        ],
+        "type": "object",
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "An alpha numeric value that can uniquely identify the Financial Institution based on a specific Scheme <br>Length 1 - 17",
+            "minLength": 1,
+            "maxLength": 17
+          },
+          "idType": {
+            "type": "string",
+            "description": "Identification scheme within which the identifier is unique."
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 2,
+            "description": "Bank Resident country. 2 digit ISO Country Code."
+          }
+        }
+      },
+      "accountOwner": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "object",
+            "description": "Name of the Owner <br>Length : 1 \u2013 140",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/name"
+              }
+            ]
+          },
+          "postalAddress": {
+            "type": "object",
+            "description": "Address of the Owner",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/portalAddress"
+              }
+            ]
+          },
+          "contactDetails": {
+            "type": "object",
+            "description": "Contact detail",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/contactDetails"
+              }
+            ]
+          }
+        }
+      },
+      "name": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "namePrefix": {
+            "type": "string",
+            "description": "Prefix of the Owner <br>Length 1 - 4",
+            "minLength": 1,
+            "maxLength": 4
+          },
+          "nameSuffix": {
+            "type": "string",
+            "description": "Suffix of the Owner <br>Length 1 - 4",
+            "minLength": 1,
+            "maxLength": 4
+          },
+          "firstName": {
+            "type": "string",
+            "description": "First name of the Owner <br>Length 1 - 140",
+            "minLength": 1,
+            "maxLength": 140
+          },
+          "middleName": {
+            "type": "string",
+            "description": "Middle name of the Owner <br>Length 1 - 140",
+            "minLength": 1,
+            "maxLength": 140
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Last name of the Owner <br>Length 1 - 140",
+            "minLength": 1,
+            "maxLength": 140
+          },
+          "businessName": {
+            "type": "string",
+            "description": "Business name of the Owner, in case account is owned by business and not an individual. <br>Length 1 - 140",
+            "minLength": 1,
+            "maxLength": 140
+          }
+        }
+      },
+      "portalAddress": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "addressLine": {
+            "type": "array",
+            "description": "Address of the Owner<br> Length : 1 \u2013 70 per line <br>Array Size: (Min: 1; Max: 3)",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 70
+            }
+          },
+          "city": {
+            "type": "string",
+            "description": "City of the Owner <br>Length 1 - 35",
+            "minLength": 1,
+            "maxLength": 35
+          },
+          "countrySubDivision": {
+            "type": "string",
+            "description": "Country Subdivision (State, Province) of the Owner<br>Length 1 - 35",
+            "minLength": 1,
+            "maxLength": 35
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "Zip code or postal code <br>Length: 25",
+            "maxLength": 25
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO country code of the Owner <br>Length 2",
+            "maxLength": 2
+          }
+        }
+      },
+      "contactDetails": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "workPhoneNumber": {
+            "type": "string",
+            "description": "Numeric Work Phone Number of the Owner. <br>Length 1 - 15",
+            "minLength": 1,
+            "maxLength": 15
+          },
+          "homePhoneNumber": {
+            "type": "string",
+            "description": "Numeric Home Number of the Owner. <br>Length 1 - 15",
+            "minLength": 1,
+            "maxLength": 15
+          }
+        }
+      },
+      "response": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "endToEndId": {
+            "type": "string",
+            "description": "Unique identification assigned by the initiating party.<br> Length 1 - 36",
+            "minLength": 1,
+            "maxLength": 36
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Context id from application for reference.<br> Length 36 Universally Unique Identifier",
+            "maxLength": 36
+          },
+          "status": {
+            "type": "string",
+            "description": "Enum: <br> \"COMPLETE\",\"UNSUCCESSFUL\"",
+            "enum": [
+              "COMPLETE",
+              "UNSUCCESSFUL"
+            ]
+          },
+          "accountStatus": {
+            "type": "object",
+            "description": "Status of the Account provided. Its available for validationType \"STATUS\" and \"STATUSANDOWNER\"",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/accountStatus"
+              }
+            ]
+          },
+          "accountOwner": {
+            "type": "object",
+            "description": "Result of Account Owner match. It will be available only when validationType is \"STATUSANDOWNER\".",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/accountOwnerResponse"
+              }
+            ]
+          },
+          "reason": {
+            "type": "array",
+            "description": "List of errors for given Request, in case of UNSUCCESSFUL",
+            "items": {
+              "$ref": "#/components/schemas/reason"
+            }
+          }
+        },
+        "example": {
+          "endToEndId": "account1",
+          "requestId": "R10798dc-ac97-41d7-be53-7e9b1e9f46fb",
+          "status": "COMPLETE",
+          "accountStatus": {
+            "status": [
+              {
+                "code": "099",
+                "description": "Account Open",
+                "addlInf": "099"
+              }
+            ],
+            "reason": [
+              {
+                "code": "000",
+                "description": "Description",
+                "addlInf": "001"
+              }
+            ]
+          },
+          "accountOwner": {
+            "overallMatchScore": 80,
+            "nameMatch": {
+              "namePrefixMatch": "Y",
+              "nameSuffixMatch": "Y",
+              "firstNameMatch": "Y",
+              "middleNameMatch": "Y",
+              "lastNameMatch": "Y",
+              "fullNameMatch": "Y",
+              "businessNameMatch": "Y"
+            },
+            "postalAddressMatch": {
+              "addressLineMatch": "Y",
+              "postalCodeMatch": "Y",
+              "cityMatch": "Y",
+              "countrySubDivisionMatch": "Y"
+            },
+            "contactDetailsMatch": {
+              "workPhoneNumberMatch": "Y",
+              "homePhoneNumberMatch": "Y"
+            },
+            "reason": [
+              {
+                "code": "000",
+                "description": "Description",
+                "addlInf": "001"
+              }
+            ]
+          }
+        }
+      },
+      "accountStatus": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "array",
+            "description": "Status of the Account.",
+            "items": {
+              "$ref": "#/components/schemas/reasonObjForStatus"
+            }
+          },
+          "reason": {
+            "type": "array",
+            "description": "List of errors for given Request, in case of Failed Status.",
+            "items": {
+              "$ref": "#/components/schemas/reasonObjForReason"
+            }
+          }
+        }
+      },
+      "reasonObjForStatus": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "This contains the error reason code <br><br> 'Account Status Code': '000' <br> 'Account Status Description': 'Account Not Located' <br> 'Account Status Text': 'NOT_LOCATED' <br><br> 'Account Status Code': '099' <br> 'Account Status Description': 'Account Open' <br> 'Account Status Text': 'ACCOUNT_OPEN' <br><br> 'Account Status Code': '012' <br> 'Account Status Description': 'Account Closed' <br> 'Account Status Text': 'ACCOUNT_CLOSED' <br><br> 'Account Status Code': '699' <br> 'Account Status Description': 'Account Likely Open' <br> 'Account Status Text': 'ACCOUNT_LIKELY_OPEN' <br><br> 'Account Status Code': '096' <br> 'Account Status Description': 'No Information Available' <br> 'Account Status Text': 'NO_KNOWN_INFORMATION' <br><br> 'Account Status Code': 'NNN' <br> 'Account Status Description': 'Unknown' <br> 'Account Status Text': 'UNKNOWN'"
+          },
+          "description": {
+            "type": "string",
+            "description": "This contains the description of the error"
+          },
+          "addlInf": {
+            "type": "string",
+            "description": "This contains additional underlying information"
+          }
+        }
+      },
+      "reasonObjForReason": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "This contains the error reason code  <br><br> 'Code': 'AV_ACNM_101' <br> 'Account Status Rejection Reason': 'Missing Account Number' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'AV_ACNM_102' <br> 'Account Status Rejection Reason': 'Incorrect Account Number Length' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'AV_ACAG_101' <br> 'Account Status Rejection Reason': 'Missing Account Agent Detail' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'AV_ACAG_102' <br> 'Account Status Rejection Reason': 'Incorrect Account Agent Id Length' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'AV_ACAG_203' <br> 'Account Status Rejection Reason': 'Unsupported Account Agent Type' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'AV_ACAG_303' <br> 'Account Status Rejection Reason': 'Unsupported Account Agent Country' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'REQUIRED_FIELD_MISSING' <br> 'Account Status Rejection Reason': '${FIELD_LABEL} is required' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'FIELD_LENGTH_ERR' <br> 'Account Status Rejection Reason': '${FIELD_LABEL} does not meet length specifications' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'FIELD_FORMAT_ERR' <br> 'Account Status Rejection Reason': '${FIELD_LABEL} format error' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'MISSING_INVALID_FIELD_VALUE' <br> 'Account Status Rejection Reason': '${FIELD_LABEL} is missing or has invalid value' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'FIELD_FORMAT_ERR' <br> 'Account Status Rejection Reason': '&#60;Field&#62; should be in ASCII format' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'SUCCESS' <br> 'Account Status Rejection Reason': 'Success' <br> 'Additional Information': '000' <br><br> 'Code': 'INVALID_ABA' <br> 'Account Status Rejection Reason': 'Invalid ABA/Routing Number' <br> 'Additional Information': '001' <br><br> 'Code': 'INVALID_ACCOUNT_NBR' <br> 'Account Status Rejection Reason': 'Invalid Account Number' <br> 'Additional Information': '003' <br><br> 'Code': 'REQUIRED_FIELD_MISSING' <br> 'Account Status Rejection Reason': 'Insufficient information/missing required data' <br> 'Additional Information': '006'<br><br>'Code': TEPS_ERR 'Account Status Rejection Reason': 'System error' 'Additional Information': '007' <br><br> 'Code': 'INVALID_ACCOUNT_NBR_LENGTH' <br> 'Account Status Rejection Reason': 'Account Number length error' <br> 'Additional Information': '008' <br><br> 'Code': 'TEPS_ERR' <br> 'Account Status Rejection Reason': 'System error' <br> 'Additional Information': '009' <br><br> 'Code': 'FIELD_LENGTH_ERR' <br> 'Account Status Rejection Reason': 'Field length too short' <br> 'Additional Information': '010' <br><br> 'Code': 'FIELD_LENGTH_ERR' <br> 'Account Status Rejection Reason': 'Field length too long' <br> 'Additional Information': '011' <br><br> 'Code': 'REQUIRED_FIELD_MISSING' <br> 'Account Status Rejection Reason': 'Insufficient information/missing required data' <br> 'Additional Information': '101' <br><br> 'Code': 'REQUIRED_FIELD_MISSING' <br> 'Account Status Rejection Reason': 'Insufficient information/missing required data' <br> 'Additional Information': '102' <br><br> 'Code': 'REQUIRED_FIELD_MISSING' <br> 'Account Status Rejection Reason': 'Insufficient information/missing required data' <br> 'Additional Information': '103' <br><br> 'Code': 'FIELD_FORMAT_ERR' <br> 'Account Status Rejection Reason': 'Field value format error' <br> 'Additional Information': '104' <br><br> 'Code': 'FIELD_FORMAT_ERR' <br> 'Account Status Rejection Reason': 'Field value format error' <br> 'Additional Information': '105' <br><br> 'Code': 'FIELD_FORMAT_ERR' <br> 'Account Status Rejection Reason': 'Field value format error' <br> 'Additional Information': '107' <br><br> 'Code': 'SYSTEM_ERR' <br> 'Account Status Rejection Reason': 'System error' <br> 'Additional Information': '997' <br><br> 'Code': 'SYSTEM_ERR' <br> 'Account Status Rejection Reason': 'System error' <br> 'Additional Information': '998' <br><br> 'Code': 'SYSTEM_ERR' <br> 'Account Status Rejection Reason': 'System timeout' <br> 'Additional Information': '0999' <br><br> 'Code': 'SYSTEM_ERR' <br> 'Account Status Rejection Reason': 'System error' <br> 'Additional Information': 'NNN'"
+          },
+          "description": {
+            "type": "string",
+            "description": "This contains the description of the error"
+          },
+          "addlInf": {
+            "type": "string",
+            "description": "This contains additional underlying information"
+          }
+        }
+      },
+      "accountOwnerResponse": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "overallMatchScore": {
+            "type": "number",
+            "description": "Overall match score for Account Owner Match, from 0 \u2013 100."
+          },
+          "nameMatch": {
+            "type": "object",
+            "description": "Name of the party",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/nameResponse"
+              }
+            ]
+          },
+          "postalAddressMatch": {
+            "type": "object",
+            "description": "Address of the party",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/portalAddressMatch"
+              }
+            ]
+          },
+          "contactDetailsMatch": {
+            "type": "object",
+            "description": "Contact details of the party.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/contactDetailsResult"
+              }
+            ]
+          },
+          "reason": {
+            "type": "array",
+            "description": "List of errors for given Request, in case of Failed Status.",
+            "items": {
+              "$ref": "#/components/schemas/accountOwnerReason"
+            }
+          }
+        }
+      },
+      "nameResponse": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "namePrefixMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [\"Y\",\"N\",\"U\"]",
+            "enum": [
+              "Y",
+              "N",
+              "U"
+            ]
+          },
+          "nameSuffixMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [\"Y\",\"N\",\"U\"]",
+            "enum": [
+              "Y",
+              "N",
+              "U"
+            ]
+          },
+          "firstNameMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [\"Y\",\"N\",\"U\"]",
+            "enum": [
+              "Y",
+              "N",
+              "U"
+            ]
+          },
+          "middleNameMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [\"Y\",\"N\",\"U\"]",
+            "enum": [
+              "Y",
+              "N",
+              "U"
+            ]
+          },
+          "lastNameMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [\"Y\",\"N\",\"U\"]",
+            "enum": [
+              "Y",
+              "N",
+              "U"
+            ]
+          },
+          "fullNameMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [\"Y\",\"N\",\"C\",\"U\"]",
+            "enum": [
+              "Y",
+              "N",
+              "C",
+              "U"
+            ]
+          },
+          "businessNameMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [\"Y\",\"N\",\"C\",\"U\"]",
+            "enum": [
+              "Y",
+              "N",
+              "C",
+              "U"
+            ]
+          }
+        }
+      },
+      "portalAddressMatch": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "addressLineMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [Y, N, C, U]",
+            "enum": [
+              "Y",
+              "N",
+              "C",
+              "U"
+            ]
+          },
+          "postalCodeMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [Y, N, C, U]",
+            "enum": [
+              "Y",
+              "N",
+              "C",
+              "U"
+            ]
+          },
+          "cityMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [Y, N, C, U]",
+            "enum": [
+              "Y",
+              "N",
+              "C",
+              "U"
+            ]
+          },
+          "countrySubDivisionMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [Y, N, U]",
+            "enum": [
+              "Y",
+              "N",
+              "U"
+            ]
+          }
+        }
+      },
+      "contactDetailsResult": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "workPhoneNumberMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [Y, N, C, U]",
+            "enum": [
+              "Y",
+              "N",
+              "C",
+              "U"
+            ]
+          },
+          "homePhoneNumberMatch": {
+            "type": "string",
+            "description": "Result of matching provided value with the actual value. <br>Enum : [Y, N, C, U]",
+            "enum": [
+              "Y",
+              "N",
+              "U"
+            ]
+          }
+        }
+      },
+      "accountOwnerReason": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "This contains the error reason code <br><br> 'Code': 'AV_OWNM_101' <br> 'Account Owner Rejection Reason': '(First & Last Name) or (Business Name) Required for validation Type is \"STATUSANDOWNER\"' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'AV_OWDB_102' <br> 'Account Owner Rejection Reason': 'Incorrect Date Format.' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'AV_OWAD_102' <br> 'Account Owner Rejection Reason': 'Unsupported Owner Country' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'Pass through to client as received' <br> 'Account Owner Rejection Reason': 'Missing one or more address details' <br> 'Additional Information': 'Empty' <br><br> 'Code': 'SUCCESS' <br> 'Account Owner Rejection Reason': 'Success' <br> 'Additional Information': '000' <br><br> 'Code': 'DATA_UNAVAILABLE' <br> 'Account Owner Rejection Reason': 'Account Owner Data Not Available' <br> 'Additional Information': '300' <br><br> 'Code': 'DATA_UNAVAILABLE' <br> 'Account Owner Rejection Reason': 'Account Owner Data Not Available' <br> 'Additional Information': '301' <br><br> 'Code': 'DATA_UNAVAILABLE' <br> 'Account Owner Rejection Reason': 'Account Owner Data Not Available' <br> 'Additional Information': '302' <br><br> 'Code': 'REQUIRED_FIELD_MISSING' <br> 'Account Owner Rejection Reason': 'Missing Name field values' <br> 'Additional Information': '304' <br><br> 'Code': 'DATA_UNAVAILABLE' <br> 'Account Owner Rejection Reason': 'Account Owner Data Not Available' <br> 'Additional Information': '396' <br><br> 'Code': 'DATA_UNAVAILABLE_OR_NOT_REQUESTED' <br> 'Account Owner Rejection Reason': 'Account Owner Data Not Available or not requested' <br> 'Additional Information': '900' <br><br> 'Code': 'DATA_UNAVAILABLE_OR_NOT_REQUESTED' <br> 'Account Owner Rejection Reason': 'Account Owner Data Not Available or not requested' <br> 'Additional Information': '901'"
+          },
+          "description": {
+            "type": "string",
+            "description": "This contains the description of the error"
+          },
+          "addlInf": {
+            "type": "string",
+            "description": "This contains additional underlying information"
+          }
+        }
+      },
+      "reason": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "This contains the error reason code"
+          },
+          "description": {
+            "type": "string",
+            "description": "This contains the description of the error"
+          },
+          "addlInf": {
+            "type": "string",
+            "description": "This contains additional underlying information"
+          }
+        }
+      },
+      "errorResponse400": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/reason400"
+              }
+            ]
+          }
+        },
+        "example": {
+          "reason": {
+            "code": "AV_TYPE_201",
+            "description": "Missing or Incorrect Validation Type"
+          }
+        }
+      },
+      "reason400": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "This contains the error reason code"
+          },
+          "description": {
+            "type": "string",
+            "description": "This contains the description of the error"
+          }
+        }
+      },
+      "errorResponse401": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/reason401"
+              }
+            ]
+          }
+        },
+        "example": {
+          "reason": {
+            "code": "AV_AUTH_101",
+            "description": "Entitlement Check Failed"
+          }
+        }
+      },
+      "reason401": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "This contains the error reason code"
+          },
+          "description": {
+            "type": "string",
+            "description": "This contains the description of the error "
+          }
+        }
+      },
+      "errorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "description": ""
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": ""
+          }
+        }
+      },
+      "errorResponse403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "errorResponse404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts1",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "errorResponse405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " GET /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "errorResponse406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "errorResponse408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "errorResponse415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "errorResponse500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "errorResponse503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/errorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST /validation/v1/accounts",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}

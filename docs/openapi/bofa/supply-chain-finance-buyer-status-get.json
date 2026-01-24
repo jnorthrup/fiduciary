@@ -1,0 +1,458 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Get Invoice Status",
+    "description": "Invoice submission status allows the client to inquire on the status of their invoice submission. A response will be sent back to the client advising the latest status of their submitted invoices.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": "supply-chain-finance-buyer-status-overview.json"
+      }
+    }
+  },
+  "paths": {
+    "/trade/v1/invoice-submission/status": {
+      "get": {
+        "tags": [
+          "Supply Chain Finance"
+        ],
+        "summary": "This API would be used by the CashPro Client to request a status for their invoice submissions.",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifies the payload content as JSON",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "An unexpired access token to be used for this request (ex. \"Bearer [value]\").  ",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "si",
+            "in": "query",
+            "description": "CashPro Trade Identifier used to identify the submitters request",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The IP Address is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "response": {
+        "required": [
+          "submissionIdentification"
+        ],
+        "type": "object",
+        "properties": {
+          "invoicestatus": {
+            "type": "string",
+            "description": "Status of the invoice submission <br><br>'Invoice Status': 'Pending' <br>'Status Code': 200 <br>'StatusDescription': 'Invoice submitted successfully' <br>'Description': 'Invoice is pending in CashPro Trade and ready to be submitted' <br> <br>'Invoice Status;: 'Submitted' <br>'Status Code': 200 <br>'StatusDescription': 'Discount Request in Process' <br>'Description': 'Invoice is in the process of being discounted by Bank of America' <br> <br>'Invoice Status;: 'Discounted' <br>'Status Code': 200 <br>'StatusDescription': 'Invoice Discounted' <br>'Description': 'Invoice was discounted by Bank of America and funds have been disbursed' <br> <br>'Invoice Status;: 'Matured' <br>'Status Code': 200 <br>'StatusDescription': 'Invoice Matured' <br>'Description': 'Invoice has matured and Bank of America has received funds' <br> <br>'Invoice Status;: 'Error' <br>'Status Code': 200 <br>'StatusDescription': 'Duplicate SubmitterRef' <br>'Description': 'Duplicate SubmitterRef' <br>"
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": "Status code sent for the POST submission i.e 200, 400, 401, 403"
+          },
+          "statusDescription": {
+            "type": "string",
+            "description": "Additional status information of the invoice submission"
+          },
+          "submissionIdentification": {
+            "type": "string",
+            "description": "Unique transaction identifier as assigned by the bank"
+          },
+          "additionalInformation ": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/additionalInformation"
+            }
+          }
+        },
+        "example": {
+          "invoicestatus": "Matured",
+          "statuscode": 200,
+          "StatusDescription": "Invoice matured",
+          "submissionIdentification": "716GLnvySRr1q05272021133745",
+          "additionalInformation": {
+            "obligationNumber": "109125432",
+            "discountCharge": "248.18",
+            "fundsDue": "4776.97"
+          }
+        }
+      },
+      "additionalInformation": {
+        "required": [
+          ""
+        ],
+        "type": "object",
+        "properties": {
+          "obligationNumber": {
+            "type": "string",
+            "description": "Transaction identifier for the discount request"
+          },
+          "discountCharge": {
+            "type": "string",
+            "description": "Banks fees for the invoice within the discount request"
+          },
+          "Fundsdue": {
+            "type": "string",
+            "description": "Funds due to the bank at maturity for the Invoice"
+          }
+        }
+      },
+      "errorResponse400": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": ""
+          },
+          "statusdescription": {
+            "type": "string",
+            "description": "<br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': '&#60;Buyer Company&#62; is not set up for Supply Chain Finance Buyer Services' <br>'Description': 'Buyer is not set up in CashPro Trade for Supply Chain Finance Buyer Services' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': '&#60;Buyer party&#62; not set up' <br>'Description': 'Specified buyer party not found' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Required Field &#60;name of field&#62; not present' <br>'Description': 'Required field not present' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': '&#60;Numeric field&#62; is not numeric' <br>'Description': 'Numeric field contains non-numeric characters' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': '&#60;Date field&#62; is not in proper date format' <br>'Description': 'Date field is not in proper MMDDYYYY format' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': '&#60;String&#62; is not within the required length' <br>'Description': 'String is not within the required length' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Field &#60;string&#62; cannot be negative for an invoice' <br>'Description': 'Field string cannot be negative for an invoice' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Field &#60;string&#62; cannot be positive for a credit memo' <br>'Description': 'Field string cannot be positive for a credit memo' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Submitter &#60;string&#62; not set up in CashPro Trade to submit invoices' <br>'Description': 'Submitter string not set up in CashPro Trade to submit invoices' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Seller party field required for buyer submitted invoices' <br>'Description': 'Seller party field required for buyer submitted invoices' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Invalid &#60;String&#62;' <br>'Description': 'Specified field is invalid' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Invalid Rate' <br>'Description': 'Specified rate exceeds maximum allowed value or is too precise' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Invalid Spread' <br>'Description': 'Specified spread exceeds maximum allowed value or is too precise' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Invalid User Defined10' <br>'Description': 'User defined date field must be in a valid date format' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Field Spread should have numeric value' <br>'Description': 'Spread Rate cannot be negative' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Seller Country code &#60;country code&#62; not a valid country code' <br>'Description': 'Seller Country code not a valid country code' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': '&#60;String&#62; has illegal characters' <br>'Description': 'Specified field has illegal characters' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': '&#60;String&#62; field exceeds maximum length' <br>'Description': 'Specified field exceeds maximum length' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Invoice amount less than minimum amount allowed' <br>'Description': 'Invoice amount less than minimum amount allowed' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Duplicate Invoice Number' <br>'Description': 'Duplicate Invoice Number for Buyer Party' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 400 <br>'StatusDescription': 'Bad Request' <br>'Description': 'CashPro Trade could not find any data available for the GET request.  Submission Identification is incorrect ' <br>"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 400,
+          "statusdescription": "Bad request"
+        }
+      },
+      "errorResponse401": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": ""
+          },
+          "statusdescription": {
+            "type": "string",
+            "description": "'Invoice Status': 'Error' <br>'Status Code': 401 <br>'StatusDescription': 'Unauthorized' <br>'Description': 'Submitter of the GET request is not authorized to submit a GET or Token is invalid' <br>"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 401,
+          "statusdescription": "Unauthorized"
+        }
+      },
+      "errorResponse403": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": ""
+          },
+          "statusdescription": {
+            "type": "string",
+            "description": "'Invoice Status': 'Error' <br>'Status Code': 403 <br>'StatusDescription': 'Set up in CashPro Trade Incomplete for submitterId &#60;submitterId&#62;' <br>'Description': 'Set up in CashPro Trade Incomplete for submitterId' <br> <br>'Invoice Status': 'Error' <br>'Status Code': 403 <br>'StatusDescription': 'Buyer Company  &#60;buyer company&#62; is not a valid CashPro Trade Buyer' <br>'Description': 'Buyer Company buyer is not a valid CashPro Trade Buyer' <br>"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 403,
+          "statusdescription": "The IP Address is invalid"
+        }
+      },
+      "errorResponse404": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": ""
+          },
+          "statusdescription": {
+            "type": "string",
+            "description": "'Invoice Status': 'Error' <br>'Status Code': 404 <br>'StatusDescription': 'No Data available for the requested Details' <br>'Description': 'CashPro Trade could not find any data available for the GET request.  Invoice Number or submission Identification is not found in CashPro Trade Database' <br>"
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 404,
+          "statusdescription": "No Data available for the requested Details"
+        }
+      },
+      "errorResponse405": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": ""
+          },
+          "statusdescription": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 405,
+          "statusdescription": "Method Not Allowed"
+        }
+      },
+      "errorResponse406": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": ""
+          },
+          "statusdescription": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 406,
+          "statusdescription": "Not Acceptable"
+        }
+      },
+      "errorResponse408": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": ""
+          },
+          "statusdescription": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 408,
+          "statusdescription": "HTTP Timeout Exception"
+        }
+      },
+      "errorResponse415": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": ""
+          },
+          "statusdescription": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 415,
+          "statusdescription": "Unsupported Media Type"
+        }
+      },
+      "errorResponse500": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": ""
+          },
+          "statusdescription": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "example": {
+          "status": "Error",
+          "statuscode": 500,
+          "statusdescription": "Internal Server Error"
+        }
+      },
+      "errorResponse503": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "statuscode": {
+            "type": "integer",
+            "description": ""
+          },
+          "statusdescription": {
+            "type": "string",
+            "description": ""
+          }
+        },
+        "description": "",
+        "example": {
+          "status": "Error",
+          "statuscode": 503,
+          "statusdescription": "Service Unavailable"
+        }
+      }
+    }
+  }
+}

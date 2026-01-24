@@ -1,0 +1,1463 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Payments V2 Initiation - JSON",
+    "description": "Initiate a payment transaction.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": "cashpro-payments-v2-payment-initiations-post-overview.json"
+      },
+      "webhook": {
+        "enable": false,
+        "allowGET": true,
+        "allowURI": true,
+        "allowQS": true
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Payments V2 Initiations API",
+      "description": "The CashPro Payment Initiations API gives you the flexibility to initiate different payment types with one API"
+    }
+  ],
+  "paths": {
+    "/cashpro/payments/v2/payment-initiations": {
+      "post": {
+        "tags": [
+          "Payments V2 API (CA Interac, EU TARGET2, FX Wire, MX SPEI, PayPal, SEPA Credit Transfer, SEPA Instant, U.S. ACH Credit Transfer, U.S. Domestic Wire, U.S. Foreign Wire, U.S. Real Time Payment, and Zelle)"
+        ],
+        "summary": "Payment Initiations allows for the origination of single payment instruction through CashPro Payments.",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. 'Bearer [value]')",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "description": "A unique identifier to be used for a single payment. Length: 1 - 256",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "requestBody": {
+        "type": "object",
+        "required": [
+          "paymentIdentification",
+          "paymentMethod",
+          "requestedExecutionDate",
+          "amount",
+          "debtorAccount",
+          "debtorAgent",
+          "creditor",
+          "creditorAccount",
+          "creditorAgent",
+          "paymentType"
+        ],
+        "properties": {
+          "paymentIdentification": {
+            "$ref": "#/components/schemas/paymentIdentification"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "The means of payment, static value 'TRF' "
+          },
+          "requestedExecutionDate": {
+            "type": "string",
+            "description": "Date on which payment should be made in YYYY-MM-DD format"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/amount"
+          },
+          "trade": {
+            "$ref": "#/components/schemas/trade"
+          },
+          "debtorAccount": {
+            "description": "The account that will be debited to satisfy the payment",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/account"
+              }
+            ]
+          },
+          "debtorAgent": {
+            "description": "The Financial Institution holding the debit account",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/financialInstitution"
+              }
+            ]
+          },
+          "debtor": {
+            "description": "Party that owes the debt or is making the payment on behalf of an ultimate debtor",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/partyIdentification"
+              }
+            ]
+          },
+          "ultimateDebtor": {
+            "description": "Party that owes the debt in a 'Pay on Behalf of' scenario",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/partyIdentification"
+              }
+            ]
+          },
+          "creditor": {
+            "description": "Party to which the payment will be made",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/partyIdentification"
+              }
+            ]
+          },
+          "creditorAccount": {
+            "description": "The account that will be credited to satisfy the payment",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/account"
+              }
+            ]
+          },
+          "creditorAgent": {
+            "description": "The Financial Institution holding the credit account",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/financialInstitution"
+              }
+            ]
+          },
+          "intermediaryAgent": {
+            "description": "The Financial Institution that acts on behalf of the sender bank.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/financialInstitution"
+              }
+            ]
+          },
+          "paymentType": {
+            "$ref": "#/components/schemas/paymentType"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/purpose"
+          },
+          "chargesBearer": {
+            "type": "string",
+            "description": "Specifies which party/parties will bear the charges associated with the processing of the payment transaction.<br>Allowed values are 'DEBT','CRED','SHAR' or 'SLEV'."
+          },
+          "tax": {
+            "$ref": "#/components/schemas/tax"
+          },
+          "unstructuredRemittance": {
+            "type": "string",
+            "description": "Unstructured information to be conveyed to the receiver. Length : 1 \u2013 140"
+          },
+          "transactionDescription": {
+            "type": "string",
+            "description": "Details of transaction"
+          },
+          "structuredRemittance": {
+            "$ref": "#/components/schemas/structuredRemittance"
+          },
+          "regulatoryReporting": {
+            "$ref": "#/components/schemas/regulatoryReporting"
+          },
+          "instructionForCreditorAgent": {
+            "type": "array",
+            "description": "Further information related to the processing of the payment instruction, provided by the initiating party, and intended for the creditor agent. Array Length : 0-4 Element Length : 1-140",
+            "items": {}
+          },
+          "instructionForDebtorAgent": {
+            "type": "string",
+            "description": "Instructions for debtor Agent"
+          }
+        },
+        "example": {
+          "paymentIdentification": {
+            "instructionIdentification": "InstrnIden",
+            "endToEndIdentification": "PayZelle{{$randomInt}}",
+            "UETR": "eb6305c9-1f7f-49de-aed0-16487c27b42d"
+          },
+          "paymentMethod": "PAY",
+          "requestedExecutionDate": "2020-09-25",
+          "amount": {
+            "value": "60.36",
+            "type": "CREDIT"
+          },
+          "debtor": {
+            "name": "psd2pp",
+            "type": "ORG",
+            "postalAddress": {
+              "addressLine": [
+                "302-2659 DOUGLAS STREET1",
+                "302-2659 DOUGLAS STREET2"
+              ],
+              "postalCode": "54785",
+              "city": "New york",
+              "countrySubDivision": "Washington",
+              "country": "US"
+            },
+            "identifiers": [
+              {
+                "identification": "identification",
+                "schemeName": "",
+                "issuer": "debtorIdentifiersIssuer1"
+              },
+              {
+                "identification": "identification",
+                "schemeName": "debtorIdentifiersSchemeName2",
+                "issuer": "debtorIdentifiersIssuer2"
+              }
+            ],
+            "contactDetails": {
+              "mobileNumber": "8328075045",
+              "emailAddress": "sravan.limbadri@baml.com"
+            }
+          },
+          "ultimateDebtor": {
+            "name": "PP LASTKM",
+            "type": "ORG",
+            "postalAddress": {
+              "addressLine": [
+                "UltimateDebtorAddress1",
+                "UltimateDebtorAddress2"
+              ],
+              "postalCode": "92134",
+              "city": "UltdebtCity",
+              "countrySubDivision": "NC",
+              "country": "US"
+            },
+            "identifiers": [
+              {
+                "identification": "identification",
+                "schemeName": "ultimateDebtorIdentifiersSchemeName1",
+                "issuer": "ultimateDebtorIdentifiersIssuer1"
+              },
+              {
+                "identification": "1GL41EQ07",
+                "schemeName": "ultimateDebtorIdentifiersSchemeName2",
+                "issuer": "ultimateDebtorIdentifiersIssuer2"
+              }
+            ],
+            "contactDetails": {
+              "phoneNumber": "914067260594",
+              "mobileNumber": "8688999808",
+              "faxNumber": "123456",
+              "emailAddress": "sravan.limbadri@bankofamerica.com"
+            }
+          },
+          "debtorAccount": {
+            "name": "Dbt name",
+            "identification": "0051380205",
+            "currency": "USD"
+          },
+          "debtorAgent": {
+            "institution": {
+              "name": "DebtorAgentName Bank of America",
+              "identification": "111000012",
+              "schemeName": "DebtorAgentSchemeName",
+              "issuer": "DebtorAgentIssuer",
+              "postalAddress": {
+                "addressLine": [
+                  "DebtorAgentAddress1",
+                  "DebtorAgentAddress2"
+                ],
+                "postalCode": "503230",
+                "city": "Chicago",
+                "countrySubDivision": "TX",
+                "country": "US"
+              }
+            },
+            "branch": {
+              "name": "Bank of America",
+              "identification": "",
+              "postalAddress": {
+                "addressLine": [
+                  "DebtorAgentBranchAddress1",
+                  "DebtorAgentBranchAddress2"
+                ],
+                "postalCode": "503230",
+                "city": "Chicago",
+                "countrySubDivision": "TX",
+                "country": "US"
+              }
+            }
+          },
+          "instructionForDebtorAgent": "Instruction For Debtor Agent",
+          "creditor": {
+            "name": "BeneName",
+            "type": "ORG",
+            "postalAddress": {
+              "addressLine": [
+                "5656 Main Rd",
+                "5657 Main Rd"
+              ],
+              "postalCode": "44444",
+              "city": "Austin",
+              "countrySubDivision": "TX",
+              "country": "US"
+            },
+            "identifiers": [
+              {
+                "identification": "creditorIdentifiersIdentification1",
+                "schemeName": "creditorIdentifiersSchemeName1",
+                "issuer": "creditorIdentifiersIssuer1"
+              },
+              {
+                "identification": "creditorIdentifiersIdentification2",
+                "schemeName": "creditorIdentifiersSchemeName2",
+                "issuer": "creditorIdentifiersIssuer2"
+              }
+            ],
+            "contactDetails": {
+              "name": "Neeraja",
+              "mobileNumber": "8688999808",
+              "emailAddress": "neeraja.babu@baml.com"
+            }
+          },
+          "creditorAccount": {
+            "name": "Benny",
+            "identification": "123456789",
+            "schemeName": "EMAIL",
+            "currency": "USD"
+          },
+          "creditorAgent": {
+            "institution": {
+              "name": "CreditorAgentName",
+              "identification": "064003768",
+              "issuer": "CreditorAgentIssuer",
+              "postalAddress": {
+                "addressLine": [
+                  "CreditorAgentAddress1",
+                  "CreditorAgentAddress2"
+                ],
+                "postalCode": "503230",
+                "city": "Chicago",
+                "countrySubDivision": "TX",
+                "country": "US"
+              }
+            },
+            "branch": {
+              "name": "Bank of America",
+              "identification": "CreditorAgentbranchIdentification",
+              "postalAddress": {
+                "addressLine": [
+                  "CreditorAgentBranchAddress1",
+                  "CreditorAgentBranchAddress2"
+                ],
+                "postalCode": "503230",
+                "city": "Chicago",
+                "countrySubDivision": "TX",
+                "country": "US"
+              }
+            }
+          },
+          "instructionForCreditorAgent": [
+            "ClientRefInfo1",
+            "ClientRefInfo2"
+          ],
+          "paymentType": {
+            "priority": "Priority1",
+            "serviceLevel": "",
+            "localInstrument": "ZELLE",
+            "categoryOfPurpose": ""
+          },
+          "purpose": {
+            "code": "P123",
+            "description": "P123Desc"
+          },
+          "unstructuredRemittance": "Remittance Information",
+          "transactionDescription": "Transaction Information",
+          "structuredRemittance": {
+            "referredDocument": [
+              {
+                "type": "CINV",
+                "number": "INVOICE1",
+                "date": "2022-01-01"
+              },
+              {
+                "type": "CSCM",
+                "number": "BILLERACCOUNT123",
+                "date": "2023-10-16"
+              },
+              {
+                "type": "RTRN",
+                "number": "ORGNINSTRID",
+                "date": "2023-09-10"
+              },
+              {
+                "type": "CINV",
+                "number": "INVOICE2",
+                "date": "2022-02-05"
+              },
+              {
+                "type": "CINV",
+                "number": "INVOICE3",
+                "date": "2023-10-16"
+              }
+            ],
+            "Invoicer": {
+              "identification": "InvoicerId"
+            },
+            "Invoicee": {
+              "identification": "InvoiceeId"
+            }
+          }
+        }
+      },
+      "paymentIdentification": {
+        "type": "object",
+        "required": [
+          "instructionIdentification",
+          "endToEndIdentification"
+        ],
+        "description": "Payment identification references",
+        "properties": {
+          "instructionIdentification": {
+            "type": "string",
+            "description": "Unique identification as assigned by an instructing party for an instructed party to unambiguously identify the instruction. Length : 1 - 35",
+            "example": "instrId123"
+          },
+          "endToEndIdentification": {
+            "type": "string",
+            "description": "Unique identification assigned by the initiating party to unumbiguously identify the transaction. This identification is passed on, unchanged, throughout the entire end-to-end chain.  Length : 1 - 35",
+            "example": "e2eId123"
+          },
+          "UETR": {
+            "type": "string",
+            "description": "Unique End2End Transaction Reference",
+            "example": "eb6305c9-1f7f-49de-aed0-16487c27b42d"
+          }
+        }
+      },
+      "amount": {
+        "type": "object",
+        "required": [
+          "value",
+          "type"
+        ],
+        "description": "Amount of the transaction",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "Amount of the transaction represented as 9999999999.99. Length: 1 - 13",
+            "example": "1.00"
+          },
+          "type": {
+            "type": "string",
+            "description": "Specifies whether the payment is a fixed debit (equivalent) or fixed credit (instructed) payment. enum: \"CREDIT\", \"DEBIT\"",
+            "example": "CREDIT"
+          }
+        }
+      },
+      "trade": {
+        "type": "object",
+        "description": "Prebooked Trade that needs to be used for FX Payment",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "description": ""
+          }
+        }
+      },
+      "account": {
+        "required": [
+          "identification"
+        ],
+        "type": "object",
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "Account number or identification. Length : 1 \u2013 256"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Name of the identification scheme. <br>enum: 'IBAN', 'BBAN', 'EMAIL', 'PHONE', 'CARD'"
+          },
+          "currency": {
+            "type": "string",
+            "description": "The Currency of the account.Required for creditor account. Length : 3"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the Account."
+          }
+        }
+      },
+      "financialInstitution": {
+        "type": "object",
+        "required": [
+          "institution",
+          "branch"
+        ],
+        "properties": {
+          "institution": {
+            "$ref": "#/components/schemas/institutionv2"
+          },
+          "branch": {
+            "$ref": "#/components/schemas/branch"
+          }
+        }
+      },
+      "institutionv2": {
+        "type": "object",
+        "required": [
+          "name",
+          "identification"
+        ],
+        "description": "The Financial Institution details",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the Financial Institution."
+          },
+          "identification": {
+            "type": "string",
+            "description": "An alpha numeric value that can uniquely identify the Financial Institution based on a specific Scheme."
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Identification scheme within which the identifier is unique, such as BIC, OTHERS."
+          },
+          "issuer": {
+            "type": "string",
+            "description": "The organization that issued the identification."
+          },
+          "postalAddress": {
+            "$ref": "#/components/schemas/portalAddress"
+          }
+        }
+      },
+      "portalAddress": {
+        "type": "object",
+        "required": [
+          "addressLine",
+          "city",
+          "countrySubDivision",
+          "country"
+        ],
+        "description": "Address of the party",
+        "properties": {
+          "addressLine": {
+            "type": "array",
+            "description": "Address of the party. Length : 1 \u2013 70 <br> Min: 1<br> Max: 2",
+            "items": {}
+          },
+          "city": {
+            "type": "string",
+            "description": "City of the party. Length : 1 \u2013 35"
+          },
+          "countrySubDivision": {
+            "type": "string",
+            "description": "Identifies a subdivision of a country, for instance state, region, or province. Length : 1-35"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO country code of the party. Length : 2"
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "Identifier consisting of a group of letters and/or numbers that is added to a postal address to assist the sorting of mail. Length : 1-16"
+          }
+        }
+      },
+      "branch": {
+        "type": "object",
+        "required": [
+          "name",
+          "identification"
+        ],
+        "description": "The Branch details",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the Financial Institution."
+          },
+          "identification": {
+            "type": "string",
+            "description": "An alpha numeric value that can uniquely identify the Financial Institution based on a specific Scheme. Length 1-35"
+          },
+          "postalAddress": {
+            "$ref": "#/components/schemas/portalAddress"
+          }
+        }
+      },
+      "partyIdentification": {
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "postalAddress"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the party. Length : 1 - 140"
+          },
+          "type": {
+            "type": "string",
+            "description": "Enumeration indicating whether the party is an organization or a private individual"
+          },
+          "postalAddress": {
+            "$ref": "#/components/schemas/postalAddress"
+          },
+          "identifiers": {
+            "type": "array",
+            "description": "Identification details for the party.",
+            "items": {
+              "$ref": "#/components/schemas/identifier"
+            }
+          },
+          "dateOfBirth": {
+            "type": "string",
+            "description": "Date of Birth of an Individual"
+          },
+          "countrySubDivisionOfBirth": {
+            "type": "string",
+            "description": "State, Province or County of Birth of an Individual"
+          },
+          "cityOfBirth": {
+            "type": "string",
+            "description": "City of Birth of an Individual"
+          },
+          "countryOfBirth": {
+            "type": "string",
+            "description": "County of Birth of an Individual (ISO country code). Length : 2"
+          },
+          "countryOfResidence": {
+            "type": "string",
+            "description": "The country in which the party resides (ISO country code). Length : 2"
+          },
+          "contactDetails": {
+            "$ref": "#/components/schemas/contactDetail"
+          }
+        }
+      },
+      "postalAddress": {
+        "type": "object",
+        "required": [
+          "addressLine",
+          "city",
+          "country"
+        ],
+        "description": "Address of the party",
+        "properties": {
+          "addressLine": {
+            "type": "array",
+            "description": "Address of the party Length : 1 - 70 Min: 1 Max: 2",
+            "items": {
+              "$ref": "#/components/schemas/addressLine"
+            }
+          },
+          "city": {
+            "type": "string",
+            "description": "City of the party Length : 1 - 35",
+            "example": "Beneficiary City"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO country code of the party Length : 2",
+            "example": "GB"
+          },
+          "countrySubDivision": {
+            "type": "string",
+            "description": "Identifies a subdivision of a country, for instance state, region, or province. Length : 1-35"
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "Identifier consisting of a group of letters and/or numbers that is added to a postal address to assist the sorting of mail. Length : 1-16"
+          }
+        }
+      },
+      "addressLine": {
+        "required": [
+          "address"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "",
+            "example": "Beneficiary Address Line 1"
+          }
+        }
+      },
+      "identifier": {
+        "type": "object",
+        "required": [
+          "identification",
+          "schemeName",
+          "issuer"
+        ],
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "An alpha numeric value that can uniquely identify a party within the specified issuer. Length : 1 \u2013 35"
+          },
+          "schemeName": {
+            "type": "string",
+            "description": "Identification scheme such as SSN, Drivers License, National Id, Tax Id. Length : 1 \u2013 35"
+          },
+          "issuer": {
+            "type": "string",
+            "description": "The organization that issued the identification. Length : 1 \u2013 35"
+          }
+        }
+      },
+      "contactDetail": {
+        "type": "object",
+        "description": "Contact details of the party.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the contact. Length 1-140"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "description": "Phone Number of the contact. Length 1 - 30",
+            "example": "800 555 1212"
+          },
+          "mobileNumber": {
+            "type": "string",
+            "description": "Mobile Number of the contact. Length 1-30"
+          },
+          "faxNumber": {
+            "type": "string",
+            "description": "Fax Number of the contact. Length 1-30"
+          },
+          "emailAddress": {
+            "type": "string",
+            "description": "Email Address of the contact. Length : 1 \u2013 2048"
+          }
+        }
+      },
+      "paymentType": {
+        "required": [
+          "serviceLevel"
+        ],
+        "type": "object",
+        "description": "Indication of the type of payment being initiated",
+        "properties": {
+          "serviceLevel": {
+            "type": "string",
+            "description": "Agreement under which or rules under which the transaction should be processed enum: \"URGP\",\"SDVA\",\"SEPA\",\"NURG\",\"\" <br>Usage: \u201cURGP\u201d indicates high value wire transaction. \u201cNURG\u201d indicates local low value transaction"
+          },
+          "localInstrument": {
+            "type": "string",
+            "description": "User community specific instrument. Length : 1-35"
+          },
+          "categoryOfPurpose": {
+            "type": "string",
+            "description": "Specifies the high level purpose of the instruction based on a set of pre-defined categories. Usage: This is used by the initiating party to provide information concerning the processing of the payment. It is likely to trigger special processing by any of the agents involved in the payment chain. Length : 1-35"
+          },
+          "priority": {
+            "type": "string",
+            "description": "Priority for the payment"
+          }
+        }
+      },
+      "purpose": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "description": " Describes the purpose of the payment",
+        "properties": {
+          "code": {
+            "type": "number",
+            "description": "Identifier for the purpose of payment"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description for the purpose of payment"
+          }
+        }
+      },
+      "tax": {
+        "type": "object",
+        "description": "Details about tax paid, or to be paid, to the government in accordance with the law, including pre-defined parameters such as thresholds and type of account.",
+        "properties": {
+          "referenceNumber": {
+            "type": "string",
+            "description": "Tax reference information that is specific to a taxing agency. Length : 1-35"
+          }
+        }
+      },
+      "structuredRemittance": {
+        "type": "object",
+        "description": "Information supplied to enable the matching/reconciliation of an entry with the items that the payment is intended to settle, such as commercial invoices in an accounts' receivable system, in a structured form.",
+        "properties": {
+          "referredDocument": {
+            "$ref": "#/components/schemas/referredDocument"
+          },
+          "Invoicer": {
+            "$ref": "#/components/schemas/invoicer"
+          },
+          "Invoicee": {
+            "$ref": "#/components/schemas/invoicee"
+          }
+        }
+      },
+      "referredDocument": {
+        "required": [
+          "number"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "The type of the remittance document. Length : 1-35"
+          },
+          "number": {
+            "type": "string",
+            "description": "Unique and unambiguous identification of the referred document.<br> Length : 1-35"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date of the remittance document."
+          }
+        }
+      },
+      "invoicer": {
+        "type": "object",
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "Identification of Invoicer."
+          }
+        }
+      },
+      "invoicee": {
+        "type": "object",
+        "properties": {
+          "identification": {
+            "type": "string",
+            "description": "Identification of Invoicee."
+          }
+        }
+      },
+      "regulatoryReporting": {
+        "type": "object",
+        "description": "Information that is required by regulatory body.",
+        "properties": {
+          "debitCreditIndicator": {
+            "type": "string",
+            "description": "Indicator for wether its debit side regulatory data or credit side. Enum : [\"debit\", \"credit\", \"both\"]"
+          },
+          "details": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "$ref": "#/components/schemas/regulatoryReportingDetails"
+            }
+          }
+        }
+      },
+      "regulatoryReportingDetails": {
+        "required": [
+          "information"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Type of the regulatory data. Length : 1-35"
+          },
+          "information": {
+            "type": "string",
+            "description": "Regulatory information text. Length : 1-140"
+          }
+        }
+      },
+      "response": {
+        "required": [
+          "endToEndIdentification"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": "Unique transaction identifier as assigned by the bank. Length: 36"
+          },
+          "endToEndIdentification": {
+            "type": "string",
+            "description": "Client assigned end to end identifier of the transaction"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "description": "Status of the transaction <br> &#149; Received By Bank<br> &#149; Rejected by Bank"
+          },
+          "reason": {
+            "type": "array",
+            "description": "List of errors for given payment",
+            "items": {
+              "$ref": "#/components/schemas/reason"
+            }
+          }
+        },
+        "example": {
+          "transactionIdentification": "1234567890ABC",
+          "endToEndIdentification": "SenderRefSIT18",
+          "paymentStatus": "Rejected By Bank",
+          "Reason": [
+            {
+              "reasonCode": "CP212",
+              "reasonDescription": "Beneficiary Email Address is Required"
+            }
+          ]
+        }
+      },
+      "reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "description": "This contains the error reason code. Length: 5"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "This contains the description of the error. Length: 256"
+          }
+        }
+      },
+      "error400": {
+        "type": "object",
+        "required": [
+          "endToEndIdentification"
+        ],
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": "Unique transaction identifier as assigned by the bank. Length: 1-36"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "description": "Status of the transaction:<br> &#149; Processing by Bank<br> &#149; Rejected by Bank<br> &#149; Settlement Complete <br> &#149; Approved <br> &#149; Cancelled <br> &#149; Received by Bank <br> &#149; Pending Bene Verification <br> &#149; Confirmed by Bank"
+          },
+          "endToEndIdentification": {
+            "type": "string",
+            "description": "Unique identification assigned by the initiating party to unambiguously identify the transaction. This identification is passed on, unchanged, throughout the entire end-to-end chain. Length : 1-16"
+          },
+          "Reason": {
+            "type": "array",
+            "description": "List of errors for given payment",
+            "items": {
+              "$ref": "#/components/schemas/400Reason"
+            }
+          }
+        },
+        "example": {
+          "transactionIdentification": "596780be-67a5-4fdb-a922-061fbce44233",
+          "paymentStatus": "Rejected By Bank",
+          "endToEndIdentification": "USRTP12345",
+          "reason": [
+            {
+              "reasonCode": "DU04",
+              "reasonDescription": "Duplicate transaction 'd98a81e2-fc83-4157-9bd1' found associated with given end to end ID"
+            }
+          ]
+        }
+      },
+      "error401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "apiName": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST/cashpro/payments/v2/payment-initiations",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "error403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "apiName": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST/cashpro/payments/v2/payment-initiations",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "error404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "apiName": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST/cashpro/payments/v2/payment-initiations",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "error405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "apiName": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST/cashpro/payments/v2/payment-initiations",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "error406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "apiName": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST/cashpro/payments/v2/payment-initiations",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "error408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "apiName": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST/cashpro/payments/v2/payment-initiations",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "error415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "apiName": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST/cashpro/payments/v2/payment-initiations",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "error500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "apiName": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": " POST/cashpro/payments/v2/payment-initiations",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "error503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "apiName": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "example": {
+          "transactionIdentification": "99999990-9999-9999-9999-009099999999",
+          "status": "Failure",
+          "apiName": "POST/cashpro/payments/v2/payment-initiations",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "400Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "string",
+            "description": "Error reason code. Length: 1-5"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "Description of the error. Length: 1-256"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

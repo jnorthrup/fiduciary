@@ -1,0 +1,155 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "OAuth Token Push Notification",
+    "description": "Describes expectation for Push Notification authentication; basic authentication is also supported.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Push Notification for Payments v2 APIs",
+      "description": "OAuth Token"
+    }
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "tags": [
+          ""
+        ],
+        "summary": "Describes expectation for Push Notification authentication. Basic authentication is also supported.",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON. </br> ex. application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "oAuthAPI Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/oAuthAPI"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/oAuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/oAuthErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {}
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {}
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {}
+          },
+          "405": {
+            "description": "Invalid method",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {}
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "oAuthAPI": {
+        "type": "object",
+        "properties": {
+          "clientID": {
+            "type": "string",
+            "description": "The clientID is a unique ID identified provided as part of onboarding process",
+            "example": "ACME1099_BD129A34"
+          },
+          "clientSceret": {
+            "type": "string",
+            "description": "The client secret, also provided as part of the client onboarding, is unique to the clientID ",
+            "example": "NFMIJSnPiE2296d2sH0AM0PBLZZRytpU6O0QMChVXJns4NNT8tn28JuobrXINY8T"
+          }
+        }
+      },
+      "oAuthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "This is status of the client API call. </br> SUCCESS </br> ERROR",
+            "example": "SUCCESS"
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "Generated token. Length: 1 - 550 characters",
+            "example": "eyJhbGciOiJSUzM4NCIsImtpZCI6InByb2QiLCJ4NXQiOiJIanRmUFR0QVZrbFI4dkE2QURVZDVxRWpEc1EifQ.eyJjbGllbnRfaWQiOiJBSVRfMjg5NjBfQ1BPR1AiLCJleHAiOjE1MzQ5MDI3NzIsInNjb3BlIjpbXSwiaXNzIjoiaHR0cHM6Ly9zdHMtaW50LmJhbmtvZmFtZXJpY2EuY29tIiwianRpIjoicXpUUkQifQ.dv6_NcG8iRk3hQsj6BdErMFZO7EkYlgzADezQLkji1DBNbzco8HJ0VX6x_OaPVDfSxyMIq5o5XPKZIrvMyABGwvh6lAMypNj49C6GdzkGQVE6vP6IaPORQlBdAcm8soAFHuS8uJp1OEqDX7vKzRAoW6qlLSGicUxTSkM1EiujXxhT2OfOXJl7LLw1A9tq3Qs8IGT-wP8NicMrP5xJU5ErTKkkf4DUXyNOAQKrDeQLDbDLaTRM9D3ZG126eEsnqSxq0IDnQi4ZJn7oF_iKMqcQYpJmbk81GWA58h34mcmDdSAKIEy0J9_PybhRt3OmAdFTOwtP1fzaSW8emVaDq3w"
+          }
+        }
+      },
+      "oAuthErrorResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ERROR"
+          },
+          "errorCode": {
+            "type": "string",
+            "description": "This contains the Error Code.",
+            "example": "101"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "description": "This contains the error description.",
+            "example": "Authentication Failed"
+          }
+        },
+        "description": "This is status of the client API call.Required for creditor account."
+      }
+    }
+  }
+}

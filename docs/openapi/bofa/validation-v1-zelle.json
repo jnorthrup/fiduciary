@@ -1,0 +1,885 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Zelle Token Validation",
+    "description": "The Zelle Token Validation API allows you to determine a target token's enrollment status in the Zelle Network, prior to payment initiation.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": "validation-v1-zelle-overview.json"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Zelle Token Validation",
+      "description": "The Zelle Token Validation API allows you to determine whether a Zelle token (phone number or email address) is registered with the Zelle network, prior to payment initiation."
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://developer.bankofamerica.com/CPODevPortal/apidocs/public/#/api/validation/v1/zelle/aliastoken/verify",
+      "description": "Production Gateway Base URL"
+    },
+    {
+      "url": "https://developer.bankofamerica.com/CPODevPortal/apidocs/public/#/api/validation/v1/zelle/aliastoken/verify",
+      "description": "Sandbox Base URL"
+    }
+  ],
+  "paths": {
+    "/validation/v1/zelle/aliastoken/verify": {
+      "post": {
+        "tags": [
+          "Zelle Token Validation"
+        ],
+        "summary": "Helps determine whether a Zelle token (phone number or email address) is registered with the Zelle network.",
+        "operationId": "",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request (ex. \u201cBearer [value])",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON. </br>  ex. application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "description": "A unique identifier to be used for a single intent ID. Length: 1 - 256 </br> Eg. 123898733525554444",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZelleRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/zelleTokenStatusResponse200"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication Failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse429"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZelleValidationErrorResponse503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ZelleRequestBody": {
+        "type": "object",
+        "required": [
+          "selectionCriteria"
+        ],
+        "properties": {
+          "selectionCriteria": {
+            "type": "object",
+            "required": [
+              "identifier"
+            ],
+            "description": "Selection criteria with parameters such as alias identifier, contact point to retrieve alias token status along with other attributes",
+            "properties": {
+              "identifier": {
+                "type": "object",
+                "required": [
+                  "type",
+                  "value"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "Type of the alias token"
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "email/mobile value"
+                  }
+                }
+              }
+            }
+          },
+          "rules": {
+            "type": "object",
+            "required": [
+              "enrichmentRules"
+            ],
+            "description": "A set of rules intended to be used for routing, handling, and processing of the service request",
+            "properties": {
+              "enrichmentRules": {
+                "type": "array",
+                "description": "Identifies what objects need to be included, more like a inclusion list<br>",
+                "items": {
+                  "$ref": "#/components/schemas/enrichmentRulesObject"
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "selectionCriteria": {
+            "identifier": {
+              "type": "mobile",
+              "value": "7325899700"
+            }
+          },
+          "rules": {
+            "enrichmentRules": [
+              {
+                "name": "includeassociatedfinancialinstitution",
+                "value": "true"
+              }
+            ]
+          }
+        }
+      },
+      "enrichmentRulesObject": {
+        "type": "object",
+        "required": [
+          "type",
+          "value"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Rule type which indicates whether the associated financial institution details need to be returned in the response for an Alias Token"
+          },
+          "value": {
+            "type": "string",
+            "description": "Rule value which indicates whether the associated financial institution details need to be returned in the response for an Alias Token"
+          }
+        }
+      },
+      "zelleTokenStatusResponse200": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "description": "Unique Identifier"
+          },
+          "status": {
+            "type": "string",
+            "description": "SUCCESS/FAILED"
+          },
+          "aliasTokenIdentifier": {
+            "type": "object",
+            "description": "Zelle Token Type Identifier",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Zelle token type - mobile/email"
+              },
+              "value": {
+                "type": "string",
+                "description": "Zelle token value"
+              }
+            }
+          },
+          "aliasTokenStatus": {
+            "type": "object",
+            "description": "Profile/Token Status<br>Enrolled - Registered in Zelle and available to send/receive transactions<br>UnEnrolled - Either not yet registered in Zelle, or registered earlier and currently unregistered<br>OptedOut - Token is opted out from receiving any notifications. Token is not allowed to register or receive transactions<br>Restricted - Token is blocked in EWS. This token cannot send/receive transactions",
+            "properties": {
+              "value": {
+                "type": "string",
+                "description": "Valid values are enrolled / unenrolled / optedout / restricted"
+              }
+            }
+          },
+          "customerName": {
+            "type": "object",
+            "description": "Name of the customer",
+            "properties": {
+              "displayName": {
+                "type": "string",
+                "description": "Name of the Business"
+              },
+              "firstName": {
+                "type": "string",
+                "description": "First name of a person"
+              }
+            }
+          },
+          "aliasTokenClassificationType": {
+            "type": "string",
+            "description": "Classifies whether the alias token is of business or personal"
+          },
+          "aliasTokenAssociatedFinancialInstitution": {
+            "type": "object",
+            "description": "Identifies the financial institution at which the alias token is registered by a customer. For example, a customer may register an email address at Bank of America, then the financial institution corresponding to the alias token will be Bank of America",
+            "properties": {
+              "financialInstitutionCode": {
+                "type": "object",
+                "description": "Used to identify financial institutions code and value",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "Identifies the financial institution at which the alias token is registered by a customer. For example, a customer may register an email address at Bank of America, then the financial institution corresponding to the alias token will be Bank of America"
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "Name of the financial institution at which the alias token is registered by a customer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "example": {
+          "requestId": "2febfb9c-db44-49b1-b3a5-02e2001b167e",
+          "status": "SUCCESS",
+          "aliasTokenIdentifier": {
+            "type": "mobile,",
+            "value": "7325899700,"
+          },
+          "aliasTokenStatus": {
+            "value": "inactive"
+          },
+          "customerName": {
+            "displayName": "Jun19TestRec02",
+            "firstName": "Jun19TestRec02"
+          },
+          "aliasTokenClassificationType": "person",
+          "aliasTokenAssociatedFinancialInstitution": {
+            "financialInstitutionCode": {
+              "code": "PNC",
+              "value": "PNC Bank, National Association"
+            }
+          }
+        }
+      },
+      "ZelleValidationErrorResponse400": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/400ErrorReason",
+            "description": ""
+          }
+        },
+        "example": {
+          "transactionIdentification": "33cabc40-a219-11ed-87aa-005056a7a042",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 400,
+            "reasonDescription": "Bad Request"
+          }
+        }
+      },
+      "ZelleValidationErrorResponse401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "d7df57b0-37b8-11ea-8715-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "ZelleValidationErrorResponse403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "ZelleValidationErrorResponse404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "29804110-37b9-11ea-99c7-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "ZelleValidationErrorResponse405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "33cabc40-a219-11ed-87aa-005056a7a042",
+          "status": "Failure",
+          "apiName": "GET/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "ZelleValidationErrorResponse406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "ZelleValidationErrorResponse408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "69524190-37b8-11ea-abc9-005056a7d6dc",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "Timeout exceeded"
+          }
+        }
+      },
+      "ZelleValidationErrorResponse415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "33cabc40-a219-11ed-87aa-005056a7a042",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "ZelleValidationErrorResponse429": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/429ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "66cabc40-a219-11ed-87aa-005056a7a042",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 429,
+            "reasonDescription": "API Hit Rate Error:Maximum number of times this API can be called per second has been exceeded"
+          }
+        }
+      },
+      "ZelleValidationErrorResponse500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "ae18f4d0-37b9-11ea-8ce3-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "ZelleValidationErrorResponse503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503ErrorReason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "4654681-37d3-11ea-92e7-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/validation/v1/zelle/aliastoken/verify",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "400ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 400,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Bad Request",
+            "description": "Reason description for the failure"
+          }
+        }
+      },
+      "401ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 401,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Authentication Failure",
+            "description": "Reason description for the failure"
+          }
+        }
+      },
+      "403ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 403,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Forbidden",
+            "description": "Reason description for the failure"
+          }
+        }
+      },
+      "404ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 404,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Resource Not Found",
+            "description": "Reason description for the failure"
+          }
+        }
+      },
+      "405ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 405,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Method Not Allowed",
+            "description": "Reason description for the failure"
+          }
+        }
+      },
+      "406ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 406,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Not Acceptable",
+            "description": "Reason description for the failure"
+          }
+        }
+      },
+      "408ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 408,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Timeout exceeded",
+            "description": "Reason description for the failure"
+          }
+        }
+      },
+      "415ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 415,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Unsupported Media Type",
+            "description": "Reason description for the failure"
+          }
+        }
+      },
+      "429ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 429,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "API Hit Rate Error:Maximum number of times this API can be called per second has been exceeded",
+            "description": "Reason description for the failure"
+          }
+        }
+      },
+      "500ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 500,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Internal Server Error",
+            "description": "Reason description for the failure"
+          }
+        }
+      },
+      "503ErrorReason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer",
+            "example": 503,
+            "description": "Reason code for the failure"
+          },
+          "reasonDescription": {
+            "type": "string",
+            "example": "Service Unavailable",
+            "description": "Reason description for the failure"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,654 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Prime Brokerage Free Credit",
+    "description": "Sends daily summary of free credit balances at a margin group level, including credit cash, debit cash, short market value and margin excess.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Prime Brokerage",
+      "description": "Prime Brokerage APIs"
+    }
+  ],
+  "paths": {
+    "/prime/financing/v1/free-credit": {
+      "get": {
+        "tags": [
+          "Prime Brokerage"
+        ],
+        "summary": "Provides clients a daily summary of their free credit balances at a margin group level. The response includes the components of free credits including credit cash, debit cash, short market value and margin excess.",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Bearer Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "businessDate",
+            "in": "query",
+            "description": "Business date the user is requesting. Expected format YYYY-MM-DD. All numbers.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {}
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse401"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse403"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse404"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse405"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse406"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "HTTP Timeout Exception",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse408"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Unsupported Media Type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse415"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "API calls exceeded",
+            "content": {}
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse500"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse503"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "response": {
+        "required": [
+          "results"
+        ],
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "description": "JSON array of response of each margin group id[1..N]",
+            "items": {
+              "$ref": "#/components/schemas/responseDetails"
+            }
+          }
+        },
+        "example": {
+          "results": [
+            {
+              "marginGroupId": "ACBD",
+              "marginGroupName": "JOHN DOWE PARTNERS LLC",
+              "businessDate": "2020-04-14",
+              "freeCredits": "31300000.00",
+              "reportingCurrency": "USD",
+              "longPhysicalValue": "93131427.95",
+              "shortPhysicalValue": "119795399.53",
+              "longNotionalValue": "59872025.69",
+              "shortNotionalValue": "14337230.62",
+              "grossMarketValue": "287136083.79",
+              "marginExcess": "",
+              "cashDeposits": "",
+              "cashLoans": "",
+              "netCash": "",
+              "beneficialOwnerCoper": null
+            }
+          ]
+        }
+      },
+      "responseDetails": {
+        "type": "object",
+        "required": [
+          "marginGroupId",
+          "marginGroupName",
+          "businessDate",
+          "freeCredits",
+          "reportingCurrency",
+          "longPhysicalValue",
+          "shortPhysicalValue",
+          "longNotionalValue",
+          "shortNotionalValue",
+          "grossMarketValue",
+          "beneficialOwnerCoper"
+        ],
+        "properties": {
+          "marginGroupId": {
+            "type": "string",
+            "description": "BofA ID of margin group"
+          },
+          "marginGroupName": {
+            "type": "string",
+            "description": "BofA Name of margin group"
+          },
+          "businessDate": {
+            "type": "string",
+            "description": "Date that the data is generated (Trade Date + 1)"
+          },
+          "freeCredits": {
+            "type": "string",
+            "description": "Unencumbered Cash balance amount that this margin group has (USD Equivalent)"
+          },
+          "reportingCurrency": {
+            "type": "string",
+            "description": "The currency that the free credits balance above is reported in"
+          },
+          "longPhysicalValue": {
+            "type": "string",
+            "description": "Total long market value of all physical positions in the margin group"
+          },
+          "shortPhysicalValue": {
+            "type": "string",
+            "description": "Total short market value of all physical positions in the margin group"
+          },
+          "longNotionalValue": {
+            "type": "string",
+            "description": "Total long notional value of all TRS swap positions in the margin group"
+          },
+          "shortNotionalValue": {
+            "type": "string",
+            "description": "Total short notional value of all TRS swap positions in the margin group"
+          },
+          "grossMarketValue": {
+            "type": "string",
+            "description": "sum of LMV, SMV, LNV and SNV"
+          },
+          "beneficialOwnerCoper": {
+            "type": "number",
+            "description": "A BofA identifier for identifying the fund manager of the margin group"
+          },
+          "marginExcess": {
+            "type": "number",
+            "description": "The current excess/deficit balance of this margin group as stated in the margin statement"
+          },
+          "cashDeposits": {
+            "type": "number",
+            "description": "Credit cash held in the margin group"
+          },
+          "cashLoans": {
+            "type": "number",
+            "description": "Debit cash held in the margin group"
+          },
+          "SMV": {
+            "type": "number",
+            "description": "Total short market value of all physical positions in the margin group"
+          },
+          "netCash": {
+            "type": "number",
+            "description": "Net cash balance within the margin group (calculation: Credit Cash - Debit Cash - 1.05*SMV)"
+          }
+        }
+      },
+      "errorResponse401": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/401Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/free-credit",
+          "reason": {
+            "reasonCode": 401,
+            "reasonDescription": "Authentication Failure"
+          }
+        }
+      },
+      "errorResponse403": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/403Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/free-credit",
+          "reason": {
+            "reasonCode": 403,
+            "reasonDescription": "Forbidden"
+          }
+        }
+      },
+      "errorResponse404": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/404Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/free-credit",
+          "reason": {
+            "reasonCode": 404,
+            "reasonDescription": "Resource Not Found"
+          }
+        }
+      },
+      "errorResponse405": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/405Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "POST/prime/financing/v1/free-credit",
+          "reason": {
+            "reasonCode": 405,
+            "reasonDescription": "Method Not Allowed"
+          }
+        }
+      },
+      "errorResponse406": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/406Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/free-credit",
+          "reason": {
+            "reasonCode": 406,
+            "reasonDescription": "Not Acceptable"
+          }
+        }
+      },
+      "errorResponse408": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/408Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/free-credit",
+          "reason": {
+            "reasonCode": 408,
+            "reasonDescription": "HTTP Timeout Exception"
+          }
+        }
+      },
+      "errorResponse415": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/415Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/free-credit",
+          "reason": {
+            "reasonCode": 415,
+            "reasonDescription": "Unsupported Media Type"
+          }
+        }
+      },
+      "errorResponse500": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/500Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/free-credit",
+          "reason": {
+            "reasonCode": 500,
+            "reasonDescription": "Internal Server Error"
+          }
+        }
+      },
+      "errorResponse503": {
+        "type": "object",
+        "properties": {
+          "transactionIdentification": {
+            "type": "string",
+            "description": ""
+          },
+          "status": {
+            "type": "string",
+            "description": ""
+          },
+          "apiName": {
+            "type": "string",
+            "description": ""
+          },
+          "reason": {
+            "$ref": "#/components/schemas/503Reason"
+          }
+        },
+        "description": "",
+        "example": {
+          "transactionIdentification": "518c29a0-83de-11ea-91eb-005056a74762",
+          "status": "Failure",
+          "apiName": "GET/prime/financing/v1/free-credit",
+          "reason": {
+            "reasonCode": 503,
+            "reasonDescription": "Service Unavailable"
+          }
+        }
+      },
+      "401Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "403Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "404Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "405Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "406Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "408Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "415Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "500Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      },
+      "503Reason": {
+        "type": "object",
+        "properties": {
+          "reasonCode": {
+            "type": "integer"
+          },
+          "reasonDescription": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

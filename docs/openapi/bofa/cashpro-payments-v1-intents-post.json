@@ -1,0 +1,192 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Payments V1 Intent",
+    "description": "Generate payment intent ID to be included for UK or EU Third Party Providers with each payment initiation.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0",
+    "x-additionalDocs": {
+      "overview": {
+        "fileName": ""
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Payments V1 API (PSD2)",
+      "description": "This is a sample Payment Initiation server.  For this sample, you can use the api key 'special-key' to test the authorization filters."
+    }
+  ],
+  "paths": {
+    "/cashpro/payments/v1/intents": {
+      "post": {
+        "tags": [
+          "Payments V1 API (PSD2)"
+        ],
+        "summary": "Generates a payment intent ID that must be included for UK or EU Third Party Providers with each payment initiation request.",
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "Identifying the content of the payload as JSON. </br> ex. application/json",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "description": "A unique identifier to be used for a single intent ID. Length: 1 - 256 </br> Eg. 123898733525554444",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "A unique access token to be used for a single request. </br> ex. Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Payment Intent Request Body",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Response successfully retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {}
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {}
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {}
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {}
+          },
+          "405": {
+            "description": "Invalid method",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorResponse405"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {}
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {}
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "requestBody": {
+        "type": "object",
+        "required": [
+          "instructedPartyName",
+          "currency",
+          "amount",
+          "creditorAccountIdentification",
+          "creditorAgentIdentification"
+        ],
+        "properties": {
+          "instructedPartyName": {
+            "type": "string",
+            "description": "Party to which the payment will be made. Length: 1 - 35"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code of the creditor account, as documented by ISO 4217 Codes for the representation of currencies and funds"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Amount of the transaction represented as 9999999999.99. Length: 1 - 13"
+          },
+          "creditorAccountIdentification": {
+            "type": "string",
+            "description": "Account number. Length : 1 - 34"
+          },
+          "creditorAgentIdentification": {
+            "type": "string",
+            "description": "BIC or routing number of the account. Length : 1 - 12"
+          }
+        }
+      },
+      "response": {
+        "required": [
+          "intentID"
+        ],
+        "type": "object",
+        "description": "Intent ID,to be used in subsequent/payment-initiations request",
+        "properties": {
+          "intentID": {
+            "type": "string",
+            "example": "e7c693d0-1a12-4c3d-8c15-5555d0f21b1a"
+          }
+        }
+      },
+      "errorResponse405": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/error405"
+            }
+          }
+        }
+      },
+      "error405": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "invalidMethod"
+          },
+          "description": {
+            "type": "string",
+            "example": "Invalid HTTP method used"
+          }
+        }
+      }
+    }
+  }
+}
