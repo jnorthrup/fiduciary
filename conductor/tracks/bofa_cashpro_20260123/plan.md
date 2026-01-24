@@ -50,19 +50,19 @@
 ## Phase 3: Account Validation API [P1]
 
 ### 3.1 Account Validation Client
-- [ ] Task: Implement validateAccount() function
-  - [ ] Sub-task: Write failing tests for account validation
-  - [ ] Sub-task: Implement BOFA account validation API call
-  - [ ] Sub-task: Parse and return validation response
-  - [ ] Sub-task: Add routing number format validation
-  - [ ] Sub-task: Verify tests pass and coverage >80%
+- [x] Task: Implement validateAccount() function [8c6f410]
+  - [x] Sub-task: Write failing tests for account validation
+  - [x] Sub-task: Implement BOFA account validation API call
+  - [x] Sub-task: Parse and return validation response
+  - [x] Sub-task: Add routing number format validation
+  - [x] Sub-task: Verify tests pass and coverage >80%
 
 ### 3.2 Integration with Settlement UI
-- [ ] Task: Add account validation to payment order form
-  - [ ] Sub-task: Call validateAccount() on routing/account input
-  - [ ] Sub-task: Display validation status in UI
-  - [ ] Sub-task: Prevent submission if account invalid
-  - [ ] Sub-task: Verify integration works
+- [x] Task: Add account validation to payment order form [8c6f410]
+  - [x] Sub-task: Call validateAccount() on routing/account input
+  - [x] Sub-task: Display validation status in UI
+  - [x] Sub-task: Prevent submission if account invalid
+  - [x] Sub-task: Verify integration works
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 3 Account Validation'
 
@@ -71,21 +71,21 @@
 ## Phase 4: ACH Payment Origination API [P0]
 
 ### 4.1 NACHA File Submission
-- [ ] Task: Implement submitACHFile() function
-  - [ ] Sub-task: Write failing tests for ACH submission
-  - [ ] Sub-task: Implement BOFA ACH origination API call
-  - [ ] Sub-task: Integrate with existing nacha-generator.js
-  - [ ] Sub-task: Parse submission response and extract submissionId
-  - [ ] Sub-task: Handle submission errors and retries
-  - [ ] Sub-task: Verify tests pass and coverage >80%
+- [x] Task: Implement submitACHFile() function [6f9a25a]
+  - [x] Sub-task: Write failing tests for ACH submission
+  - [x] Sub-task: Implement BOFA ACH origination API call
+  - [x] Sub-task: Integrate with existing nacha-generator.js
+  - [x] Sub-task: Parse submission response and extract submissionId
+  - [x] Sub-task: Handle submission errors and retries
+  - [x] Sub-task: Verify tests pass and coverage >80%
 
 ### 4.2 Automatic Posting Integration
-- [ ] Task: Hook submission into settlement workflow
-  - [ ] Sub-task: Write failing tests for auto-posting trigger
-  - [ ] Sub-task: Add submitACHFile() call to settlement approval
-  - [ ] Sub-task: Store bofaSubmissionId with payment order
-  - [ ] Sub-task: Add error handling (fire-and-forget with logging)
-  - [ ] Sub-task: Verify tests pass and integration works
+- [x] Task: Hook submission into settlement workflow [6f9a25a]
+  - [x] Sub-task: Write failing tests for auto-posting trigger
+  - [x] Sub-task: Add submitACHFile() call to settlement approval
+  - [x] Sub-task: Store bofaSubmissionId with payment order
+  - [x] Sub-task: Add error handling (fire-and-forget with logging)
+  - [x] Sub-task: Verify tests pass and integration works
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 4 ACH Origination'
 
@@ -94,20 +94,20 @@
 ## Phase 5: ACH Payment Status API [P1]
 
 ### 5.1 Payment Status Tracking
-- [ ] Task: Implement getPaymentStatus() function
-  - [ ] Sub-task: Write failing tests for payment status query
-  - [ ] Sub-task: Implement BOFA payment status API call
-  - [ ] Sub-task: Parse status response and lifecycle states
-  - [ ] Sub-task: Handle return codes (R01, R02, etc.)
-  - [ ] Sub-task: Verify tests pass and coverage >80%
+- [x] Task: Implement getPaymentStatus() function [6f9a25a]
+  - [x] Sub-task: Write failing tests for payment status query
+  - [x] Sub-task: Implement BOFA payment status API call
+  - [x] Sub-task: Parse status response and lifecycle states
+  - [x] Sub-task: Handle return codes (R01, R02, etc.)
+  - [x] Sub-task: Verify tests pass and coverage >80%
 
 ### 5.2 Status Polling Service
-- [ ] Task: Create background polling for payment updates
-  - [ ] Sub-task: Write failing tests for status polling
-  - [ ] Sub-task: Implement cron job or Cloud Scheduler
-  - [ ] Sub-task: Update payment order status in ledger
-  - [ ] Sub-task: Add webhook support for future BOFA webhooks
-  - [ ] Sub-task: Verify tests pass
+- [x] Task: Create background polling for payment updates [6f9a25a]
+  - [x] Sub-task: Write failing tests for status polling
+  - [x] Sub-task: Implement cron job or Cloud Scheduler
+  - [x] Sub-task: Update payment order status in ledger
+  - [x] Sub-task: Add webhook support for future BOFA webhooks
+  - [x] Sub-task: Verify tests pass
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 5 Payment Status'
 
