@@ -32,14 +32,14 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
-## [~] Track: JSONL LSM Persistence Layer
+## [x] Track: JSONL LSM Persistence Layer
 
 *Link: [./conductor/tracks/jsonl_lsm_persistence_20260121/](./conductor/tracks/jsonl_lsm_persistence_20260121/)*
 *LSM-tree with JSONL WAL, configurable threshold, MapReduce-compatible streaming*
 
 ---
 
-## [ ] Track: BOFA CashPro API Integration
+## [x] Track: BOFA CashPro API Integration
 
 *Link: [./conductor/tracks/bofa_cashpro_20260123/](./conductor/tracks/bofa_cashpro_20260123/)*
 *Bank of America ACH origination, automatic posting, 2-cent test transaction, OAuth 2.0*
