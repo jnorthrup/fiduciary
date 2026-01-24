@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import persistence from '../lib/gcs-persistence.js';
 import { generateNachaFile } from '../lib/nacha-generator.js';
 import { getSponsor } from '../config/sponsors.js';
-import { validateAccount, submitACHFile, getPaymentStatus } from '../services/bofaCashProService.js';
+import { validateAccount, submitACHFile, getPaymentStatus, getBalance } from '../services/bofaCashProService.js';
 
 const router = express.Router();
 
@@ -272,6 +272,30 @@ router.post('/payment-orders/:paymentOrderId/execute', async (req, res) => {
         res.json(order);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/settlement/bofa/balance
+ * Get BOFA account balance for dashboard display
+ *
+ * This endpoint returns the current balance for the BOFA settlement account.
+ * The account number is masked for security (shows last 4 digits only).
+ */
+router.get('/bofa/balance', async (req, res) => {
+    try {
+        // Get BOFA account ID from query params or use default from config
+        const accountId = req.query.accountId || process.env.BOFA_SETTLEMENT_ACCOUNT_ID || 'DEFAULT';
+
+        const balance = await getBalance(accountId);
+
+        res.json(balance);
+    } catch (error) {
+        console.error('Balance inquiry error:', error);
+        res.status(500).json({
+            error: 'Balance Inquiry Failed',
+            message: error.message
+        });
     }
 });
 
