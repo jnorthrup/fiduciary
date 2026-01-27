@@ -1,0 +1,9 @@
+{
+  "journal_entries": [
+    {
+      "id": "je-001",
+      "timestamp": "2026-01-20T10:00:00Z",
+      "amount": 100
+    }
+  ]
+}

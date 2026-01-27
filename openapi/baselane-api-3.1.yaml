@@ -1,0 +1,1286 @@
+openapi: 3.1.0
+info:
+  title: Baselane API
+  description: |
+    Baselane Landlord Banking API - Property management, rent collection, and banking services.
+
+    **Note:** This API is currently in private beta and requires partner access.
+    Contact Baselane business development for API access credentials.
+
+    ## Authentication
+
+    All API requests require OAuth 2.0 client credentials flow authentication.
+
+    ## Environments
+
+    - **Sandbox:** https://sandbox-api.baselane.com/v1
+    - **Production:** https://api.baselane.com/v1
+  version: 1.0.0
+  contact:
+    name: Baselane Developer Relations
+    email: api@baselane.com
+    url: https://www.baselane.com
+  license:
+    name: Proprietary
+    url: https://www.baselane.com/legal/terms
+
+servers:
+  - url: https://sandbox-api.baselane.com/v1
+    description: Sandbox environment
+  - url: https://api.baselane.com/v1
+    description: Production environment
+
+security:
+  - OAuth2: []
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      description: OAuth 2.0 Client Credentials Flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://sandbox-api.baselane.com/v1/oauth/token
+          scopes:
+            read: Read access to properties, tenants, and transactions
+            write: Write access to create and modify resources
+
+  schemas:
+    PropertyAddress:
+      type: object
+      required:
+        - street
+        - city
+        - state
+        - zip
+        - country
+      properties:
+        street:
+          type: string
+          example: "123 Main St"
+        city:
+          type: string
+          example: "San Francisco"
+        state:
+          type: string
+          minLength: 2
+          maxLength: 2
+          example: "CA"
+        zip:
+          type: string
+          pattern: "^\\d{5}(-\\d{4})?$"
+          example: "94102"
+        country:
+          type: string
+          default: "US"
+          example: "US"
+
+    PropertyType:
+      type: string
+      enum: [residential, multifamily, commercial]
+
+    Property:
+      type: object
+      required:
+        - address
+        - propertyType
+        - units
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+          example: "prop_01HBSZAYH9KC8QZQ4Z8QYQK3Q"
+        address:
+          $ref: "#/components/schemas/PropertyAddress"
+        propertyType:
+          $ref: "#/components/schemas/PropertyType"
+        units:
+          type: integer
+          minimum: 1
+          example: 4
+        nickname:
+          type: string
+          maxLength: 100
+          example: "Sunset Apartments"
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    Unit:
+      type: object
+      required:
+        - propertyId
+        - unitNumber
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        propertyId:
+          type: string
+          format: uuid
+        unitNumber:
+          type: string
+          example: "101"
+        sqft:
+          type: integer
+          minimum: 0
+          example: 850
+        bedrooms:
+          type: integer
+          minimum: 0
+          maximum: 10
+          example: 2
+        bathrooms:
+          type: number
+          minimum: 0
+          maximum: 10
+          example: 1.5
+        rentAmount:
+          type: number
+          format: double
+          minimum: 0
+          example: 2500.00
+        securityDeposit:
+          type: number
+          format: double
+          minimum: 0
+          example: 5000.00
+        isOccupied:
+          type: boolean
+          readOnly: true
+          example: true
+
+    Tenant:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - leaseStart
+        - leaseEnd
+        - monthlyRent
+        - securityDeposit
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "John"
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        phone:
+          type: string
+          pattern: "^\\+1[0-9]{10}$"
+          example: "+14155551234"
+        unitId:
+          type: string
+          format: uuid
+        propertyId:
+          type: string
+          format: uuid
+        leaseStart:
+          type: string
+          format: date
+          example: "2026-01-01"
+        leaseEnd:
+          type: string
+          format: date
+          example: "2026-12-31"
+        monthlyRent:
+          type: number
+          format: double
+          minimum: 0
+          example: 2000.00
+        securityDeposit:
+          type: number
+          format: double
+          minimum: 0
+          example: 4000.00
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    ChargeType:
+      type: string
+      enum: [rent, late_fee, other]
+
+    RentCharge:
+      type: object
+      required:
+        - tenantId
+        - propertyId
+        - unitId
+        - amount
+        - dueDate
+        - type
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        tenantId:
+          type: string
+          format: uuid
+        propertyId:
+          type: string
+          format: uuid
+        unitId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          example: 2000.00
+        dueDate:
+          type: string
+          format: date
+          example: "2026-02-01"
+        type:
+          $ref: "#/components/schemas/ChargeType"
+        description:
+          type: string
+          maxLength: 500
+        status:
+          type: string
+          enum: [pending, paid, voided]
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    PaymentMethodType:
+      type: string
+      enum: [bank_account, card]
+
+    PaymentStatus:
+      type: string
+      enum: [pending, completed, failed, refunded]
+
+    Payment:
+      type: object
+      required:
+        - chargeId
+        - tenantId
+        - amount
+        - status
+        - paymentMethod
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        chargeId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          example: 2000.00
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        paymentMethod:
+          $ref: "#/components/schemas/PaymentMethodType"
+        paymentMethodId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        completedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        failedReason:
+          type: string
+          example: "Insufficient funds"
+
+    Balance:
+      type: object
+      required:
+        - available
+        - current
+        - pending
+        - currency
+        - asOfDate
+      properties:
+        available:
+          type: number
+          format: double
+          example: 5000.00
+        current:
+          type: number
+          format: double
+          example: 5500.00
+        pending:
+          type: number
+          format: double
+          example: -500.00
+        currency:
+          type: string
+          default: USD
+          example: "USD"
+        asOfDate:
+          type: string
+          format: date
+          example: "2026-01-24"
+
+    Transaction:
+      type: object
+      required:
+        - accountId
+        - amount
+        - type
+        - description
+        - postedDate
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        accountId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          example: 150.00
+        type:
+          type: string
+          enum: [debit, credit]
+        description:
+          type: string
+          example: "Monthly rent"
+        category:
+          type: string
+          example: "Rent Income"
+        propertyId:
+          type: string
+          format: uuid
+        unitId:
+          type: string
+          format: uuid
+        postedDate:
+          type: string
+          format: date
+          example: "2026-01-24"
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+    TransferRequest:
+      type: object
+      required:
+        - fromAccountId
+        - amount
+      properties:
+        fromAccountId:
+          type: string
+          format: uuid
+        toAccountId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          example: 1000.00
+        memo:
+          type: string
+          maxLength: 500
+          example: "Transfer to reserve"
+        routingNumber:
+          type: string
+          pattern: "^\\d{9}$"
+          example: "021000021"
+        accountNumber:
+          type: string
+          pattern: "^\\d{4,17}$"
+          example: "123456789"
+        accountType:
+          type: string
+          enum: [checking, savings]
+
+    PropertyPerformance:
+      type: object
+      required:
+        - propertyId
+        - period
+      properties:
+        propertyId:
+          type: string
+          format: uuid
+        totalRevenue:
+          type: number
+          format: double
+          example: 50000.00
+        totalExpenses:
+          type: number
+          format: double
+          example: 15000.00
+        netOperatingIncome:
+          type: number
+          format: double
+          example: 35000.00
+        occupancyRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          example: 0.95
+        averageRent:
+          type: number
+          format: double
+          example: 2200.00
+        totalCollected:
+          type: number
+          format: double
+          example: 48000.00
+        totalOutstanding:
+          type: number
+          format: double
+          example: 2000.00
+        period:
+          type: object
+          required:
+            - start
+            - end
+          properties:
+            start:
+              type: string
+              format: date
+            end:
+              type: string
+              format: date
+
+    PortfolioSummary:
+      type: object
+      properties:
+        totalProperties:
+          type: integer
+          minimum: 0
+          example: 5
+        totalUnits:
+          type: integer
+          minimum: 0
+          example: 12
+        totalRevenue:
+          type: number
+          format: double
+          example: 150000.00
+        totalExpenses:
+          type: number
+          format: double
+          example: 45000.00
+        netOperatingIncome:
+          type: number
+          format: double
+          example: 105000.00
+        occupancyRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          example: 0.92
+        totalTenants:
+          type: integer
+          minimum: 0
+          example: 11
+
+    RentRollEntry:
+      type: object
+      properties:
+        propertyId:
+          type: string
+          format: uuid
+        propertyName:
+          type: string
+          example: "Sunset Apartments"
+        unitId:
+          type: string
+          format: uuid
+        unitNumber:
+          type: string
+          example: "101"
+        tenantName:
+          type: string
+          example: "John Doe"
+        monthlyRent:
+          type: number
+          format: double
+          example: 2200.00
+        leaseStart:
+          type: string
+          format: date
+          example: "2026-01-01"
+        leaseEnd:
+          type: string
+          format: date
+          example: "2026-12-31"
+        balance:
+          type: number
+          format: double
+          example: 0.00
+        status:
+          type: string
+          enum: [current, late, paid_ahead]
+          example: "current"
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          example: "Invalid request parameters"
+        details:
+          type: object
+          additionalProperties: true
+        requestId:
+          type: string
+          format: uuid
+          example: "req_01HBSZAYH9KC8QZQ4Z8QYQK3Q"
+
+tags:
+  - name: Properties
+    description: Property and unit management
+  - name: Tenants
+    description: Tenant management
+  - name: Rent
+    description: Rent charges and payments
+  - name: Banking
+    description: Account balances and transactions
+  - name: Transfers
+    description: ACH and wire transfers
+  - name: Reports
+    description: Performance and analytics reports
+
+paths:
+  /properties:
+    get:
+      summary: List all properties
+      description: Retrieve a list of all properties for the authenticated account
+      operationId: listProperties
+      tags:
+        - Properties
+      responses:
+        "200":
+          description: List of properties
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  properties:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Property"
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      pageSize:
+                        type: integer
+                      totalCount:
+                        type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+    post:
+      summary: Create property
+      description: Create a new property in the system
+      operationId: createProperty
+      tags:
+        - Properties
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Property"
+      responses:
+        "201":
+          description: Property created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /properties/{propertyId}:
+    parameters:
+      - name: propertyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: Property ID
+
+    get:
+      summary: Get property details
+      description: Retrieve details of a specific property
+      operationId: getProperty
+      tags:
+        - Properties
+      responses:
+        "200":
+          description: Property details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      summary: Update property
+      description: Update details of an existing property
+      operationId: updateProperty
+      tags:
+        - Properties
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address:
+                  $ref: "#/components/schemas/PropertyAddress"
+                nickname:
+                  type: string
+      responses:
+        "200":
+          description: Property updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      summary: Delete property
+      description: Delete a property from the system
+      operationId: deleteProperty
+      tags:
+        - Properties
+      responses:
+        "204":
+          description: Property deleted successfully
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /properties/{propertyId}/units:
+    parameters:
+      - name: propertyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      summary: List property units
+      description: Retrieve all units for a specific property
+      operationId: listUnits
+      tags:
+        - Properties
+      responses:
+        "200":
+          description: List of units
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  units:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Unit"
+
+    post:
+      summary: Create unit
+      description: Add a new unit to a property
+      operationId: createUnit
+      tags:
+        - Properties
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Unit"
+      responses:
+        "201":
+          description: Unit created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unit"
+
+  /tenants:
+    get:
+      summary: List all tenants
+      description: Retrieve a list of all tenants
+      operationId: listTenants
+      tags:
+        - Tenants
+      responses:
+        "200":
+          description: List of tenants
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenants:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Tenant"
+
+    post:
+      summary: Create tenant
+      description: Add a new tenant to the system
+      operationId: createTenant
+      tags:
+        - Tenants
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Tenant"
+      responses:
+        "201":
+          description: Tenant created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+
+  /tenants/{tenantId}:
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      summary: Get tenant details
+      operationId: getTenant
+      tags:
+        - Tenants
+      responses:
+        "200":
+          description: Tenant details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+
+    patch:
+      summary: Update tenant
+      operationId: updateTenant
+      tags:
+        - Tenants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+      responses:
+        "200":
+          description: Tenant updated successfully
+
+  /rent/charges:
+    post:
+      summary: Create rent charge
+      description: Create a new rent charge for a tenant
+      operationId: createRentCharge
+      tags:
+        - Rent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RentCharge"
+      responses:
+        "201":
+          description: Rent charge created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RentCharge"
+
+  /rent/charges/{chargeId}:
+    delete:
+      summary: Void rent charge
+      operationId: voidRentCharge
+      tags:
+        - Rent
+      parameters:
+        - name: chargeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Charge voided successfully
+
+  /rent/payments:
+    post:
+      summary: Initiate payment
+      description: Process a rent payment
+      operationId: initiatePayment
+      tags:
+        - Rent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - chargeId
+                - amount
+                - paymentMethod
+                - paymentMethodId
+              properties:
+                chargeId:
+                  type: string
+                  format: uuid
+                amount:
+                  type: number
+                  format: double
+                paymentMethod:
+                  $ref: "#/components/schemas/PaymentMethodType"
+                paymentMethodId:
+                  type: string
+                  format: uuid
+      responses:
+        "201":
+          description: Payment initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /rent/payments/{paymentId}:
+    get:
+      summary: Get payment status
+      operationId: getPaymentStatus
+      tags:
+        - Rent
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Payment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+    post:
+      summary: Refund payment
+      operationId: refundPayment
+      tags:
+        - Rent
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - reason
+              properties:
+                amount:
+                  type: number
+                  format: double
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Payment refunded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /banking/accounts/{accountId}/balance:
+    get:
+      summary: Get account balance
+      description: Retrieve current balance for a banking account
+      operationId: getBalance
+      tags:
+        - Banking
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Account balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Balance"
+
+  /banking/accounts/{accountId}/transactions:
+    get:
+      summary: List transactions
+      description: Retrieve transaction history for an account
+      operationId: getTransactions
+      tags:
+        - Banking
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transactions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Transaction"
+
+  /banking/transfers:
+    post:
+      summary: Create internal transfer
+      description: Transfer funds between internal accounts
+      operationId: createTransfer
+      tags:
+        - Transfers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferRequest"
+      responses:
+        "201":
+          description: Transfer created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transferId:
+                    type: string
+                    format: uuid
+
+  /banking/transfers/external:
+    post:
+      summary: Create external transfer
+      description: Transfer funds to external bank account via ACH
+      operationId: createExternalTransfer
+      tags:
+        - Transfers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferRequest"
+      responses:
+        "201":
+          description: Transfer created
+
+  /reports/properties/{propertyId}:
+    get:
+      summary: Get property performance
+      description: Retrieve performance metrics for a specific property
+      operationId: getPropertyPerformance
+      tags:
+        - Reports
+      parameters:
+        - name: propertyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Property performance data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PropertyPerformance"
+
+  /reports/portfolio:
+    get:
+      summary: Get portfolio summary
+      description: Retrieve aggregate metrics for all properties
+      operationId: getPortfolioSummary
+      tags:
+        - Reports
+      responses:
+        "200":
+          description: Portfolio summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioSummary"
+
+  /reports/rent-roll:
+    get:
+      summary: Get rent roll report
+      description: Retrieve comprehensive rent roll for all units
+      operationId: getRentRoll
+      tags:
+        - Reports
+      responses:
+        "200":
+          description: Rent roll data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rentRoll:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RentRollEntry"
+
+  /webhooks:
+    get:
+      summary: List webhooks
+      description: List all registered webhooks
+      operationId: listWebhooks
+      tags:
+        - Webhooks
+      responses:
+        "200":
+          description: List of webhooks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    url:
+                      type: string
+                      format: uri
+                    events:
+                      type: array
+                      items:
+                        type: string
+                    secret:
+                      type: string
+                      format: byte
+
+    post:
+      summary: Register webhook
+      description: Register a new webhook for event notifications
+      operationId: registerWebhook
+      tags:
+        - Webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+                - events
+              properties:
+                url:
+                  type: string
+                  format: uri
+                events:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - rent.payment.completed
+                      - rent.payment.failed
+                      - tenant.created
+                      - tenant.updated
+                      - property.created
+                      - property.updated
+                secret:
+                  type: string
+                  format: byte
+      responses:
+        "201":
+          description: Webhook registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+
+  /webhooks/{webhookId}:
+    delete:
+      summary: Delete webhook
+      description: Unregister and delete a webhook
+      operationId: deleteWebhook
+      tags:
+        - Webhooks
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Webhook deleted successfully
+
+components:
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    RateLimited:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

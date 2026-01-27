@@ -1,0 +1,776 @@
+openapi: 3.1.0
+info:
+  title: Odoo REST API
+  description: |
+    Complete REST API interface for Odoo ERP system.
+
+    ## Authentication
+
+    All API requests require Bearer Token authentication.
+
+    ## Base URL
+
+    - **Default:** /api/v1
+    - **OpenAPI Spec:** /api/v1/openapi.json
+
+    ## Supported Operations
+
+    - **GET** - Query records
+    - **POST** - Create records
+    - **PUT** - Update records
+    - **DELETE** - Delete records
+
+    ## Model Naming
+
+    Odoo models use dot notation:
+    - `res.users` - Users
+    - `res.partner` - Contacts
+    - `product.template` - Products
+    - `sale.order` - Sales Orders
+    - `account.move` - Journal Entries
+  version: 17.0
+  contact:
+    name: Odoo SA
+    url: https://www.odoo.com
+  license:
+    name: LGPL-3
+    url: https://www.gnu.org/licenses/lgpl-3.0.html
+
+servers:
+  - url: /api/v1
+    description: Default API path (relative to Odoo instance)
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Bearer token authentication
+
+  schemas:
+    # Generic Odoo Record wrapper
+    RecordList:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Records retrieved successfully"
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        count:
+          type: integer
+          example: 50
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-24T12:00:00Z"
+
+    Record:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Record retrieved successfully"
+        data:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-24T12:00:00Z"
+
+    # User Model (res.users)
+    User:
+      type: object
+      required:
+        - login
+        - email
+        - name
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        login:
+          type: string
+          example: "admin"
+        email:
+          type: string
+          format: email
+          example: "admin@example.com"
+        name:
+          type: string
+          example: "Administrator"
+        active:
+          type: boolean
+          example: true
+        company_id:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        partner_id:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+
+    # Partner Model (res.partner)
+    Partner:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 1
+        name:
+          type: string
+          example: "Acme Corporation"
+        email:
+          type: string
+          format: email
+          example: "contact@acme.com"
+        phone:
+          type: string
+          example: "+1-555-123-4567"
+        is_company:
+          type: boolean
+          example: true
+        supplier_rank:
+          type: integer
+          example: 10
+        customer_rank:
+          type: integer
+          example: 5
+        street:
+          type: string
+          example: "123 Main St"
+        city:
+          type: string
+          example: "San Francisco"
+        zip:
+          type: string
+          example: "94102"
+        country_id:
+          type: object
+          properties:
+            id:
+              type: integer
+            code:
+              type: string
+              example: "US"
+
+    # Product Model (product.template)
+    Product:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          example: "Product A"
+        type:
+          type: string
+          enum: [consu, service]
+          example: "consu"
+        list_price:
+          type: number
+          format: double
+          example: 100.00
+        standard_price:
+          type: number
+          format: double
+          example: 95.00
+        categ_id:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+        description:
+          type: string
+          example: "Product description"
+        sale_ok:
+          type: boolean
+          example: true
+        purchase_ok:
+          type: boolean
+          example: true
+
+    # Sales Order Model (sale.order)
+    SalesOrder:
+      type: object
+      required:
+        - partner_id
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          example: "SO001"
+        partner_id:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        date_order:
+          type: string
+          format: date
+          example: "2026-01-24"
+        validity_date:
+          type: string
+          format: date
+        amount_total:
+          type: number
+          format: double
+          example: 1500.00
+        state:
+          type: string
+          enum: [draft, sent, sale, done, cancel]
+          example: "sale"
+        order_line:
+          type: array
+          items:
+            type: object
+            properties:
+              product_id:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+              quantity:
+                type: integer
+              price_unit:
+                type: number
+                format: double
+
+    # Journal Entry Model (account.move)
+    JournalEntry:
+      type: object
+      required:
+        - journal_id
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          example: "MISC/2026/0001"
+        date:
+          type: string
+          format: date
+          example: "2026-01-24"
+        journal_id:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        state:
+          type: string
+          enum: [draft, posted, cancel]
+          example: "posted"
+        amount:
+          type: number
+          format: double
+          example: 500.00
+        line_ids:
+          type: array
+          items:
+            type: integer
+
+    # Query Parameters
+    QueryParams:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Field selection syntax (e.g., "{id,name,email}")
+          example: "{id,name,email}"
+        filter:
+          type: array
+          description: Domain filters (e.g., [["active","=",true]])
+          items:
+            type: array
+          example: "[[\"active\",\"=\",true]]"
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 80
+          example: 50
+        offset:
+          type: integer
+          minimum: 0
+          default: 0
+        order:
+          type: string
+          description: Sort field (e.g., "id DESC", "name ASC")
+          example: "id DESC"
+
+    # Create/Update Request Body
+    RecordRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+          description: Record data
+        context:
+          type: object
+          description: Optional context (lang, tz, etc.)
+          properties:
+            lang:
+              type: string
+              example: "en_US"
+            tz:
+              type: string
+              example: "UTC"
+
+    # Error Response
+    Error:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - type
+          properties:
+            code:
+              type: integer
+              example: 400
+            message:
+              type: string
+              example: "Validation error"
+            type:
+              type: string
+              example: "ValidationError"
+            data:
+              type: object
+              additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-24T12:00:00Z"
+
+tags:
+  - name: Users
+    description: User management (res.users)
+  - name: Partners
+    description: Contact management (res.partner)
+  - name: Products
+    description: Product catalog (product.template)
+  - name: Sales
+    description: Sales orders (sale.order)
+  - name: Accounting
+    description: Journal entries (account.move)
+  - name: Reports
+    description: Report generation
+  - name: System
+    description: System utilities
+
+paths:
+  # Generic CRUD endpoints for any Odoo model
+  /{model}:
+    parameters:
+      - name: model
+        in: path
+        required: true
+        description: Odoo model name (e.g., res.users, res.partner, product.template)
+        schema:
+          type: string
+          example: "res.partner"
+        x-example: "res.partner"
+
+    get:
+      summary: List records
+      description: Retrieve records from any Odoo model
+      operationId: listRecords
+      tags:
+        - Generic
+      parameters:
+        - $ref: "#/components/parameters/query"
+        - $ref: "#/components/parameters/filter"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/order"
+      responses:
+        "200":
+          description: Records retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+    post:
+      summary: Create record
+      description: Create a new record in any Odoo model
+      operationId: createRecord
+      tags:
+        - Generic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordRequest"
+      responses:
+        "200":
+          description: Record created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Record"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /{model}/{id}:
+    parameters:
+      - name: model
+        in: path
+        required: true
+        schema:
+          type: string
+          example: "res.partner"
+      - name: id
+        in: path
+        required: true
+        description: Record ID
+        schema:
+          type: integer
+          example: 1
+
+    get:
+      summary: Get record
+      description: Retrieve a single record by ID
+      operationId: getRecord
+      tags:
+        - Generic
+      parameters:
+        - $ref: "#/components/parameters/query"
+      responses:
+        "200":
+          description: Record retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Record"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    put:
+      summary: Update record
+      description: Update a single record by ID
+      operationId: updateRecord
+      tags:
+        - Generic
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordRequest"
+      responses:
+        "200":
+          description: Record updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Record"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      summary: Delete record
+      description: Delete a single record by ID
+      operationId: deleteRecord
+      tags:
+        - Generic
+      responses:
+        "200":
+          description: Record deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Record"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # Model-specific endpoints
+  /res.users/search:
+    get:
+      summary: Search users
+      description: Advanced search on users model
+      operationId: searchUsers
+      tags:
+        - Users
+      parameters:
+        - name: domain
+          in: query
+          schema:
+            type: array
+          description: Odoo search domain
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordList"
+
+  /res.partner/{id}/fields:
+    get:
+      summary: Get partner fields
+      description: Retrieve field information for partner model
+      operationId: getPartnerFields
+      tags:
+        - Partners
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Field definitions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fields:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        required:
+                          type: boolean
+                        readonly:
+                          type: boolean
+                        string:
+                          type: string
+                        help:
+                          type: string
+
+  /product.template/search:
+    get:
+      summary: Search products
+      description: Advanced product search
+      operationId: searchProducts
+      tags:
+        - Products
+      parameters:
+        - name: domain
+          in: query
+          schema:
+            type: array
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Search results
+
+  # Accounting endpoints
+  /account.move/search:
+    get:
+      summary: Search journal entries
+      operationId: searchJournalEntries
+      tags:
+        - Accounting
+      responses:
+        "200":
+          description: Search results
+
+  # System endpoints
+  /health:
+    get:
+      summary: Health check
+      description: Check API health status
+      operationId: healthCheck
+      tags:
+        - System
+      security: []
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  version:
+                    type: string
+                    example: "17.0"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /info:
+    get:
+      summary: API information
+      description: Get API metadata and available endpoints
+      operationId: getApiInfo
+      tags:
+        - System
+      security: []
+      responses:
+        "200":
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                    example: "17.0"
+                  endpoints:
+                    type: array
+                    items:
+                      type: string
+                  models:
+                    type: array
+                    items:
+                      type: string
+                    example: ["res.users", "res.partner", "product.template", "sale.order"]
+
+  /openapi.json:
+    get:
+      summary: OpenAPI specification
+      description: Retrieve OpenAPI 3.1 specification
+      operationId: getOpenApiSpec
+      tags:
+        - System
+      security: []
+      responses:
+        "200":
+          description: OpenAPI 3.1 specification
+          content:
+            application/json:
+              schema:
+                type: object
+            application/yaml:
+              schema:
+                type: object
+
+components:
+  parameters:
+    query:
+      name: query
+      in: query
+      description: Field selection syntax
+      schema:
+        type: string
+      example: "{id,name,email}"
+    filter:
+      name: filter
+      in: query
+      description: Domain filters
+      schema:
+        type: array
+      example: "[[\"active\",\"=\",true]]"
+    limit:
+      name: limit
+      in: query
+      description: Maximum records to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 80
+    offset:
+      name: offset
+      in: query
+      description: Number of records to skip
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    order:
+      name: order
+      in: query
+      description: Sort order
+      schema:
+        type: string
+      example: "id DESC"
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

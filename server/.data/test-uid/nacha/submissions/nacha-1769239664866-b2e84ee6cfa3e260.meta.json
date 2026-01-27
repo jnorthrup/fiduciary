@@ -1,0 +1,12 @@
+{
+  "submissionId": "nacha-1769239664866-b2e84ee6cfa3e260",
+  "uid": "test-uid",
+  "filename": "ACH_TEST_20260120.ach",
+  "timestamp": "2026-01-24T07:27:44.866Z",
+  "checksum": "b73d124ca9159931d0d621e72864704e879cbe038af1a8b8f2a3260fe0e2d557",
+  "batchCount": 1,
+  "entryCount": 5,
+  "totalDebit": 500000,
+  "totalCredit": 500000,
+  "hash": "12345678"
+}

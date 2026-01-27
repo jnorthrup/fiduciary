@@ -46,6 +46,20 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
+## [ ] Track: Day/Night Capable Skins System
+
+*Link: [./conductor/tracks/nightday_skins_20260124/](./conductor/tracks/nightday_skins_20260124/)*
+*3 day-night capable skins (mobile, QuickBooks, advanced graph layout) with UI toggle for profile selection. Profile-resident CRUD for skin adjustments.*
+
+---
+
+## [ ] Track: Baselane API Integration
+
+*Link: [./conductor/tracks/baselane_api_20260124/](./conductor/tracks/baselane_api_20260124/)*
+*Landlord banking API integration: rent collection, property management, tenant management, automated payments, ledger & settlement integration*
+
+---
+
 ## [ARCHIVED] Completed & Retired Tracks
 
 Stored in `conductor/archive/` for reference:

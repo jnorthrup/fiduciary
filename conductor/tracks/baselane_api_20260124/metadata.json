@@ -1,0 +1,8 @@
+{
+  "track_id": "baselane_api_20260124",
+  "type": "integration",
+  "status": "new",
+  "created_at": "2026-01-24T00:00:00Z",
+  "updated_at": "2026-01-24T00:00:00Z",
+  "description": "Baselane API integration for landlord banking, rent collection, and property management"
+}

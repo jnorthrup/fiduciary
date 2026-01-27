@@ -22,6 +22,22 @@ interface BOFAConfig {
 }
 
 /**
+ * Baselane configuration from environment
+ */
+interface BaselaneConfig {
+  /** Environment: sandbox or production */
+  environment: 'sandbox' | 'production';
+  /** OAuth client ID (local development only) */
+  clientId?: string;
+  /** OAuth client secret (local development only) */
+  clientSecret?: string;
+  /** Webhook secret for signature validation */
+  webhookSecret?: string;
+  /** Egress IP range for Cloud NAT whitelisting */
+  egressIpRange: string;
+}
+
+/**
  * GCP configuration from environment
  */
 interface GCPConfig {
@@ -37,6 +53,8 @@ interface AppConfig {
   gcp: GCPConfig;
   /** Bank of America CashPro settings */
   bofa: BOFAConfig;
+  /** Baselane landlord banking API settings */
+  baselane: BaselaneConfig;
 }
 
 // ============================================================================
@@ -116,6 +134,47 @@ export const BOFA_ENDPOINTS = {
   BALANCE: 'https://api.bankofamerica.com/accounts/v1/balances',
 } as const;
 
+/**
+ * Baselane API endpoints
+ *
+ * NOTE: Baselane may require static IP whitelisting for API access.
+ * The application must use Cloud NAT with the egress IP range below.
+ * Add this range to your Baselane developer portal IP whitelist before going to production.
+ *
+ * Egress IP Range: 35.190.0.0/18
+ * - This is the us-central1 region Cloud NAT IP range
+ * - Baselane will reject requests from non-whitelisted IPs (if enabled)
+ * - For production, work with Baselane to add your specific static IPs
+ *
+ * Documentation: https://docs.baselane.com
+ */
+export const BASELANE_ENDPOINTS = {
+  /** Sandbox base URL */
+  SANDBOX: 'https://sandbox-api.baselane.com/v1',
+  /** Production base URL */
+  PRODUCTION: 'https://api.baselane.com/v1',
+  /** OAuth token endpoint */
+  AUTH: '/oauth/token',
+  /** Properties endpoints */
+  PROPERTIES: '/properties',
+  /** Tenants endpoints */
+  TENANTS: '/tenants',
+  /** Rent charges endpoints */
+  RENT_CHARGES: '/rent/charges',
+  /** Payments endpoints */
+  PAYMENTS: '/rent/payments',
+  /** Banking endpoints */
+  BALANCE: '/banking/accounts',
+  TRANSACTIONS: '/banking/transactions',
+  TRANSFERS: '/banking/transfers',
+  /** Reports endpoints */
+  REPORTS_PROPERTY: '/reports/properties',
+  REPORTS_PORTFOLIO: '/reports/portfolio',
+  REPORTS_RENT_ROLL: '/reports/rent-roll',
+  /** Webhook endpoint */
+  WEBHOOKS: '/webhooks',
+} as const;
+
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
@@ -152,7 +211,24 @@ function loadConfig(): AppConfig {
     egressIpRange,
   };
 
-  return { gcp, bofa };
+  // Validate Baselane configuration
+  const baselaneEnvironment = process.env.BASELANE_ENVIRONMENT || 'sandbox';
+  if (baselaneEnvironment !== 'sandbox' && baselaneEnvironment !== 'production') {
+    throw new Error(`Invalid BASELANE_ENVIRONMENT: ${baselaneEnvironment} (must be 'sandbox' or 'production')`);
+  }
+
+  const baselaneEgressIpRange = process.env.BASELANE_EGRESS_IP_RANGE || '35.190.0.0/18';
+  validateCidr(baselaneEgressIpRange);
+
+  const baselane: BaselaneConfig = {
+    environment: baselaneEnvironment,
+    clientId: process.env.BASELANE_CLIENT_ID,
+    clientSecret: process.env.BASELANE_CLIENT_SECRET,
+    webhookSecret: process.env.BASELANE_WEBHOOK_SECRET,
+    egressIpRange: baselaneEgressIpRange,
+  };
+
+  return { gcp, bofa, baselane };
 }
 
 /**

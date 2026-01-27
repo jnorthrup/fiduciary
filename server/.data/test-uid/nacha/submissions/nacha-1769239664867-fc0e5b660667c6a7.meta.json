@@ -1,0 +1,12 @@
+{
+  "submissionId": "nacha-1769239664867-fc0e5b660667c6a7",
+  "uid": "test-uid",
+  "filename": "test.ach",
+  "timestamp": "2026-01-24T07:27:44.867Z",
+  "checksum": "ea7ee3f1fd2950fe2f1b8d867db48b7fc01ae30b0cffb74d2b11237874cfcbfe",
+  "batchCount": 1,
+  "entryCount": 1,
+  "totalDebit": 100,
+  "totalCredit": 100,
+  "hash": "87654321"
+}

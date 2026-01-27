@@ -1,0 +1,12 @@
+{
+  "events": [
+    {
+      "id": "ev-999",
+      "data": "last dual-write"
+    },
+    {
+      "id": "ev-1000",
+      "data": "first jsonl-only"
+    }
+  ]
+}
