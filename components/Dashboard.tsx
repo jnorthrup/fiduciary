@@ -46,6 +46,9 @@ import { CAFRViewer } from './CAFRViewer';
 import { APDashboard } from './APDashboard';
 import { BofaBalanceWidget } from './BofaBalanceWidget';
 import { BofaAdminPanel } from './BofaAdminPanel';
+import { BaselaneAdminPanel } from './BaselaneAdminPanel';
+import { BaselanePropertyWidget } from './BaselanePropertyWidget';
+import { BaselaneRentWidget } from './BaselaneRentWidget';
 
 const WizardModal = ({ children, onClose }: { children?: React.ReactNode, onClose: () => void }) => (
   <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95">
@@ -109,7 +112,7 @@ const BSOTabContent = ({ entity, onOpenWizard }: { entity: Entity, onOpenWizard:
   );
 };
 
-type WizardType = 'DTCC' | 'EXCHANGE' | 'REAL_ESTATE' | 'COLLATERAL' | 'FORENSIC' | 'SETTLEMENT' | 'LEGAL' | 'RESITUS' | 'RESOLUTION' | 'CREDIT_DEFENSE' | 'CHANCERY' | '1099' | 'ACCOUNT_RECON' | 'EDGAR' | 'MARAD' | 'CAFR' | 'BSO_WIZARD' | 'BSO_ENROLL' | 'BOFA_ADMIN';
+type WizardType = 'DTCC' | 'EXCHANGE' | 'REAL_ESTATE' | 'COLLATERAL' | 'FORENSIC' | 'SETTLEMENT' | 'LEGAL' | 'RESITUS' | 'RESOLUTION' | 'CREDIT_DEFENSE' | 'CHANCERY' | '1099' | 'ACCOUNT_RECON' | 'EDGAR' | 'MARAD' | 'CAFR' | 'BSO_WIZARD' | 'BSO_ENROLL' | 'BOFA_ADMIN' | 'BASELANE_ADMIN';
 
 interface Props {
   entity: Entity;
@@ -186,17 +189,24 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
       case 'Financials':
         return (
           <div className="h-full overflow-y-auto custom-scrollbar space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               <div className="bg-white p-4 rounded-xl border border-slate-200">
                 <h3 className="font-bold text-slate-700 mb-4">Quick Actions</h3>
                 <div className="space-y-2">
                   <button onClick={() => openWizard('1099')} className="w-full text-left text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded border">Create 1099</button>
                   <button onClick={() => openWizard('SETTLEMENT')} className="w-full text-left text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded border">Settlement Engine</button>
                   <button onClick={() => openWizard('BOFA_ADMIN')} className="w-full text-left text-xs p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200">BOFA Admin Panel</button>
+                  <button onClick={() => openWizard('BASELANE_ADMIN')} className="w-full text-left text-xs p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded border border-indigo-200">Baselane Admin Panel</button>
                 </div>
               </div>
               <div className="h-96">
                 <BofaBalanceWidget />
+              </div>
+              <div className="h-96">
+                <BaselanePropertyWidget />
+              </div>
+              <div className="h-96">
+                <BaselaneRentWidget />
               </div>
               <div className="h-96">
                 <APDashboard entity={entity} onSettlementClick={() => openWizard('SETTLEMENT')} />
@@ -312,6 +322,7 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
       case 'BSO_WIZARD': return <BSOWizard entity={entity} onComplete={() => closeWizard()} />;
       case 'BSO_ENROLL': return <BSOEnrollmentWizard entity={entity} onComplete={() => closeWizard()} />;
       case 'BOFA_ADMIN': return <BofaAdminPanel onApiConsole={onOpenApiConsole} />;
+      case 'BASELANE_ADMIN': return <BaselaneAdminPanel onApiConsole={onOpenApiConsole} />;
       default: return null;
     }
   };
