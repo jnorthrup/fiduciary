@@ -9,6 +9,7 @@ import { generateClientJWT, generateUserJWT } from './jwt-utils.js';
 import irsPortalAuthRouter from './routes/irs-portal-auth.js';
 import auditRouter from './routes/audit.js';
 import bankingRouter from './routes/banking.js';
+import baselaneRouter from './routes/baselane.js';
 import bsoRouter from './routes/bso.js';
 import ledgerRouter from './routes/ledger.js';
 import migrationRouter from './routes/migration.js';
@@ -189,6 +190,9 @@ app.use('/api/nacha', verifyFirebaseToken, nachaRouter);
 
 // Mount Migration router (state.json rollback)
 app.use('/api/migration', verifyFirebaseToken, migrationRouter);
+
+// Mount Baselane router (Baselane API integration)
+app.use('/api/baselane', verifyFirebaseToken, baselaneRouter);
 
 // Mount Ledger router
 if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'ledger-service') {
