@@ -6,6 +6,7 @@ import { LedgerProvider } from './services/ledgerService';
 import { AuthProvider, useAuth } from './services/authService';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Loader2 } from 'lucide-react';
+import './styles/theme.css';
 
 // Environment-based feature flags
 const FIREBASE_ENABLED = import.meta.env.VITE_FIREBASE_ENABLED !== 'false';

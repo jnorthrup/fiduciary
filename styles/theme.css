@@ -1,0 +1,96 @@
+/**
+ * Theme CSS variables and Tailwind integration
+ * Supports both light and dark modes
+ */
+
+@import "tailwindcss";
+
+:root {
+  /* Light mode theme tokens */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-elevated: #ffffff;
+  --bg-surface: #e2e8f0;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+  --text-disabled: #cbd5e1;
+
+  --border-default: #cbd5e1;
+  --border-subtle: #e2e8f0;
+  --border-focus: #3b82f6;
+  --border-error: #ef4444;
+
+  --accent-primary: #3b82f6;
+  --accent-secondary: #8b5cf6;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --accent-info: #06b6d4;
+
+  --status-paid: #10b981;
+  --status-pending: #f59e0b;
+  --status-failed: #ef4444;
+  --status-reconciled: #3b82f6;
+  --status-disputed: #f97316;
+
+  /* Color scheme indicator */
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  /* Dark mode theme tokens */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --bg-elevated: #1e293b;
+  --bg-surface: #0f172a;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+  --text-disabled: #475569;
+
+  --border-default: #475569;
+  --border-subtle: #334155;
+  --border-focus: #60a5fa;
+  --border-error: #f87171;
+
+  --accent-primary: #60a5fa;
+  --accent-secondary: #a78bfa;
+  --accent-success: #34d399;
+  --accent-warning: #fbbf24;
+  --accent-error: #f87171;
+  --accent-info: #22d3ee;
+
+  --status-paid: #34d399;
+  --status-pending: #fbbf24;
+  --status-failed: #f87171;
+  --status-reconciled: #60a5fa;
+  --status-disputed: #fb923c;
+
+  /* Color scheme indicator */
+  color-scheme: dark;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.2s ease-in-out,
+              color 0.2s ease-in-out,
+              border-color 0.2s ease-in-out;
+}
+
+/* Prevent transition on page load */
+.no-transition * {
+  transition: none !important;
+}
+
+/* Base styles using theme tokens */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
