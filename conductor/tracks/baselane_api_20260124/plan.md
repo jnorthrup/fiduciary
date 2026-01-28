@@ -290,11 +290,11 @@
   - [x] Sub-task: Verify component renders and functions
 
 ### 11.3 Dashboard Integration
-- [ ] Task: Integrate Baselane admin into dashboard
-  - [ ] Sub-task: Add "Baselane Admin" button to Financials tab
-  - [ ] Sub-task: Add Baselane widget for property performance
-  - [ ] Sub-task: Add rent collection summary widget
-  - [ ] Sub-task: Verify integration works
+- [x] Task: Integrate Baselane admin into dashboard [53a0a7d]
+  - [x] Sub-task: Add "Baselane Admin" button to Financials tab
+  - [x] Sub-task: Add Baselane widget for property performance
+  - [x] Sub-task: Add rent collection summary widget
+  - [x] Sub-task: Verify integration works
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 11 Admin UI'
 
