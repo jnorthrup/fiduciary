@@ -7,12 +7,12 @@
 ## Phase 1: Theme System Foundation [P0]
 
 ### 1.1 Theme Token Setup
-- [ ] Task: Create theme token definitions
-  - [ ] Sub-task: Define `ThemeTokens` TypeScript interface
-  - [ ] Sub-task: Create light theme token values
-  - [ ] Sub-task: Create dark theme token values
-  - [ ] Sub-task: Add Tailwind config extension for theme tokens
-  - [ ] Sub-task: Verify theme tokens compile
+- [x] Task: Create theme token definitions [0f64ab0]
+  - [x] Sub-task: Define `ThemeTokens` TypeScript interface
+  - [x] Sub-task: Create light theme token values
+  - [x] Sub-task: Create dark theme token values
+  - [x] Sub-task: Add Tailwind config extension for theme tokens
+  - [x] Sub-task: Verify theme tokens compile
 
 ### 1.2 Theme Provider
 - [ ] Task: Implement theme context and provider
