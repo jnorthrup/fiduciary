@@ -269,15 +269,15 @@
 ## Phase 11: Admin UI & API Routes [P1]
 
 ### 11.1 API Routes
-- [ ] Task: Create Baselane API routes
-  - [ ] Sub-task: Create `server/routes/baselane.js`
-  - [ ] Sub-task: Implement GET /api/baselane/properties
-  - [ ] Sub-task: Implement POST /api/baselane/properties/sync
-  - [ ] Sub-task: Implement GET /api/baselane/tenants
-  - [ ] Sub-task: Implement POST /api/baselane/rent/charges
-  - [ ] Sub-task: Implement GET /api/baselane/balance
-  - [ ] Sub-task: Implement GET /api/baselane/transactions
-  - [ ] Sub-task: Verify all routes work
+- [x] Task: Create Baselane API routes [12c38f4]
+  - [x] Sub-task: Create `server/routes/baselane.js`
+  - [x] Sub-task: Implement GET /api/baselane/properties
+  - [x] Sub-task: Implement POST /api/baselane/properties/sync
+  - [x] Sub-task: Implement GET /api/baselane/tenants
+  - [x] Sub-task: Implement POST /api/baselane/rent/charges
+  - [x] Sub-task: Implement GET /api/baselane/balance
+  - [x] Sub-task: Implement GET /api/baselane/transactions
+  - [x] Sub-task: Verify all routes work
 
 ### 11.2 Admin Panel Component
 - [ ] Task: Create BaselaneAdminPanel component
