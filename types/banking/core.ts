@@ -18,6 +18,8 @@ export enum BankingProvider {
   // Commercial
   PLAID = 'plaid',
   COINBASE = 'coinbase',
+  ACHQ = 'achq',
+  STRIPE = 'stripe',
 
   // Open-source core banking
   OBP = 'obp', // Open Bank Project
@@ -321,6 +323,29 @@ export interface TellerConfig extends ProviderConfig {
     certFile?: string;
     certKey?: string;
     apiKey?: string;
+  };
+}
+
+/**
+ * ACHQ-specific configuration
+ */
+export interface AchqConfig extends ProviderConfig {
+  provider: BankingProvider.ACHQ;
+  credentials: {
+    apiKey: string;
+    webhookSecret: string;
+  };
+}
+
+/**
+ * Stripe-specific configuration
+ */
+export interface StripeConfig extends ProviderConfig {
+  provider: BankingProvider.STRIPE;
+  credentials: {
+    secretKey: string;
+    publishableKey: string;
+    webhookSecret: string;
   };
 }
 

@@ -46,7 +46,7 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
-## [ ] Track: Day/Night Capable Skins System
+## [~] Track: Day/Night Capable Skins System
 
 *Link: [./conductor/tracks/nightday_skins_20260124/](./conductor/tracks/nightday_skins_20260124/)*
 *3 day-night capable skins (mobile, QuickBooks, advanced graph layout) with UI toggle for profile selection. Profile-resident CRUD for skin adjustments.*
@@ -57,6 +57,33 @@ Primary scope: **NACHA posting client + Account ledger**
 
 *Link: [./conductor/tracks/baselane_api_20260124/](./conductor/tracks/baselane_api_20260124/)*
 *Landlord banking API integration: rent collection, property management, tenant management, automated payments, ledger & settlement integration*
+
+---
+
+## [ ] Track: LM Studio Integration for Development
+
+*Link: [./conductor/tracks/lmstudio_integration_20260201/](./conductor/tracks/lmstudio_integration_20260201/)*
+*Integrate LM Studio (local LLM inference) for code generation, test generation, and documentation. Privacy, cost savings, and speed for development workflow.*
+
+---
+
+## [ ] Track: Kotlin-Node.js Fiduciary Fusion
+
+*Link: [./conductor/tracks/kotlin_node_fusion_20260201/](./conductor/tracks/kotlin_node_fusion_20260201/)*
+*Port Kotlin dual-ledger framework (v2superbikeshed/moneyfan) to Node.js trust ledger system. Public/private ledgers with cryptographic bridges, beneficiary management, expert panel system.*
+
+---
+
+## [ ] Track: Kotlin-Node.js Fiduciary Fusion
+
+*Link: [./conductor/tracks/kotlin_node_fusion_20260201/](./conductor/tracks/kotlin_node_fusion_20260201/)*
+*Port Kotlin dual-ledger framework (v2superbikeshed/moneyfan) to Node.js trust ledger system. Public/private ledgers with cryptographic bridges, beneficiary management, expert panel system.*
+
+---
+
+## [~] Track: ACH + KYC Integration — achq.com, Plaid, Stripe
+*Link: [./conductor/tracks/ach_kyc_20260204/](./conductor/tracks/ach_kyc_20260204/)*
+*ACH origination via achq.com and Stripe (user-selectable rail), CIP-compliant KYC via Plaid/Stripe Identity, full onboarding + payment UI, dual-track ledger with webhook-driven settlement.*
 
 ---
 

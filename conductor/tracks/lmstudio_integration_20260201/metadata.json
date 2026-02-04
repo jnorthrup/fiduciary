@@ -1,0 +1,21 @@
+{
+  "id": "lmstudio_integration_20260201",
+  "title": "LM Studio Integration for Development",
+  "type": "feature",
+  "status": "pending",
+  "created_at": "2026-02-01T01:20:00Z",
+  "updated_at": "2026-02-01T01:20:00Z",
+  "phase": "planning",
+  "priority": "medium",
+  "tags": [
+    "lm-studio",
+    "local-llm",
+    "development-tools",
+    "code-generation",
+    "test-generation"
+  ],
+  "dependencies": [],
+  "related_tracks": [
+    "kotlin_node_fusion_20260201"
+  ]
+}

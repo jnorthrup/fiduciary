@@ -1,0 +1,25 @@
+{
+  "id": "kotlin_node_fusion_20260201",
+  "title": "Kotlin-Node.js Fiduciary Fusion",
+  "type": "feature",
+  "status": "pending",
+  "created_at": "2026-02-01T01:15:00Z",
+  "updated_at": "2026-02-01T01:15:00Z",
+  "phase": "planning",
+  "priority": "high",
+  "tags": [
+    "kotlin",
+    "typescript",
+    "dual-ledger",
+    "fiduciary",
+    "encryption",
+    "compliance",
+    "integration"
+  ],
+  "dependencies": [],
+  "related_tracks": [
+    "ledger_20260114",
+    "settlement_nacha_20260122",
+    "bofa_cashpro_20260123"
+  ]
+}
