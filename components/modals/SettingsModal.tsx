@@ -12,8 +12,8 @@ interface Props {
 }
 
 export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, onReset }) => {
-  const { irsCreds, entities, updateIrsCredential, addIrsCredential, deleteIrsCredential, isCloudEnabled, connectToFirebase, pushLocalToCloud, settings, updateSettings } = useLedgerStore();
-  const [activeTab, setActiveTab] = useState<'Storage' | 'Backup' | 'Cloud' | 'Credentials' | 'Layout' | 'Reset'>('Cloud'); // Default to Cloud tab for setup
+  const { irsCreds, entities, updateIrsCredential, addIrsCredential, deleteIrsCredential, isCloudEnabled, connectToFirebase, pushLocalToCloud, settings } = useLedgerStore();
+  const [activeTab, setActiveTab] = useState<'Storage' | 'Backup' | 'Cloud' | 'Credentials' | 'Reset'>('Cloud'); // Default to Cloud tab for setup
   const [importStatus, setImportStatus] = useState<string>('');
   const [confirmReset, setConfirmReset] = useState(false);
   const [isWiping, setIsWiping] = useState(false);
@@ -182,7 +182,7 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
         </div>
 
         <div className="flex border-b border-slate-200 shrink-0 overflow-x-auto">
-            {['Cloud', 'Storage', 'Backup', 'Credentials', 'Layout', 'Reset'].map(tab => (
+            {['Cloud', 'Storage', 'Backup', 'Credentials', 'Reset'].map(tab => (
                 <button
                     key={tab}
                     onClick={() => { setActiveTab(tab as any); setConfirmReset(false); }}
@@ -489,38 +489,6 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
                                 </div>
                             </div>
                         ))}
-                    </div>
-                </div>
-            )}
-
-            {activeTab === 'Layout' && (
-                <div className="space-y-6">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600 border border-indigo-100">
-                            <LayoutGrid size={24} />
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-slate-700">Display & Layout</h3>
-                            <p className="text-sm text-slate-500">Choose your preferred system interface.</p>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <button 
-                            onClick={() => updateSettings({ layoutMode: 'Standard' })}
-                            className={`p-4 border-2 rounded-xl text-left transition-all ${settings.layoutMode !== 'MobileQuickBooks' ? 'border-indigo-600 bg-indigo-50 shadow-md' : 'border-slate-100 hover:border-slate-200'}`}
-                        >
-                            <div className="font-bold text-slate-800 mb-1">Standard Desktop</div>
-                            <p className="text-[10px] text-slate-500 leading-tight">Optimized for wide screens and institutional multi-tasking.</p>
-                        </button>
-
-                        <button 
-                            onClick={() => updateSettings({ layoutMode: 'MobileQuickBooks' })}
-                            className={`p-4 border-2 rounded-xl text-left transition-all ${settings.layoutMode === 'MobileQuickBooks' ? 'border-[#2ca01c] bg-[#f4f5f8] shadow-md' : 'border-slate-100 hover:border-slate-200'}`}
-                        >
-                            <div className={`font-bold mb-1 ${settings.layoutMode === 'MobileQuickBooks' ? 'text-[#2ca01c]' : 'text-slate-800'}`}>Mobile QuickBooks</div>
-                            <p className="text-[10px] text-slate-500 leading-tight">Responsive green-theme layout inspired by Intuit's mobile experience.</p>
-                        </button>
                     </div>
                 </div>
             )}

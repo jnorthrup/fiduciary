@@ -7,7 +7,7 @@
   },
   "description": "IRS IRIS A2A API Proxy Server with Google GenAI integration",
   "scripts": {
-    "start": "tsx index.js",
+    "start": "node index.js",
     "dev": "tsx --watch index.js"
   },
   "dependencies": {
