@@ -23,7 +23,7 @@
   - [ ] Sub-task: Add theme persistence to user profile (deferred - requires backend integration)
 
 ### 1.3 Theme Transitions
-- [x] Task: Add smooth theme switching
+- [x] Task: Add smooth theme switching [3435bef]
   - [x] Sub-task: Configure CSS transitions for theme changes
   - [x] Sub-task: Prevent flash of wrong theme on page load
   - [x] Sub-task: Add theme transition animation
