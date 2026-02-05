@@ -15,12 +15,12 @@
   - [x] Sub-task: Verify theme tokens compile
 
 ### 1.2 Theme Provider
-- [ ] Task: Implement theme context and provider
-  - [ ] Sub-task: Create `ThemeContext` with React context
-  - [ ] Sub-task: Implement `ThemeProvider` component
-  - [ ] Sub-task: Implement `useTheme` hook
-  - [ ] Sub-task: Add system preference detection (`prefers-color-scheme`)
-  - [ ] Sub-task: Add theme persistence to user profile
+- [~] Task: Implement theme context and provider
+  - [x] Sub-task: Create `ThemeContext` with React context
+  - [x] Sub-task: Implement `ThemeProvider` component
+  - [x] Sub-task: Implement `useTheme` hook
+  - [x] Sub-task: Add system preference detection (`prefers-color-scheme`)
+  - [ ] Sub-task: Add theme persistence to user profile (deferred - requires backend integration)
 
 ### 1.3 Theme Transitions
 - [ ] Task: Add smooth theme switching

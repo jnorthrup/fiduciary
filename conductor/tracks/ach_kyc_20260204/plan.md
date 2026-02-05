@@ -4,7 +4,7 @@
 
 ## Phase 1: Core Types & Provider Registration
 
-- [~] Task: Extend `BankingProvider` enum with `ACHQ` and `STRIPE` in `types/banking/core.ts`
+- [ ] Task: Extend `BankingProvider` enum with `ACHQ` and `STRIPE` in `types/banking/core.ts`
     - [ ] Add `ACHQ = 'achq'` and `STRIPE = 'stripe'` to enum
     - [ ] Add `AchqConfig` and `StripeConfig` interfaces extending `ProviderConfig`
     - [ ] Update `types/banking/index.ts` exports
