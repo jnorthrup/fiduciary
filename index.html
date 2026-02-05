@@ -32,6 +32,23 @@
 </script>
 </head>
   <body>
+    <!-- FOUC Prevention: Set theme before React loads -->
+    <script>
+      (function() {
+        // Get stored theme preference or default to auto
+        var stored = localStorage.getItem('theme-preference');
+        var theme = stored;
+        
+        // If auto or not set, detect system preference
+        if (!stored || stored === 'auto') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        
+        // Apply theme immediately to prevent flash
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.classList.add('no-transition');
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
   </body>

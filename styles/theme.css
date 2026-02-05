@@ -78,14 +78,28 @@
 }
 
 /* Smooth transitions for theme changes */
-* {
-  transition: background-color 0.2s ease-in-out,
-              color 0.2s ease-in-out,
-              border-color 0.2s ease-in-out;
+*,
+*::before,
+*::after {
+  transition-property: background-color, color, border-color, fill, stroke, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-in-out;
+}
+
+/* Elements that shouldn't transition */
+input[type="checkbox"],
+input[type="radio"],
+button,
+a,
+[role="button"],
+.no-theme-transition {
+  transition-property: background-color, color, border-color, fill, stroke, box-shadow, transform, opacity;
 }
 
 /* Prevent transition on page load */
-.no-transition * {
+.no-transition *,
+.no-transition *::before,
+.no-transition *::after {
   transition: none !important;
 }
 
@@ -93,4 +107,15 @@
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
+}
+
+/* Ensure scrollbars respect theme */
+:root {
+  scrollbar-color: var(--border-default) var(--bg-secondary);
+}
+
+/* Selection colors for theme */
+::selection {
+  background-color: var(--accent-primary);
+  color: var(--text-inverse);
 }
