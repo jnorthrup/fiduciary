@@ -2,26 +2,15 @@
 import React from 'react';
 import { useSkin } from './contexts/SkinContext';
 import { StandardLayout } from './components/layouts/StandardLayout';
-
-// Placeholder layouts for future phases
+import { QuickBooksLayout } from './components/layouts/QuickBooksLayout';
+import { HeatherLayout } from './components/layouts/HeatherLayout';
 const MobileLayout = () => {
   const { setSkin } = useSkin();
   return (
     <div className="p-8 text-center bg-slate-100 h-screen flex flex-col items-center justify-center">
-      <h2 className="text-xl font-bold mb-4">Mobile Layout</h2>
+      <h2 className="text-2xl font-bold mb-4">Mobile Layout</h2>
       <p className="mb-4">Coming in Phase 4</p>
-      <button onClick={() => setSkin('current')} className="px-4 py-2 bg-blue-600 text-white rounded">Switch to Desktop</button>
-    </div>
-  );
-};
-
-const QuickBooksLayout = () => {
-  const { setSkin } = useSkin();
-  return (
-    <div className="p-8 text-center bg-[#2CA01C] h-screen flex flex-col items-center justify-center text-white">
-      <h2 className="text-xl font-bold mb-4">Accountant View</h2>
-      <p className="mb-4">Coming in Phase 5</p>
-      <button onClick={() => setSkin('current')} className="px-4 py-2 bg-white text-[#2CA01C] rounded font-bold">Switch to Standard View</button>
+      <button onClick={() => setSkin('current')} className="px-4 py-2 bg-blue-600 text-white rounded">Switch to Standard View</button>
     </div>
   );
 };
@@ -38,15 +27,16 @@ const AdvancedGraphLayout = () => {
 };
 
 export const App = () => {
-  const { activeSkin } = useSkin();
-
+  const { activeSkin } = useSkin(); // Route based on skin selection
   switch (activeSkin) {
     case 'mobile':
       return <MobileLayout />;
     case 'quickbooks':
       return <QuickBooksLayout />;
+    case 'heather':
+      return <HeatherLayout />;
     case 'advanced-graph':
-      return <AdvancedGraphLayout />;
+      return <StandardLayout />; // Fallback until implemented
     case 'current':
     default:
       return <StandardLayout />;

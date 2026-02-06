@@ -4,7 +4,7 @@
 
 import { ThemePreference } from '../contexts/ThemeContext';
 
-export type SkinType = 'current' | 'mobile' | 'quickbooks' | 'advanced-graph';
+export type SkinType = 'current' | 'mobile' | 'quickbooks' | 'heather' | 'advanced-graph';
 
 export interface Skin {
     id: SkinType;
@@ -36,6 +36,13 @@ export const SKINS: Record<SkinType, Skin> = {
         description: 'Familiar layout for accounting professionals used to QuickBooks Online.',
         features: ['Left sidebar tree', 'Green accent theme', 'Register view', 'Keyboard shortcuts'],
         bestFor: 'Accounting and bookkeeping tasks'
+    },
+    heather: {
+        id: 'heather',
+        name: 'Heather (Repository Fork)',
+        description: 'Project Merge & Collaboration View',
+        features: ['GitHub Integration', 'Fork Instructions', 'Merge Prep'],
+        bestFor: 'Collaborators, Developers'
     },
     'advanced-graph': {
         id: 'advanced-graph',

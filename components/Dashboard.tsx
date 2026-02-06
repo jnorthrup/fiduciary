@@ -195,7 +195,9 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
                 <div className="space-y-2">
                   <button onClick={() => openWizard('1099')} className="w-full text-left text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded border">Create 1099</button>
                   <button onClick={() => openWizard('SETTLEMENT')} className="w-full text-left text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded border">Settlement Engine</button>
-                  <button onClick={() => openWizard('BOFA_ADMIN')} className="w-full text-left text-xs p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200">BOFA Admin Panel</button>
+                  {store.accounts.some(a => a.name.toLowerCase().includes('bank of america') || a.name.toLowerCase().includes('bof')) && (
+                    <button onClick={() => openWizard('BOFA_ADMIN')} className="w-full text-left text-xs p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200">BOFA Admin Panel</button>
+                  )}
                   <button onClick={() => openWizard('BASELANE_ADMIN')} className="w-full text-left text-xs p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded border border-indigo-200">Baselane Admin Panel</button>
                 </div>
               </div>
