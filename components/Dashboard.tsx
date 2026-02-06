@@ -42,7 +42,6 @@ import { ChanceryWizard } from './ChanceryWizard';
 import { TenNinetyNineWizard } from './TenNinetyNineWizard';
 import { AccountReconciliationWizard } from './AccountReconciliationWizard';
 import { MARADAuthorityWizard } from './MARADAuthorityWizard';
-import { CAFRViewer } from './CAFRViewer';
 import { APDashboard } from './APDashboard';
 import { BofaBalanceWidget } from './BofaBalanceWidget';
 import { BofaAdminPanel } from './BofaAdminPanel';
@@ -195,21 +194,29 @@ export const Dashboard: React.FC<Props> = ({ entity, onOpenApiConsole, onEditEnt
                 <div className="space-y-2">
                   <button onClick={() => openWizard('1099')} className="w-full text-left text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded border">Create 1099</button>
                   <button onClick={() => openWizard('SETTLEMENT')} className="w-full text-left text-xs p-2 bg-slate-50 hover:bg-slate-100 rounded border">Settlement Engine</button>
-                  {store.accounts.some(a => a.name.toLowerCase().includes('bank of america') || a.name.toLowerCase().includes('bof')) && (
+                  {store.accounts.some(a => a.vendor === 'BOFA') && (
                     <button onClick={() => openWizard('BOFA_ADMIN')} className="w-full text-left text-xs p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded border border-blue-200">BOFA Admin Panel</button>
                   )}
-                  <button onClick={() => openWizard('BASELANE_ADMIN')} className="w-full text-left text-xs p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded border border-indigo-200">Baselane Admin Panel</button>
+                  {store.accounts.some(a => a.vendor === 'BASELANE') && (
+                    <button onClick={() => openWizard('BASELANE_ADMIN')} className="w-full text-left text-xs p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded border border-indigo-200">Baselane Admin Panel</button>
+                  )}
                 </div>
               </div>
-              <div className="h-96">
-                <BofaBalanceWidget />
-              </div>
-              <div className="h-96">
-                <BaselanePropertyWidget />
-              </div>
-              <div className="h-96">
-                <BaselaneRentWidget />
-              </div>
+              {store.accounts.some(a => a.vendor === 'BOFA') && (
+                <div className="h-96">
+                  <BofaBalanceWidget />
+                </div>
+              )}
+              {store.accounts.some(a => a.vendor === 'BASELANE') && (
+                <>
+                  <div className="h-96">
+                    <BaselanePropertyWidget />
+                  </div>
+                  <div className="h-96">
+                    <BaselaneRentWidget />
+                  </div>
+                </>
+              )}
               <div className="h-96">
                 <APDashboard entity={entity} onSettlementClick={() => openWizard('SETTLEMENT')} />
               </div>

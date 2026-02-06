@@ -24,6 +24,7 @@ export {
   AccountType,
   DCFlag,
   type AccountClass,
+  type VendorType,
   type Account,
   type JournalLine,
   type JournalEntry,
