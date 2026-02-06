@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { LedgerProvider } from './services/ledgerService';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { SkinProvider } from './contexts/SkinContext';
 import { Loader2 } from 'lucide-react';
 import './styles/theme.css';
 
@@ -22,7 +23,9 @@ if (container) {
     <Suspense fallback={<LoadingScreen />}>
       <ThemeProvider>
         <LedgerProvider>
-          <App />
+          <SkinProvider>
+            <App />
+          </SkinProvider>
         </LedgerProvider>
       </ThemeProvider>
     </Suspense>

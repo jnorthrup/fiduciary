@@ -11,6 +11,14 @@
  */
 
 import { BaseAdapter } from './BaseAdapter';
+import {
+  BankingProvider,
+  TransactionType,
+  TransactionDirection,
+  TransactionStatus,
+  AccountStatus,
+  UnifiedAccountType,
+} from '../../types/banking';
 import type {
   AdapterCapabilities,
   ProviderHealthStatus,
@@ -21,12 +29,6 @@ import type {
   AccountFilters,
   TransactionFilters,
   BankingErrorCode,
-  BankingProvider,
-  TransactionType,
-  TransactionDirection,
-  TransactionStatus,
-  AccountStatus,
-  UnifiedAccountType,
 } from '../../types/banking';
 
 /**

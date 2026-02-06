@@ -84,6 +84,7 @@ export enum DCFlag {
 }
 
 export interface Account {
+  isActive: any;
   id: string;
   entityId: string;
   code: string;
@@ -254,6 +255,9 @@ export interface User {
   department?: string;
   phoneNumber?: string;
   isPrivate?: boolean;
+  // Skin & Theme Preferences
+  skin?: 'current' | 'mobile' | 'quickbooks' | 'advanced-graph';
+  themePreference?: 'light' | 'dark' | 'auto';
 }
 
 export type IRSFormType = '56' | '2848' | 'SSA-89' | 'Trust-Description' | '1041' | '941' | '940' | 'W-2' | 'W-8BEN' | 'T-1' | '9779' | 'Credit-Elect' | '15103' | 'Unpostable' | '668-W' | 'CP-2000' | 'Probate' | '8822-B';
@@ -303,6 +307,7 @@ export interface FuzzConfig {
 }
 
 export interface SystemSettings {
+  layoutMode: string;
   fuzzing: FuzzConfig;
   network: string;
   firebaseConfig?: {

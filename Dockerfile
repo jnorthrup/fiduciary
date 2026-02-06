@@ -17,7 +17,7 @@ RUN apk add --no-cache dumb-init
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /app
 
@@ -86,7 +86,7 @@ RUN apk add --no-cache dumb-init
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+  adduser -S nodejs -u 1001
 
 WORKDIR /app
 
@@ -109,5 +109,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Use dumb-init to handle signals properly (prevents zombie processes)
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the server
-CMD ["node", "index.js"]
+# Start the server with tsx to handle TypeScript imports
+CMD ["npx", "tsx", "index.js"]

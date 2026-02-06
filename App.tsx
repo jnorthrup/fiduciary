@@ -1,218 +1,54 @@
 
-import React, { useState } from 'react';
-import { useLedgerStore } from './services/ledgerService';
-import { Sidebar } from './components/Sidebar';
-import { LaunchScreen } from './components/LaunchScreen';
-import { SystemOverview } from './components/SystemOverview';
-import { Dashboard } from './components/Dashboard';
-import { SettingsModal } from './components/modals/SettingsModal';
-import { IRSApiConsole } from './components/IRSApiConsole';
-import { IRMTreeWidget } from './components/IRMTreeWidget';
-import { UserProfileModal } from './components/modals/UserProfileModal';
-import { TwoFactorAuthModal } from './components/modals/TwoFactorAuthModal';
-import { User } from './types';
-import { ReceiptCaptureWizard } from './components/ReceiptCaptureWizard';
-import { FedGateway } from './components/FedGateway'; // Reusing FedGateway logic via context if needed, or opening Dashboard tab
-import { ACHMovementWizard } from './components/ACHMovementWizard';
-import { LLCContractorForm } from './components/forms/LLCContractorForm';
-import { X } from 'lucide-react';
+import React from 'react';
+import { useSkin } from './contexts/SkinContext';
+import { StandardLayout } from './components/layouts/StandardLayout';
 
-const WizardModalWrapper: React.FC<{ children: React.ReactNode; onClose: () => void }> = ({ children, onClose }) => (
-  <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
-    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] overflow-hidden relative">
-      <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 bg-slate-100 rounded-full hover:bg-slate-200">
-        <X />
-      </button>
-      {children}
-    </div>
-  </div>
-);
-
-export const App = () => {
-  const store = useLedgerStore();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeEntityId, setActiveEntityId] = useState<string | null>(null);
-  
-  // State for immediate wizard launch
-  const [autoLaunchWizard, setAutoLaunchWizard] = useState(false);
-
-  // Modal states
-  const [showSettings, setShowSettings] = useState(false);
-  const [showApiConsole, setShowApiConsole] = useState(false);
-  const [showIRM, setShowIRM] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-
-  // Quick Action Modal States
-  const [quickAction, setQuickAction] = useState<'Invoice' | 'Receipt' | 'Payment' | 'Wire' | null>(null);
-
-  // Derived state
-  const activeEntity = activeEntityId ? store.entities.find((e: any) => e.id === activeEntityId) : null;
-
-  if (!store.currentUser.name) {
-    return (
-      <LaunchScreen 
-        onLaunch={store.setInitialOwner}
-        onJimProfile={store.loadJimProfile}
-        onSyntheticFuzz={store.loadSyntheticFuzz}
-        onResumePersistent={store.resumePersistent}
-        onCreditUnionLaunch={() => {
-            store.setInitialOwner("System Administrator", "admin@charter.net");
-            setAutoLaunchWizard(true);
-        }}
-        canResume={store.canResume}
-      />
-    );
-  }
-
-  // Quick Action Handlers
-  const closeQuickAction = () => setQuickAction(null);
-
+// Placeholder layouts for future phases
+const MobileLayout = () => {
+  const { setSkin } = useSkin();
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-900">
-      <Sidebar 
-        activeEntityId={activeEntityId}
-        onSelectEntity={setActiveEntityId}
-        onOpenIRM={() => setShowIRM(true)}
-        onOpenSettings={() => setShowSettings(true)}
-        entities={store.entities}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        currentUser={store.currentUser}
-        users={store.users}
-        onAddUser={store.addUser}
-        onUpdateUser={store.updateUser}
-        onDeleteUser={store.deleteUser}
-        onEditUser={setEditingUser}
-        // Quick Actions
-        onQuickInvoice={() => setQuickAction('Invoice')}
-        onQuickReceipt={() => setQuickAction('Receipt')}
-        onQuickPayment={() => setQuickAction('Payment')}
-        onQuickWire={() => setQuickAction('Wire')}
-      />
-
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {activeEntity ? (
-          <Dashboard 
-            entity={activeEntity} 
-            onOpenApiConsole={() => setShowApiConsole(true)}
-            onEditEntity={setActiveEntityId}
-          />
-        ) : (
-          <SystemOverview 
-            entities={store.entities}
-            accounts={store.accounts}
-            journals={store.journals}
-            wallets={store.wallets}
-            onUpdateEntity={store.updateEntity}
-            onAddEntity={store.addEntity}
-            onDeleteEntity={store.deleteEntity}
-            initialWizard={autoLaunchWizard}
-          />
-        )}
-      </div>
-
-      {/* QUICK ACTION MODALS (Global Context) */}
-      {activeEntity && quickAction === 'Receipt' && (
-          <ReceiptCaptureWizard 
-              entityId={activeEntity.id} 
-              accounts={store.accounts}
-              onPost={(d, m, t, l) => store.postJournal(activeEntity.id, d, m, t, l)}
-              onClose={closeQuickAction}
-          />
-      )}
-
-      {activeEntity && quickAction === 'Wire' && (
-          <WizardModalWrapper onClose={closeQuickAction}>
-              <FedGateway 
-                  entity={activeEntity}
-                  fedWires={store.fedWires}
-                  crmPeople={store.crmPeople}
-                  onOriginate={store.onOriginate}
-                  onPostJournal={store.postJournal}
-              />
-          </WizardModalWrapper>
-      )}
-
-      {activeEntity && quickAction === 'Payment' && (
-          <WizardModalWrapper onClose={closeQuickAction}>
-              <ACHMovementWizard 
-                  entity={activeEntity}
-                  onOriginate={store.originateACH}
-              />
-          </WizardModalWrapper>
-      )}
-
-      {activeEntity && quickAction === 'Invoice' && (
-          <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden relative">
-                  <button onClick={closeQuickAction} className="absolute top-4 right-4 z-50 p-2 bg-slate-100 rounded-full hover:bg-slate-200"><X/></button>
-                  <LLCContractorForm 
-                      entityId={activeEntity.id}
-                      contractors={store.contractors}
-                      modules={store.modules}
-                      onSubmit={(d, a, c, m, memo) => {
-                          // Inverted logic for AR (Invoice Creation) vs AP (Contractor Pay)
-                          // Ideally we'd have a separate AR form, reusing this for simplicity as a "Bill"
-                          store.postJournal(activeEntity.id, d, memo, 'INVOICE_GEN', [
-                              { accountCode: '110000', dc: 'Debit', amount: a, accountName: 'Accounts Receivable' },
-                              { accountCode: '400000', dc: 'Credit', amount: a, accountName: 'Sales Revenue' }
-                          ]);
-                          closeQuickAction();
-                      }}
-                  />
-                  <div className="bg-indigo-50 p-4 text-center text-xs font-bold text-indigo-700">
-                      Generating Revenue Invoice (Accounts Receivable)
-                  </div>
-              </div>
-          </div>
-      )}
-
-
-      {/* Modals & Overlays */}
-      {store.is2FAOpen && (
-        <TwoFactorAuthModal 
-          onVerify={store.verify2FA}
-          onCancel={store.cancel2FA}
-        />
-      )}
-
-      {showSettings && (
-        <SettingsModal 
-          onClose={() => setShowSettings(false)}
-          onExport={() => JSON.stringify(store, null, 2)}
-          onImport={store.importData}
-          onReset={store.resetData}
-        />
-      )}
-
-      {showApiConsole && (
-        <IRSApiConsole 
-          transmissions={store.transmissions}
-          systemStatus={store.apiSystemStatus}
-          searchResults={store.searchResults}
-          isSearching={store.isSearching}
-          onSearch={store.performGroundingSearch}
-          onClose={() => setShowApiConsole(false)}
-        />
-      )}
-
-      <IRMTreeWidget 
-        isOpen={showIRM}
-        onClose={() => setShowIRM(false)}
-        entities={store.entities}
-        documents={store.documents}
-        onFileAll={() => {}}
-      />
-
-      {editingUser && (
-        <UserProfileModal 
-          user={editingUser}
-          currentUser={store.currentUser}
-          onSave={(u) => { store.updateUser(u); setEditingUser(null); }}
-          onDelete={(id) => { store.deleteUser(id); setEditingUser(null); }}
-          onClose={() => setEditingUser(null)}
-        />
-      )}
+    <div className="p-8 text-center bg-slate-100 h-screen flex flex-col items-center justify-center">
+      <h2 className="text-xl font-bold mb-4">Mobile Layout</h2>
+      <p className="mb-4">Coming in Phase 4</p>
+      <button onClick={() => setSkin('current')} className="px-4 py-2 bg-blue-600 text-white rounded">Switch to Desktop</button>
     </div>
   );
+};
+
+const QuickBooksLayout = () => {
+  const { setSkin } = useSkin();
+  return (
+    <div className="p-8 text-center bg-[#2CA01C] h-screen flex flex-col items-center justify-center text-white">
+      <h2 className="text-xl font-bold mb-4">Accountant View</h2>
+      <p className="mb-4">Coming in Phase 5</p>
+      <button onClick={() => setSkin('current')} className="px-4 py-2 bg-white text-[#2CA01C] rounded font-bold">Switch to Standard View</button>
+    </div>
+  );
+};
+
+const AdvancedGraphLayout = () => {
+  const { setSkin } = useSkin();
+  return (
+    <div className="p-8 text-center bg-slate-900 h-screen flex flex-col items-center justify-center text-white">
+      <h2 className="text-xl font-bold mb-4">Data Analyst Layout</h2>
+      <p className="mb-4">Coming in Phase 6</p>
+      <button onClick={() => setSkin('current')} className="px-4 py-2 bg-indigo-500 text-white rounded">Back to Dashboard</button>
+    </div>
+  );
+};
+
+export const App = () => {
+  const { activeSkin } = useSkin();
+
+  switch (activeSkin) {
+    case 'mobile':
+      return <MobileLayout />;
+    case 'quickbooks':
+      return <QuickBooksLayout />;
+    case 'advanced-graph':
+      return <AdvancedGraphLayout />;
+    case 'current':
+    default:
+      return <StandardLayout />;
+  }
 };

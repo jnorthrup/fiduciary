@@ -29,7 +29,7 @@
   - [x] Sub-task: Add theme transition animation
   - [x] Sub-task: Test theme switching across all components
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 1 Theme'
+- [~] Task: Conductor - User Manual Verification 'Phase 1 Theme'
 
 ---
 

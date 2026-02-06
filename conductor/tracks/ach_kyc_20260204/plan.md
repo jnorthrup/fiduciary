@@ -14,7 +14,7 @@
 - [x] Task: Implement and verify config types [7cdfdba]
     - [x] Ensure tests pass (Green)
     - [x] Commit: `feat(banking): Register ACHQ and STRIPE provider types`
-- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ---
 

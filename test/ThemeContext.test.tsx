@@ -6,22 +6,12 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, renderHook } from '@testing-library/react';
-import { ThemeProvider, useTheme, ThemeContext } from '../contexts/ThemeContext';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 
 describe('ThemeContext', () => {
-    // Mock localStorage
-    let mockLocalStorage: Record<string, string> = {};
-
     beforeEach(() => {
-        mockLocalStorage = {};
-        vi.spyOn(Storage.prototype, 'getItem').mockImplementation(
-            (key: string) => mockLocalStorage[key] || null
-        );
-        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(
-            (key: string, value: string) => {
-                mockLocalStorage[key] = value;
-            }
-        );
+        // Clear localStorage before each test (uses global mock from setup.ts)
+        localStorage.clear();
 
         // Mock matchMedia for prefers-color-scheme
         Object.defineProperty(window, 'matchMedia', {
@@ -236,11 +226,11 @@ describe('ThemeContext', () => {
                 result.current.setTheme('dark');
             });
 
-            expect(mockLocalStorage['theme-preference']).toBe('dark');
+            expect(localStorage.getItem('theme-preference')).toBe('dark');
         });
 
         it('should load theme preference from localStorage on mount', () => {
-            mockLocalStorage['theme-preference'] = 'dark';
+            localStorage.setItem('theme-preference', 'dark');
 
             const { result } = renderHook(() => useTheme(), {
                 wrapper: ThemeProvider,

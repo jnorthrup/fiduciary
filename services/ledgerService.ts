@@ -216,6 +216,7 @@ type LedgerContextType = LedgerDb & {
   setInitialOwner: (name: string, email: string) => void;
 
   loadSyntheticFuzz?: () => void;  // Demo only (DEV mode)
+  loadJimProfile?: () => void;     // Demo only (DEV mode)
   resumePersistent: () => void;
   wipeSession: () => void;
 
@@ -738,6 +739,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
         const mockData = await import('./mockData');
         setDb({ ...EMPTY_DB, entities: mockData.FUZZ_ENTITIES, accounts: mockData.FUZZ_ACCOUNTS, journals: mockData.FUZZ_JOURNALS });
         const u = { id: uuidv4(), name: "Synthetic Operator", email: "ai@fuzznet.local", role: 'Owner' as types.UserRole, avatarInitials: "AI", lastActive: 'Now', _version: '1' };
+        setCurrentUser(u); addItem('users', u);
+      },
+      loadJimProfile: async () => {
+        const mockData = await import('./mockData');
+        setDb({ ...EMPTY_DB, entities: mockData.JIM_ENTITIES, accounts: mockData.JIM_ACCOUNTS, journals: mockData.JIM_JOURNALS, modules: mockData.JIM_MODULES, filings: mockData.JIM_FILINGS, contractors: mockData.SEED_CONTRACTORS });
+        const u = { id: 'auth-env-standard', name: "James R. Standard Jr.", email: "admin@trust-ledger.system", role: 'Owner' as types.UserRole, avatarInitials: "JS", lastActive: 'Now', _version: '1' };
         setCurrentUser(u); addItem('users', u);
       }
     } : {}),
