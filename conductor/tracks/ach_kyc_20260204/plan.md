@@ -4,16 +4,16 @@
 
 ## Phase 1: Core Types & Provider Registration
 
-- [ ] Task: Extend `BankingProvider` enum with `ACHQ` and `STRIPE` in `types/banking/core.ts`
-    - [ ] Add `ACHQ = 'achq'` and `STRIPE = 'stripe'` to enum
-    - [ ] Add `AchqConfig` and `StripeConfig` interfaces extending `ProviderConfig`
-    - [ ] Update `types/banking/index.ts` exports
-- [ ] Task: Write tests for new provider config types
-    - [ ] Unit tests validating AchqConfig and StripeConfig shape and defaults
-    - [ ] Confirm tests fail (Red)
-- [ ] Task: Implement and verify config types
-    - [ ] Ensure tests pass (Green)
-    - [ ] Commit: `feat(banking): Register ACHQ and STRIPE provider types`
+- [x] Task: Extend `BankingProvider` enum with `ACHQ` and `STRIPE` in `types/banking/core.ts`
+    - [x] Add `ACHQ = 'achq'` and `STRIPE = 'stripe'` to enum
+    - [x] Add `AchqConfig` and `StripeConfig` interfaces extending `ProviderConfig`
+    - [x] Update `types/banking/index.ts` exports
+- [x] Task: Write tests for new provider config types [7cdfdba]
+    - [x] Unit tests validating AchqConfig and StripeConfig shape and defaults
+    - [x] Confirm tests fail (Red)
+- [x] Task: Implement and verify config types [7cdfdba]
+    - [x] Ensure tests pass (Green)
+    - [x] Commit: `feat(banking): Register ACHQ and STRIPE provider types`
 - [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ---
