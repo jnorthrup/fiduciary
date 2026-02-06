@@ -70,16 +70,26 @@ class GCSPersistence {
      */
     async saveData(uid, component, data) {
         const fileName = `${uid}/${component}.json`;
+        const shouldEncrypt = ['clearflow', 'clearflow-auth', 'clearflow-audit'].includes(component);
+        const key = process.env.CLEARFLOW_ENCRYPTION_KEY;
 
         if (this.useLocalStorage) {
             const localPath = this._getLocalPath(fileName);
-            fs.writeFileSync(localPath, JSON.stringify(data, null, 2));
+            let payload = JSON.stringify(data, null, 2);
+            if (shouldEncrypt && key) {
+                payload = JSON.stringify(this._encryptPayload(payload, key));
+            }
+            fs.writeFileSync(localPath, payload);
             console.info(`Saved ${fileName} to local storage`);
             return;
         }
 
         const file = this.bucket.file(fileName);
-        await file.save(JSON.stringify(data, null, 2), {
+        let payload = JSON.stringify(data, null, 2);
+        if (shouldEncrypt && key) {
+            payload = JSON.stringify(this._encryptPayload(payload, key));
+        }
+        await file.save(payload, {
             contentType: 'application/json',
             resumable: false,
         });
@@ -95,13 +105,19 @@ class GCSPersistence {
      */
     async loadData(uid, component) {
         const fileName = `${uid}/${component}.json`;
+        const shouldEncrypt = ['clearflow', 'clearflow-auth', 'clearflow-audit'].includes(component);
+        const key = process.env.CLEARFLOW_ENCRYPTION_KEY;
 
         if (this.useLocalStorage) {
             const localPath = this._getLocalPath(fileName);
             if (!fs.existsSync(localPath)) return null;
             try {
                 const content = fs.readFileSync(localPath, 'utf-8');
-                return JSON.parse(content);
+                const raw = JSON.parse(content);
+                if (shouldEncrypt && key && raw?.ciphertext) {
+                    return JSON.parse(this._decryptPayload(raw, key));
+                }
+                return raw;
             } catch (error) {
                 console.error(`Error loading ${fileName} from local storage:`, error.message);
                 return null;
@@ -114,7 +130,11 @@ class GCSPersistence {
             if (!exists) return null;
 
             const [content] = await file.download();
-            return JSON.parse(content.toString());
+            const raw = JSON.parse(content.toString());
+            if (shouldEncrypt && key && raw?.ciphertext) {
+                return JSON.parse(this._decryptPayload(raw, key));
+            }
+            return raw;
         } catch (error) {
             console.error(`Error loading ${fileName} from GCS:`, error.message);
             return null;
@@ -129,6 +149,31 @@ class GCSPersistence {
     async listComponents(uid) {
         const [files] = await this.bucket.getFiles({ prefix: `${uid}/` });
         return files.map(file => path.basename(file.name, '.json'));
+    }
+
+    _encryptPayload(payload, key) {
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(key, 'hex'), iv);
+        const encrypted = Buffer.concat([cipher.update(payload, 'utf8'), cipher.final()]);
+        const tag = cipher.getAuthTag();
+        return {
+            ciphertext: encrypted.toString('base64'),
+            iv: iv.toString('base64'),
+            tag: tag.toString('base64'),
+            enc: 'aes-256-gcm'
+        };
+    }
+
+    _decryptPayload(wrapper, key) {
+        const iv = Buffer.from(wrapper.iv, 'base64');
+        const tag = Buffer.from(wrapper.tag, 'base64');
+        const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(key, 'hex'), iv);
+        decipher.setAuthTag(tag);
+        const decrypted = Buffer.concat([
+            decipher.update(Buffer.from(wrapper.ciphertext, 'base64')),
+            decipher.final()
+        ]);
+        return decrypted.toString('utf8');
     }
 
     // =========================================================================

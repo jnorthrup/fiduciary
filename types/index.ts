@@ -129,6 +129,12 @@ export {
   type SSAStatement,
 } from './payroll';
 
+// Theme Domain
+export {
+  type ThemeMode,
+  type ThemeTokens,
+} from './theme';
+
 // System Domain
 export {
   type SystemStatus,

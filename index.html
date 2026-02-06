@@ -4,11 +4,103 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Trust Ledger System</title>
+    <title>Clear.Flow | Ledger + Rail</title>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              skin: {
+                bg: 'var(--color-bg)',
+                'bg-muted': 'var(--color-bg-muted)',
+                surface: 'var(--color-surface)',
+                'surface-alt': 'var(--color-surface-alt)',
+                text: 'var(--color-text)',
+                'text-muted': 'var(--color-text-muted)',
+                primary: 'var(--color-primary)',
+                'primary-hover': 'var(--color-primary-hover)',
+                accent: 'var(--color-accent)',
+                border: 'var(--color-border)',
+                ring: 'var(--color-ring)',
+                success: 'var(--color-success)',
+                warning: 'var(--color-warning)',
+                danger: 'var(--color-danger)'
+              }
+            },
+            boxShadow: {
+              'skin-sm': 'var(--shadow-sm)',
+              'skin-md': 'var(--shadow-md)',
+              'skin-lg': 'var(--shadow-lg)'
+            },
+            borderRadius: {
+              'skin-sm': 'var(--radius-sm)',
+              'skin-md': 'var(--radius-md)',
+              'skin-lg': 'var(--radius-lg)',
+              'skin-xl': 'var(--radius-xl)'
+            },
+            fontFamily: {
+              sans: ['var(--font-sans)', 'Inter', 'sans-serif'],
+              mono: ['var(--font-mono)', 'JetBrains Mono', 'monospace']
+            }
+          }
+        }
+      };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-      body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+      body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
+      code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
+      .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+      @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.5); } 50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.8); } }
+      .pulse-glow { animation: pulse-glow 2s infinite; }
+      :root {
+        --color-bg: #f8fafc;
+        --color-bg-muted: #f1f5f9;
+        --color-surface: #ffffff;
+        --color-surface-alt: #e2e8f0;
+        --color-text: #0f172a;
+        --color-text-muted: #475569;
+        --color-primary: #2563eb;
+        --color-primary-hover: #1d4ed8;
+        --color-accent: #14b8a6;
+        --color-border: #cbd5e1;
+        --color-ring: #93c5fd;
+        --color-success: #16a34a;
+        --color-warning: #d97706;
+        --color-danger: #dc2626;
+        --font-sans: 'Sora';
+        --font-mono: 'JetBrains Mono';
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 14px;
+        --radius-xl: 18px;
+        --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+        --shadow-md: 0 8px 20px rgba(15, 23, 42, 0.12);
+        --shadow-lg: 0 20px 45px rgba(15, 23, 42, 0.18);
+      }
+      [data-theme="dark"] {
+        --color-bg: #0b1220;
+        --color-bg-muted: #0f172a;
+        --color-surface: #111827;
+        --color-surface-alt: #1f2937;
+        --color-text: #f8fafc;
+        --color-text-muted: #94a3b8;
+        --color-primary: #60a5fa;
+        --color-primary-hover: #3b82f6;
+        --color-accent: #2dd4bf;
+        --color-border: #1e293b;
+        --color-ring: #38bdf8;
+        --color-success: #22c55e;
+        --color-warning: #f59e0b;
+        --color-danger: #f87171;
+        --shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.4);
+        --shadow-md: 0 10px 26px rgba(2, 6, 23, 0.5);
+        --shadow-lg: 0 24px 48px rgba(2, 6, 23, 0.6);
+      }
     </style>
   <script type="importmap">
 {
@@ -26,12 +118,16 @@
     "firebase/app": "https://esm.sh/firebase@10.12.2/app",
     "firebase/firestore": "https://esm.sh/firebase@10.12.2/firestore",
     "firebase/auth": "https://esm.sh/firebase@10.12.2/auth",
-    "firebase/": "https://esm.sh/firebase@^12.7.0/"
+    "firebase/": "https://esm.sh/firebase@^12.7.0/",
+    "redoc": "https://esm.sh/redoc@2.0.0"
   }
 }
 </script>
-</head>
-  <body>
+    <link rel="stylesheet" href="https://esm.sh/redoc@2.0.0/bundles/redoc.standalone.css">
+    <!-- Google Identity Services for Gmail OAuth -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
   </body>

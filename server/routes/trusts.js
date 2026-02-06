@@ -159,6 +159,110 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * POST /api/trusts/demo/seed
+ * Seed demo trusts + trustees for the authenticated user (development only)
+ */
+router.post('/demo/seed', async (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({
+            error: 'forbidden',
+            message: 'Demo seed is disabled in production'
+        });
+    }
+
+    try {
+        const uid = req.user.uid;
+        const state = await getTrustsState(uid);
+        const now = new Date().toISOString();
+
+        const createdTrusts = [];
+        const createdTrustees = [];
+
+        const demoTrusts = [
+            {
+                legalNameFull: 'Northwind Family Trust',
+                dateOfTrust: '2012-05-14',
+                ein: '12-3456789',
+                situsState: 'DE',
+                mailingAddress: {
+                    street1: '100 Bay St',
+                    city: 'Wilmington',
+                    state: 'DE',
+                    postalCode: '19801'
+                }
+            },
+            {
+                legalNameFull: 'Acacia Charitable Trust',
+                dateOfTrust: '2018-09-22',
+                ein: '98-7654321',
+                situsState: 'NV',
+                mailingAddress: {
+                    street1: '455 Spring Ave',
+                    city: 'Reno',
+                    state: 'NV',
+                    postalCode: '89501'
+                }
+            }
+        ];
+
+        for (const trust of demoTrusts) {
+            const trustId = randomUUID();
+            const newTrust = {
+                trustId,
+                ...trust,
+                status: TRUST_STATUS.ACTIVE,
+                createdAt: now,
+                updatedAt: now
+            };
+            state.trusts[trustId] = newTrust;
+            createdTrusts.push(newTrust);
+
+            if (!state.trustees[trustId]) state.trustees[trustId] = {};
+
+            const trustee1Id = randomUUID();
+            const trustee2Id = randomUUID();
+
+            const trustee1 = {
+                trusteeId: trustee1Id,
+                trustId,
+                fullName: 'Morgan Wells',
+                role: TRUSTEE_ROLES.CO_TRUSTEE,
+                independentSigningAuthority: true,
+                authorityBasisDocId: null,
+                status: TRUST_STATUS.ACTIVE,
+                createdAt: now,
+                updatedAt: now
+            };
+
+            const trustee2 = {
+                trusteeId: trustee2Id,
+                trustId,
+                fullName: 'Casey Rivera',
+                role: TRUSTEE_ROLES.AUTHORIZED_SIGNATORY,
+                independentSigningAuthority: false,
+                authorityBasisDocId: null,
+                status: TRUST_STATUS.ACTIVE,
+                createdAt: now,
+                updatedAt: now
+            };
+
+            state.trustees[trustId][trustee1Id] = trustee1;
+            state.trustees[trustId][trustee2Id] = trustee2;
+            createdTrustees.push(trustee1, trustee2);
+        }
+
+        await saveTrustsState(uid, state);
+
+        return res.status(201).json({
+            trusts: createdTrusts,
+            trustees: createdTrustees
+        });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/trusts/:trustId
  * Get a trust profile
  */

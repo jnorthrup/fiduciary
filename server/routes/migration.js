@@ -8,7 +8,7 @@
  */
 
 import express from 'express';
-import { rollbackMigration } from '../lib/migrateStateToJSONL.js';
+import { rollbackMigration } from '../lib/migrateStateToJSONL.ts';
 
 const router = express.Router();
 

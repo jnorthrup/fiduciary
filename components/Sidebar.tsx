@@ -12,7 +12,9 @@ interface SidebarProps {
   onSelectEntity: (id: string | null) => void;
   onOpenIRM: () => void;
   onOpenSettings: () => void;
-  onOpenGraph: () => void;
+  onOpenGraph?: () => void;
+  activeSection?: string;
+  onNavigateSection?: (id: string) => void;
   entities: Entity[];
   isOpen: boolean;
   onClose: () => void;
@@ -39,7 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUser, users, onAddUser, onUpdateUser, onDeleteUser, onEditUser,
   onTeachModeChange,
   onQuickInvoice, onQuickReceipt, onQuickPayment, onQuickWire, onQuick1099,
-  onOpenGraph, onToggleLayout, onOpenScanner
+  onOpenGraph, onToggleLayout, onOpenScanner, activeSection, onNavigateSection
 }) => {
   const [showTeamModal, setShowTeamModal] = useState(false);
 
@@ -49,6 +51,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const handleSelect = (id: string | null, name: string) => {
     UseCaseLogger.log('UI', 'Sidebar Navigation', { target: name, id });
     onSelectEntity(id);
+    onClose();
+  };
+
+  const handleSection = (id: string, label: string) => {
+    if (!onNavigateSection) return;
+    UseCaseLogger.log('UI', 'Sidebar Navigation', { target: label, id });
+    onNavigateSection(id);
     onClose();
   };
 
@@ -91,6 +100,63 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto no-scrollbar">
+
+          {/* WORKSPACE */}
+          {onNavigateSection && (
+            <div className="space-y-2">
+              <p className="px-4 text-[10px] font-bold text-emerald-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                Workspace
+              </p>
+              <NavItem
+                label="Home"
+                icon={LayoutDashboard}
+                active={activeSection === 'Home'}
+                onClick={() => handleSection('Home', 'Home')}
+              />
+              <NavItem
+                label="Banking"
+                icon={Landmark}
+                active={activeSection === 'Banking'}
+                onClick={() => handleSection('Banking', 'Banking')}
+              />
+              <NavItem
+                label="Accounting"
+                icon={CreditCard}
+                active={activeSection === 'Accounting'}
+                onClick={() => handleSection('Accounting', 'Accounting')}
+              />
+              <NavItem
+                label="Documents"
+                icon={FileText}
+                active={activeSection === 'Documents'}
+                onClick={() => handleSection('Documents', 'Documents')}
+              />
+              <NavItem
+                label="Reports"
+                icon={Database}
+                active={activeSection === 'Reports'}
+                onClick={() => handleSection('Reports', 'Reports')}
+              />
+              <NavItem
+                label="Compliance"
+                icon={ShieldCheck}
+                active={activeSection === 'Compliance'}
+                onClick={() => handleSection('Compliance', 'Compliance')}
+              />
+              <NavItem
+                label="Operations"
+                icon={Building2}
+                active={activeSection === 'Operations'}
+                onClick={() => handleSection('Operations', 'Operations')}
+              />
+              <NavItem
+                label="Legal"
+                icon={FileBadge}
+                active={activeSection === 'Legal'}
+                onClick={() => handleSection('Legal', 'Legal')}
+              />
+            </div>
+          )}
 
           {/* BANKING OPS - Prioritized */}
           {activeEntityId && (
