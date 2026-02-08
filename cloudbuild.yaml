@@ -35,7 +35,7 @@ steps:
       - 'push'
       - 'gcr.io/fiduciary-prod/trust-ledger-fullstack'
 
-  # 4. Deploy to Cloud Run
+  # 5. Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -50,8 +50,18 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--memory'
-      - '512Mi'
+      - '1Gi'
+      - '--cpu'
+      - '1'
+      - '--timeout'
+      - '300'
+      - '--concurrency'
+      - '80'
+      - '--max-instances'
+      - '10'
       - '--set-env-vars'
-      - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=fiduciary-prod'
+      - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=fiduciary-prod,PORT=3001'
+      - '--health-check-path'
+      - '/api/health'
 
 # NOTE: No 'images:' section needed - buildpacks publish directly via --publish flag

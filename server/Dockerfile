@@ -27,12 +27,12 @@ RUN mkdir -p public && chown -R nodejs:nodejs /app
 # Switch to non-root user
 USER nodejs
 
-# Expose port
-EXPOSE 3000
+# Expose port (Cloud Run uses PORT env var, default 3001)
+EXPOSE 3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
+# Health check (use /api/health which is the actual endpoint)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD node -e "const h=require('http');h.get('http://localhost:3001/api/health',(r)=>{r.statusCode===200?process.exit(0):process.exit(1)}).on('error',()=>process.exit(1))"
 
 # Start server with dumb-init
 ENTRYPOINT ["dumb-init", "--"]
