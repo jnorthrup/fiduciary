@@ -61,7 +61,5 @@ steps:
       - '10'
       - '--set-env-vars'
       - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=fiduciary-prod,PORT=3001'
-      - '--health-check-path'
-      - '/api/health'
 
 # NOTE: No 'images:' section needed - buildpacks publish directly via --publish flag
