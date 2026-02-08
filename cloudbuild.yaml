@@ -19,16 +19,21 @@ steps:
       mkdir -p server/public
       cp -r dist/* server/public/
 
-  # 3. Build & Publish Container (Cloud Native Buildpacks)
-  #    "We are serverless" -> No Dockerfile required.
-  - name: 'gcr.io/k8s-skaffold/pack'
-    entrypoint: 'pack'
+  # 3. Build & Publish Container using Docker
+  - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '-t'
       - 'gcr.io/fiduciary-prod/trust-ledger-fullstack'
-      - '--builder=gcr.io/buildpacks/builder:google-22'
-      - '--path=./server'
-      - '--publish'
+      - '-f'
+      - './server/Dockerfile'
+      - './server'
+
+  # 4. Push Container
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/fiduciary-prod/trust-ledger-fullstack'
 
   # 4. Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
