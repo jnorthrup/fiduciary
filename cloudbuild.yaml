@@ -48,6 +48,8 @@ steps:
       - 'us-central1'
       - '--platform'
       - 'managed'
+      - '--port'
+      - '8080'
       - '--allow-unauthenticated'
       - '--memory'
       - '1Gi'
