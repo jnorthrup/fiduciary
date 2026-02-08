@@ -2,8 +2,9 @@ import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
-// Force GCS mode for persistence tests (must be before gcs-persistence import)
-process.env.NODE_ENV = 'production';
+// Set test environment - use 'development' for React 19 JSX runtime compatibility
+// Note: GCS persistence tests should mock NODE_ENV locally if they need production behavior
+process.env.NODE_ENV = 'development';
 process.env.GOOGLE_APPLICATION_CREDENTIALS = '/fake/path.json';
 delete process.env.USE_LOCAL_PERSISTENCE;
 
@@ -19,7 +20,7 @@ import { webcrypto } from 'node:crypto';
 
 // Polyfill Web Crypto API for jsdom
 if (!global.crypto) {
-  // @ts-ignore
+  // @ts-expect-error - webcrypto type mismatch with Crypto
   global.crypto = webcrypto;
 }
 

@@ -48,8 +48,11 @@ export default defineConfig({
       ],
     },
   },
-  // Define DEV for tests (treat tests as development mode)
+  // Define mode for tests - critical for React 19 JSX runtime
+  mode: 'development',
   define: {
-    'import.meta.env.DEV': true
+    'import.meta.env.DEV': JSON.stringify(true),
+    'import.meta.env.MODE': JSON.stringify('development'),
+    'process.env.NODE_ENV': JSON.stringify('development')
   }
 });

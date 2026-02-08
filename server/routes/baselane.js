@@ -9,7 +9,7 @@
 import express from 'express';
 import { BaselaneService } from '../services/baselaneService.js';
 import { syncPropertiesToEntities } from '../services/baselaneMapping.js';
-import { getBaselaneConfig } from '../services/baselaneSecrets.js';
+import { getBaselaneCredentials as getBaselaneConfig } from '../services/baselaneSecrets.js';
 
 const router = express.Router();
 

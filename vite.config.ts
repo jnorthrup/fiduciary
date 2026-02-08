@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => {
   const dev = isDev(mode);
 
   return {
+    base: './',
     server: {
       port: Number(env.VITE_PORT) || 3000,
       host: env.VITE_HOST || '0.0.0.0',

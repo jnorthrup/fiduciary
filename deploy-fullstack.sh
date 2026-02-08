@@ -28,25 +28,32 @@ TAG=$(git rev-parse --short HEAD)
 echo -e "${GREEN}Deploying Fullstack App to Cloud Run ($PROJECT_ID)...${NC}"
 
 # 1. Build & Push Image
-echo -e "${BLUE}Building Docker image (Frontend + Backend)...${NC}"
-# Use root context because Dockerfile needs root package.json and server/
-docker build -f server/Dockerfile -t $IMAGE_NAME:$TAG -t $IMAGE_NAME:latest .
+# 1. Build & Push Image (Cloud Build)
+echo -e "${BLUE}Building & Pushing with Cloud Build...${NC}"
+gcloud builds submit --tag $IMAGE_NAME:$TAG .
+gcloud container images add-tag $IMAGE_NAME:$TAG $IMAGE_NAME:latest --quiet
 
-echo -e "${BLUE}Pushing Docker image...${NC}"
-docker push $IMAGE_NAME:$TAG
-docker push $IMAGE_NAME:latest
-
-# 2. Deploy infrastructure via Terraform
-echo -e "${BLUE}Applying Terraform...${NC}"
-cd infra/gcp
-terraform init
-terraform apply -auto-approve \
-  -var="project_id=$PROJECT_ID" \
-  -var="region=$REGION" \
-  -var="service_name=$SERVICE_NAME" \
-  -var="image_url=$IMAGE_NAME:$TAG"
+# 2. Deploy
+if command -v terraform &> /dev/null; then
+  echo -e "${BLUE}Applying Terraform...${NC}"
+  cd infra/gcp
+  terraform init
+  terraform apply -auto-approve \
+    -var="project_id=$PROJECT_ID" \
+    -var="region=$REGION" \
+    -var="service_name=$SERVICE_NAME" \
+    -var="image_url=$IMAGE_NAME"
+else
+  echo -e "${BLUE}Terraform not found. Falling back to direct Cloud Run deployment...${NC}"
+  gcloud run deploy $SERVICE_NAME \
+    --image $IMAGE_NAME:latest \
+    --platform managed \
+    --region $REGION \
+    --project $PROJECT_ID \
+    --allow-unauthenticated
+fi
 
 # 3. Get URL
 echo -e "${GREEN}Deployment Complete!${NC}"
-URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --format 'value(status.url)')
+URL=$(gcloud run services describe $SERVICE_NAME --platform managed --region $REGION --project $PROJECT_ID --format 'value(status.url)')
 echo -e "Service URL: ${GREEN}$URL${NC}"

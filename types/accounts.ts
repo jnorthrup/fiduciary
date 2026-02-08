@@ -18,9 +18,13 @@ export enum DCFlag {
 
 export type AccountClass = 'Debit' | 'Credit';
 
+
+export type VendorType = 'BOFA' | 'BASELANE' | 'CHASE' | 'WELLS_FARGO' | 'UNKNOWN';
+
 export interface Account {
   id: string;
   entityId: string;
+  vendor?: VendorType;
   code: string;
   name: string;
   type: AccountType;
