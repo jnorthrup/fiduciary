@@ -1,0 +1,8 @@
+{
+  "id": "lastrust",
+  "name": "Personal Finance",
+  "description": "Personal finance management with tracking and insights",
+  "icon": "DollarSign",
+  "color": "#059669",
+  "entryPoint": "/index-lastrust.html"
+}

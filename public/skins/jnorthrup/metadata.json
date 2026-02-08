@@ -1,0 +1,8 @@
+{
+  "id": "jnorthrup",
+  "name": "Trust Ledger Classic",
+  "description": "Full-featured trust ledger with NACHA, banking, and settlement operations",
+  "icon": "Building2",
+  "color": "#1e40af",
+  "entryPoint": "/index.html"
+}

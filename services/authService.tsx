@@ -1,169 +1,232 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import {
-    getAuth,
-    signInWithPopup,
-    signOut as firebaseSignOut,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    User
-} from 'firebase/auth';
-import { initializeApp, getApps } from 'firebase/app';
-import { cryptoService } from './cryptoService';
-import { logger } from './logger';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { apiGet, apiPost, clearAuthToken, getAuthToken, setAuthToken } from './apiClient';
 
-interface AuthUser {
-    uid: string;
-    displayName: string | null;
-    email: string | null;
-    photoURL: string | null;
-    emailVerified: boolean;
-}
+const LOCAL_USERS_KEY = 'clearflow_users';
+const LOCAL_CURRENT_USER_KEY = 'clearflow_current_user';
+const LOCAL_BOOTSTRAP_USER = {
+    email: 'lastrust8808@gmail.com',
+    password: 'Khlas8808$$',
+    role: 'admin'
+};
+const GOOGLE_CLIENT_KEY = 'clearflow_google_client_id';
+
+const CACHED_PROFILE_KEY = 'clearflow_cached_profile';
+const CACHED_EMAIL_KEY = 'clearflow_cached_email';
+const AUTH_DB_NAME = 'clearflow-auth';
+const AUTH_STORE = 'profiles';
+const AUTH_PROFILE_KEY = 'current';
+
+const openAuthDb = () => {
+    return new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(AUTH_DB_NAME, 1);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(AUTH_STORE)) {
+                db.createObjectStore(AUTH_STORE);
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+};
+
+const saveCachedProfile = async (profile: any) => {
+    if (!profile) return;
+    try {
+        localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify(profile));
+        if (profile.email) {
+            localStorage.setItem(CACHED_EMAIL_KEY, profile.email);
+        }
+        const db = await openAuthDb();
+        await new Promise<void>((resolve, reject) => {
+            const tx = db.transaction(AUTH_STORE, 'readwrite');
+            tx.objectStore(AUTH_STORE).put(profile, AUTH_PROFILE_KEY);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+        db.close();
+    } catch {
+        // ignore cache errors
+    }
+};
+
+const readLocalUsers = () => {
+    try {
+        const raw = localStorage.getItem(LOCAL_USERS_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch {
+        return [];
+    }
+};
+
+const writeLocalUsers = (users: any[]) => {
+    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+};
+
+const setLocalCurrentUser = (user: any) => {
+    localStorage.setItem(LOCAL_CURRENT_USER_KEY, JSON.stringify(user));
+};
+
+const getLocalCurrentUser = () => {
+    try {
+        const raw = localStorage.getItem(LOCAL_CURRENT_USER_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
 
 interface AuthContextType {
-    user: AuthUser | null;
-    encryptionKey: CryptoKey | null;
+    user: any | null;
     isLoading: boolean;
-    signIn: () => Promise<void>;
+    signIn: (email: string, password: string) => Promise<void>;
+    signInWithGoogle: (clientId?: string) => Promise<void>;
     signOut: () => Promise<void>;
     isInitialized: boolean;
-    getIdToken: () => Promise<string | null>;
+    isDemo: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Firebase config from environment
-const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
-// Initialize Firebase (singleton)
-const initFirebaseApp = () => {
-    if (getApps().length === 0) {
-        if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-            logger.error('Firebase config missing. Check VITE_FIREBASE_* env vars.');
-            return null;
+const ensureGoogleScript = () => {
+    return new Promise<void>((resolve, reject) => {
+        if ((window as any).google?.accounts?.id) {
+            resolve();
+            return;
         }
-        return initializeApp(firebaseConfig);
-    }
-    return getApps()[0];
+        const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+        if (existing) {
+            existing.addEventListener('load', () => resolve());
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Google Identity Services'));
+        document.head.appendChild(script);
+    });
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<AuthUser | null>(null);
-    const [encryptionKey, setEncryptionKey] = useState<CryptoKey | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState<any | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
-    const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+
+    const loadUser = async () => {
+        const token = getAuthToken();
+        if (!token) {
+            setUser(null);
+            setIsInitialized(true);
+            return;
+        }
+
+        if (token.startsWith('local-')) {
+            const localUser = getLocalCurrentUser();
+            setUser(localUser);
+            await saveCachedProfile(localUser);
+            setIsInitialized(true);
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const me = await apiGet<any>('/auth/me');
+            setUser(me);
+            await saveCachedProfile(me);
+        } catch {
+            clearAuthToken();
+            setUser(null);
+        } finally {
+            setIsLoading(false);
+            setIsInitialized(true);
+        }
+    };
 
     useEffect(() => {
-        const app = initFirebaseApp();
-        if (!app) {
-            setIsLoading(false);
-            setIsInitialized(true);
-            return;
-        }
-
-        const auth = getAuth(app);
-
-        // Listen for auth state changes (handles page refresh, session restore)
-        const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-            if (fbUser) {
-                // Real Google profile data from the wire
-                const authUser: AuthUser = {
-                    uid: fbUser.uid,
-                    displayName: fbUser.displayName,
-                    email: fbUser.email,
-                    photoURL: fbUser.photoURL,
-                    emailVerified: fbUser.emailVerified,
-                };
-                setUser(authUser);
-                setFirebaseUser(fbUser);
-
-                // Derive encryption key from uid
-                const salt = new TextEncoder().encode('ledger-static-salt-' + fbUser.uid);
-                const key = await cryptoService.deriveKey(fbUser.uid, salt);
-                setEncryptionKey(key);
-
-                logger.info('User authenticated', {
-                    uid: fbUser.uid,
-                    email: fbUser.email,
-                    photoURL: fbUser.photoURL ? 'present' : 'none'
-                });
-            } else {
-                setUser(null);
-                setFirebaseUser(null);
-                setEncryptionKey(null);
-            }
-            setIsLoading(false);
-            setIsInitialized(true);
-        });
-
-        return () => unsubscribe();
+        loadUser();
     }, []);
 
-    const signIn = async () => {
-        const app = initFirebaseApp();
-        if (!app) {
-            logger.error('Cannot sign in: Firebase not initialized');
-            return;
-        }
-
+    const signIn = async (email: string, password: string) => {
         setIsLoading(true);
         try {
-            const auth = getAuth(app);
-            const provider = new GoogleAuthProvider();
-
-            // Request profile scope to ensure we get photo/name
-            provider.addScope('profile');
-            provider.addScope('email');
-
-            await signInWithPopup(auth, provider);
-            // onAuthStateChanged will handle the user state update
-        } catch (error: any) {
-            logger.error('Sign in failed', { error: error.message, code: error.code });
+            const response = await apiPost<any>('/auth/login', { email, password });
+            const token = response?.token || response?.access_token || response?.jwt;
+            if (!token) {
+                throw new Error('Login response missing token');
+            }
+            setAuthToken(token);
+            const me = await apiGet<any>('/auth/me');
+            setUser(me);
+            setLocalCurrentUser(me);
+            await saveCachedProfile(me);
+            return;
+        } catch (err) {
+            const users = readLocalUsers();
+            if (users.length === 0) {
+                writeLocalUsers([LOCAL_BOOTSTRAP_USER]);
+            }
+            const updatedUsers = readLocalUsers();
+            const matched = updatedUsers.find((u: any) => u.email === email && u.password === password);
+            if (!matched) throw err;
+            const localUser = { email: matched.email, role: matched.role || 'admin' };
+            setAuthToken(`local-${Date.now()}`);
+            setLocalCurrentUser(localUser);
+            setUser(localUser);
+            await saveCachedProfile(localUser);
+        } finally {
             setIsLoading(false);
-            throw error;
+        }
+    };
+
+    const signInWithGoogle = async (clientId?: string) => {
+        const resolvedClientId = clientId || localStorage.getItem(GOOGLE_CLIENT_KEY) || '';
+        if (!resolvedClientId) {
+            throw new Error('Google client ID not configured');
+        }
+        localStorage.setItem(GOOGLE_CLIENT_KEY, resolvedClientId);
+        setIsLoading(true);
+        try {
+            await ensureGoogleScript();
+            const google = (window as any).google;
+            const credential: string = await new Promise((resolve, reject) => {
+                google.accounts.id.initialize({
+                    client_id: resolvedClientId,
+                    callback: (response: any) => {
+                        if (response?.credential) resolve(response.credential);
+                        else reject(new Error('No Google credential received'));
+                    }
+                });
+                google.accounts.id.prompt();
+            });
+
+            const response = await apiPost<any>('/auth/google', { credential, client_id: resolvedClientId });
+            const token = response?.token;
+            if (!token) throw new Error('Missing token from Google auth');
+            setAuthToken(token);
+            const me = await apiGet<any>('/auth/me');
+            setUser(me);
+            setLocalCurrentUser(me);
+            await saveCachedProfile(me);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const signOut = async () => {
-        const app = initFirebaseApp();
-        if (!app) return;
-
         try {
-            const auth = getAuth(app);
-            await firebaseSignOut(auth);
-            // onAuthStateChanged will handle clearing user state
-        } catch (error: any) {
-            logger.error('Sign out failed', { error: error.message });
+            await apiPost('/auth/logout');
+        } catch {
+            // ignore
         }
-    };
-
-    const getIdToken = async (): Promise<string | null> => {
-        if (!firebaseUser) return null;
-        try {
-            return await firebaseUser.getIdToken();
-        } catch (error) {
-            logger.error('Failed to get ID token', { error });
-            return null;
-        }
+        clearAuthToken();
+        setUser(null);
+        localStorage.removeItem(LOCAL_CURRENT_USER_KEY);
     };
 
     return (
-        <AuthContext.Provider value={{
-            user,
-            encryptionKey,
-            isLoading,
-            signIn,
-            signOut,
-            isInitialized,
-            getIdToken
-        }}>
+        <AuthContext.Provider value={{ user, isLoading, signIn, signInWithGoogle, signOut, isInitialized, isDemo: !user }}>
             {children}
         </AuthContext.Provider>
     );
@@ -174,3 +237,9 @@ export const useAuth = () => {
     if (!context) throw new Error('useAuth must be used within AuthProvider');
     return context;
 };
+
+
+
+
+
+

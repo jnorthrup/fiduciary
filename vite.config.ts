@@ -41,6 +41,11 @@ export default defineConfig(({ mode }) => {
       },
       rollupOptions: {
         external: ['@google/genai'],
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          lastrust: path.resolve(__dirname, 'index-lastrust.html'),
+          unified: path.resolve(__dirname, 'index-unified.html'),
+        },
         output: {
           manualChunks: (id) => {
             // React ecosystem
