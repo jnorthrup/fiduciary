@@ -222,10 +222,11 @@ const Table: React.FC<{ columns: string[]; rows: any[]; empty?: string; renderCe
   </div>
 );
 const LoginPage: React.FC = () => {
-  const { signIn, isLoading } = useAuth();
+  const { signIn, signInWithGoogle, isLoading } = useAuth();
   const { push } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const googleEnabled = String(import.meta.env.VITE_FIREBASE_ENABLED || '').toLowerCase() === 'true' && !!import.meta.env.VITE_FIREBASE_CONFIG;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -1743,3 +1744,4 @@ export const App: React.FC = () => {
     </ToastProvider>
   );
 };
+

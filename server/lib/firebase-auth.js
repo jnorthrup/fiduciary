@@ -32,24 +32,38 @@ export async function verifyFirebaseToken(req, res, next) {
 
   const token = authHeader.slice('Bearer '.length).trim();
 
-  if (process.env.NODE_ENV !== 'production' && token === 'dev-token') {
-    req.user = { uid: 'dev-user-local', email: 'dev@localhost' };
+  try {
+    const decoded = await verifyFirebaseTokenValue(token);
+    req.user = decoded;
     return next();
+  } catch (err) {
+    return res.status(err?.status || 403).json({
+      error: err?.code || 'forbidden',
+      message: err?.message || 'Invalid ID token'
+    });
+  }
+}
+
+export async function verifyFirebaseTokenValue(token) {
+  if (process.env.NODE_ENV !== 'production' && token === 'dev-token') {
+    return { uid: 'dev-user-local', email: 'dev@localhost' };
   }
 
   ensureFirebaseAdmin();
   if (!firebaseReady) {
-    return res.status(503).json({
-      error: 'auth_unavailable',
-      message: 'Firebase auth not initialized. Use dev-token in development.',
-    });
+    const error = new Error('Firebase auth not initialized. Use dev-token in development.');
+    error.code = 'auth_unavailable';
+    error.status = 503;
+    throw error;
   }
 
   try {
     const decoded = await admin.auth().verifyIdToken(token);
-    req.user = decoded;
-    return next();
+    return decoded;
   } catch (err) {
-    return res.status(403).json({ error: 'forbidden', message: 'Invalid ID token' });
+    const error = new Error('Invalid ID token');
+    error.code = 'forbidden';
+    error.status = 403;
+    throw error;
   }
 }

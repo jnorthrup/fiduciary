@@ -1,6 +1,7 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
 import { apiGet, apiPost, clearAuthToken, getAuthToken, setAuthToken } from './apiClient';
+import { initFirebase, getFirebaseAuth } from './firebase';
 
 const LOCAL_USERS_KEY = 'clearflow_users';
 const LOCAL_CURRENT_USER_KEY = 'clearflow_current_user';
@@ -36,17 +37,38 @@ const getLocalCurrentUser = () => {
     }
 };
 
+const parseFirebaseConfig = () => {
+    const enabled = String(import.meta.env.VITE_FIREBASE_ENABLED || '').toLowerCase() === 'true';
+    if (!enabled) return null;
+    const raw = import.meta.env.VITE_FIREBASE_CONFIG;
+    if (!raw) return null;
+    try {
+        return typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch {
+        return null;
+    }
+};
+
+let firebaseInitialized = false;
+const ensureFirebase = () => {
+    if (firebaseInitialized) return;
+    const config = parseFirebaseConfig();
+    if (!config) return;
+    firebaseInitialized = initFirebase(config);
+};
+
 interface AuthContextType {
     user: any | null;
     isLoading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
+    signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;
     isInitialized: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode, config?: any }> = ({ children, config }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode, config?: any }> = ({ children }) => {
     const [user, setUser] = useState<any | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
@@ -80,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode, config?: any }>
     };
 
     useEffect(() => {
+        ensureFirebase();
         loadUser();
     }, []);
 
@@ -114,9 +137,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode, config?: any }>
         }
     };
 
+    const signInWithGoogle = async () => {
+        ensureFirebase();
+        const auth = getFirebaseAuth();
+        if (!auth) {
+            throw new Error('Google auth not configured');
+        }
+        setIsLoading(true);
+        try {
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            const token = await result.user.getIdToken();
+            setAuthToken(token);
+            try {
+                const me = await apiGet<any>('/auth/me');
+                setUser(me);
+                setLocalCurrentUser(me);
+            } catch {
+                const fallbackUser = {
+                    id: result.user.uid,
+                    email: result.user.email,
+                    role: 'viewer'
+                };
+                setUser(fallbackUser);
+                setLocalCurrentUser(fallbackUser);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const signOut = async () => {
         try {
             await apiPost('/auth/logout');
+        } catch {
+            // ignore
+        }
+        try {
+            const auth = getFirebaseAuth();
+            if (auth) {
+                await firebaseSignOut(auth);
+            }
         } catch {
             // ignore
         }
@@ -126,7 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode, config?: any }>
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, signIn, signOut, isInitialized }}>
+        <AuthContext.Provider value={{ user, isLoading, signIn, signInWithGoogle, signOut, isInitialized }}>
             {children}
         </AuthContext.Provider>
     );

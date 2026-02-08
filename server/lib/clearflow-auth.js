@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { loadAuthState, saveAuthState } from './clearflow-store.js';
+import { verifyFirebaseTokenValue } from './firebase-auth.js';
 
 const BOOTSTRAP_EMAIL = 'lastrust8808@gmail.com';
 const BOOTSTRAP_PASSWORD = 'Khlas8808$$';
@@ -99,14 +100,24 @@ export function authMiddleware() {
     }
     try {
       const session = await findSession(token);
-      if (!session) return res.status(401).json({ error: 'unauthorized' });
+      if (session) {
+        req.user = {
+          id: session.user.id,
+          email: session.user.email,
+          role: session.user.role,
+          uid: session.user.id
+        };
+        return next();
+      }
+
+      const decoded = await verifyFirebaseTokenValue(token);
       req.user = {
-        id: session.user.id,
-        email: session.user.email,
-        role: session.user.role,
-        uid: session.user.id
+        id: decoded.uid,
+        email: decoded.email || 'google-user',
+        role: 'viewer',
+        uid: decoded.uid
       };
-      next();
+      return next();
     } catch (err) {
       res.status(401).json({ error: 'unauthorized' });
     }
