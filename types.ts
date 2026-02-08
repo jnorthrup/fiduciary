@@ -68,6 +68,18 @@ export interface Entity {
     financingAssurances: boolean;
     programStatus: string;
   };
+  w9OnFile?: boolean;
+  cotOnFile?: boolean;
+  coeOnFile?: boolean;
+  cp575OnFile?: boolean;
+  isAffiliated?: boolean;
+  lendingEnabled?: boolean;
+  memo?: string;
+  docRefs?: string[];
+  verifyEmail?: string;
+  verifyPhone?: string;
+  verifyAuthApp?: boolean;
+  status?: string;
 }
 
 export enum AccountType {

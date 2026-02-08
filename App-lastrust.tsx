@@ -22,6 +22,7 @@ import {
 import { usePlaidLink } from 'react-plaid-link';
 import { useAuth } from './services/authService';
 import { apiGet, apiPost } from './services/apiClient';
+import { useLedgerStore } from './services/ledgerService';
 
 type ToastType = 'success' | 'error' | 'info';
 type Toast = { id: string; type: ToastType; message: string };
@@ -428,39 +429,38 @@ const ChartCard: React.FC<{ title: string; series: any[] }> = ({ title, series }
 const DashboardPage: React.FC = () => {
   const { push } = useToast();
   const { navigate } = useRouteContext();
-  const [cash, setCash] = useState<any>(null);
-  const [transit, setTransit] = useState<any>(null);
-  const [ap, setAp] = useState<any>(null);
-  const [cashSeries, setCashSeries] = useState<any[]>([]);
-  const [transitSeries, setTransitSeries] = useState<any[]>([]);
+  const store = useLedgerStore();
+
+  // Select first entity as active if none selected
+  const activeEntity = store.entities[0];
+  const activeEntityId = activeEntity?.id;
+
+  const totals = activeEntityId ? store.getAccountTotals(activeEntityId) : null;
+
+  // In jnorthrup, balances are derived from store
+  // For lastrust dashboard, we map store data to its visual components
+  const cash = totals ? totals.breakdown['Asset'] || 0 : 0;
+  const transit = 0; // Simplified for now
+  const ap = totals ? totals.breakdown['Liability'] || 0 : 0;
+
+  // Use placeholder series or derive from journals if needed
+  const cashSeries = store.journals
+    .filter(j => j.entityId === activeEntityId)
+    .map(j => ({ value: j.lines.reduce((acc, l) => acc + (l.dc === 'Debit' ? l.amount : -l.amount), 0) }));
+
+  const transitSeries: any[] = [];
 
   const load = async () => {
-    try {
-      const results = await Promise.allSettled([
-        apiGet('/ledger/balance/cash'),
-        apiGet('/ledger/balance/transit'),
-        apiGet('/ledger/balance/ap'),
-        apiGet('/ledger/series/cash'),
-        apiGet('/ledger/series/transit')
-      ]);
-
-      const [c, t, a, cs, ts] = results;
-
-      if (c.status === 'fulfilled') setCash(c.value);
-      if (t.status === 'fulfilled') setTransit(t.value);
-      if (a.status === 'fulfilled') setAp(a.value);
-      if (cs.status === 'fulfilled') setCashSeries(cs.value as any[]);
-      if (ts.status === 'fulfilled') setTransitSeries(ts.value as any[]);
-
-      // If any failed, show a single consolidated toast
-      const failures = results.filter(r => r.status === 'rejected');
-      if (failures.length > 0) {
-        push('error', 'Dashboard partially failed to load live data.');
-      }
-    } catch (e: any) {
-      push('error', 'Failed to load dashboard');
-    }
+    // No-op for now as LedgerProvider handles loading
+    // We can still trigger a sync or check if needed
   };
+
+  useEffect(() => {
+    if (store.entities.length === 0) {
+      push('info', 'No entities found. Seeding default...');
+      store.addEntity('', 'LLC' as any, 'OPERATING_LLC' as any, 'Default Entity');
+    }
+  }, [store.entities.length]);
 
   useEffect(() => {
     load();
@@ -492,37 +492,37 @@ const DashboardPage: React.FC = () => {
 };
 const LedgerAccountsPage: React.FC<{ canAdmin: boolean }> = ({ canAdmin }) => {
   const { push } = useToast();
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [form, setForm] = useState({ code: '', name: '', type: 'Asset' });
+  const store = useLedgerStore();
+  const [form, setForm] = useState({ code: '', name: '', type: 'Asset' as any });
+
+  const accounts = store.accounts;
 
   const load = async () => {
-    const data = await apiGet<any[]>('/ledger/accounts');
-    setAccounts(data || []);
+    // Managed by store
   };
 
-  useEffect(() => {
-    load().catch(() => push('error', 'Failed to load accounts.'));
-  }, [push]);
-
   const handleInit = async () => {
-    try {
-      await apiPost('/ledger/accounts/init-defaults');
-      push('success', 'Default COA initialized.');
-      await load();
-    } catch (err: any) {
-      push('error', err?.payload?.detail || 'COA init failed.');
+    if (store.generateSampleEnterprise) {
+      store.generateSampleEnterprise();
+      push('success', 'Default COA initialized from seeds.');
     }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    try {
-      await apiPost('/ledger/accounts', form);
+    // Match store's expected input
+    const { account, errors } = store.createAccount({
+      entityId: store.entities[0]?.id || '',
+      code: form.code,
+      name: form.name,
+      type: form.type
+    });
+
+    if (account) {
       push('success', 'Account created.');
       setForm({ code: '', name: '', type: 'Asset' });
-      await load();
-    } catch (err: any) {
-      push('error', err?.payload?.detail || 'Failed to create account.');
+    } else {
+      push('error', errors[0]?.message || 'Failed to create account.');
     }
   };
 
@@ -571,31 +571,20 @@ const LedgerAccountsPage: React.FC<{ canAdmin: boolean }> = ({ canAdmin }) => {
 
 const LedgerJournalPage: React.FC = () => {
   const { push } = useToast();
-  const [entries, setEntries] = useState<any[]>([]);
+  const store = useLedgerStore();
   const [filters, setFilters] = useState({ search: '', source_module: '', external_ref: '', date_from: '', date_to: '' });
   const [form, setForm] = useState({
     memo: '',
-    source_module: 'ledger',
-    external_ref: '',
-    entity_id: '',
-    entry_date: '',
-    lines: [{ account_code: '', debit: 0, credit: 0, description: '' }]
+    entry_date: new Date().toISOString().split('T')[0],
+    entityId: '',
+    lines: [{ accountCode: '', dc: 'Debit' as any, amount: 0, description: '' }]
   });
 
-  const load = async () => {
-    const params = new URLSearchParams();
-    if (filters.search) params.set('search', filters.search);
-    if (filters.source_module) params.set('source_module', filters.source_module);
-    if (filters.external_ref) params.set('external_ref', filters.external_ref);
-    if (filters.date_from) params.set('date_from', filters.date_from);
-    if (filters.date_to) params.set('date_to', filters.date_to);
-    const data = await apiGet<any[]>(`/ledger/journal?${params.toString()}`);
-    setEntries(data || []);
-  };
+  const entries = store.journals;
 
-  useEffect(() => {
-    load().catch(() => push('error', 'Failed to load journal entries.'));
-  }, [push]);
+  const load = async () => {
+    // Managed by store
+  };
 
   const updateLine = (index: number, key: string, value: any) => {
     setForm(prev => {
@@ -605,21 +594,30 @@ const LedgerJournalPage: React.FC = () => {
     });
   };
 
-  const addLine = () => setForm(prev => ({ ...prev, lines: [...prev.lines, { account_code: '', debit: 0, credit: 0, description: '' }] }));
+  const addLine = () => setForm(prev => ({ ...prev, lines: [...prev.lines, { accountCode: '', dc: 'Debit' as any, amount: 0, description: '' }] }));
   const removeLine = (index: number) => setForm(prev => ({ ...prev, lines: prev.lines.filter((_, i) => i !== index) }));
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    try {
-      await apiPost('/ledger/journal', {
-        ...form,
-        entity_id: form.entity_id ? Number(form.entity_id) : undefined
-      });
+    // Map lastrust lines to jnorthrup lines
+    const result = store.postJournal(
+      form.entityId || store.entities[0]?.id || '',
+      form.entry_date,
+      form.memo,
+      'ledger',
+      form.lines.map(l => ({ account_code: l.accountCode, dc: l.dc, amount: Number(l.amount), description: l.description }))
+    );
+
+    if (result.success) {
       push('success', 'Journal entry posted.');
-      setForm({ memo: '', source_module: 'ledger', external_ref: '', entity_id: '', entry_date: '', lines: [{ account_code: '', debit: 0, credit: 0, description: '' }] });
-      await load();
-    } catch (err: any) {
-      push('error', err?.payload?.detail || 'Failed to post journal entry.');
+      setForm({
+        memo: '',
+        entry_date: new Date().toISOString().split('T')[0],
+        entityId: '',
+        lines: [{ accountCode: '', dc: 'Debit' as any, amount: 0, description: '' }]
+      });
+    } else {
+      push('error', result.errors[0]?.message || 'Failed to post journal entry.');
     }
   };
 
@@ -627,22 +625,22 @@ const LedgerJournalPage: React.FC = () => {
     <PageShell title="Ledger / Journal" subtitle="Post obligations and journal entries.">
       <LedgerTabs />
       <Card className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <Input placeholder="Search memo/ref" value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} />
-          <Input placeholder="Source module" value={filters.source_module} onChange={e => setFilters({ ...filters, source_module: e.target.value })} />
-          <Input placeholder="External ref" value={filters.external_ref} onChange={e => setFilters({ ...filters, external_ref: e.target.value })} />
-          <Input type="date" value={filters.date_from} onChange={e => setFilters({ ...filters, date_from: e.target.value })} />
-          <Input type="date" value={filters.date_to} onChange={e => setFilters({ ...filters, date_to: e.target.value })} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Input placeholder="Search memo" value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} />
+          <div className="flex gap-2">
+            <Input type="date" value={filters.date_from} onChange={e => setFilters({ ...filters, date_from: e.target.value })} />
+            <Input type="date" value={filters.date_to} onChange={e => setFilters({ ...filters, date_to: e.target.value })} />
+          </div>
         </div>
         <div className="mt-3">
-          <Button type="button" variant="ghost" onClick={() => load()}>
+          <Button type="button" variant="ghost" onClick={() => { }}>
             Apply Filters
           </Button>
         </div>
       </Card>
       <Card className="p-6 space-y-4">
         <h3 className="text-sm font-semibold text-slate-700">Journal Entries</h3>
-        <Table columns={['id', 'entry_date', 'memo', 'source_module', 'external_ref', 'entity_id']} rows={entries} />
+        <Table columns={['id', 'entry_date', 'memo', 'source_module', 'external_ref', 'entityId']} rows={entries} />
       </Card>
       <Card className="p-6">
         <h3 className="text-sm font-semibold text-slate-700 mb-4">Post Journal Entry</h3>
@@ -662,7 +660,7 @@ const LedgerJournalPage: React.FC = () => {
             </div>
             <div className="space-y-2">
               <Label>Entity ID</Label>
-              <Input value={form.entity_id} onChange={e => setForm({ ...form, entity_id: e.target.value })} />
+              <Input value={form.entityId} onChange={e => setForm({ ...form, entityId: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Entry Date</Label>
@@ -672,14 +670,43 @@ const LedgerJournalPage: React.FC = () => {
           <div className="space-y-3">
             <Label>Lines</Label>
             {form.lines.map((line, idx) => (
-              <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-                <Input placeholder="Account Code" value={line.account_code} onChange={e => updateLine(idx, 'account_code', e.target.value)} required />
-                <Input type="number" placeholder="Debit" value={line.debit} onChange={e => updateLine(idx, 'debit', Number(e.target.value))} />
-                <Input type="number" placeholder="Credit" value={line.credit} onChange={e => updateLine(idx, 'credit', Number(e.target.value))} />
-                <Input placeholder="Description" value={line.description} onChange={e => updateLine(idx, 'description', e.target.value)} />
-                <Button type="button" variant="ghost" onClick={() => removeLine(idx)}>
-                  Remove
-                </Button>
+              <div key={idx} className="p-3 border rounded-lg space-y-3">
+                <div className="flex justify-between items-center text-xs text-slate-500">
+                  <span>Line Item #{idx + 1}</span>
+                  <button type="button" onClick={() => removeLine(idx)} className="text-rose-500 hover:text-rose-700">Remove</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label>Account</Label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      value={line.accountCode}
+                      onChange={e => updateLine(idx, 'accountCode', e.target.value)}
+                    >
+                      <option value="">Select Account</option>
+                      {store.accounts.map(a => <option key={a.id} value={a.code}>{a.code} - {a.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Direction</Label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg text-sm"
+                      value={line.dc}
+                      onChange={e => updateLine(idx, 'dc', e.target.value)}
+                    >
+                      <option value="Debit">Debit</option>
+                      <option value="Credit">Credit</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Amount</Label>
+                    <Input type="number" step="0.01" value={line.amount} onChange={e => updateLine(idx, 'amount', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Input value={line.description} onChange={e => updateLine(idx, 'description', e.target.value)} />
+                  </div>
+                </div>
               </div>
             ))}
             <Button type="button" variant="ghost" onClick={addLine}>
@@ -760,7 +787,7 @@ const LedgerReportsPage: React.FC = () => {
           memo: first.memo || `Ledger import ${key}`,
           source_module: 'ledger',
           external_ref: first.external_ref || key,
-          entity_id: first.entity_id ? Number(first.entity_id) : (entityId ? Number(entityId) : undefined),
+          entityId: first.entity_id ? Number(first.entity_id) : (entityId ? Number(entityId) : undefined),
           entry_date: first.entry_date || first.date || new Date().toISOString().split('T')[0],
           lines: lines.map((line) => ({
             account_code: line.account_code || line.account || '',
@@ -995,7 +1022,7 @@ const RailPaymentOrdersPage: React.FC = () => {
                 memo: billPay.memo || `AP Bill - ${billPay.legal_name}`,
                 source_module: 'rail',
                 external_ref: `AP_BILL_${Date.now()}`,
-                entity_id: billPay.entity_id ? Number(billPay.entity_id) : undefined,
+                entityId: billPay.entity_id ? Number(billPay.entity_id) : undefined,
                 entry_date: new Date().toISOString().split('T')[0],
                 lines: [
                   { account_code: '5000', debit: Number(billPay.amount), credit: 0, description: 'Expense' },
@@ -1009,7 +1036,7 @@ const RailPaymentOrdersPage: React.FC = () => {
                   memo: `Opening balance for ${billPay.legal_name}`,
                   source_module: 'ledger',
                   external_ref: `OPEN_BAL_${Date.now()}`,
-                  entity_id: billPay.entity_id ? Number(billPay.entity_id) : undefined,
+                  entityId: billPay.entity_id ? Number(billPay.entity_id) : undefined,
                   entry_date: new Date().toISOString().split('T')[0],
                   lines: [
                     { account_code: '2000', debit: Number(billPay.opening_balance), credit: 0, description: 'Opening A/P' },
@@ -1366,7 +1393,7 @@ const RailBankPage: React.FC = () => {
           <div className="space-y-2">
             <Label>Provider</Label>
             <Select value={bankProvider} onChange={e => setBankProvider(e.target.value)}>
-              {(providers.length ? providers : [{ id: 'wellsfargo', label: 'Wells Fargo Gateway' }]).map((p: any) => (
+              {(providers.length ? providers : [{ id: 'mock', label: 'Mock Provider' }]).map((p: any) => (
                 <option key={p.id} value={p.id}>
                   {p.label || p.id}
                 </option>
@@ -1683,61 +1710,30 @@ const RailWebhookTesterPage: React.FC = () => {
     </PageShell>
   );
 };
-
-const EntitiesPage: React.FC = () => {
+const EntitiesPage: React.FC<{ canAdmin: boolean }> = ({ canAdmin }) => {
   const { push } = useToast();
-  const [entities, setEntities] = useState<any[]>([]);
+  const store = useLedgerStore();
   const [form, setForm] = useState({
     entity_name: '',
-    entity_type: 'MEMBER',
-    is_affiliated: true,
-    lending_enabled: true,
-    memo: '',
-    w9_on_file: false,
-    cot_on_file: false,
-    coe_on_file: false,
-    cp575_on_file: false,
-    doc_refs: '',
-    verify_email: '',
-    verify_phone: '',
-    verify_auth_app: false
+    entity_type: 'LLC' as any,
+    role: 'OPERATING_LLC' as any,
+    name: ''
   });
 
-  const load = async () => {
-    const data = await apiGet<any[]>('/entities');
-    setEntities(data || []);
-  };
+  const entities = store.entities;
 
-  useEffect(() => {
-    load().catch(() => push('error', 'Failed to load entities.'));
-  }, [push]);
+  const load = async () => {
+    // Managed by store
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      await apiPost('/entities', {
-        ...form,
-        doc_refs: form.doc_refs ? form.doc_refs.split(',').map(s => s.trim()) : []
-      });
+      await store.addEntity('', form.entity_type, form.role, form.entity_name);
       push('success', 'Entity created.');
-      setForm({
-        entity_name: '',
-        entity_type: 'MEMBER',
-        is_affiliated: true,
-        lending_enabled: true,
-        memo: '',
-        w9_on_file: false,
-        cot_on_file: false,
-        coe_on_file: false,
-        cp575_on_file: false,
-        doc_refs: '',
-        verify_email: '',
-        verify_phone: '',
-        verify_auth_app: false
-      });
-      await load();
+      setForm({ entity_name: '', entity_type: 'LLC' as any, role: 'OPERATING_LLC' as any, name: '' });
     } catch (err: any) {
-      push('error', err?.payload?.detail || 'Failed to create entity.');
+      push('error', 'Failed to create entity.');
     }
   };
 

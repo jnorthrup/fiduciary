@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiGet, apiPost, clearAuthToken, getAuthToken, setAuthToken } from './apiClient';
-
-const LOCAL_USERS_KEY = 'clearflow_users';
-const LOCAL_CURRENT_USER_KEY = 'clearflow_current_user';
+import { storageService } from './storageService';
 const LOCAL_BOOTSTRAP_USER = {
     email: 'lastrust8808@gmail.com',
     password: 'Khlas8808$$',
@@ -52,25 +50,26 @@ const saveCachedProfile = async (profile: any) => {
 
 const readLocalUsers = () => {
     try {
-        const raw = localStorage.getItem(LOCAL_USERS_KEY);
-        return raw ? JSON.parse(raw) : [];
+        const users = storageService.get<any[]>('auth_users');
+        return users || [];
     } catch {
         return [];
     }
 };
 
 const writeLocalUsers = (users: any[]) => {
-    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(users));
+    storageService.set('auth_users', users);
+    storageService.persist();
 };
 
 const setLocalCurrentUser = (user: any) => {
-    localStorage.setItem(LOCAL_CURRENT_USER_KEY, JSON.stringify(user));
+    storageService.set('auth_current_user', user);
+    storageService.persist();
 };
 
 const getLocalCurrentUser = () => {
     try {
-        const raw = localStorage.getItem(LOCAL_CURRENT_USER_KEY);
-        return raw ? JSON.parse(raw) : null;
+        return storageService.get<any>('auth_current_user');
     } catch {
         return null;
     }
@@ -222,7 +221,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         clearAuthToken();
         setUser(null);
-        localStorage.removeItem(LOCAL_CURRENT_USER_KEY);
+        storageService.remove('auth_current_user');
+        storageService.persist();
     };
 
     return (

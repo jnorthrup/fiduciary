@@ -3,11 +3,16 @@
  * Shows Google OAuth login, then dual-entry splash to select skin
  */
 
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Loader2, Mail } from 'lucide-react';
 import { DualEntrySplash } from './components/DualEntrySplash';
 import { AuthProvider } from './services/authService';
+import { storageService } from './services/storageService';
+import { LedgerProvider } from './services/ledgerService';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { SkinProvider } from './contexts/SkinContext';
+import './styles/theme.css';
 
 // Dynamic imports for lazy loading - wrap with AuthProvider
 const AppClassic = React.lazy(() => import('./App').then(m => ({ default: m.App })));
@@ -28,9 +33,6 @@ interface GoogleUser {
     picture?: string;
 }
 
-const SKIN_STORAGE_KEY = 'fiduciary_selected_skin';
-const USER_STORAGE_KEY = 'fiduciary_google_user';
-
 const UnifiedApp: React.FC = () => {
     const [user, setUser] = useState<GoogleUser | null>(null);
     const [selectedSkin, setSelectedSkin] = useState<'jnorthrup' | 'lastrust' | null>(null);
@@ -39,38 +41,60 @@ const UnifiedApp: React.FC = () => {
 
     // Check for existing session or dev bypass
     useEffect(() => {
-        const storedUser = localStorage.getItem(USER_STORAGE_KEY);
-        const storedSkin = localStorage.getItem(SKIN_STORAGE_KEY) as 'jnorthrup' | 'lastrust' | null;
+        const initStorage = async () => {
+            await storageService.init();
 
-        // Dev mode bypass: ?dev=1 skips OAuth for testing
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('dev') === '1' && !storedUser) {
-            const devUser: GoogleUser = {
-                email: 'dev@test.local',
-                name: 'Dev User',
-            };
-            setUser(devUser);
-            // Set auth token and local user so AuthProvider recognizes the session
-            localStorage.setItem('clearflow_token', 'local-dev-bypass');
-            localStorage.setItem('clearflow_current_user', JSON.stringify({
-                email: 'dev@test.local',
-                role: 'admin'
-            }));
-            setIsLoading(false);
-            return;
-        }
+            const storedUser = storageService.get<GoogleUser>('google_user');
+            const storedSkin = storageService.get<'jnorthrup' | 'lastrust'>('selected_skin');
 
-        if (storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
+            // Dev mode bypass: ?dev=1 skips OAuth for testing
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('dev') === '1' && !storedUser) {
+                const devUser: GoogleUser = {
+                    email: 'dev@test.local',
+                    name: 'Dev User',
+                };
+                setUser(devUser);
+                // Set auth token and local user so AuthProvider recognizes the session
+                storageService.set('auth_token', 'local-dev-bypass');
+                storageService.set('auth_current_user', {
+                    email: 'dev@test.local',
+                    role: 'admin'
+                });
+                await storageService.persist();
+                setIsLoading(false);
+                return;
+            }
+
+            if (storedUser) {
+                setUser(storedUser);
                 if (storedSkin) {
                     setSelectedSkin(storedSkin);
                 }
-            } catch (e) {
-                localStorage.removeItem(USER_STORAGE_KEY);
             }
+            setIsLoading(false);
+        };
+
+        initStorage();
+    }, []);
+
+    const handleCredentialResponse = useCallback((response: any) => {
+        try {
+            // Decode JWT to get user info
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            const googleUser: GoogleUser = {
+                email: payload.email,
+                name: payload.name,
+                picture: payload.picture,
+            };
+            setUser(googleUser);
+            storageService.set('google_user', googleUser);
+            storageService.persist();
+            setLoginError(null);
+        } catch (err) {
+            console.error('Google Auth Parse Error:', err);
+            setLoginError('Failed to process login');
         }
-        setIsLoading(false);
     }, []);
 
     // Initialize Google Sign-In
@@ -103,35 +127,20 @@ const UnifiedApp: React.FC = () => {
         };
 
         loadGoogleSignIn();
-    }, [user]);
-
-    const handleCredentialResponse = (response: any) => {
-        try {
-            // Decode JWT to get user info
-            const payload = JSON.parse(atob(response.credential.split('.')[1]));
-            const googleUser: GoogleUser = {
-                email: payload.email,
-                name: payload.name,
-                picture: payload.picture,
-            };
-            setUser(googleUser);
-            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(googleUser));
-            setLoginError(null);
-        } catch (e) {
-            setLoginError('Failed to process login');
-        }
-    };
+    }, [user, handleCredentialResponse]);
 
     const handleSelectSkin = (skin: 'jnorthrup' | 'lastrust') => {
         setSelectedSkin(skin);
-        localStorage.setItem(SKIN_STORAGE_KEY, skin);
+        storageService.set('selected_skin', skin);
+        storageService.persist();
     };
 
     const handleLogout = () => {
         setUser(null);
         setSelectedSkin(null);
-        localStorage.removeItem(USER_STORAGE_KEY);
-        localStorage.removeItem(SKIN_STORAGE_KEY);
+        storageService.remove('google_user');
+        storageService.remove('selected_skin');
+        storageService.persist();
         (window as any).google?.accounts?.id?.disableAutoSelect();
     };
 
@@ -177,12 +186,18 @@ const UnifiedApp: React.FC = () => {
         );
     }
 
-    // Render selected skin wrapped with AuthProvider
+    // Render selected skin wrapped with necessary providers
     return (
         <AuthProvider>
-            <Suspense fallback={<LoadingScreen />}>
-                {selectedSkin === 'jnorthrup' ? <AppClassic /> : <AppLastrust />}
-            </Suspense>
+            <ThemeProvider>
+                <LedgerProvider>
+                    <SkinProvider>
+                        <Suspense fallback={<LoadingScreen />}>
+                            {selectedSkin === 'jnorthrup' ? <AppClassic /> : <AppLastrust />}
+                        </Suspense>
+                    </SkinProvider>
+                </LedgerProvider>
+            </ThemeProvider>
         </AuthProvider>
     );
 };

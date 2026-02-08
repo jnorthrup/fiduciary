@@ -8,6 +8,7 @@ import { logger } from './logger';
 import { GoogleGenAI } from "@google/genai";
 import { cryptoService } from './cryptoService';
 import * as accountService from './accountService';
+import { storageService } from './storageService';
 
 // Unified State Interface to reduce useState bloat
 interface LedgerDb {
@@ -109,40 +110,26 @@ function createResource<T>(promise: Promise<T>) {
   };
 }
 
-const STORAGE_KEY = 'trust_ledger_state';
-
 // The Async Data Fetcher
 async function fetchLedgerData(key?: CryptoKey): Promise<{ db: LedgerDb, user: types.User, secrets: types.ApiSecrets, settings: types.SystemSettings }> {
-  // 1. Try Local Storage first
-  const saved = localStorage.getItem(STORAGE_KEY);
+  // 1. Initialize Unified Storage
+  await storageService.init();
+
+  // 2. Try Unified Storage first
+  const saved = storageService.get<any>('ledger_state');
   if (saved) {
     try {
-      let data = saved;
-      // If key is provided, attempt to decrypt
-      if (key) {
-        const encrypted: any = JSON.parse(saved);
-        if (encrypted.ciphertext) {
-          data = await cryptoService.decrypt(
-            Uint8Array.from(atob(encrypted.ciphertext), c => c.charCodeAt(0)).buffer,
-            key,
-            new Uint8Array(atob(encrypted.iv).split('').map(c => c.charCodeAt(0)))
-          );
-        }
-      }
-
-      const parsed = JSON.parse(data);
-      // Ensure we merge with EMPTY_DB to ensure all keys exist even if local storage is old
+      const parsed = saved; // Data is already parsed by storageService
+      // Ensure we merge with EMPTY_DB to ensure all keys exist even if storage is old
       const db = { ...EMPTY_DB, ...parsed };
-      // Clean up top-level keys that might have been merged into db by mistake if structure changed, 
-      // but simpler to just return the parsed structure if valid.
       return {
-        db: db, // Assuming the saved object IS the db + extra fields, we extract what we need
+        db: db,
         user: parsed.currentUser || {} as types.User,
         secrets: parsed.secrets || { irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' },
         settings: parsed.settings || { fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' }, network: 'Testnet' }
       };
     } catch (e) {
-      console.error("Local storage corruption, falling back to seed", e);
+      console.error("Storage recovery error, falling back to seed", e);
     }
   }
 
@@ -411,6 +398,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
   const [paginationCursor, setPaginationCursor] = useState<string | null>(null);
   const [paginationLimit] = useState(50); // Default page size
 
+
+
   useEffect(() => {
     fetchLedgerData(encryptionKey).then(data => {
       // SEED DEFAULT ENTITY IF MISSING (QuickBooks Mode)
@@ -588,8 +577,16 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
     return { success: true, errors: [] };
   };
 
-  const addEntity = async (parentId: string, type: types.EntityType, role: types.EntityRole, nameOverride?: string) => {
-    const newEntity: types.Entity = { id: uuidv4(), name: nameOverride || `New ${type}`, type, role, parentEntityId: parentId || null, _version: '1' };
+  const addEntity = async (parentId: string, type: types.EntityType, role: types.EntityRole, nameOverride?: string, metadata?: Partial<types.Entity>) => {
+    const newEntity: types.Entity = {
+      id: uuidv4(),
+      name: nameOverride || `New ${type}`,
+      type,
+      role,
+      parentEntityId: parentId || null,
+      _version: '1',
+      ...metadata
+    };
     addItem('entities', newEntity);
     return newEntity;
   };
@@ -604,17 +601,10 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
 
     const handler = setTimeout(async () => {
       if (currentUser.name || db.entities.length > 0) {
-        const state = JSON.stringify({ ...db, currentUser, secrets, settings });
-        if (encryptionKey) {
-          const { ciphertext, iv } = await cryptoService.encrypt(state, encryptionKey);
-          const encrypted = JSON.stringify({
-            ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
-            iv: btoa(String.fromCharCode(...iv))
-          });
-          localStorage.setItem(STORAGE_KEY, encrypted);
-        } else {
-          localStorage.setItem(STORAGE_KEY, state);
-        }
+        const state = { ...db, currentUser, secrets, settings };
+        storageService.set('ledger_state', state);
+        await storageService.persist();
+
         if (!canResume) setCanResume(true);
       }
     }, 1000);
@@ -716,19 +706,30 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
       const u = { id: uuidv4(), name, email, role: 'Owner' as types.UserRole, avatarInitials: name.substring(0, 2).toUpperCase(), lastActive: 'Now', _version: '1' };
       setCurrentUser(u); addItem('users', u);
     },
-    resumePersistent: () => { const s = localStorage.getItem(STORAGE_KEY); if (s) importData(s); },
+    resumePersistent: () => {
+      const s = storageService.get<any>('ledger_state');
+      if (s) {
+        setDb(s.db || EMPTY_DB);
+        setCurrentUser(s.currentUser || {} as types.User);
+        setSecrets(s.secrets || { irsEtin: '', irsAppId: '', bsoUserId: '', hmacKey: '' });
+        setSettings(s.settings || { fuzzing: { enabled: false, intensity: 'Low', latencyMode: 'Realistic' }, network: 'Testnet' });
+      }
+    },
     wipeSession: () => {
       // 1. Clear Persistence
-      localStorage.removeItem(STORAGE_KEY);
-      sessionStorage.clear(); // Clears all session data including OAuth tokens
+      storageService.remove('ledger_state');
+      storageService.remove('auth_current_user');
+      storageService.remove('google_user');
+      storageService.remove('selected_skin');
+
+      localStorage.clear(); // Legacy cleanup
+      sessionStorage.clear();
 
       // 2. Reset Internal State
       resetData();
       setCanResume(false);
 
       // 3. Log Action
-      // We use the existing logger, but wrapped to match signature/style if needed
-      // Assuming logger.info exists, using console as fallback if needed or just logging to internal log
       console.warn("Factory Reset Executed - Profile/Buckets Abandoned");
       UseCaseLogger.log("SYSTEM", "Factory Reset Executed - Profile/Buckets Abandoned");
     },

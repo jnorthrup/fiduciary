@@ -1,3 +1,5 @@
+import { storageService } from './storageService';
+
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.PROD
@@ -6,15 +8,17 @@ export const API_BASE_URL =
 export const TOKEN_KEY = 'clearflow_token';
 
 export function getAuthToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return storageService.get<string>('auth_token');
 }
 
 export function setAuthToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
+  storageService.set('auth_token', token);
+  storageService.persist();
 }
 
 export function clearAuthToken() {
-  localStorage.removeItem(TOKEN_KEY);
+  storageService.remove('auth_token');
+  storageService.persist();
 }
 
 type ApiOptions = RequestInit & { raw?: boolean };
