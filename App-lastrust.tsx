@@ -1869,9 +1869,12 @@ const navItems = [
 ];
 
 export const App: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, signInWithGoogle } = useAuth();
   const { route, navigate } = useRoute();
-  const isAuthenticated = !!user;
+
+  // Demo Mode: If no user is authenticated, use a transient demo user
+  const effectiveUser = user || { email: 'demo@mode', role: 'viewer', isDemo: true };
+  const isAuthenticated = true; // Always true in Demo Mode
 
   useEffect(() => {
     if (!isAuthenticated && route !== '/login') {
@@ -1959,13 +1962,23 @@ export const App: React.FC = () => {
               ))}
             </nav>
             <div className="p-4 border-t border-slate-900">
-              <button
-                onClick={() => signOut()}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-900"
-              >
-                <span>Sign out</span>
-                <LogOut size={16} />
-              </button>
+              {effectiveUser.isDemo ? (
+                <button
+                  onClick={() => signInWithGoogle()}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-900"
+                >
+                  <span>Sign in with Google</span>
+                  <LogOut size={16} className="rotate-180" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => signOut()}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-900"
+                >
+                  <span>Sign out</span>
+                  <LogOut size={16} />
+                </button>
+              )}
             </div>
           </aside>
 
@@ -1978,12 +1991,12 @@ export const App: React.FC = () => {
               </div>
               <div className="flex items-center gap-4 text-sm text-slate-500">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-semibold">
-                    {(user?.email || 'U').slice(0, 2).toUpperCase()}
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold ${effectiveUser.isDemo ? 'bg-slate-700 text-slate-300' : 'bg-slate-900 text-white'}`}>
+                    {(effectiveUser.email || 'U').slice(0, 2).toUpperCase()}
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-slate-900 font-semibold">{user?.email || 'User'}</div>
-                    <div className="text-xs text-slate-400 uppercase">{role}</div>
+                    <div className="text-sm text-slate-900 font-semibold">{effectiveUser.email || 'User'}</div>
+                    <div className="text-xs text-slate-400 uppercase">{effectiveUser.role}</div>
                   </div>
                 </div>
               </div>

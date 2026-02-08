@@ -83,6 +83,7 @@ interface AuthContextType {
     signInWithGoogle: (clientId?: string) => Promise<void>;
     signOut: () => Promise<void>;
     isInitialized: boolean;
+    isDemo: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -225,7 +226,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, signIn, signInWithGoogle, signOut, isInitialized }}>
+        <AuthContext.Provider value={{ user, isLoading, signIn, signInWithGoogle, signOut, isInitialized, isDemo: !user }}>
             {children}
         </AuthContext.Provider>
     );

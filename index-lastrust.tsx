@@ -1,6 +1,7 @@
 
 import React, { Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
+import { AuthProvider } from './services/authService';
 import { App } from './App-lastrust';
 import { Loader2 } from 'lucide-react';
 
@@ -17,7 +18,9 @@ if (container) {
     const root = createRoot(container);
     root.render(
         <Suspense fallback={<LoadingScreen />}>
-            <App />
+            <AuthProvider>
+                <App />
+            </AuthProvider>
         </Suspense>
     );
 }
