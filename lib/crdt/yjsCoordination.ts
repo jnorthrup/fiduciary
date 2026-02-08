@@ -4,7 +4,7 @@
  */
 
 import * as Y from 'yjs';
-import IndexedDB from 'y-indexeddb';
+import { IndexeddbPersistence } from 'y-indexeddb';
 
 /**
  * Entity types in the Ledger JSON Graph
@@ -153,9 +153,7 @@ export class LedgerCRDT {
    * Persist document state to IndexedDB
    */
   async persistToIndexedDB(name: string): Promise<any> {
-    const provider = new IndexedDB(name, {
-      share: { ledger: this.root }
-    });
+    const provider = new IndexeddbPersistence(name, this.doc);
     await provider.whenSynced;
     return provider;
   }
@@ -164,9 +162,7 @@ export class LedgerCRDT {
    * Load document from IndexedDB
    */
   async loadFromIndexedDB(name: string): Promise<void> {
-    const provider = new IndexedDB(name, {
-      share: { ledger: this.root }
-    });
+    const provider = new IndexeddbPersistence(name, this.doc);
     await provider.whenSynced;
   }
 
