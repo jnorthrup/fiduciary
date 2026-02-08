@@ -55,5 +55,4 @@ steps:
       - '--set-env-vars'
       - 'NODE_ENV=production'
 
-images:
-  - 'gcr.io/fiduciary-prod/trust-ledger-fullstack'
+# NOTE: No 'images:' section needed - buildpacks publish directly via --publish flag
