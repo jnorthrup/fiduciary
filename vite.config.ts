@@ -20,7 +20,13 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      minify: false
+      minify: false,
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          lastrust: path.resolve(__dirname, 'index-lastrust.html'),
+        },
+      },
     }
   };
 });

@@ -3,6 +3,7 @@ import React, { Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { LedgerProvider } from './services/ledgerService';
+import { AuthProvider } from './services/authService';
 import { Loader2 } from 'lucide-react';
 
 const LoadingScreen = () => (
@@ -19,7 +20,9 @@ if (container) {
   root.render(
     <Suspense fallback={<LoadingScreen />}>
       <LedgerProvider>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </LedgerProvider>
     </Suspense>
   );

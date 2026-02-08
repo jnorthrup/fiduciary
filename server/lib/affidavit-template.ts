@@ -1,4 +1,4 @@
-import { Affidavit } from '../../types/admin-process';
+import { Affidavit } from '../../types/admin-process.js';
 
 /**
  * Interface for affidavit templates

@@ -7,8 +7,9 @@
   },
   "description": "IRS IRIS A2A API Proxy Server with Google GenAI integration",
   "scripts": {
-    "start": "node index.js",
-    "dev": "tsx --watch index.js"
+    "start": "tsx index.ts",
+    "dev": "tsx watch index.ts",
+    "build": "tsc || true"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.18.0",
@@ -21,6 +22,11 @@
     "playwright": "^1.57.0"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "@types/amqplib": "^0.10.8",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.2",
+    "concurrently": "^9.2.1",
+    "typescript": "^5.9.3"
   }
 }

@@ -1,10 +1,11 @@
-import express from 'express';
+/* eslint-disable no-console */
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { irisOAuthRouter, authenticateToken } from './routes/iris-oauth.js';
+import { irisOAuthRouter } from './routes/iris-oauth.js';
 import { generateClientJWT, generateUserJWT } from './jwt-utils.js';
 import irsPortalAuthRouter from './routes/irs-portal-auth.js';
 import auditRouter from './routes/audit.js';
@@ -57,9 +58,9 @@ const __dirname = path.dirname(__filename);
 // In-project logger is TS, but server is JS.
 // For JS server, we'll implement a simple structured logger or just clean up console calls.
 const logger = {
-  info: (msg, ...args) => console.info(`[INFO] ${msg}`, ...args),
-  error: (msg, ...args) => console.error(`[ERROR] ${msg}`, ...args),
-  debug: (msg, ...args) => {
+  info: (msg: string, ...args: any[]) => console.info(`[INFO] ${msg}`, ...args),
+  error: (msg: string, ...args: any[]) => console.error(`[ERROR] ${msg}`, ...args),
+  debug: (msg: string, ...args: any[]) => {
     if (process.env.NODE_ENV !== 'production') {
       console.debug(`[DEBUG] ${msg}`, ...args);
     }
@@ -80,7 +81,7 @@ const ERROR_CODES = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
 };
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 
 // Initialize Express app
 const app = express();
@@ -94,7 +95,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Request logging middleware
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const tcc = req.headers['x-irs-tcc'];
   const auth = req.headers.authorization;
   const maskedTcc = tcc ? `****${String(tcc).slice(-4)}` : 'N/A';
@@ -104,10 +105,14 @@ app.use((req, res, next) => {
   next();
 });
 
+interface AuthenticatedRequest extends Request {
+  user?: any; // Replace 'any' with a more specific Firebase user type if available
+}
+
 /**
  * Middleware to verify Firebase ID Token
  */
-const verifyFirebaseToken = async (req, res, next) => {
+const verifyFirebaseToken = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'unauthorized', message: 'No ID token provided' });
@@ -116,7 +121,7 @@ const verifyFirebaseToken = async (req, res, next) => {
   const idToken = authHeader.split('Bearer ')[1];
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken;
+    (req as AuthenticatedRequest).user = decodedToken;
     next();
   } catch (error) {
     logger.error('Firebase token verification failed:', error.message);
@@ -132,6 +137,7 @@ const protectedRoutes = ['/api/banking', '/api/audit', '/api/bso'];
 protectedRoutes.forEach(route => {
   // For now, we'll selectively apply to these routers or within the routers themselves
   // For simplicity here, we'll just define the middleware and note that routers should use it
+  // console.log(`Protected route: ${route}`); // Keep usage to avoid lint error or remove loop if truly no-op
 });
 
 // Safe to remove in-memory maps
@@ -326,9 +332,9 @@ app.get('/api/health', (req, res) => {
  * POST /api/irs/submissions
  * Submit information return batch
  */
-app.post('/api/irs/submissions', verifyFirebaseToken, async (req, res) => {
+app.post('/api/irs/submissions', verifyFirebaseToken, async (req: Request, res: Response) => {
   try {
-    const uid = req.user.uid;
+    const uid = (req as AuthenticatedRequest).user.uid;
     const submission = req.body;
 
     // Basic validation
@@ -448,9 +454,9 @@ app.post('/api/irs/submissions', verifyFirebaseToken, async (req, res) => {
  * GET /api/irs/submissions/:receiptId/status
  * Get submission status
  */
-app.get('/api/irs/submissions/:receiptId/status', verifyFirebaseToken, async (req, res) => {
+app.get('/api/irs/submissions/:receiptId/status', verifyFirebaseToken, async (req: Request, res: Response) => {
   const { receiptId } = req.params;
-  const uid = req.user.uid;
+  const uid = (req as AuthenticatedRequest).user.uid;
 
   const state = await persistence.loadData(uid, 'iris');
   const submission = state?.submissions?.[receiptId];
@@ -499,9 +505,9 @@ app.get('/api/irs/submissions/:receiptId/status', verifyFirebaseToken, async (re
  * POST /api/irs/tin-validation
  * Interactive TIN matching
  */
-app.post('/api/irs/tin-validation', verifyFirebaseToken, async (req, res) => {
+app.post('/api/irs/tin-validation', verifyFirebaseToken, async (req: Request, res: Response) => {
   try {
-    const uid = req.user.uid;
+    const uid = (req as AuthenticatedRequest).user.uid;
     const { tin, name, requests } = req.body;
 
     const state = await persistence.loadData(uid, 'iris') || { submissions: {}, tinValidationCache: {} };
@@ -763,8 +769,11 @@ app.get('*', (req, res) => {
 // Error Handler
 // ============================================================================
 
-app.use((err, req, res, next) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   logger.error('Unhandled error:', err);
+  if (res.headersSent) {
+    return next(err);
+  }
   res.status(500).json({
     code: ERROR_CODES.INTERNAL_ERROR,
     message: err.message || 'An unexpected error occurred',

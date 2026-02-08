@@ -1,6 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { AuditEvent, AuditEventCreate, AuditFilters } from '../types/audit';
+import { AuditEvent, AuditEventCreate, AuditFilters } from '../../types/audit.js';
 
 /**
  * Audit Service
