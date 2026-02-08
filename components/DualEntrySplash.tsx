@@ -43,6 +43,7 @@ export const DualEntrySplash: React.FC<DualEntrySplashProps> = ({
                 <div className="grid md:grid-cols-2 gap-6">
                     {/* jnorthrup skin */}
                     <button
+                        type="button"
                         onClick={() => onSelectSkin('jnorthrup')}
                         className="group relative bg-slate-800/50 border border-slate-700 rounded-2xl p-8 hover:border-blue-500 hover:bg-slate-800 transition-all duration-300 text-left"
                     >
@@ -72,6 +73,7 @@ export const DualEntrySplash: React.FC<DualEntrySplashProps> = ({
 
                     {/* lastrust skin */}
                     <button
+                        type="button"
                         onClick={() => onSelectSkin('lastrust')}
                         className="group relative bg-slate-800/50 border border-slate-700 rounded-2xl p-8 hover:border-emerald-500 hover:bg-slate-800 transition-all duration-300 text-left"
                     >
