@@ -96,7 +96,15 @@ router.post('/logout', authMiddleware(), async (req, res) => {
 });
 
 router.get('/me', authMiddleware(), async (req, res) => {
-  res.json({ id: req.user.id, email: req.user.email, role: req.user.role });
+  const state = await loadUserState(req.user.id);
+  const profile = [...(state.profiles || [])].reverse().find(p => p.entity_id === req.user.id) || null;
+  res.json({
+    id: req.user.id,
+    email: req.user.email,
+    role: req.user.role,
+    profile_status: profile?.status || 'draft',
+    profile
+  });
 });
 
 export default router;

@@ -434,11 +434,13 @@ const LoginPage: React.FC = () => {
 
 const DashboardPage: React.FC = () => {
   const { push } = useToast();
+  const { navigate } = useRouteContext();
   const [cash, setCash] = useState<any>(null);
   const [transit, setTransit] = useState<any>(null);
   const [ap, setAp] = useState<any>(null);
   const [cashSeries, setCashSeries] = useState<any[]>([]);
   const [transitSeries, setTransitSeries] = useState<any[]>([]);
+  const [profileStatus, setProfileStatus] = useState<string>('draft');
 
   useEffect(() => {
     const load = async () => {
@@ -451,10 +453,61 @@ const DashboardPage: React.FC = () => {
         setAp(apData?.latest?.y ?? apData?.latest ?? apData?.value ?? 0);
         setCashSeries(cashData?.series || cashData?.points || []);
         setTransitSeries(transitData?.series || transitData?.points || []);
+        const me = await apiGet<any>('/auth/me');
+        setProfileStatus(me?.profile_status || 'draft');
       } catch (err: any) {
         push('error', err?.payload?.detail || 'Failed to load dashboard data.');
       }
     };
+    load();
+  }, [push]);
+
+  const ChartCard = ({ title, series }: { title: string; series: any[] }) => (
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+        <span className="text-xs text-slate-400">Latest 12</span>
+      </div>
+      <div className="grid grid-cols-12 gap-1 items-end h-32">
+        {series.slice(-12).map((point, idx) => (
+          <div
+            key={idx}
+            className="bg-slate-900/80 rounded-sm"
+            style={{ height: `${Math.min(100, Math.max(6, (point?.y ?? point?.value ?? 0) / 10))}%` }}
+          />
+        ))}
+      </div>
+    </Card>
+  );
+
+  return (
+    <PageShell title="Dashboard" subtitle="Live balances from ledger + rail.">
+      {profileStatus === 'draft' && (
+        <Card className="p-5 border-amber-200 bg-amber-50">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-amber-900">Complete your profile</div>
+              <div className="text-xs text-amber-700">Finish your profile to unlock full KYC + payment features. You can do this anytime.</div>
+            </div>
+            <Button onClick={() => navigate('/entities')}>Complete Profile</Button>
+          </div>
+        </Card>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[{ label: 'Cash', value: cash }, { label: 'Transit', value: transit }, { label: 'A/P', value: ap }].map(item => (
+          <Card key={item.label} className="p-5">
+            <div className="text-xs uppercase text-slate-400 font-semibold">{item.label}</div>
+            <div className="text-2xl font-semibold text-slate-900 mt-2">{Number(item.value || 0).toLocaleString()}</div>
+          </Card>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ChartCard title="Cash Balance" series={cashSeries} />
+        <ChartCard title="Transit Balance" series={transitSeries} />
+      </div>
+    </PageShell>
+  );
+};
     load();
   }, [push]);
 
@@ -1913,6 +1966,7 @@ export const App: React.FC = () => {
     </ToastProvider>
   );
 };
+
 
 
 
