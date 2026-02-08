@@ -5,7 +5,7 @@ steps:
     args:
       - '-c'
       - |
-        npm ci
+        npm ci --legacy-peer-deps
         export VITE_FIREBASE_ENABLED=true
         export VITE_GMAIL_AUTH_ENABLED=true
         export VITE_IRS_API_URL=/api
