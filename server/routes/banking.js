@@ -1,5 +1,7 @@
 import express from 'express';
 import persistence from '../lib/gcs-persistence.js';
+import plaidClient from '../lib/plaid-client.js';
+import config from '../config/env-config.js';
 
 const router = express.Router();
 
@@ -179,6 +181,88 @@ router.get('/providers', (req, res) => {
     available: ['plaid', 'teller', 'obp', 'fineract', 'mifos', 'coinbase'],
     enabled: ['plaid', 'teller'],
   });
+});
+
+// ============================================================================
+// PLAID ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/banking/plaid/create-link-token
+ * Create a link token for Plaid Link initialization
+ */
+router.post('/plaid/create-link-token', async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    // ...
+    const { PLAID, NETWORK } = config;
+
+    // Graceful fallback if Plaid is not configured (prevents frontend startup errors)
+    if (!PLAID.PLAID_CLIENT_ID || !PLAID.PLAID_SECRET) {
+      console.warn('Plaid credentials missing. Returning mock link token.');
+      return res.json({
+        link_token: 'link-sandbox-mock-disabled',
+        expiration: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+        request_id: 'mock-request-id'
+      });
+    }
+
+    const request = {
+      // ...
+      user: { client_user_id: uid },
+      client_name: 'Trust Ledger System',
+      products: PLAID.PLAID_PRODUCTS.split(','),
+      country_codes: PLAID.PLAID_COUNTRY_CODES.split(','),
+      language: 'en',
+      redirect_uri: `${NETWORK.PUBLIC_URL}/index-unified.html`,
+    };
+
+    const response = await plaidClient.linkTokenCreate(request);
+    res.json(response.data);
+  } catch (error) {
+    console.error('Plaid Link Token Error:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Failed to create link token', message: error.message });
+  }
+});
+
+/**
+ * POST /api/banking/plaid/exchange-public-token
+ * Exchange public token for access token and store it
+ */
+router.post('/plaid/exchange-public-token', async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const { public_token, institution_name } = req.body;
+
+    if (!public_token) {
+      return res.status(400).json({ error: 'Missing public_token' });
+    }
+
+    const response = await plaidClient.itemPublicTokenExchange({
+      public_token: public_token,
+    });
+
+    const accessToken = response.data.access_token;
+    const itemId = response.data.item_id;
+
+    // Store access token in GCS user banking data
+    const state = await persistence.loadData(uid, 'banking') || { accounts: {}, transactions: {}, plaid: {} };
+    if (!state.plaid) state.plaid = {};
+
+    state.plaid[itemId] = {
+      access_token: accessToken,
+      item_id: itemId,
+      institution_name: institution_name || 'Connected Institution',
+      linked_at: new Date().toISOString(),
+    };
+
+    await persistence.saveData(uid, 'banking', state);
+
+    res.json({ success: true, item_id: itemId });
+  } catch (error) {
+    console.error('Plaid Token Exchange Error:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Failed to exchange token', message: error.message });
+  }
 });
 
 // ============================================================================

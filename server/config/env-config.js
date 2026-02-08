@@ -303,6 +303,46 @@ const KEYSTORE = {
 };
 
 // ============================================================================
+// PLAID: Plaid API Configuration
+// ============================================================================
+const PLAID = {
+    // Plaid Client ID
+    PLAID_CLIENT_ID: env('PLAID_CLIENT_ID', {
+        section: 'PLAID',
+        required: false,
+        default: ''
+    }),
+
+    // Plaid Secret
+    PLAID_SECRET: env('PLAID_SECRET', {
+        section: 'PLAID',
+        required: false,
+        default: ''
+    }),
+
+    // Plaid Environment (sandbox, development, production)
+    PLAID_ENV: env('PLAID_ENV', {
+        section: 'PLAID',
+        required: false,
+        default: 'sandbox'
+    }),
+
+    // Plaid Products (comma-separated: transactions,auth,identity)
+    PLAID_PRODUCTS: env('PLAID_PRODUCTS', {
+        section: 'PLAID',
+        required: false,
+        default: 'transactions,auth'
+    }),
+
+    // Plaid Country Codes (comma-separated: US,CA,GB)
+    PLAID_COUNTRY_CODES: env('PLAID_COUNTRY_CODES', {
+        section: 'PLAID',
+        required: false,
+        default: 'US'
+    })
+};
+
+// ============================================================================
 // NETWORK: IP Address and Domain Configuration
 // ============================================================================
 const NETWORK = {
@@ -407,6 +447,7 @@ export default {
     GITHUB_CI,
     IRS_IRIS,
     KEYSTORE,
+    PLAID,
     NETWORK,
     validate: validateConfig
 };

@@ -46,4 +46,76 @@ router.post('/journal', async (req, res) => {
   }
 });
 
+// Calculate balances from persistent journal
+router.get('/balance/cash', async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const journal = await persistence.loadData(uid, 'ledger') || { entries: [] };
+    const balance = journal.entries.reduce((sum, entry) => sum + (entry.amount || 0), 0);
+    res.json(balance);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/balance/transit', async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    // Mock transit calculation: simulate some entries as pending
+    const journal = await persistence.loadData(uid, 'ledger') || { entries: [] };
+    const transit = journal.entries
+      .filter(e => e.status === 'pending')
+      .reduce((sum, entry) => sum + (entry.amount || 0), 0);
+    res.json(transit);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/balance/ap', async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    // Mock AP calculation: verify AP account balance
+    const journal = await persistence.loadData(uid, 'ledger') || { entries: [] };
+    const ap = journal.entries
+      .filter(e => e.account === 'payable' || e.type === 'expense')
+      .reduce((sum, entry) => sum + (entry.amount || 0), 0);
+    res.json(ap);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/series/cash', async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const journal = await persistence.loadData(uid, 'ledger') || { entries: [] };
+    // Group by day for simple series
+    // Implement actual grouping if needed, for now just return raw entries mapped
+    const series = journal.entries.map(e => ({
+      x: e.timestamp,
+      y: e.amount || 0
+    }));
+    res.json(series);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/series/transit', async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const journal = await persistence.loadData(uid, 'ledger') || { entries: [] };
+    const series = journal.entries
+      .filter(e => e.status === 'pending')
+      .map(e => ({
+        x: e.timestamp,
+        y: e.amount || 0
+      }));
+    res.json(series);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

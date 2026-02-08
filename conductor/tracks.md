@@ -63,3 +63,9 @@ The following tracks are retired incomplete to focus on core NACHA + ledger func
 - BSO Implementation (bso_phase1_20260114)
 - Mobile QuickBooks Layout (mobile_quickbooks_layout_20260115)
 - Settlement Architecture Rail Adapters (settlement_architecture_20260115)
+
+---
+
+## [x] Track: Dual Splash Screen
+*Link: [./conductor/tracks/dual_splash_20260208/](./conductor/tracks/dual_splash_20260208/)*
+*OAuth-triggered skin selector preserving jnorthrup and lastrust entry points*
