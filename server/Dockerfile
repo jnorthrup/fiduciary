@@ -13,10 +13,10 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json ./
+COPY package.json ./
 
-# Install production dependencies only
-RUN npm ci --omit=dev --no-audit --no-fund
+# Install production dependencies (use npm install since we may not have package-lock.json in context)
+RUN npm install --omit=dev --no-audit --no-fund
 
 # Copy server source code
 COPY . .
