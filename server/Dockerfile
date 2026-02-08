@@ -31,8 +31,9 @@ USER nodejs
 EXPOSE 3001
 
 # Health check (use /api/health which is the actual endpoint)
+# Note: Cloud Run uses PORT env var (typically 8080), so we use it in the healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD node -e "const h=require('http');h.get('http://localhost:3001/api/health',(r)=>{r.statusCode===200?process.exit(0):process.exit(1)}).on('error',()=>process.exit(1))"
+    CMD node -e "const p=process.env.PORT||3001;const h=require('http');h.get('http://localhost:'+p+'/api/health',(r)=>{r.statusCode===200?process.exit(0):process.exit(1)}).on('error',()=>process.exit(1))"
 
 # Start server with dumb-init
 ENTRYPOINT ["dumb-init", "--"]
