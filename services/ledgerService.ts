@@ -208,10 +208,13 @@ type LedgerContextType = LedgerDb & {
   wipeSession: () => void;
 
   // Generic CRUD
+  addItem: (key: keyof LedgerDb, item: any) => void;
+  updateItem: (key: keyof LedgerDb, item: any) => void;
+  deleteItem: (key: keyof LedgerDb, id: string) => void;
   addUser: (user: types.User) => void;
   updateUser: (user: types.User) => void;
   deleteUser: (id: string) => void;
-  addEntity: (parentId: string, type: types.EntityType, role: types.EntityRole, nameOverride?: string) => Promise<types.Entity>;
+  addEntity: (parentId: string, type: types.EntityType, role: types.EntityRole, nameOverride?: string, metadata?: Partial<types.Entity>) => Promise<types.Entity>;
   updateEntity: (id: string, updates: Partial<types.Entity>) => void;
   deleteEntity: (id: string) => void;
 
@@ -695,6 +698,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
     ...db,
     currentUser, apiSystemStatus, searchResults, isSearching, secrets, settings, changeGraph, canResume, isCloudEnabled, is2FAOpen,
     teachModeEnabled,
+    addItem, updateItem, deleteItem,
     setTeachModeEnabled,
     connectToFirebase: async () => false, // Stubbed (Non-goal)
     signInWithGoogle,
@@ -889,8 +893,6 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode, encryptionKey
         settlementId: settlementId,
         traceNumber: `RET-${Date.now()}`,
         effectiveEntryDate: new Date().toISOString().split('T')[0],
-        status: 'Returned',
-        returnCode,
         returnReason: reason,
         postedAt: new Date().toISOString(),
         _version: '1'
