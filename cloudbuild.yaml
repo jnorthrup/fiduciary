@@ -60,6 +60,6 @@ steps:
       - '--max-instances'
       - '10'
       - '--set-env-vars'
-      - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=fiduciary-prod,PORT=3001'
+      - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=fiduciary-prod'
 
 # NOTE: No 'images:' section needed - buildpacks publish directly via --publish flag
