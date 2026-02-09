@@ -161,16 +161,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // If we already restored from storage, don't auto-prompt
             if (restoredFromStorage) return;
 
-            // Try silent auto-select on page load
-            window.google!.accounts.id.prompt((notification: any) => {
-                // FedCM-safe: isNotDisplayed() is removed. Use getMomentType()
-                // or the retained methods isSkippedMoment / isDismissedMoment.
-                if (notification.isSkippedMoment() || notification.isDismissedMoment()) {
-                    // No auto-credential — finish loading so login screen shows
-                    setIsLoading(false);
-                    setIsInitialized(true);
-                }
-            });
+            // Try silent auto-select on page load (no notification callback — FedCM clean)
+            window.google!.accounts.id.prompt();
+            // If auto-select succeeds, the initialize callback fires → handleCredential
+            // sets loading/initialized. If it doesn't fire within 3s, show login screen.
+            // Fallback: if credential callback doesn't fire, finish loading
+            setTimeout(() => {
+                setIsLoading(false);
+                setIsInitialized(true);
+            }, 3000);
         };
 
         if (window.google?.accounts?.id) {
@@ -199,14 +198,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return new Promise<string>((resolve, reject) => {
             pendingRef.current = { resolve, reject };
 
-            // prompt() shows One Tap; credential arrives via the initialize callback
-            window.google?.accounts.id.prompt((notification: any) => {
-                if (notification.isSkippedMoment()) {
-                    pendingRef.current = null;
-                    reject(new Error('Sign-in was cancelled'));
-                }
-                // isDismissedMoment with credential_returned → callback already fired → pendingRef resolved
-            });
+            // prompt() shows One Tap; credential arrives via the initialize callback (FedCM clean)
+            window.google?.accounts.id.prompt();
 
             setTimeout(() => {
                 if (pendingRef.current) {
