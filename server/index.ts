@@ -114,7 +114,16 @@ const verifyGoogleToken = async (req: Request, res: Response, next: NextFunction
 };
 
 // Serve static files from 'public' directory (built React app)
-app.use(express.static(path.join(__dirname, 'public')));
+// CAS-hashed assets are immutable; index.html must never be cached stale
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    } else if (filePath.includes('/assets/')) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 
 // Apply auth to ledger/banking routes (preserving bypass for health/iris-oauth)
 const protectedRoutes = ['/api/banking', '/api/audit', '/api/bso'];
@@ -750,6 +759,7 @@ app.get('/api/irs/schemas/:formType', (req, res) => {
 // SPA fallback: serve index.html for all non-file routes
 app.get('*', (req, res) => {
   if (req.path === '/' || !req.path.includes('.')) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
   } else {
     res.status(404).send('Not Found');
