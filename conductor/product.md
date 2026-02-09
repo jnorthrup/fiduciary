@@ -70,7 +70,7 @@ The Trust Ledger System provides a unified platform that:
 
 ### User Management
 - Multi-user support with role-based access
-- Two-factor authentication
+- Step-up authentication via Google OAuth re-auth (replaces custom 2FA)
 - Audit logging for all transactions
 - Team collaboration tools
 

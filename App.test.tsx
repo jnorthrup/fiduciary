@@ -58,7 +58,6 @@ vi.mock('./components/modals/SettingsModal', () => ({ SettingsModal: mockCompone
 vi.mock('./components/IRSApiConsole', () => ({ IRSApiConsole: mockComponent('irs-console') }));
 vi.mock('./components/IRMTreeWidget', () => ({ IRMTreeWidget: mockComponent('irm-tree') }));
 vi.mock('./components/modals/UserProfileModal', () => ({ UserProfileModal: mockComponent('user-modal') }));
-vi.mock('./components/modals/TwoFactorAuthModal', () => ({ TwoFactorAuthModal: mockComponent('twofactor-modal') }));
 vi.mock('./components/ReceiptCaptureWizard', () => ({ ReceiptCaptureWizard: mockComponent('receipt-wizard') }));
 vi.mock('./components/FedGateway', () => ({ FedGateway: mockComponent('fed-gateway') }));
 vi.mock('./components/ACHMovementWizard', () => ({ ACHMovementWizard: mockComponent('ach-wizard') }));

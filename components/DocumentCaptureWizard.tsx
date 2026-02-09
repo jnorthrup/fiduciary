@@ -39,7 +39,7 @@ export const DocumentCaptureWizard: React.FC<Props> = ({ entityId, accounts, onP
   const [summary, setSummary] = useState('');
   const [financialImpact, setFinancialImpact] = useState<number>(0);
 
-  const clientId = process.env.GOOGLE_CLIENT_ID || 'YOUR_CLIENT_ID_HERE';
+  const clientId = import.meta.env.VITE_GMAIL_CLIENT_ID || 'YOUR_CLIENT_ID_HERE';
   const isConfigured = clientId !== 'YOUR_CLIENT_ID_HERE';
 
   useEffect(() => {

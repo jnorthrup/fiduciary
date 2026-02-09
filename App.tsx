@@ -13,7 +13,6 @@ const SettingsModal = React.lazy(() => import('./components/modals/SettingsModal
 const IRSApiConsole = React.lazy(() => import('./components/IRSApiConsole').then(module => ({ default: module.IRSApiConsole })));
 const IRMTreeWidget = React.lazy(() => import('./components/IRMTreeWidget').then(module => ({ default: module.IRMTreeWidget })));
 const UserProfileModal = React.lazy(() => import('./components/modals/UserProfileModal').then(module => ({ default: module.UserProfileModal })));
-const TwoFactorAuthModal = React.lazy(() => import('./components/modals/TwoFactorAuthModal').then(module => ({ default: module.TwoFactorAuthModal })));
 const ReceiptCaptureWizard = React.lazy(() => import('./components/ReceiptCaptureWizard').then(module => ({ default: module.ReceiptCaptureWizard })));
 const FedGateway = React.lazy(() => import('./components/FedGateway').then(module => ({ default: module.FedGateway })));
 const ACHMovementWizard = React.lazy(() => import('./components/ACHMovementWizard').then(module => ({ default: module.ACHMovementWizard })));
@@ -55,16 +54,20 @@ export const App = () => {
   // Sync Auth with Store
   useEffect(() => {
     if (auth.user && !store.isCloudEnabled) {
-      store.connectToFirebase({
-        apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-        appId: import.meta.env.VITE_FIREBASE_APP_ID,
-      });
+      const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+      const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
 
-      if (store.currentUser.email !== auth.user.email) {
+      if (apiKey && projectId && apiKey !== 'placeholder') {
+        store.connectToFirebase({
+          apiKey,
+          authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+          projectId,
+          storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+          messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+          appId: import.meta.env.VITE_FIREBASE_APP_ID,
+        });
+      } else {
+        // Fallback or local mode
         store.setInitialOwner(auth.user.displayName || 'User', auth.user.email || 'email@example.com');
       }
     }
@@ -196,13 +199,6 @@ export const App = () => {
         )}
 
         {/* Modals & Overlays */}
-        {store.is2FAOpen && (
-          <TwoFactorAuthModal
-            onVerify={store.verify2FA}
-            onCancel={store.cancel2FA}
-          />
-        )}
-
         {showSettings && (
           <SettingsModal
             onClose={() => setShowSettings(false)}

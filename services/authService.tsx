@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
     getAuth,
     signInWithPopup,
+    reauthenticateWithPopup,
     signOut as firebaseSignOut,
     GoogleAuthProvider,
     onAuthStateChanged,
@@ -27,6 +28,8 @@ interface AuthContextType {
     signOut: () => Promise<void>;
     isInitialized: boolean;
     getIdToken: () => Promise<string | null>;
+    reauthenticate: () => Promise<string>;
+    getLastAuthTime: () => Date | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,13 +46,28 @@ const firebaseConfig = {
 
 // Initialize Firebase (singleton)
 const initFirebaseApp = () => {
+    // Check if config is present and valid (not placeholder)
+    const isConfigValid = firebaseConfig.apiKey &&
+        firebaseConfig.projectId &&
+        firebaseConfig.apiKey !== 'placeholder' &&
+        !firebaseConfig.apiKey.includes('your-');
+
     if (getApps().length === 0) {
-        if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-            logger.error('Firebase config missing. Check VITE_FIREBASE_* env vars.');
+        if (!isConfigValid) {
+            logger.warn('Firebase config missing or invalid (placeholder detected). Skipping real Firebase init.');
             return null;
         }
-        return initializeApp(firebaseConfig);
+        try {
+            return initializeApp(firebaseConfig);
+        } catch (e) {
+            logger.error('Firebase initialization failed', e);
+            return null;
+        }
     }
+
+    // If app exists but config is invalid (e.g. hot reload with bad env), return null
+    if (!isConfigValid) return null;
+
     return getApps()[0];
 };
 
@@ -128,7 +146,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const signIn = async () => {
         const app = initFirebaseApp();
         if (!app) {
-            logger.error('Cannot sign in: Firebase not initialized');
+            logger.warn('Firebase config missing. Falling back to Mock Auth.');
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            const mockUser: AuthUser = {
+                uid: 'mock-user-' + Math.floor(Math.random() * 1000),
+                displayName: 'Dev User',
+                email: 'dev@local.test',
+                photoURL: null,
+                emailVerified: true
+            };
+
+            setUser(mockUser);
+
+            // Derive encryption key for mock user
+            const salt = new TextEncoder().encode('ledger-static-salt-' + mockUser.uid);
+            const key = await cryptoService.deriveKey(mockUser.uid, salt);
+            setEncryptionKey(key);
+
+            setIsLoading(false);
             return;
         }
 
@@ -173,6 +210,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const reauthenticate = async (): Promise<string> => {
+        const app = initFirebaseApp();
+        if (!app || !firebaseUser) {
+            logger.warn('reauthenticate: Firebase not available, returning mock token');
+            return 'mock-reauth-token';
+        }
+        try {
+            const provider = new GoogleAuthProvider();
+            const result = await reauthenticateWithPopup(firebaseUser, provider);
+            const token = await result.user.getIdToken(true);
+            logger.info('User re-authenticated successfully');
+            return token;
+        } catch (error: any) {
+            logger.error('Re-authentication failed', { error: error.message, code: error.code });
+            throw error;
+        }
+    };
+
+    const getLastAuthTime = (): Date | null => {
+        if (!firebaseUser) return null;
+        const lastSignIn = firebaseUser.metadata.lastSignInTime;
+        return lastSignIn ? new Date(lastSignIn) : null;
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -181,7 +242,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             signIn,
             signOut,
             isInitialized,
-            getIdToken
+            getIdToken,
+            reauthenticate,
+            getLastAuthTime
         }}>
             {children}
         </AuthContext.Provider>

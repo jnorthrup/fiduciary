@@ -7,12 +7,13 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { irisOAuthRouter } from './routes/iris-oauth.js';
 import { generateClientJWT, generateUserJWT } from './jwt-utils.js';
-import irsPortalAuthRouter from './routes/irs-portal-auth.js';
+
 import auditRouter from './routes/audit.js';
 import bankingRouter from './routes/banking.js';
 import bsoRouter from './routes/bso.js';
 import ledgerRouter from './routes/ledger.js';
 import settlementRouter from './routes/settlement.js';
+import coinbaseRouter from './routes/coinbase.js';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { connect as connectBus, subscribe } from './lib/event-bus.js';
 import admin from 'firebase-admin';
@@ -156,7 +157,7 @@ app.use('/api/iris', irisOAuthRouter);
 // ============================================================================
 
 // Mount portal auth router at /api/irs-portal/auth
-app.use('/api/irs-portal/auth', irsPortalAuthRouter);
+
 
 // Protected Routes
 app.use('/api/audit', verifyFirebaseToken, auditRouter);
@@ -195,6 +196,9 @@ if (process.env.SERVICE_NAME === 'api-gateway' && process.env.AUDIT_SERVICE_URL)
     pathRewrite: { '^/api/audit': '/api/audit' }
   }));
 }
+
+// Mount Coinbase router (crypto rail)
+app.use('/api/coinbase', verifyFirebaseToken, coinbaseRouter);
 
 
 /**

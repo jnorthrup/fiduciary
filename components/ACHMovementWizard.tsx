@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { useLedgerStore } from '../services/ledgerService';
+import { useStepUpAuth } from '../services/stepUpAuth';
 import { FlowLayout } from './shared/FlowLayout';
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
 
 export const ACHMovementWizard: React.FC<Props> = ({ entity, onOriginate }) => {
   const { crmPeople } = useLedgerStore();
+  const stepUp = useStepUpAuth();
   const [mode, setMode] = useState<'Originate' | 'Import'>('Originate');
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -139,7 +141,9 @@ export const ACHMovementWizard: React.FC<Props> = ({ entity, onOriginate }) => {
       onOriginate(result);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+      const ok = await stepUp.verify();
+      if (!ok) return;
       if (mode === 'Originate') {
           if (step === 1) handleOriginate();
           else onOriginate(achResult!);

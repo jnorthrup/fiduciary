@@ -9,7 +9,8 @@ export enum PaymentRail {
     MANUAL_CHECK = 'MANUAL_CHECK',
     WIRE = 'WIRE',
     WIRE_INTL = 'WIRE_INTL',
-    RTP = 'RTP'
+    RTP = 'RTP',
+    COINBASE_CRYPTO = 'COINBASE_CRYPTO'
 }
 
 export enum PaymentStatus {
@@ -105,12 +106,21 @@ export interface CheckCoordinates {
     };
 }
 
+export interface CryptoCoordinates {
+    type: 'crypto';
+    address: string;
+    currency: string;  // BTC, ETH, USDC, etc.
+    network?: string;  // mainnet, testnet, etc.
+    memo?: string;     // For currencies that use memos (XRP, etc.)
+}
+
 export type PayeeCoordinates =
     | ACHCoordinates
     | WireDomesticCoordinates
     | WireIntlCoordinates
     | RTPCoordinates
-    | CheckCoordinates;
+    | CheckCoordinates
+    | CryptoCoordinates;
 
 // ═══════════════════════════════════════════════════════════════
 // LAYER 3: Rail Selection
@@ -154,7 +164,7 @@ export interface Execution {
 
 export interface FormattedPayload {
     rail: PaymentRail;
-    format: 'nacha' | 'iso20022' | 'swift_mt103' | 'json' | 'pdf_check';
+    format: 'nacha' | 'iso20022' | 'swift_mt103' | 'json' | 'pdf_check' | 'coinbase_json';
     content: string | Uint8Array;
     filename?: string;
 }

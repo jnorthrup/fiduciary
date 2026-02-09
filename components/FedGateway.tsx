@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { useLedgerStore } from '../services/ledgerService';
+import { useStepUpAuth } from '../services/stepUpAuth';
 
 interface Props {
   entity: Entity;
@@ -21,6 +22,7 @@ export const FedGateway: React.FC<Props> = ({
   entity, fedWires, crmPeople, onOriginate, onPostJournal 
 }) => {
   const { requestAuthorization } = useLedgerStore();
+  const stepUp = useStepUpAuth();
   const [activeTab, setActiveTab] = useState<'Realtime' | 'WireRoom' | 'Settlement' | 'Import'>('WireRoom');
   const [loading, setLoading] = useState(false);
   const [wireType, setWireType] = useState<'Wire' | 'FedNow'>('Wire');
@@ -92,7 +94,9 @@ export const FedGateway: React.FC<Props> = ({
     }
   };
 
-  const handleSecureOriginate = () => {
+  const handleSecureOriginate = async () => {
+      const ok = await stepUp.verify();
+      if (!ok) return;
       // Trigger global 2FA before executing wire
       requestAuthorization(() => {
           setWireType(activeTab === 'Realtime' ? 'FedNow' : 'Wire');
@@ -133,8 +137,10 @@ export const FedGateway: React.FC<Props> = ({
       }
   };
 
-  const handleExecuteImport = () => {
+  const handleExecuteImport = async () => {
       if (!parsedXml) return;
+      const ok = await stepUp.verify();
+      if (!ok) return;
       const record: FedwireRecord = {
           id: `FED-API-${Date.now()}`,
           entityId: entity.id,

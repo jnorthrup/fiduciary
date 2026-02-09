@@ -9,7 +9,6 @@ import { SettingsModal } from './components/modals/SettingsModal';
 import { IRSApiConsole } from './components/IRSApiConsole';
 import { IRMTreeWidget } from './components/IRMTreeWidget';
 import { UserProfileModal } from './components/modals/UserProfileModal';
-import { TwoFactorAuthModal } from './components/modals/TwoFactorAuthModal';
 import { User, Entity } from './types';
 import { ReceiptCaptureWizard } from './components/ReceiptCaptureWizard';
 import { FedGateway } from './components/FedGateway'; 
@@ -157,7 +156,6 @@ export const App = () => {
 
       {activeEntity && quickAction && <QuickActionOverlay action={quickAction} entity={activeEntity} />}
 
-      {store.is2FAOpen && <TwoFactorAuthModal onVerify={store.verify2FA} onCancel={store.cancel2FA} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onExport={() => JSON.stringify(store, null, 2)} onImport={store.importData} onReset={store.resetData} />}
       {showApiConsole && <IRSApiConsole transmissions={store.transmissions} systemStatus={store.apiSystemStatus} searchResults={store.searchResults} isSearching={store.isSearching} onSearch={store.performGroundingSearch} onClose={() => setShowApiConsole(false)} />}
       <IRMTreeWidget isOpen={showIRM} onClose={() => setShowIRM(false)} entities={store.entities} documents={store.documents} onFileAll={() => {}} />

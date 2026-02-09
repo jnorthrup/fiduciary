@@ -1,27 +1,36 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  BarChart3,
   Book,
   Building2,
   ChevronRight,
   HandCoins,
-  LogOut,
   Settings,
   Shuffle,
   Link as LinkIcon,
-  Plus,
   Search,
-  Filter,
   MoreVertical,
   CheckCircle2,
-  Clock,
-  AlertCircle,
-  Sparkles
+  Menu, X, Bell, LayoutGrid, HelpCircle,
+  Landmark, Users, Upload, Shield, Lock,
+  Loader2, Copy, ArrowUpRight, ArrowDownLeft, Wallet, XCircle
 } from 'lucide-react';
 import { usePlaidLink } from 'react-plaid-link';
 import { useAuth } from './services/authService';
+import { useStepUpAuth } from './services/stepUpAuth';
 import { apiGet, apiPost, setApiUser } from './services/apiClient';
+import {
+  listAccounts as cbListAccounts,
+  sendCrypto,
+  getReceiveAddress,
+  listTransactions as cbListTransactions,
+  validateAddress as cbValidateAddress
+} from './services/coinbaseService';
+import type {
+  CoinbaseAccount,
+  CoinbaseTransaction
+} from './services/coinbaseService';
+
+// ─── Toast System ────────────────────────────────────────────────────────────
 
 type ToastType = 'success' | 'error' | 'info';
 type Toast = { id: string; type: ToastType; message: string };
@@ -40,7 +49,6 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const push = (type: ToastType, message: string) => {
-    // Deduplicate: don't push if the exact same message and type is already visible
     const isDuplicate = toasts.some(t => t.message === message && t.type === type);
     if (isDuplicate) return;
 
@@ -73,162 +81,7 @@ const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   );
 };
 
-const useRoute = () => {
-  const [route, setRoute] = useState(window.location.pathname || '/dashboard');
-
-  useEffect(() => {
-    const handler = () => setRoute(window.location.pathname || '/dashboard');
-    window.addEventListener('popstate', handler);
-    return () => window.removeEventListener('popstate', handler);
-  }, []);
-
-  const navigate = (path: string) => {
-    if (path === route) return;
-    window.history.pushState({}, '', path);
-    setRoute(path);
-  };
-
-  return { route, navigate };
-};
-
-const RouteContext = React.createContext<{ route: string; navigate: (path: string) => void } | null>(null);
-
-const useRouteContext = () => {
-  const ctx = React.useContext(RouteContext);
-  if (!ctx) throw new Error('useRouteContext must be used within RouteContext');
-  return ctx;
-};
-
-
-const LedgerTabs: React.FC = () => {
-  const { route, navigate } = useRouteContext();
-  const tabs = [
-    { label: 'Accounts', route: '/ledger/accounts' },
-    { label: 'Journal', route: '/ledger/journal' },
-    { label: 'Reports', route: '/ledger/reports' }
-  ];
-  return (
-    <div className="flex gap-3 border-b border-slate-200 pb-3">
-      {tabs.map(tab => (
-        <button
-          key={tab.route}
-          onClick={() => navigate(tab.route)}
-          className={`text-sm font-semibold ${route === tab.route ? 'text-slate-900' : 'text-slate-400 hover:text-slate-700'}`}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
-};
-
-const RailTabs: React.FC = () => {
-  const { route, navigate } = useRouteContext();
-  const tabs = [
-    { label: 'Payees', route: '/rail/payees' },
-    { label: 'Payment Orders', route: '/rail/payment-orders' },
-    { label: 'Bank Mirror', route: '/rail/bank' },
-    { label: 'Reconcile', route: '/rail/reconcile' },
-    { label: 'Documents', route: '/rail/documents' },
-    { label: 'Webhook Tester', route: '/rail/webhook-tester' }
-  ];
-  return (
-    <div className="flex flex-wrap gap-3 border-b border-slate-200 pb-3">
-      {tabs.map(tab => (
-        <button
-          key={tab.route}
-          onClick={() => navigate(tab.route)}
-          className={`text-sm font-semibold ${route === tab.route ? 'text-slate-900' : 'text-slate-400 hover:text-slate-700'}`}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
-};
-
-const DocumentsPage: React.FC = () => {
-  const { push } = useToast();
-  const { user } = useAuth();
-  const [docs, setDocs] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
-
-  const load = useCallback(() => {
-    return apiGet<any[]>('/documents').then(setDocs);
-  }, []);
-
-  useEffect(() => {
-    load().catch(() => push('error', 'Failed to load documents.'));
-  }, [load, push]);
-
-  const handleUpload = async () => {
-    setUploading(true);
-    try {
-      // Simulate upload
-      await new Promise(r => setTimeout(r, 1000));
-      const name = `receipt_${Date.now()}.pdf`;
-      await apiPost('/documents/upload', {
-        name,
-        size: Math.floor(Math.random() * 1024 * 1024),
-        type: 'application/pdf'
-      });
-      push('success', `Uploaded ${name}`);
-      await load();
-    } catch (e) {
-      push('error', 'Upload failed.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <PageShell title="Rail / Documents" subtitle="Manage receipts and evidential documents.">
-      <RailTabs />
-      <Card className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="font-semibold text-slate-900">My Files</h3>
-            <p className="text-xs text-slate-500">Secure storage isolated to {user?.email}</p>
-          </div>
-          <Button onClick={handleUpload} disabled={uploading}>
-            {uploading ? 'Uploading...' : 'Upload Receipt'}
-          </Button>
-        </div>
-
-        <div className="space-y-3">
-          {docs.length === 0 ? (
-            <div className="text-center py-10 text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl">
-              No documents found. Upload one to see ACLs in action.
-            </div>
-          ) : (
-            docs.map(doc => (
-              <div key={doc.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-lg hover:bg-slate-50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded flex items-center justify-center">
-                    <Book className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-slate-900 text-sm">{doc.name}</div>
-                    <div className="text-xs text-slate-500">
-                      {(doc.size / 1024).toFixed(1)} KB • {new Date(doc.uploaded_at).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded font-medium border border-emerald-100 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Owner: Me
-                  </span>
-                  <Button variant="ghost" className="text-xs h-8">Download</Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </Card>
-    </PageShell>
-  );
-};
+// ─── UI Primitives ───────────────────────────────────────────────────────────
 
 const PageShell: React.FC<{ title: string; subtitle?: string; children: React.ReactNode }> = ({ title, subtitle, children }) => (
   <div className="space-y-6">
@@ -280,6 +133,62 @@ const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant
   );
 };
 
+const Table: React.FC<{ columns: string[]; rows: any[]; empty?: string; renderCell?: (row: any, col: string) => React.ReactNode }> = ({
+  columns,
+  rows,
+  empty = 'No records found.',
+  renderCell
+}) => (
+  <div className="overflow-hidden rounded-xl border border-slate-200">
+    <table className="min-w-full text-sm">
+      <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+        <tr>
+          {columns.map(col => (
+            <th key={col} className="px-4 py-3 text-left font-semibold">
+              {col.replace(/_/g, ' ')}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-slate-100">
+        {rows.length === 0 && (
+          <tr>
+            <td colSpan={columns.length} className="px-4 py-6 text-center text-slate-400">
+              {empty}
+            </td>
+          </tr>
+        )}
+        {rows.map((row, idx) => (
+          <tr key={row.id || idx} className="hover:bg-slate-50">
+            {columns.map(col => (
+              <td key={col} className="px-4 py-3 text-slate-700">
+                {renderCell ? renderCell(row, col) : row[col]}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+const ChartCard: React.FC<{ title: string; series: any[] }> = ({ title, series }) => (
+  <Card>
+    <div className="text-sm uppercase text-slate-400 font-semibold">{title}</div>
+    <div className="grid grid-cols-12 gap-1 items-end h-32">
+      {series.slice(-12).map((point, idx) => (
+        <div
+          key={idx}
+          className="bg-slate-900/80 rounded-sm"
+          style={{ height: `${Math.min(100, Math.max(6, (point?.y ?? point?.value ?? 0) / 10))}%` }}
+        />
+      ))}
+    </div>
+  </Card>
+);
+
+// ─── Plaid Link Button ───────────────────────────────────────────────────────
+
 const PlaidLinkButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
   const { push } = useToast();
   const [linkToken, setLinkToken] = useState<string | null>(null);
@@ -329,196 +238,99 @@ const PlaidLinkButton: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => 
   );
 };
 
-const Table: React.FC<{ columns: string[]; rows: any[]; empty?: string; renderCell?: (row: any, col: string) => React.ReactNode }> = ({
-  columns,
-  rows,
-  empty = 'No records found.',
-  renderCell
-}) => (
-  <div className="overflow-hidden rounded-xl border border-slate-200">
-    <table className="min-w-full text-sm">
-      <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
-        <tr>
-          {columns.map(col => (
-            <th key={col} className="px-4 py-3 text-left font-semibold">
-              {col.replace(/_/g, ' ')}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-slate-100">
-        {rows.length === 0 && (
-          <tr>
-            <td colSpan={columns.length} className="px-4 py-6 text-center text-slate-400">
-              {empty}
-            </td>
-          </tr>
-        )}
-        {rows.map((row, idx) => (
-          <tr key={row.id || idx} className="hover:bg-slate-50">
-            {columns.map(col => (
-              <td key={col} className="px-4 py-3 text-slate-700">
-                {renderCell ? renderCell(row, col) : row[col]}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
-const LoginPage: React.FC = () => {
-  const { signIn, signInWithGoogle, isLoading } = useAuth();
-  const { push } = useToast();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [completeLater, setCompleteLater] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [entityName, setEntityName] = useState('');
-  const [entityType, setEntityType] = useState('LLC');
-  const [address, setAddress] = useState('');
-  const googleEnabled = String(import.meta.env.VITE_FIREBASE_ENABLED || '').toLowerCase() === 'true' && !!import.meta.env.VITE_FIREBASE_CONFIG;
+// ─── Sub-Tab Components (prop-driven) ────────────────────────────────────────
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    try {
-      if (isRegister) {
-        if (!termsAccepted) {
-          push('error', 'Please accept the terms to create your account.');
-          return;
-        }
-        await apiPost('/auth/register', {
-          email,
-          password,
-          termsAccepted: true,
-          full_name: fullName,
-          company_name: companyName,
-          phone,
-          entity_name: entityName,
-          entity_type: entityType,
-          address,
-          complete_later: completeLater
-        });
-        push('success', 'Account created. Please sign in.');
-        setIsRegister(false);
-      }
-      await signIn(email, password);
-      push('success', 'Signed in successfully.');
-    } catch (err: any) {
-      push('error', err?.payload?.detail || err?.message || 'Login failed.');
-    }
-  };
-
+const LedgerTabs: React.FC<{ activeTab: string; onTabChange: (tab: string) => void }> = ({ activeTab, onTabChange }) => {
+  const tabs = [
+    { label: 'Accounts', id: 'accounts' },
+    { label: 'Journal', id: 'journal' },
+    { label: 'Reports', id: 'reports' }
+  ];
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-slate-900">Sign in</h1>
-          <p className="text-sm text-slate-500 mt-1">Access Clear.Flow to begin the payment test path.</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label>Password</Label>
-            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-          </div>
-          {isRegister && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 gap-3">
-                <Input placeholder="Full name" value={fullName} onChange={e => setFullName(e.target.value)} />
-                <Input placeholder="Company name" value={companyName} onChange={e => setCompanyName(e.target.value)} />
-                <Input placeholder="Phone" value={phone} onChange={e => setPhone(e.target.value)} />
-                <Input placeholder="Entity name" value={entityName} onChange={e => setEntityName(e.target.value)} />
-                <Select value={entityType} onChange={e => setEntityType(e.target.value)}>
-                  {['LLC', 'CORP', 'TRUST', 'SOLE_PROP', 'NONPROFIT'].map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </Select>
-                <Input placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} />
-              </div>
-              <label className="flex items-center gap-2 text-xs text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={completeLater}
-                  onChange={e => setCompleteLater(e.target.checked)}
-                />
-                Complete profile later
-              </label>
-              <label className="flex items-center gap-2 text-xs text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={termsAccepted}
-                  onChange={e => setTermsAccepted(e.target.checked)}
-                />
-                I agree to the terms, electronic records, and privacy notice.
-              </label>
-            </div>
-          )}
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : isRegister ? 'Create Account' : 'Login'}
-          </Button>
-          {googleEnabled && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full"
-              onClick={async () => {
-                try {
-                  await signInWithGoogle();
-                  push('success', 'Signed in with Google.');
-                } catch (err: any) {
-                  push('error', err?.message || 'Google sign-in failed.');
-                }
-              }}
-            >
-              Sign in with Google
-            </Button>
-          )}
-          <button
-            type="button"
-            className="text-xs text-slate-500 hover:text-slate-800"
-            onClick={() => setIsRegister(prev => !prev)}
-          >
-            {isRegister ? 'Already have an account? Sign in' : 'New here? Create an account'}
-          </button>
-        </form>
-      </div>
+    <div className="flex gap-3 border-b border-slate-200 pb-3">
+      {tabs.map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => onTabChange(tab.id)}
+          className={`text-sm font-semibold ${activeTab === tab.id ? 'text-slate-900' : 'text-slate-400 hover:text-slate-700'}`}
+        >
+          {tab.label}
+        </button>
+      ))}
     </div>
   );
 };
 
-const ChartCard: React.FC<{ title: string; series: any[] }> = ({ title, series }) => (
-  <Card>
-    <div className="text-sm uppercase text-slate-400 font-semibold">{title}</div>
-    <div className="grid grid-cols-12 gap-1 items-end h-32">
-      {series.slice(-12).map((point, idx) => (
-        <div
-          key={idx}
-          className="bg-slate-900/80 rounded-sm"
-          style={{ height: `${Math.min(100, Math.max(6, (point?.y ?? point?.value ?? 0) / 10))}%` }}
-        />
+const RailTabs: React.FC<{ activeTab: string; onTabChange: (tab: string) => void }> = ({ activeTab, onTabChange }) => {
+  const tabs = [
+    { label: 'Payees', id: 'payees' },
+    { label: 'Payment Orders', id: 'payment-orders' },
+    { label: 'Bank Mirror', id: 'bank' },
+    { label: 'Reconcile', id: 'reconcile' },
+    { label: 'Crypto', id: 'crypto' },
+    { label: 'Documents', id: 'documents' },
+    { label: 'Webhook Tester', id: 'webhook-tester' }
+  ];
+  return (
+    <div className="flex flex-wrap gap-3 border-b border-slate-200 pb-3">
+      {tabs.map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => onTabChange(tab.id)}
+          className={`text-sm font-semibold ${activeTab === tab.id ? 'text-slate-900' : 'text-slate-400 hover:text-slate-700'}`}
+        >
+          {tab.label}
+        </button>
       ))}
     </div>
-  </Card>
-);
+  );
+};
+
+// ─── Page Components ─────────────────────────────────────────────────────────
+
+// --- Functional Wrappers ---
+
+const PaymentCenter: React.FC = () => {
+  return (
+    <PageShell title="Payment Center" subtitle="ACH/EFT and FedWire origination.">
+      <RailPage />
+    </PageShell>
+  );
+};
+
+const LoanManager: React.FC = () => {
+  return (
+    <PageShell title="Loan Manager" subtitle="Credit Defense and Collateral Management.">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6 space-y-4">
+          <h3 className="font-bold text-slate-700 flex items-center gap-2"><Shield size={18} /> Credit Defense</h3>
+          <p className="text-sm text-slate-500">Automated credit instrument validation and asset acquisition.</p>
+        </Card>
+        <Card className="p-6 space-y-4">
+          <h3 className="font-bold text-slate-700 flex items-center gap-2"><Building2 size={18} /> Collateral Pools</h3>
+          <p className="text-sm text-slate-500">Manage real estate assets and security paper collateral.</p>
+        </Card>
+      </div>
+      <Card className="p-6 space-y-4">
+        <h3 className="font-bold text-slate-700 flex items-center gap-2"><Lock size={18} /> Escrow Management</h3>
+        <p className="text-sm text-slate-500">Multi-party settlement coordination and fiduciary fee tracking.</p>
+      </Card>
+    </PageShell>
+  );
+};
+
+// --- Main Pages ---
 
 const DashboardPage: React.FC = () => {
   const { push } = useToast();
-  const { navigate } = useRouteContext();
   const [cash, setCash] = useState<any>(null);
   const [transit, setTransit] = useState<any>(null);
   const [ap, setAp] = useState<any>(null);
   const [cashSeries, setCashSeries] = useState<any[]>([]);
   const [transitSeries, setTransitSeries] = useState<any[]>([]);
+  const [statementFile, setStatementFile] = useState<File | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const results = await Promise.allSettled([
         apiGet('/ledger/balance/cash'),
@@ -536,7 +348,6 @@ const DashboardPage: React.FC = () => {
       if (cs.status === 'fulfilled') setCashSeries(cs.value as any[]);
       if (ts.status === 'fulfilled') setTransitSeries(ts.value as any[]);
 
-      // If any failed, show a single consolidated toast
       const failures = results.filter(r => r.status === 'rejected');
       if (failures.length > 0) {
         push('error', 'Dashboard partially failed to load live data.');
@@ -544,37 +355,89 @@ const DashboardPage: React.FC = () => {
     } catch (e: any) {
       push('error', 'Failed to load dashboard');
     }
-  };
+  }, [push]);
 
   useEffect(() => {
     load();
-  }, [push]);
+  }, [load]);
+
+  const handleStatementUpload = async () => {
+    if (!statementFile) return;
+    try {
+      const text = await statementFile.text();
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const idx = (name: string) => headers.findIndex(h => h.includes(name));
+
+      const items = lines.slice(1).map(line => {
+        const cols = line.split(',');
+        return {
+          bank_txn_id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          posted_at: cols[idx('date')] || new Date().toISOString().split('T')[0],
+          amount: Number(cols[idx('amount')] || 0),
+          memo: cols[idx('memo')] || 'Imported Transaction',
+          counterparty: cols[idx('counterparty')] || 'Unknown'
+        };
+      });
+
+      await apiPost('/rail/bank/import/batch', { items });
+      push('success', `Successfully imported ${items.length} transactions.`);
+      load();
+      setStatementFile(null);
+    } catch (e) {
+      push('error', 'Failed to process statement file.');
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Live balances from ledger + rail.</p>
+          <h1 className="text-2xl font-semibold text-slate-900">Personal Overview</h1>
+          <p className="text-sm text-slate-500 mt-1">Your financial health at a glance.</p>
         </div>
         <PlaidLinkButton onSuccess={load} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[{ label: 'Cash', value: cash }, { label: 'Transit', value: transit }, { label: 'A/P', value: ap }].map(item => (
+        {[{ label: 'Net Liquidity', value: cash }, { label: 'In Flight', value: transit }, { label: 'Credit Debt', value: ap }].map(item => (
           <Card key={item.label} className="p-5">
             <div className="text-xs uppercase text-slate-400 font-semibold">{item.label}</div>
-            <div className="text-2xl font-semibold text-slate-900 mt-2">{Number(item.value || 0).toLocaleString()}</div>
+            <div className="text-2xl font-semibold text-slate-900 mt-2">
+              ${(typeof item.value === 'number' && !isNaN(item.value)) ? item.value.toLocaleString() : '0'}
+            </div>
           </Card>
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartCard title="Cash Balance" series={cashSeries} />
-        <ChartCard title="Transit Balance" series={transitSeries} />
+        <ChartCard title="Liquidity Trend" series={cashSeries} />
+        <Card className="p-5">
+          <h3 className="text-sm font-bold text-slate-700 mb-4">Quick Import</h3>
+          <div className="space-y-3">
+            <div className="border border-dashed border-slate-300 rounded-lg p-6 bg-slate-50 text-center">
+              <Upload className="mx-auto h-8 w-8 text-slate-400 mb-2" />
+              <p className="text-xs text-slate-500 mb-4">Upload CSV bank statements</p>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={e => setStatementFile(e.target.files?.[0] || null)}
+                className="text-xs text-slate-500 w-full mb-3"
+              />
+              <button
+                onClick={handleStatementUpload}
+                disabled={!statementFile}
+                className="w-full py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              >
+                Process Statement
+              </button>
+            </div>
+          </div>
+        </Card>
       </div>
     </div>
   );
 };
-const LedgerAccountsPage: React.FC<{ canAdmin: boolean }> = ({ canAdmin }) => {
+
+const LedgerAccountsPage: React.FC<{ canAdmin: boolean; ledgerTabs: React.ReactNode }> = ({ canAdmin, ledgerTabs }) => {
   const { push } = useToast();
   const [accounts, setAccounts] = useState<any[]>([]);
   const [form, setForm] = useState({ code: '', name: '', type: 'Asset' });
@@ -612,7 +475,7 @@ const LedgerAccountsPage: React.FC<{ canAdmin: boolean }> = ({ canAdmin }) => {
 
   return (
     <PageShell title="Ledger / Accounts" subtitle="Chart of Accounts and initialization controls.">
-      <LedgerTabs />
+      {ledgerTabs}
       <div className="flex items-center gap-3">
         <Button onClick={handleInit} disabled={!canAdmin}>
           Initialize Default COA
@@ -653,7 +516,7 @@ const LedgerAccountsPage: React.FC<{ canAdmin: boolean }> = ({ canAdmin }) => {
   );
 };
 
-const LedgerJournalPage: React.FC = () => {
+const LedgerJournalPage: React.FC<{ ledgerTabs: React.ReactNode }> = ({ ledgerTabs }) => {
   const { push } = useToast();
   const [entries, setEntries] = useState<any[]>([]);
   const [filters, setFilters] = useState({ search: '', source_module: '', external_ref: '', date_from: '', date_to: '' });
@@ -709,7 +572,7 @@ const LedgerJournalPage: React.FC = () => {
 
   return (
     <PageShell title="Ledger / Journal" subtitle="Post obligations and journal entries.">
-      <LedgerTabs />
+      {ledgerTabs}
       <Card className="p-4">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <Input placeholder="Search memo/ref" value={filters.search} onChange={e => setFilters({ ...filters, search: e.target.value })} />
@@ -776,7 +639,8 @@ const LedgerJournalPage: React.FC = () => {
     </PageShell>
   );
 };
-const LedgerReportsPage: React.FC = () => {
+
+const LedgerReportsPage: React.FC<{ ledgerTabs: React.ReactNode }> = ({ ledgerTabs }) => {
   const { push } = useToast();
   const [entityId, setEntityId] = useState('');
   const [report, setReport] = useState<any>(null);
@@ -866,7 +730,7 @@ const LedgerReportsPage: React.FC = () => {
 
   return (
     <PageShell title="Ledger / Reports" subtitle="Trial balance, balance sheet, and P&L.">
-      <LedgerTabs />
+      {ledgerTabs}
       <Card className="p-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div className="space-y-2">
@@ -896,7 +760,8 @@ const LedgerReportsPage: React.FC = () => {
     </PageShell>
   );
 };
-const RailPayeesPage: React.FC = () => {
+
+const RailPayeesPage: React.FC<{ railTabs: React.ReactNode }> = ({ railTabs }) => {
   const { push } = useToast();
   const [payees, setPayees] = useState<any[]>([]);
   const [form, setForm] = useState({
@@ -936,7 +801,7 @@ const RailPayeesPage: React.FC = () => {
 
   return (
     <PageShell title="Rail / Payees" subtitle="Tokenized payout recipients.">
-      <RailTabs />
+      {railTabs}
       <Card className="p-6 space-y-4">
         <h3 className="text-sm font-semibold text-slate-700">Payees</h3>
         <Table columns={['id', 'legal_name', 'payout_method', 'token_ref', 'last4', 'bank_name', 'status', 'entity_id']} rows={payees} />
@@ -986,8 +851,10 @@ const RailPayeesPage: React.FC = () => {
     </PageShell>
   );
 };
-const RailPaymentOrdersPage: React.FC = () => {
+
+const RailPaymentOrdersPage: React.FC<{ railTabs: React.ReactNode }> = ({ railTabs }) => {
   const { push } = useToast();
+  const stepUp = useStepUpAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [orderFilters, setOrderFilters] = useState({ status: '', payee_id: '', date_from: '', date_to: '' });
   const [submitProvider, setSubmitProvider] = useState('mock');
@@ -1045,7 +912,7 @@ const RailPaymentOrdersPage: React.FC = () => {
 
   return (
     <PageShell title="Rail / Payment Orders" subtitle="Approve, submit, and reconcile settlements.">
-      <RailTabs />
+      {railTabs}
       <Card className="p-6 space-y-6">
         <div>
           <h3 className="text-base font-semibold text-slate-800">Online Bill Pay (Create Obligation)</h3>
@@ -1059,6 +926,8 @@ const RailPaymentOrdersPage: React.FC = () => {
                 push('error', 'Please accept ACH authorization and privacy notice.');
                 return;
               }
+              const ok = await stepUp.verify();
+              if (!ok) return;
               const docs = billPayFiles.map(file => ({ name: file.name, size: file.size, type: file.type }));
               const payeePayload = {
                 legal_name: billPay.legal_name,
@@ -1117,8 +986,6 @@ const RailPaymentOrdersPage: React.FC = () => {
                   use_clearing: true
                 });
               }
-
-              // Communications + docs are persisted server-side via payee creation.
 
               push('success', 'Bill pay created: payee + obligation + payment order.');
               setBillPay({
@@ -1367,7 +1234,7 @@ const RailPaymentOrdersPage: React.FC = () => {
                 type="button"
                 variant="ghost"
                 disabled={order.status !== 'approved' || order.rail_type === 'INTERNAL_LEDGER_TRANSFER'}
-                onClick={() => action('Submit', `/rail/payment-orders/${order.id}/submit?provider=${submitProvider}`)}
+                onClick={async () => { const ok = await stepUp.verify(); if (!ok) return; action('Submit', `/rail/payment-orders/${order.id}/submit?provider=${submitProvider}`); }}
               >
                 Submit
               </Button>
@@ -1386,7 +1253,8 @@ const RailPaymentOrdersPage: React.FC = () => {
     </PageShell>
   );
 };
-const RailBankPage: React.FC = () => {
+
+const RailBankPage: React.FC<{ railTabs: React.ReactNode }> = ({ railTabs }) => {
   const { push } = useToast();
   const [txns, setTxns] = useState<any[]>([]);
   const [matchedFilter, setMatchedFilter] = useState('');
@@ -1443,7 +1311,7 @@ const RailBankPage: React.FC = () => {
 
   return (
     <PageShell title="Rail / Bank Mirror" subtitle="Import bank postings and match to settlements.">
-      <RailTabs />
+      {railTabs}
       <Card className="p-6 space-y-4">
         <h3 className="text-sm font-semibold text-slate-700">Add Bank</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
@@ -1672,7 +1540,7 @@ const RailBankPage: React.FC = () => {
   );
 };
 
-const RailReconcilePage: React.FC = () => {
+const RailReconcilePage: React.FC<{ railTabs: React.ReactNode }> = ({ railTabs }) => {
   const { push } = useToast();
   const runBatch = async () => {
     try {
@@ -1685,13 +1553,95 @@ const RailReconcilePage: React.FC = () => {
 
   return (
     <PageShell title="Rail / Reconciliation" subtitle="Post settlement journal entries and match bank transactions.">
-      <RailTabs />
+      {railTabs}
       <Button onClick={runBatch}>Run Batch Reconcile</Button>
     </PageShell>
   );
 };
 
-const RailWebhookTesterPage: React.FC = () => {
+const DocumentsPage: React.FC<{ railTabs: React.ReactNode }> = ({ railTabs }) => {
+  const { push } = useToast();
+  const { user } = useAuth();
+  const [docs, setDocs] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const load = useCallback(() => {
+    return apiGet<any[]>('/documents').then(setDocs);
+  }, []);
+
+  useEffect(() => {
+    load().catch(() => push('error', 'Failed to load documents.'));
+  }, [load, push]);
+
+  const handleUpload = async () => {
+    setUploading(true);
+    try {
+      await new Promise(r => setTimeout(r, 1000));
+      const name = `receipt_${Date.now()}.pdf`;
+      await apiPost('/documents/upload', {
+        name,
+        size: Math.floor(Math.random() * 1024 * 1024),
+        type: 'application/pdf'
+      });
+      push('success', `Uploaded ${name}`);
+      await load();
+    } catch (e) {
+      push('error', 'Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <PageShell title="Rail / Documents" subtitle="Manage receipts and evidential documents.">
+      {railTabs}
+      <Card className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h3 className="font-semibold text-slate-900">My Files</h3>
+            <p className="text-xs text-slate-500">Secure storage isolated to {user?.email}</p>
+          </div>
+          <Button onClick={handleUpload} disabled={uploading}>
+            {uploading ? 'Uploading...' : 'Upload Receipt'}
+          </Button>
+        </div>
+
+        <div className="space-y-3">
+          {docs.length === 0 ? (
+            <div className="text-center py-10 text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl">
+              No documents found. Upload one to see ACLs in action.
+            </div>
+          ) : (
+            docs.map(doc => (
+              <div key={doc.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-lg hover:bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded flex items-center justify-center">
+                    <Book className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-slate-900 text-sm">{doc.name}</div>
+                    <div className="text-xs text-slate-500">
+                      {(doc.size / 1024).toFixed(1)} KB • {new Date(doc.uploaded_at).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded font-medium border border-emerald-100 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Owner: Me
+                  </span>
+                  <Button variant="ghost" className="text-xs h-8">Download</Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
+    </PageShell>
+  );
+};
+
+const RailWebhookTesterPage: React.FC<{ railTabs: React.ReactNode }> = ({ railTabs }) => {
   const { push } = useToast();
   const [form, setForm] = useState({
     provider: 'mock',
@@ -1716,7 +1666,7 @@ const RailWebhookTesterPage: React.FC = () => {
 
   return (
     <PageShell title="Rail / Webhook Tester" subtitle="Simulate provider callbacks for testing.">
-      <RailTabs />
+      {railTabs}
       <Card className="p-6">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
@@ -1943,153 +1893,710 @@ const PlaceholderPage: React.FC<{ title: string; subtitle: string }> = ({ title,
   </PageShell>
 );
 
-const navItems = [
-  { label: 'Dashboard', route: '/dashboard', icon: BarChart3 },
-  { label: 'Ledger', route: '/ledger/accounts', icon: Book },
-  { label: 'Rail', route: '/rail/payees', icon: Shuffle },
-  { label: 'Lending', route: '/lending', icon: HandCoins },
-  { label: 'Entities', route: '/entities', icon: Building2 },
-  { label: 'Admin', route: '/admin', icon: Settings }
+// ─── Wrapper Components (manage sub-tab state) ──────────────────────────────
+
+const LedgerPage: React.FC<{ canAdmin: boolean }> = ({ canAdmin }) => {
+  const [subTab, setSubTab] = useState('accounts');
+  const tabs = <LedgerTabs activeTab={subTab} onTabChange={setSubTab} />;
+
+  switch (subTab) {
+    case 'journal':
+      return <LedgerJournalPage ledgerTabs={tabs} />;
+    case 'reports':
+      return <LedgerReportsPage ledgerTabs={tabs} />;
+    default:
+      return <LedgerAccountsPage canAdmin={canAdmin} ledgerTabs={tabs} />;
+  }
+};
+
+// ─── Coinbase Crypto Page ────────────────────────────────────────────────────
+
+const CoinbaseCryptoPage: React.FC<{ railTabs: React.ReactNode }> = ({ railTabs }) => {
+  const { push } = useToast();
+  const stepUp = useStepUpAuth();
+
+  // ── Shared account list state ──
+  const [accounts, setAccounts] = useState<CoinbaseAccount[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+
+  // ── Send form state ──
+  const [sendForm, setSendForm] = useState({ accountId: '', to: '', amount: '', currency: '', memo: '' });
+  const [addressValid, setAddressValid] = useState<boolean | null>(null);
+  const [validating, setValidating] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  // ── Receive state ──
+  const [receiveAccountId, setReceiveAccountId] = useState('');
+  const [receiveCurrency, setReceiveCurrency] = useState('');
+  const [receiveAddress, setReceiveAddress] = useState('');
+  const [receiveLoading, setReceiveLoading] = useState(false);
+
+  // ── Transactions state ──
+  const [transactions, setTransactions] = useState<CoinbaseTransaction[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
+
+  // ── Load accounts on mount ──
+  const loadAccounts = useCallback(async () => {
+    setAccountsLoading(true);
+    try {
+      const resp = await cbListAccounts();
+      setAccounts(resp.accounts || []);
+    } catch {
+      push('error', 'Failed to load crypto accounts.');
+    } finally {
+      setAccountsLoading(false);
+    }
+  }, [push]);
+
+  // ── Load transactions on mount ──
+  const loadTransactions = useCallback(async () => {
+    setTxLoading(true);
+    try {
+      const resp = await cbListTransactions({ limit: 50 });
+      setTransactions(resp.transactions || []);
+    } catch {
+      push('error', 'Failed to load transactions.');
+    } finally {
+      setTxLoading(false);
+    }
+  }, [push]);
+
+  useEffect(() => {
+    loadAccounts();
+    loadTransactions();
+  }, [loadAccounts, loadTransactions]);
+
+  // ── Address validation on blur ──
+  const handleAddressBlur = async () => {
+    if (!sendForm.to || !sendForm.currency) {
+      setAddressValid(null);
+      return;
+    }
+    setValidating(true);
+    try {
+      const result = await cbValidateAddress(sendForm.to, sendForm.currency);
+      setAddressValid(result.valid);
+    } catch {
+      setAddressValid(false);
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  // ── Send crypto ──
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sendForm.accountId || !sendForm.to || !sendForm.amount || !sendForm.currency) {
+      push('error', 'Please fill in all required fields.');
+      return;
+    }
+    const ok = await stepUp.verify();
+    if (!ok) {
+      push('error', 'Step-up authentication failed.');
+      return;
+    }
+    setSending(true);
+    try {
+      await sendCrypto({
+        accountId: sendForm.accountId,
+        to: sendForm.to,
+        amount: sendForm.amount,
+        currency: sendForm.currency,
+        description: sendForm.memo || undefined
+      });
+      push('success', `Sent ${sendForm.amount} ${sendForm.currency} successfully.`);
+      setSendForm({ accountId: '', to: '', amount: '', currency: '', memo: '' });
+      setAddressValid(null);
+      await Promise.all([loadAccounts(), loadTransactions()]);
+    } catch (err: any) {
+      push('error', err?.payload?.detail || 'Failed to send crypto.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // ── Fetch receive address ──
+  const handleReceiveSelect = async (accountId: string, currency: string) => {
+    setReceiveAccountId(accountId);
+    setReceiveCurrency(currency);
+    setReceiveAddress('');
+    if (!accountId) return;
+    setReceiveLoading(true);
+    try {
+      const addr = await getReceiveAddress(accountId, currency);
+      setReceiveAddress(addr.address);
+    } catch {
+      push('error', 'Failed to fetch receive address.');
+    } finally {
+      setReceiveLoading(false);
+    }
+  };
+
+  // ── Copy to clipboard ──
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(
+      () => push('success', 'Address copied to clipboard.'),
+      () => push('error', 'Failed to copy address.')
+    );
+  };
+
+  // ── Format currency amount ──
+  const formatCryptoAmount = (amount: string, currency: string) => {
+    const num = parseFloat(amount);
+    if (isNaN(num)) return `${amount} ${currency}`;
+    if (['USD', 'USDC', 'USDT', 'EUR', 'GBP'].includes(currency.toUpperCase())) {
+      return `${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+    }
+    return `${num.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} ${currency}`;
+  };
+
+  // ── Truncate address ──
+  const truncateAddress = (addr: string) => {
+    if (addr.length <= 14) return addr;
+    return `${addr.slice(0, 8)}...${addr.slice(-6)}`;
+  };
+
+  // ── Status badge ──
+  const statusBadge = (status: CoinbaseTransaction['status']) => {
+    const styles: Record<string, string> = {
+      completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      pending: 'bg-amber-50 text-amber-700 border-amber-200',
+      failed: 'bg-rose-50 text-rose-700 border-rose-200',
+      canceled: 'bg-slate-100 text-slate-500 border-slate-200'
+    };
+    return (
+      <span className={`px-2 py-0.5 text-xs font-medium rounded border ${styles[status] || styles.canceled}`}>
+        {status}
+      </span>
+    );
+  };
+
+  // ── Tx type icon ──
+  const txTypeIcon = (type: CoinbaseTransaction['type']) => {
+    switch (type) {
+      case 'send': return <ArrowUpRight className="w-4 h-4 text-rose-500" />;
+      case 'receive': return <ArrowDownLeft className="w-4 h-4 text-emerald-500" />;
+      case 'deposit': return <ArrowDownLeft className="w-4 h-4 text-indigo-500" />;
+      case 'withdrawal': return <ArrowUpRight className="w-4 h-4 text-amber-500" />;
+      default: return <Wallet className="w-4 h-4 text-slate-400" />;
+    }
+  };
+
+  // ── Update send form currency when account changes ──
+  const handleSendAccountChange = (accountId: string) => {
+    const acct = accounts.find(a => a.id === accountId);
+    setSendForm(prev => ({
+      ...prev,
+      accountId,
+      currency: acct ? acct.currency.code : ''
+    }));
+    setAddressValid(null);
+  };
+
+  return (
+    <PageShell title="Rail / Crypto" subtitle="Coinbase wallet management, send/receive, and transaction history.">
+      {railTabs}
+
+      {/* ── Balances Card ── */}
+      <Card className="p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+          <Wallet className="w-4 h-4" /> Crypto Balances
+        </h3>
+        {accountsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+            <span className="ml-2 text-sm text-slate-400">Loading accounts...</span>
+          </div>
+        ) : accounts.length === 0 ? (
+          <div className="text-center py-8 text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl">
+            No crypto accounts found.
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {accounts.map(acct => (
+              <div key={acct.id} className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">
+                    {acct.currency.code.slice(0, 3)}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-slate-900">{acct.name}</div>
+                    <div className="text-xs text-slate-400">{acct.type} &middot; {acct.currency.name}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-semibold text-slate-900">
+                    {formatCryptoAmount(acct.balance.amount, acct.balance.currency)}
+                  </div>
+                  {acct.native_balance && (
+                    <div className="text-xs text-slate-400">
+                      ${parseFloat(acct.native_balance.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {acct.native_balance.currency}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* ── Send & Receive (side by side) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* ── Send Form ── */}
+        <Card className="p-6">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+            <ArrowUpRight className="w-4 h-4" /> Send Crypto
+          </h3>
+          <form onSubmit={handleSend} className="space-y-4">
+            <div className="space-y-2">
+              <Label>From Account</Label>
+              <Select value={sendForm.accountId} onChange={e => handleSendAccountChange(e.target.value)}>
+                <option value="">Select account...</option>
+                {accounts.filter(a => a.type === 'wallet').map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} ({formatCryptoAmount(a.balance.amount, a.balance.currency)})
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Recipient Address</Label>
+              <div className="relative">
+                <Input
+                  value={sendForm.to}
+                  onChange={e => {
+                    setSendForm(prev => ({ ...prev, to: e.target.value }));
+                    setAddressValid(null);
+                  }}
+                  onBlur={handleAddressBlur}
+                  placeholder="0x... or bc1..."
+                  required
+                />
+                {validating && (
+                  <div className="absolute right-3 top-2.5">
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                  </div>
+                )}
+                {!validating && addressValid === true && (
+                  <div className="absolute right-3 top-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  </div>
+                )}
+                {!validating && addressValid === false && (
+                  <div className="absolute right-3 top-2.5">
+                    <XCircle className="w-4 h-4 text-rose-500" />
+                  </div>
+                )}
+              </div>
+              {addressValid === false && (
+                <p className="text-xs text-rose-500">Invalid address for {sendForm.currency}.</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Amount</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={sendForm.amount}
+                  onChange={e => setSendForm(prev => ({ ...prev, amount: e.target.value }))}
+                  placeholder="0.00"
+                  required
+                  className="flex-1"
+                />
+                <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600 font-medium min-w-[60px] text-center">
+                  {sendForm.currency || '---'}
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Memo (optional)</Label>
+              <Input
+                value={sendForm.memo}
+                onChange={e => setSendForm(prev => ({ ...prev, memo: e.target.value }))}
+                placeholder="Payment note..."
+              />
+            </div>
+            <Button type="submit" disabled={sending || addressValid === false}>
+              {sending ? 'Sending...' : 'Send Crypto'}
+            </Button>
+          </form>
+        </Card>
+
+        {/* ── Receive Card ── */}
+        <Card className="p-6">
+          <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+            <ArrowDownLeft className="w-4 h-4" /> Receive Crypto
+          </h3>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Currency</Label>
+              <Select
+                value={receiveAccountId}
+                onChange={e => {
+                  const acct = accounts.find(a => a.id === e.target.value);
+                  handleReceiveSelect(e.target.value, acct?.currency.code || '');
+                }}
+              >
+                <option value="">Select account...</option>
+                {accounts.filter(a => a.type === 'wallet').map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.currency.code} - {a.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {receiveLoading && (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                <span className="ml-2 text-sm text-slate-400">Generating address...</span>
+              </div>
+            )}
+
+            {receiveAddress && !receiveLoading && (
+              <div className="space-y-3">
+                <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold">
+                  {receiveCurrency} Deposit Address
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <code className="flex-1 text-sm font-mono text-slate-800 break-all">
+                    {receiveAddress}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(receiveAddress)}
+                    className="p-2 hover:bg-slate-200 rounded-lg transition-colors shrink-0"
+                    title="Copy address"
+                  >
+                    <Copy className="w-4 h-4 text-slate-500" />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Only send {receiveCurrency} to this address. Sending other assets may result in permanent loss.
+                </p>
+              </div>
+            )}
+
+            {!receiveAccountId && !receiveLoading && (
+              <div className="text-center py-8 text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl">
+                Select a currency to generate a deposit address.
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* ── Transaction History ── */}
+      <Card className="p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+          <Book className="w-4 h-4" /> Transaction History
+        </h3>
+        {txLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+            <span className="ml-2 text-sm text-slate-400">Loading transactions...</span>
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="text-center py-8 text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl">
+            No transactions yet.
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-slate-200">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold">Type</th>
+                  <th className="px-4 py-3 text-left font-semibold">Amount</th>
+                  <th className="px-4 py-3 text-left font-semibold">Status</th>
+                  <th className="px-4 py-3 text-left font-semibold">Date</th>
+                  <th className="px-4 py-3 text-left font-semibold">Address</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {transactions.map(tx => (
+                  <tr key={tx.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-slate-700">
+                      <div className="flex items-center gap-2">
+                        {txTypeIcon(tx.type)}
+                        <span className="capitalize">{tx.type}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-700 font-medium">
+                      {formatCryptoAmount(tx.amount.amount, tx.amount.currency)}
+                    </td>
+                    <td className="px-4 py-3">{statusBadge(tx.status)}</td>
+                    <td className="px-4 py-3 text-slate-500 text-xs">
+                      {new Date(tx.created_at).toLocaleDateString()}{' '}
+                      {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 font-mono text-xs">
+                      {tx.to?.address
+                        ? truncateAddress(tx.to.address)
+                        : tx.from?.address
+                          ? truncateAddress(tx.from.address)
+                          : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </PageShell>
+  );
+};
+
+const RailPage: React.FC = () => {
+  const [subTab, setSubTab] = useState('payees');
+  const tabs = <RailTabs activeTab={subTab} onTabChange={setSubTab} />;
+
+  switch (subTab) {
+    case 'payment-orders':
+      return <RailPaymentOrdersPage railTabs={tabs} />;
+    case 'bank':
+      return <RailBankPage railTabs={tabs} />;
+    case 'reconcile':
+      return <RailReconcilePage railTabs={tabs} />;
+    case 'crypto':
+      return <CoinbaseCryptoPage railTabs={tabs} />;
+    case 'documents':
+      return <DocumentsPage railTabs={tabs} />;
+    case 'webhook-tester':
+      return <RailWebhookTesterPage railTabs={tabs} />;
+    default:
+      return <RailPayeesPage railTabs={tabs} />;
+  }
+};
+
+// ─── Navigation Items ────────────────────────────────────────────────────────
+
+const primaryNav = [
+  { id: 'dashboard', label: 'Home', icon: LayoutGrid },
+  { id: 'banking', label: 'Banking', icon: Landmark },
+  { id: 'payments', label: 'Payments', icon: Shuffle },
+  { id: 'loans', label: 'Loans', icon: HandCoins },
+  { id: 'more', label: 'More', icon: MoreVertical },
 ];
 
+const allNavItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
+  { id: 'banking', label: 'Banking', icon: Landmark },
+  { id: 'payments', label: 'Payments', icon: Shuffle },
+  { id: 'loans', label: 'Loans', icon: HandCoins },
+  { id: 'profile', label: 'Profile', icon: Users },
+  { id: 'settings', label: 'Settings', icon: Settings },
+];
+
+// ─── QB Shell (export App) ───────────────────────────────────────────────────
+
 export const App: React.FC = () => {
-  const { user, signOut, isLoading } = useAuth();
-  console.log('App-lastrust Render: User=', user?.email, 'Loading=', isLoading);
-  const { route, navigate } = useRoute();
-  const isAuthenticated = !!user;
+  const { user, signOut } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
     setApiUser(user?.uid || null);
   }, [user]);
 
+  // Hash routing
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash && allNavItems.some(i => i.id === hash)) {
+        setActiveTab(hash);
+      }
+    };
+    onHashChange();
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useEffect(() => {
-    if (!isAuthenticated && route !== '/login') {
-      navigate('/login');
+    if (window.location.hash.slice(1) !== activeTab) {
+      window.history.replaceState(null, '', `#${activeTab}`);
     }
-    if (isAuthenticated && route === '/login') {
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, route, navigate]);
+  }, [activeTab]);
 
-  const role = (user?.role || user?.user_role || user?.role_name || 'viewer').toLowerCase();
+  const role = ((user as any)?.role || (user as any)?.user_role || (user as any)?.role_name || 'viewer').toLowerCase();
   const canAdmin = role === 'admin';
 
-  const renderRoute = () => {
-    if (!isAuthenticated) return <LoginPage />;
-    switch (route) {
-      case '/dashboard':
+  const tabTitle = allNavItems.find(i => i.id === activeTab)?.label || 'Clear.Flow';
+
+  const handleNavClick = (id: string) => {
+    if (id === 'more') {
+      setMenuOpen(true);
+      return;
+    }
+    setActiveTab(id);
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
         return <DashboardPage />;
-      case '/ledger':
-      case '/ledger/accounts':
-        return <LedgerAccountsPage canAdmin={canAdmin} />;
-      case '/ledger/journal':
-        return <LedgerJournalPage />;
-      case '/ledger/reports':
-        return <LedgerReportsPage />;
-      case '/rail':
-      case '/rail/payees':
-        return <RailPayeesPage />;
-      case '/rail/payment-orders':
-        return <RailPaymentOrdersPage />;
-      case '/rail/bank':
-        return <RailBankPage />;
-      case '/rail/reconcile':
-        return <RailReconcilePage />;
-      case '/rail/documents':
-        return <DocumentsPage />;
-      case '/rail/webhook-tester':
-        return <RailWebhookTesterPage />;
-      case '/lending':
-        return <PlaceholderPage title="Lending" subtitle="Closed-group internal lending + netting controls." />;
-      case '/entities':
-        return <EntitiesPage />;
-      case '/admin':
-        return <PlaceholderPage title="Admin" subtitle="Users, roles, and settings." />;
+      case 'banking':
+        return <LedgerPage canAdmin={canAdmin} />;
+      case 'payments':
+        return <PaymentCenter />;
+      case 'loans':
+        return <LoanManager />;
+      case 'profile':
+        return <PlaceholderPage title="User Profile" subtitle="Manage your personal information and system role." />;
+      case 'settings':
+        return <PlaceholderPage title="Settings" subtitle="System configuration, security, and data management." />;
       default:
         return <DashboardPage />;
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <ToastProvider>
-        <RouteContext.Provider value={{ route, navigate }}>
-          <LoginPage />
-        </RouteContext.Provider>
-      </ToastProvider>
-    );
-  }
-
   return (
     <ToastProvider>
-      <RouteContext.Provider value={{ route, navigate }}>
-        <div className="min-h-screen bg-slate-100 flex">
-          <aside className="w-64 bg-slate-950 text-slate-200 flex flex-col">
-            <div className="p-6 border-b border-slate-900">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-white text-slate-900 flex items-center justify-center font-semibold">CF</div>
-                <div>
-                  <div className="text-lg font-semibold">Clear.Flow</div>
-                  <div className="text-xs text-slate-500 uppercase tracking-widest">Ledger Rail</div>
-                </div>
-              </div>
+      <div className="flex flex-col h-screen w-screen bg-slate-100 text-slate-900 font-sans pb-16">
+        {/* Indigo Header */}
+        <header className="bg-indigo-600 text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-md z-[50]">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open navigation menu"
+              className="p-1 hover:bg-white/10 rounded-md transition-colors"
+            >
+              <Menu size={24} />
+            </button>
+            <div className="flex flex-col">
+              <h1 className="text-sm font-bold leading-tight">
+                {tabTitle}
+              </h1>
+              <p className="text-[10px] text-white/80 uppercase tracking-wider font-medium">
+                Clear.Flow
+              </p>
             </div>
-            <nav className="flex-1 px-4 py-6 space-y-1">
-              {navItems.map(item => (
-                <button
-                  key={item.route}
-                  onClick={() => navigate(item.route)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${route.startsWith(item.route.split('/')[1] ? `/${item.route.split('/')[1]}` : item.route)
-                    ? 'bg-slate-800 text-white'
-                    : 'text-slate-400 hover:bg-slate-900 hover:text-white'
-                    }`}
-                >
-                  <item.icon size={16} />
-                  {item.label}
-                </button>
-              ))}
-            </nav>
-            <div className="p-4 border-t border-slate-900">
-              <button
-                onClick={() => signOut()}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-900"
-              >
-                <span>Sign out</span>
-                <LogOut size={16} />
-              </button>
-            </div>
-          </aside>
+          </div>
 
-          <main className="flex-1">
-            <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <span>Clear.Flow</span>
-                <ChevronRight size={14} />
-                <span className="text-slate-900 font-semibold">{route.replace('/', '').replace('-', ' ') || 'dashboard'}</span>
-              </div>
-              <div className="flex items-center gap-4 text-sm text-slate-500">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-semibold">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              aria-label="Toggle quick search"
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            >
+              <Search size={20} />
+            </button>
+            <button
+              className="p-2 hover:bg-white/10 rounded-full transition-colors relative"
+              aria-label="View notifications"
+            >
+              <Bell size={20} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full border border-indigo-600"></span>
+            </button>
+            <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center font-bold text-xs ml-1">
+              {(user?.email || 'U').slice(0, 2).toUpperCase()}
+            </div>
+          </div>
+        </header>
+
+        {/* Quick Search */}
+        {searchOpen && (
+          <div className="bg-white border-b border-slate-200 px-4 py-2 shadow-sm z-40">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
+              <input
+                type="text"
+                placeholder="Find transactions, entities, reports..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-600 outline-none"
+                autoFocus
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="px-4 py-6 md:px-8">
+            {renderContent()}
+          </div>
+        </main>
+
+        {/* Bottom Nav */}
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-2 py-1 flex justify-around items-center z-[50] shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-safe">
+          {primaryNav.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleNavClick(item.id)}
+              className={`flex flex-col items-center gap-1 p-2 min-w-[64px] transition-colors ${activeTab === item.id ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'
+                }`}
+            >
+              <item.icon size={20} strokeWidth={activeTab === item.id ? 2.5 : 2} />
+              <span className={`text-[10px] font-medium ${activeTab === item.id ? 'font-bold' : ''}`}>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Side Drawer */}
+        {menuOpen && (
+          <div className="fixed inset-0 z-[100]">
+            <div
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setMenuOpen(false)}
+            />
+            <aside className="absolute inset-y-0 left-0 w-4/5 max-w-sm bg-white shadow-2xl flex flex-col">
+              <div className="p-6 bg-indigo-600 text-white shrink-0">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center font-bold text-xl">
                     {(user?.email || 'U').slice(0, 2).toUpperCase()}
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm text-slate-900 font-semibold">{user?.email || 'User'}</div>
-                    <div className="text-xs text-slate-400 uppercase">{role}</div>
-                  </div>
+                  <button onClick={() => setMenuOpen(false)} className="p-1 hover:bg-white/10 rounded-md">
+                    <X size={24} />
+                  </button>
+                </div>
+                <h2 className="text-xl font-bold">{user?.displayName || user?.email || 'User'}</h2>
+                <p className="text-xs text-white/70">{user?.email}</p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto py-4">
+                <nav className="space-y-1">
+                  {allNavItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        setMenuOpen(false);
+                      }}
+                      className="w-full flex items-center justify-between px-6 py-3 hover:bg-slate-50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-4 text-slate-600 group-hover:text-indigo-600">
+                        <item.icon size={20} />
+                        <span className="text-sm font-bold">{item.label}</span>
+                      </div>
+                      <ChevronRight size={16} className="text-slate-300" />
+                    </button>
+                  ))}
+                </nav>
+
+                <div className="mt-8 px-6 pt-6 border-t border-slate-100 space-y-4">
+                  <button className="flex items-center gap-4 text-slate-500 hover:text-slate-800 text-sm font-medium">
+                    <HelpCircle size={18} />
+                    Help & Support
+                  </button>
                 </div>
               </div>
-            </header>
 
-            <div className="px-8 py-6">{renderRoute()}</div>
-          </main>
-        </div>
-      </RouteContext.Provider>
+              <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clear.Flow v4.2.0</span>
+                <button onClick={() => signOut()} className="text-xs font-bold text-red-600 hover:text-red-700">Sign Out</button>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        <style>{`
+          .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+          }
+        `}</style>
+      </div>
     </ToastProvider>
   );
 };
-
-
-
-
-

@@ -25,8 +25,9 @@ steps:
       mkdir -p server/public
       cp -r dist/* server/public/
 
-  # 3. Build & Publish Container (Cloud Native Buildpacks)
-  #    "We are serverless" -> No Dockerfile required.
+  # 3. Build & Publish Container (Cloud Native Buildpacks) # Deploy fastrack branch
+  - name: 'gcr.io/cloud-builders/git'
+    args: ['fetch', '--unshallow']
   - name: 'gcr.io/k8s-skaffold/pack'
     entrypoint: 'pack'
     args:

@@ -24,8 +24,6 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
-          lastrust: path.resolve(__dirname, 'index-lastrust.html'),
-          unified: path.resolve(__dirname, 'index-unified.html'),
         },
       },
     }

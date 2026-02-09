@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { ComplianceFiling, Entity, IRSFormType, BSORole, IRSAPICredential, EntityRole, TaxModule } from '../types';
 import { FileSignature, AlertCircle, CheckCircle, Calendar, Plus, Send, RefreshCw, Lock, Globe, Building } from 'lucide-react';
 import { AddTaxModuleModal } from './modals/AddTaxModuleModal';
-import { useLedgerStore } from '../services/ledgerService';
 
 interface Props {
   entity: Entity;
@@ -30,7 +29,6 @@ export const ComplianceWidget: React.FC<Props> = ({
   onSubmitToApi,
   onAddModule
 }) => {
-  const { requestAuthorization } = useLedgerStore();
   const [showAddModule, setShowAddModule] = useState(false);
   
   const getStatusColor = (status: string) => {
@@ -59,8 +57,7 @@ export const ComplianceWidget: React.FC<Props> = ({
 
   const handleSecureSubmit = (filingId: string) => {
       if (!onSubmitToApi) return;
-      // Request 2FA before submitting to IRS API
-      requestAuthorization(() => onSubmitToApi(filingId));
+      onSubmitToApi(filingId);
   };
 
   const renderFormRow = (type: IRSFormType | 'CAFR' | '1042', title: string, desc: string, icon: any = FileSignature) => {

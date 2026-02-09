@@ -1,0 +1,9 @@
+{
+    "track_id": "clearflow_qb_unification_20260209",
+    "type": "feature",
+    "status": "complete",
+    "created_at": "2026-02-09T09:45:00Z",
+    "updated_at": "2026-02-09T18:00:00Z",
+    "description": "Refactor Clear.Flow UI to adopt a functional layout-based structure similar to the QuickBooks skin, unifying it under a single application structure with distinct skins/layers and patching functional gaps (Plaid, CSV, payments, loans).",
+    "notes": "All 4 phases complete. Original page content restored into QB shell with hash routing, prop-driven sub-tabs, apiClient-based pages. Build verified clean. Code path verification passed for all navigation, Plaid, and skin persistence."
+}

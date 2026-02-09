@@ -161,8 +161,6 @@ vi.mock('../services/ledgerService', () => {
 describe('IRIS1099Wizard - Authentication Step', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Disable 2FA in tests for faster execution
-    vi.stubEnv('VITE_REQUIRE_2FA', 'false');
     (irsApiClient.irsApi.healthCheck as any).mockResolvedValue({
       status: 'healthy',
       service: 'IRS IRIS API Proxy',
@@ -551,20 +549,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
-      // Check if 2FA is shown, if so complete it
-      await waitFor(async () => {
-        const twoFaHeading = screen.queryByRole('heading', { name: /Two-Factor Authentication/i });
-        if (twoFaHeading) {
-          // Complete 2FA step
-          const codeInputs = screen.getAllByRole('textbox');
-          codeInputs.forEach((input, index) => {
-            fireEvent.change(input, { target: { value: String(index + 1) } });
-          });
-          fireEvent.click(screen.getByRole('button', { name: /Verify & Continue/i }));
-        }
-      }, { timeout: 10000 });
-
-      // Wait for Filer step (after auth or 2FA)
+      // Wait for Filer step (after auth)
       await waitFor(() => {
         expect(screen.getByText(/Transmitter ID/i)).toBeInTheDocument();
         expect(screen.getByText(/Filer Identification/i)).toBeInTheDocument();
@@ -1660,7 +1645,7 @@ describe('IRIS1099Wizard - Authentication Step', () => {
       fireEvent.change(tccInput, { target: { value: 'AA-1234567' } });
       fireEvent.click(screen.getByRole('button', { name: /Authenticate & Continue/i }));
 
-      // Wait for Filer step (2FA is disabled in tests)
+      // Wait for Filer step
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /Filer Identification/i })).toBeInTheDocument();
       }, { timeout: 5000 });

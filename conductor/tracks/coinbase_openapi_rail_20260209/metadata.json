@@ -1,0 +1,7 @@
+{
+    "track_id": "coinbase_openapi_rail_20260209",
+    "type": "feature",
+    "status": "complete",
+    "created_at": "2026-02-09T22:00:00Z",
+    "description": "Integrate Coinbase as a payment/transfer rail via their OpenAPI spec. Add crypto deposit, withdrawal, and balance operations alongside existing ACH/FedWire rails."
+}
