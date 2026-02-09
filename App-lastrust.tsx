@@ -367,132 +367,6 @@ const Table: React.FC<{ columns: string[]; rows: any[]; empty?: string; renderCe
     </table>
   </div>
 );
-const LoginPage: React.FC = () => {
-  const { signIn, signInWithGoogle, isLoading } = useAuth();
-  const { push } = useToast();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [completeLater, setCompleteLater] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [entityName, setEntityName] = useState('');
-  const [entityType, setEntityType] = useState('LLC');
-  const [address, setAddress] = useState('');
-  const googleEnabled = String(import.meta.env.VITE_FIREBASE_ENABLED || '').toLowerCase() === 'true' && !!import.meta.env.VITE_FIREBASE_CONFIG;
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    try {
-      if (isRegister) {
-        if (!termsAccepted) {
-          push('error', 'Please accept the terms to create your account.');
-          return;
-        }
-        await apiPost('/auth/register', {
-          email,
-          password,
-          termsAccepted: true,
-          full_name: fullName,
-          company_name: companyName,
-          phone,
-          entity_name: entityName,
-          entity_type: entityType,
-          address,
-          complete_later: completeLater
-        });
-        push('success', 'Account created. Please sign in.');
-        setIsRegister(false);
-      }
-      await signIn(email, password);
-      push('success', 'Signed in successfully.');
-    } catch (err: any) {
-      push('error', err?.payload?.detail || err?.message || 'Login failed.');
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-slate-900">Sign in</h1>
-          <p className="text-sm text-slate-500 mt-1">Access Clear.Flow to begin the payment test path.</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label>Password</Label>
-            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-          </div>
-          {isRegister && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 gap-3">
-                <Input placeholder="Full name" value={fullName} onChange={e => setFullName(e.target.value)} />
-                <Input placeholder="Company name" value={companyName} onChange={e => setCompanyName(e.target.value)} />
-                <Input placeholder="Phone" value={phone} onChange={e => setPhone(e.target.value)} />
-                <Input placeholder="Entity name" value={entityName} onChange={e => setEntityName(e.target.value)} />
-                <Select value={entityType} onChange={e => setEntityType(e.target.value)}>
-                  {['LLC', 'CORP', 'TRUST', 'SOLE_PROP', 'NONPROFIT'].map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </Select>
-                <Input placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} />
-              </div>
-              <label className="flex items-center gap-2 text-xs text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={completeLater}
-                  onChange={e => setCompleteLater(e.target.checked)}
-                />
-                Complete profile later
-              </label>
-              <label className="flex items-center gap-2 text-xs text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={termsAccepted}
-                  onChange={e => setTermsAccepted(e.target.checked)}
-                />
-                I agree to the terms, electronic records, and privacy notice.
-              </label>
-            </div>
-          )}
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Signing in...' : isRegister ? 'Create Account' : 'Login'}
-          </Button>
-          {googleEnabled && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full"
-              onClick={async () => {
-                try {
-                  await signInWithGoogle();
-                  push('success', 'Signed in with Google.');
-                } catch (err: any) {
-                  push('error', err?.message || 'Google sign-in failed.');
-                }
-              }}
-            >
-              Sign in with Google
-            </Button>
-          )}
-          <button
-            type="button"
-            className="text-xs text-slate-500 hover:text-slate-800"
-            onClick={() => setIsRegister(prev => !prev)}
-          >
-            {isRegister ? 'Already have an account? Sign in' : 'New here? Create an account'}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 const ChartCard: React.FC<{ title: string; series: any[] }> = ({ title, series }) => (
   <Card>
@@ -1976,7 +1850,7 @@ export const App: React.FC = () => {
   const canAdmin = role === 'admin';
 
   const renderRoute = () => {
-    if (!isAuthenticated) return <LoginPage />;
+    if (!isAuthenticated) return null;
     switch (route) {
       case '/dashboard':
         return <DashboardPage />;
@@ -2012,13 +1886,7 @@ export const App: React.FC = () => {
   };
 
   if (!isAuthenticated) {
-    return (
-      <ToastProvider>
-        <RouteContext.Provider value={{ route, navigate }}>
-          <LoginPage />
-        </RouteContext.Provider>
-      </ToastProvider>
-    );
+    return null;
   }
 
   return (

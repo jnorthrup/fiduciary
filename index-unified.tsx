@@ -25,15 +25,7 @@ const LoadingScreen = () => (
 const SKIN_STORAGE_KEY = 'fiduciary_selected_skin';
 
 const UnifiedApp: React.FC = () => {
-    const { user: realUser, signIn, isLoading } = useAuth();
-
-    // MOCK USER FOR VERIFICATION OF NAVIGATION
-    const user = realUser || {
-        uid: 'test-user',
-        email: 'test@example.com',
-        photoURL: 'https://via.placeholder.com/150',
-        displayName: 'Test User'
-    };
+    const { user, signIn, isLoading } = useAuth();
 
     const [selectedSkin, setSelectedSkin] = useState<'jnorthrup' | 'lastrust' | null>(null);
     const [loginError, setLoginError] = useState<string | null>(null);
