@@ -89,26 +89,26 @@ steps:
         echo "=== Post-deploy smoke test ==="
 
         # Health endpoint
-        STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/health")
-        [ "$STATUS" = "200" ] || { echo "FAIL: /api/health returned $STATUS"; exit 1; }
+        STATUS=$$(curl -s -o /dev/null -w "%{http_code}" "$$URL/api/health")
+        [ "$$STATUS" = "200" ] || { echo "FAIL: /api/health returned $$STATUS"; exit 1; }
         echo "PASS: /api/health → 200"
 
         # SPA serves correct index.html
-        BODY=$(curl -s "$URL/")
-        echo "$BODY" | grep -q "Trust Ledger" || { echo "FAIL: root page missing app title"; exit 1; }
+        BODY=$$(curl -s "$$URL/")
+        echo "$$BODY" | grep -q "Trust Ledger" || { echo "FAIL: root page missing app title"; exit 1; }
         echo "PASS: root serves Trust Ledger"
 
         # No stale login page
-        if echo "$BODY" | grep -q "Create an account"; then
+        if echo "$$BODY" | grep -q "Create an account"; then
           echo "FAIL: stale login page still served"
           exit 1
         fi
         echo "PASS: no stale login page"
 
         # Coinbase API proxy is mounted
-        CB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/coinbase/health")
-        [ "$CB_STATUS" = "401" ] || [ "$CB_STATUS" = "200" ] || { echo "FAIL: /api/coinbase/health returned $CB_STATUS"; exit 1; }
-        echo "PASS: /api/coinbase/health → $CB_STATUS (auth-gated)"
+        CB_STATUS=$$(curl -s -o /dev/null -w "%{http_code}" "$$URL/api/coinbase/health")
+        [ "$$CB_STATUS" = "401" ] || [ "$$CB_STATUS" = "200" ] || { echo "FAIL: /api/coinbase/health returned $$CB_STATUS"; exit 1; }
+        echo "PASS: /api/coinbase/health → $$CB_STATUS (auth-gated)"
 
         echo "=== All smoke tests passed ==="
 
