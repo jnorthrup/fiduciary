@@ -61,6 +61,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
 
     useEffect(() => {
+        // BACKDOOR FOR AUTOMATED TESTING
+        // Allows Playwright to simulate a logged-in user without GUI interaction
+        const params = new URLSearchParams(window.location.search);
+        const testUser = params.get('__test_user');
+
+        if (testUser) {
+            logger.warn('USING TEST USER BACKDOOR', { testUser });
+            setUser({
+                uid: testUser,
+                displayName: `Test User ${testUser}`,
+                email: `${testUser}@example.com`,
+                photoURL: null,
+                emailVerified: true
+            });
+            setIsLoading(false);
+            setIsInitialized(true);
+            return; // Skip firebase init
+        }
+
         const app = initFirebaseApp();
         if (!app) {
             setIsLoading(false);
@@ -172,5 +191,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) throw new Error('useAuth must be used within AuthProvider');
+
     return context;
 };
