@@ -25,9 +25,7 @@ steps:
       mkdir -p server/public
       cp -r dist/* server/public/
 
-  # 3. Build & Publish Container (Cloud Native Buildpacks) # Deploy fastrack branch
-  - name: 'gcr.io/cloud-builders/git'
-    args: ['fetch', '--unshallow']
+  # 3. Build & Publish Container (Cloud Native Buildpacks)
   - name: 'gcr.io/k8s-skaffold/pack'
     entrypoint: 'pack'
     args:
