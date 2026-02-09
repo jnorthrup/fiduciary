@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { UserProfileModal } from './components/modals/UserProfileModal';
 import {
   Book,
   Building2,
@@ -1718,6 +1719,42 @@ const RailWebhookTesterPage: React.FC<{ railTabs: React.ReactNode }> = ({ railTa
   );
 };
 
+const UserProfileWrapper: React.FC = () => {
+  const { user, signOut } = useAuth();
+  // Use a mock user object compatible with UserProfileModal if the auth user is simple
+  const profileUser = {
+    id: user?.uid || 'guest',
+    name: user?.displayName || 'Guest User',
+    email: user?.email || 'guest@example.com',
+    role: 'Viewer', // Default, should come from real user object
+    avatarInitials: (user?.email || 'GU').slice(0, 2).toUpperCase(),
+    isPrivate: false,
+    _version: '1',
+    lastActive: new Date().toISOString()
+  };
+
+  return (
+    <PageShell title="User Profile" subtitle="Manage your personal information and system role.">
+      <UserProfileModal
+        user={profileUser as any}
+        currentUser={profileUser as any}
+        onSave={() => { }}
+        onDelete={() => { }}
+        onClose={() => { }}
+      />
+    </PageShell>
+  );
+};
+
+const SettingsWrapper: React.FC = () => {
+  return (
+    <PageShell title="Settings" subtitle="System configuration.">
+      <Card className="p-6">
+        <p className="text-sm text-slate-500">Global system settings are managed by the administrator.</p>
+      </Card>
+    </PageShell>
+  );
+};
 const EntitiesPage: React.FC = () => {
   const { push } = useToast();
   const [entities, setEntities] = useState<any[]>([]);
@@ -2445,9 +2482,9 @@ export const App: React.FC = () => {
       case 'loans':
         return <LoanManager />;
       case 'profile':
-        return <PlaceholderPage title="User Profile" subtitle="Manage your personal information and system role." />;
+        return <UserProfileWrapper />;
       case 'settings':
-        return <PlaceholderPage title="Settings" subtitle="System configuration, security, and data management." />;
+        return <SettingsWrapper />;
       default:
         return <DashboardPage />;
     }

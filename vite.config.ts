@@ -20,10 +20,15 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      minify: false,
+      minify: 'esbuild',
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
+        },
+        output: {
+          entryFileNames: 'assets/[hash:8].js',
+          chunkFileNames: 'assets/[hash:8].js',
+          assetFileNames: 'assets/[hash:8][extname]',
         },
       },
     }

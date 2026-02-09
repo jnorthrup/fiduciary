@@ -4,3 +4,4 @@ dist/
 test-results/
 test-artifacts/
 server/node_modules/
+server/public/

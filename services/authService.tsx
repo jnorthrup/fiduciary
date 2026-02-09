@@ -54,10 +54,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [encryptionKey, setEncryptionKey] = useState<CryptoKey | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isInitialized, setIsInitialized] = useState(false);
-    const signInResolveRef = useRef<(() => void) | null>(null);
-    const signInRejectRef = useRef<((err: Error) => void) | null>(null);
+    const gsiReadyRef = useRef(false);
 
-    // ─── Credential handler (shared by auto-select and prompt) ──────────
+    // Pending credential promise — signIn() and reauthenticate() store their
+    // resolve/reject here so the GSI callback (set once in initialize) can
+    // fulfill them.
+    const pendingRef = useRef<{
+        resolve: (credential: string) => void;
+        reject: (err: Error) => void;
+    } | null>(null);
+
+    // ─── Credential handler (single callback given to GSI initialize) ───
     const handleCredential = useCallback(async (credential: string) => {
         const claims = decodeJwt(credential);
 
@@ -72,7 +79,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sessionStorage.setItem(SESSION_KEY, credential);
         setUser(authUser);
 
-        // Derive encryption key from uid
         const salt = new TextEncoder().encode('ledger-static-salt-' + authUser.uid);
         const key = await cryptoService.deriveKey(authUser.uid, salt);
         setEncryptionKey(key);
@@ -83,18 +89,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             photoURL: authUser.photoURL ? 'present' : 'none'
         });
 
-        // Resolve pending signIn() promise if any
-        signInResolveRef.current?.();
-        signInResolveRef.current = null;
-        signInRejectRef.current = null;
+        // Resolve any pending signIn / reauthenticate promise
+        pendingRef.current?.resolve(credential);
+        pendingRef.current = null;
     }, []);
 
-    // ─── Initialize GSI + restore session ───────────────────────────────
+    // ─── Initialize GSI exactly once + restore session ──────────────────
     useEffect(() => {
         // BACKDOOR FOR AUTOMATED TESTING
         const params = new URLSearchParams(window.location.search);
         const testUser = params.get('__test_user');
-
         if (testUser) {
             logger.warn('USING TEST USER BACKDOOR', { testUser });
             setUser({
@@ -110,73 +114,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (!CLIENT_ID) {
-            // No Google client ID configured — dev/mock mode
             setIsLoading(false);
             setIsInitialized(true);
             return;
         }
 
-        // Try restoring session from stored JWT
+        // Try restoring session from stored JWT before touching GSI
         const stored = sessionStorage.getItem(SESSION_KEY);
+        let restoredFromStorage = false;
         if (stored) {
             try {
                 const claims = decodeJwt(stored);
-                const expiry = claims.exp * 1000;
-                if (Date.now() < expiry) {
-                    // Token still valid — restore without re-prompting
+                if (Date.now() < claims.exp * 1000) {
+                    restoredFromStorage = true;
                     handleCredential(stored).finally(() => {
                         setIsLoading(false);
                         setIsInitialized(true);
                     });
-                    return;
+                } else {
+                    sessionStorage.removeItem(SESSION_KEY);
                 }
-                // Expired — clear it
-                sessionStorage.removeItem(SESSION_KEY);
             } catch {
                 sessionStorage.removeItem(SESSION_KEY);
             }
         }
 
-        // Initialize GSI
-        const initGsi = () => {
-            window.google?.accounts.id.initialize({
+        // Initialize GSI exactly once. The callback handles ALL future
+        // credential responses (auto-select, prompt, reauthenticate).
+        const doInit = () => {
+            window.google!.accounts.id.initialize({
                 client_id: CLIENT_ID,
                 callback: (response: any) => {
                     if (response.credential) {
-                        handleCredential(response.credential).finally(() => {
+                        handleCredential(response.credential).then(() => {
+                            // Ensure loading/init flags are set (matters for first auto-select)
                             setIsLoading(false);
                             setIsInitialized(true);
                         });
                     }
                 },
                 auto_select: true,
+                use_fedcm_for_prompt: true,
             });
+            gsiReadyRef.current = true;
+
+            // If we already restored from storage, don't auto-prompt
+            if (restoredFromStorage) return;
 
             // Try silent auto-select on page load
-            window.google?.accounts.id.prompt((notification: any) => {
-                // If auto-select didn't fire (user dismissed, or no session), just finish loading
-                if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
+            window.google!.accounts.id.prompt((notification: any) => {
+                // FedCM-safe: isNotDisplayed() is removed. Use getMomentType()
+                // or the retained methods isSkippedMoment / isDismissedMoment.
+                if (notification.isSkippedMoment() || notification.isDismissedMoment()) {
+                    // No auto-credential — finish loading so login screen shows
                     setIsLoading(false);
                     setIsInitialized(true);
                 }
             });
         };
 
-        // GSI script may still be loading
         if (window.google?.accounts?.id) {
-            initGsi();
+            doInit();
         } else {
-            // Wait for the script to load
             const interval = setInterval(() => {
                 if (window.google?.accounts?.id) {
                     clearInterval(interval);
-                    initGsi();
+                    doInit();
                 }
             }, 100);
-            // Timeout: if GSI script never loads, proceed without auth
             const timeout = setTimeout(() => {
                 clearInterval(interval);
-                if (!isInitialized) {
+                if (!gsiReadyRef.current) {
                     logger.warn('GSI script did not load in time');
                     setIsLoading(false);
                     setIsInitialized(true);
@@ -186,8 +194,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [handleCredential]);
 
+    // ─── requestCredential: shared plumbing for signIn / reauthenticate ─
+    const requestCredential = useCallback((): Promise<string> => {
+        return new Promise<string>((resolve, reject) => {
+            pendingRef.current = { resolve, reject };
+
+            // prompt() shows One Tap; credential arrives via the initialize callback
+            window.google?.accounts.id.prompt((notification: any) => {
+                if (notification.isSkippedMoment()) {
+                    pendingRef.current = null;
+                    reject(new Error('Sign-in was cancelled'));
+                }
+                // isDismissedMoment with credential_returned → callback already fired → pendingRef resolved
+            });
+
+            setTimeout(() => {
+                if (pendingRef.current) {
+                    pendingRef.current = null;
+                    reject(new Error('Sign-in timed out'));
+                }
+            }, 30000);
+        });
+    }, []);
+
     // ─── signIn ─────────────────────────────────────────────────────────
-    const signIn = async () => {
+    const signIn = useCallback(async () => {
         if (!CLIENT_ID) {
             logger.warn('Google Client ID missing. Falling back to Mock Auth.');
             await new Promise(resolve => setTimeout(resolve, 800));
@@ -201,87 +232,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
 
             setUser(mockUser);
-
             const salt = new TextEncoder().encode('ledger-static-salt-' + mockUser.uid);
             const key = await cryptoService.deriveKey(mockUser.uid, salt);
             setEncryptionKey(key);
-
             setIsLoading(false);
             return;
         }
 
-        setIsLoading(true);
-
-        return new Promise<void>((resolve, reject) => {
-            // Check if already signed in from stored JWT
-            const stored = sessionStorage.getItem(SESSION_KEY);
-            if (stored) {
-                try {
-                    const claims = decodeJwt(stored);
-                    const expiry = claims.exp * 1000;
-                    if (Date.now() < expiry) {
-                        // Valid stored session
-                        handleCredential(stored).then(() => {
-                            setIsLoading(false);
-                            resolve();
-                        });
-                        return;
-                    } else {
-                        sessionStorage.removeItem(SESSION_KEY);
-                    }
-                } catch {
-                    sessionStorage.removeItem(SESSION_KEY);
+        // Check stored JWT first
+        const stored = sessionStorage.getItem(SESSION_KEY);
+        if (stored) {
+            try {
+                const claims = decodeJwt(stored);
+                if (Date.now() < claims.exp * 1000) {
+                    await handleCredential(stored);
+                    setIsLoading(false);
+                    return;
                 }
+                sessionStorage.removeItem(SESSION_KEY);
+            } catch {
+                sessionStorage.removeItem(SESSION_KEY);
             }
+        }
 
-            // Prompt for sign-in
-            window.google?.accounts.id.initialize({
-                client_id: CLIENT_ID,
-                callback: (response: any) => {
-                    if (response.credential) {
-                        handleCredential(response.credential).then(() => {
-                            setIsLoading(false);
-                            resolve();
-                        }).catch((err) => {
-                            setIsLoading(false);
-                            reject(err);
-                        });
-                    } else {
-                        setIsLoading(false);
-                        reject(new Error('No credential received'));
-                    }
-                },
-            });
-
-            // The prompt() method handles both:
-            // - Showing One Tap popup for automatic sign-in
-            // - Returning immediately if user is already signed in (credential comes via callback)
-            window.google?.accounts.id.prompt((notification: any) => {
-                // Don't reject on isSkippedMoment() - the callback may still fire with a credential
-                // Only reject if truly not displayed and no callback fires
-                if (notification.isNotDisplayed()) {
-                    setIsLoading(false);
-                    reject(new Error('Sign-in prompt was not displayed'));
-                }
-                // isSkippedMoment() is okay - user is already signed in, callback will fire
-            });
-
-            // Timeout fallback: if callback doesn't fire within 10 seconds, reject
-            setTimeout(() => {
-                if (signInResolveRef.current) {
-                    setIsLoading(false);
-                    reject(new Error('Sign-in timed out'));
-                }
-            }, 10000);
-        });
-    };
+        setIsLoading(true);
+        try {
+            await requestCredential();
+        } finally {
+            setIsLoading(false);
+        }
+    }, [handleCredential, requestCredential]);
 
     // ─── signOut ────────────────────────────────────────────────────────
-    const signOut = async () => {
+    const signOut = useCallback(async () => {
         sessionStorage.removeItem(SESSION_KEY);
         window.google?.accounts.id.disableAutoSelect();
 
-        // Revoke if we have an email hint
         if (user?.email) {
             window.google?.accounts.id.revoke(user.email, () => {
                 logger.info('Google session revoked');
@@ -290,43 +276,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setUser(null);
         setEncryptionKey(null);
-    };
+    }, [user?.email]);
 
     // ─── getIdToken ─────────────────────────────────────────────────────
-    const getIdToken = async (): Promise<string | null> => {
+    const getIdToken = useCallback(async (): Promise<string | null> => {
         return sessionStorage.getItem(SESSION_KEY);
-    };
+    }, []);
 
     // ─── reauthenticate ─────────────────────────────────────────────────
-    const reauthenticate = async (): Promise<string> => {
+    const reauthenticate = useCallback(async (): Promise<string> => {
         if (!CLIENT_ID) {
             logger.warn('reauthenticate: Google Client ID not available, returning mock token');
             return 'mock-reauth-token';
         }
-
-        return new Promise<string>((resolve, reject) => {
-            window.google?.accounts.id.initialize({
-                client_id: CLIENT_ID,
-                callback: (response: any) => {
-                    if (response.credential) {
-                        sessionStorage.setItem(SESSION_KEY, response.credential);
-                        logger.info('User re-authenticated successfully');
-                        resolve(response.credential);
-                    } else {
-                        reject(new Error('Re-authentication failed'));
-                    }
-                },
-            });
-            window.google?.accounts.id.prompt((notification: any) => {
-                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                    reject(new Error('Re-auth prompt was not displayed'));
-                }
-            });
-        });
-    };
+        // Same flow as signIn — just call prompt(), credential comes via
+        // the single initialize callback → handleCredential → resolves pendingRef
+        return requestCredential();
+    }, [requestCredential]);
 
     // ─── getLastAuthTime ────────────────────────────────────────────────
-    const getLastAuthTime = (): Date | null => {
+    const getLastAuthTime = useCallback((): Date | null => {
         const token = sessionStorage.getItem(SESSION_KEY);
         if (!token) return null;
         try {
@@ -335,7 +304,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch {
             return null;
         }
-    };
+    }, []);
 
     return (
         <AuthContext.Provider value={{
@@ -357,6 +326,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) throw new Error('useAuth must be used within AuthProvider');
-
     return context;
 };
