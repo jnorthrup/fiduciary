@@ -213,15 +213,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(true);
 
         return new Promise<void>((resolve, reject) => {
-            signInResolveRef.current = resolve;
-            signInRejectRef.current = reject;
+            // Check if already signed in from stored JWT
+            const stored = sessionStorage.getItem(SESSION_KEY);
+            if (stored) {
+                try {
+                    const claims = decodeJwt(stored);
+                    const expiry = claims.exp * 1000;
+                    if (Date.now() < expiry) {
+                        // Valid stored session
+                        handleCredential(stored).then(() => {
+                            setIsLoading(false);
+                            resolve();
+                        });
+                        return;
+                    } else {
+                        sessionStorage.removeItem(SESSION_KEY);
+                    }
+                } catch {
+                    sessionStorage.removeItem(SESSION_KEY);
+                }
+            }
 
+            // Prompt for sign-in
             window.google?.accounts.id.initialize({
                 client_id: CLIENT_ID,
                 callback: (response: any) => {
                     if (response.credential) {
-                        handleCredential(response.credential).finally(() => {
+                        handleCredential(response.credential).then(() => {
                             setIsLoading(false);
+                            resolve();
+                        }).catch((err) => {
+                            setIsLoading(false);
+                            reject(err);
                         });
                     } else {
                         setIsLoading(false);
@@ -229,12 +252,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
                 },
             });
+
+            // The prompt() method handles both:
+            // - Showing One Tap popup for automatic sign-in
+            // - Returning immediately if user is already signed in (credential comes via callback)
             window.google?.accounts.id.prompt((notification: any) => {
-                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                // Don't reject on isSkippedMoment() - the callback may still fire with a credential
+                // Only reject if truly not displayed and no callback fires
+                if (notification.isNotDisplayed()) {
                     setIsLoading(false);
-                    reject(new Error('Sign-in prompt was not displayed or was skipped'));
+                    reject(new Error('Sign-in prompt was not displayed'));
                 }
+                // isSkippedMoment() is okay - user is already signed in, callback will fire
             });
+
+            // Timeout fallback: if callback doesn't fire within 10 seconds, reject
+            setTimeout(() => {
+                if (signInResolveRef.current) {
+                    setIsLoading(false);
+                    reject(new Error('Sign-in timed out'));
+                }
+            }, 10000);
         });
     };
 
