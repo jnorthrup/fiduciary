@@ -143,3 +143,25 @@ export {
   type ReconciliationTaskStatus,
   type ReconciliationTask,
 } from './system';
+
+// Text Analysis Domain
+export {
+  type Topic,
+  type TopicWord,
+  type ConsolidatedEntity,
+  type EntityType,
+  type TaxonomyNode,
+  type WordNode,
+  type ConceptLink,
+  type WordCloudData,
+  type ConceptGraph,
+  type GraphNode,
+  type AnalysisOptions,
+  type AnalysisResult,
+  type AnalysisMetadata,
+  type AnalysisSummary,
+  type QuickTermResult,
+  type TermFrequency,
+  type ExportFormat,
+  type ExportRequest,
+} from './text-analysis';

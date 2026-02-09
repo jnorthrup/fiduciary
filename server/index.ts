@@ -14,6 +14,7 @@ import bsoRouter from './routes/bso.js';
 import ledgerRouter from './routes/ledger.js';
 import settlementRouter from './routes/settlement.js';
 import coinbaseRouter from './routes/coinbase.js';
+import textAnalysisRouter from './routes/text-analysis.js';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { connect as connectBus, subscribe } from './lib/event-bus.js';
 import { OAuth2Client } from 'google-auth-library';
@@ -191,6 +192,9 @@ if (process.env.SERVICE_NAME === 'api-gateway' && process.env.AUDIT_SERVICE_URL)
 
 // Mount Coinbase router (crypto rail)
 app.use('/api/coinbase', verifyGoogleToken, coinbaseRouter);
+
+// Mount Text Analysis router
+app.use('/api/text-analysis', verifyGoogleToken, textAnalysisRouter);
 
 
 /**
