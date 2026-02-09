@@ -764,12 +764,10 @@ app.get('/api/irs/schemas/:formType', (req, res) => {
 });
 
 // SPA Catch-all: specific API routes above should be hit first.
-// Serve index-unified.html for root or unknown routes (SPA fallback)
+// SPA fallback: serve index.html for all non-file routes
 app.get('*', (req, res) => {
-  // If specific files are requested, they are served by static middleware above.
-  // For navigation routes, serve unified entry.
   if (req.path === '/' || !req.path.includes('.')) {
-    res.sendFile(path.join(__dirname, 'public', 'index-unified.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
   } else {
     res.status(404).send('Not Found');
   }
