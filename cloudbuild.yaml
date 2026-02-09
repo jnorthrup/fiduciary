@@ -25,10 +25,11 @@ steps:
       test ! -f dist/index-unified.html || { echo "FAIL: stale index-unified.html in build"; exit 1; }
       test ! -f dist/index-lastrust.html || { echo "FAIL: stale index-lastrust.html in build"; exit 1; }
 
-      # Assert key JS chunks exist (skin bundles + main)
-      ls dist/assets/main-*.js >/dev/null 2>&1 || { echo "FAIL: main chunk missing"; exit 1; }
-      ls dist/assets/App-lastrust-*.js >/dev/null 2>&1 || { echo "FAIL: Clear.Flow skin chunk missing"; exit 1; }
-      ls dist/assets/App-*.js >/dev/null 2>&1 || { echo "FAIL: Trust skin chunk missing"; exit 1; }
+      # Assert CAS-hashed JS chunks exist (entry point referenced in index.html)
+      ENTRY=$(grep -oP 'src="/assets/[^"]+\.js"' dist/index.html | head -1 | grep -oP '/assets/[^"]+')
+      test -f "dist${ENTRY}" || { echo "FAIL: entry chunk ${ENTRY} missing"; exit 1; }
+      JS_COUNT=$(ls dist/assets/*.js 2>/dev/null | wc -l)
+      [ "$JS_COUNT" -gt 5 ] || { echo "FAIL: expected >5 JS chunks, got $JS_COUNT"; exit 1; }
 
       # Assert no login/password page in build output
       if grep -r "password.*Login\|Create an account\|EMAIL.*PASSWORD" dist/assets/*.js 2>/dev/null; then
