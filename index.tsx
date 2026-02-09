@@ -1,6 +1,6 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Loader2, Mail, Building2, Sparkles, ArrowRight } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { AuthProvider, useAuth } from './services/authService';
 import { LedgerProvider } from './services/ledgerService';
 import { DualEntrySplash } from './components/DualEntrySplash';
@@ -23,9 +23,10 @@ const SKIN_STORAGE_KEY = 'fiduciary_skin_v2';
 const UnifiedApp: React.FC = () => {
   const { user, signIn, isLoading } = useAuth();
   const [selectedSkin, setSelectedSkin] = useState<'jnorthrup' | 'lastrust' | null>(null);
-  const [loginError, setLoginError] = useState<string | null>(null);
+  // Track whether user just authenticated (to show splash for skin choice)
+  const [justAuthenticated, setJustAuthenticated] = useState(false);
 
-  // Initial load: check local storage for skin preference
+  // On mount: load stored skin preference
   useEffect(() => {
     const storedSkin = localStorage.getItem(SKIN_STORAGE_KEY) as 'jnorthrup' | 'lastrust' | null;
     if (storedSkin) {
@@ -33,50 +34,30 @@ const UnifiedApp: React.FC = () => {
     }
   }, []);
 
+  // When user authenticates via Google, show splash if no stored skin
+  useEffect(() => {
+    if (user && justAuthenticated) {
+      const storedSkin = localStorage.getItem(SKIN_STORAGE_KEY) as 'jnorthrup' | 'lastrust' | null;
+      if (storedSkin) {
+        setSelectedSkin(storedSkin);
+      }
+      // else: selectedSkin stays null → DualEntrySplash will show
+      setJustAuthenticated(false);
+    }
+  }, [user, justAuthenticated]);
+
   const handleSelectSkin = (skin: 'jnorthrup' | 'lastrust') => {
     setSelectedSkin(skin);
     localStorage.setItem(SKIN_STORAGE_KEY, skin);
   };
 
+  // Brief loading only for GSI auto-select check
   if (isLoading) {
     return <LoadingScreen />;
   }
 
-  // Not logged in - show login screen
-  if (!user) {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col items-center justify-center p-6">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-indigo-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Mail className="w-10 h-10 text-indigo-400" />
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-3">Trust Ledger System</h1>
-          <p className="text-slate-400 mb-8">
-            Sign in with Google to access your financial dashboard
-          </p>
-
-          <button
-            onClick={() => signIn().catch(e => setLoginError(e.message))}
-            className="bg-white text-slate-700 px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-3 w-full hover:bg-slate-50 transition-colors shadow-lg shadow-indigo-900/20"
-          >
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="" />
-            Sign in with Google
-          </button>
-
-          {loginError && (
-            <p className="text-rose-400 text-sm mt-4">{loginError}</p>
-          )}
-
-          <p className="text-slate-500 text-xs mt-8">
-            Your data is encrypted and stored securely
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Logged in but no skin selected - show splash
-  if (!selectedSkin) {
+  // Authenticated user with no stored skin → show splash to pick
+  if (user && !selectedSkin) {
     return (
       <DualEntrySplash
         userEmail={user.email || ''}
@@ -86,15 +67,15 @@ const UnifiedApp: React.FC = () => {
     );
   }
 
-  // Render selected skin wrapped with AuthProvider
+  // Render the selected skin (or default to Clear.Flow for anonymous users)
+  const skin = selectedSkin || 'lastrust';
+
   return (
     <Suspense fallback={<LoadingScreen />}>
-      {selectedSkin === 'jnorthrup' ? <AppClassic /> : <AppLastrust />}
+      {skin === 'jnorthrup' ? <AppClassic /> : <AppLastrust />}
     </Suspense>
   );
 };
-
-
 
 const container = document.getElementById('root');
 if (container) {

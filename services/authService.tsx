@@ -113,63 +113,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
         }
 
-        if (!CLIENT_ID) {
-            setIsLoading(false);
-            setIsInitialized(true);
-            return;
-        }
+        // Don't block on auth — let anonymous users straight in.
+        // If there's a stored session, restore it synchronously-ish.
+        // GSI initializes in background; auto-select upgrades silently.
 
-        // Try restoring session from stored JWT before touching GSI
+        // Try restoring session from stored JWT
         const stored = sessionStorage.getItem(SESSION_KEY);
-        let restoredFromStorage = false;
         if (stored) {
             try {
                 const claims = decodeJwt(stored);
                 if (Date.now() < claims.exp * 1000) {
-                    restoredFromStorage = true;
                     handleCredential(stored).finally(() => {
                         setIsLoading(false);
                         setIsInitialized(true);
                     });
+                    // Still init GSI below so signIn/reauthenticate work
                 } else {
                     sessionStorage.removeItem(SESSION_KEY);
+                    setIsLoading(false);
+                    setIsInitialized(true);
                 }
             } catch {
                 sessionStorage.removeItem(SESSION_KEY);
+                setIsLoading(false);
+                setIsInitialized(true);
             }
+        } else {
+            // No stored session — immediately ready (anonymous)
+            setIsLoading(false);
+            setIsInitialized(true);
         }
 
-        // Initialize GSI exactly once. The callback handles ALL future
-        // credential responses (auto-select, prompt, reauthenticate).
+        if (!CLIENT_ID) return;
+
+        // Initialize GSI in background. Credential callback upgrades
+        // anonymous → authenticated seamlessly.
         const doInit = () => {
             window.google!.accounts.id.initialize({
                 client_id: CLIENT_ID,
                 callback: (response: any) => {
                     if (response.credential) {
-                        handleCredential(response.credential).then(() => {
-                            // Ensure loading/init flags are set (matters for first auto-select)
-                            setIsLoading(false);
-                            setIsInitialized(true);
-                        });
+                        handleCredential(response.credential);
                     }
                 },
                 auto_select: true,
                 use_fedcm_for_prompt: true,
             });
             gsiReadyRef.current = true;
-
-            // If we already restored from storage, don't auto-prompt
-            if (restoredFromStorage) return;
-
-            // Try silent auto-select on page load (no notification callback — FedCM clean)
-            window.google!.accounts.id.prompt();
-            // If auto-select succeeds, the initialize callback fires → handleCredential
-            // sets loading/initialized. If it doesn't fire within 3s, show login screen.
-            // Fallback: if credential callback doesn't fire, finish loading
-            setTimeout(() => {
-                setIsLoading(false);
-                setIsInitialized(true);
-            }, 3000);
         };
 
         if (window.google?.accounts?.id) {
@@ -181,14 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     doInit();
                 }
             }, 100);
-            const timeout = setTimeout(() => {
-                clearInterval(interval);
-                if (!gsiReadyRef.current) {
-                    logger.warn('GSI script did not load in time');
-                    setIsLoading(false);
-                    setIsInitialized(true);
-                }
-            }, 5000);
+            const timeout = setTimeout(() => clearInterval(interval), 5000);
             return () => { clearInterval(interval); clearTimeout(timeout); };
         }
     }, [handleCredential]);

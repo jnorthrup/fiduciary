@@ -2430,7 +2430,7 @@ const allNavItems = [
 // ─── QB Shell (export App) ───────────────────────────────────────────────────
 
 export const App: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, signIn, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -2528,9 +2528,13 @@ export const App: React.FC = () => {
               <Bell size={20} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full border border-indigo-600"></span>
             </button>
-            <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center font-bold text-xs ml-1">
-              {(user?.email || 'U').slice(0, 2).toUpperCase()}
-            </div>
+            <button
+              onClick={() => !user && signIn().catch(() => {})}
+              className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center font-bold text-xs ml-1 hover:bg-white/30 transition-colors"
+              title={user ? (user.email || 'Profile') : 'Sign in with Google'}
+            >
+              {(user?.email || 'G').slice(0, 2).toUpperCase()}
+            </button>
           </div>
         </header>
 
@@ -2588,8 +2592,8 @@ export const App: React.FC = () => {
                     <X size={24} />
                   </button>
                 </div>
-                <h2 className="text-xl font-bold">{user?.displayName || user?.email || 'User'}</h2>
-                <p className="text-xs text-white/70">{user?.email}</p>
+                <h2 className="text-xl font-bold">{user?.displayName || user?.email || 'Guest'}</h2>
+                <p className="text-xs text-white/70">{user?.email || 'Not signed in'}</p>
               </div>
 
               <div className="flex-1 overflow-y-auto py-4">
@@ -2622,7 +2626,14 @@ export const App: React.FC = () => {
 
               <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clear.Flow v4.2.0</span>
-                <button onClick={() => signOut()} className="text-xs font-bold text-red-600 hover:text-red-700">Sign Out</button>
+                {user ? (
+                  <button onClick={() => signOut()} className="text-xs font-bold text-red-600 hover:text-red-700">Sign Out</button>
+                ) : (
+                  <button onClick={() => signIn().catch(() => {})} className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-4 h-4" alt="" />
+                    Sign in with Google
+                  </button>
+                )}
               </div>
             </aside>
           </div>
