@@ -1,5 +1,4 @@
 import { useAuth } from './authService';
-import { initializeApp, getApps } from 'firebase/app';
 
 // ─── Step-Up Auth Provider Interface ────────────────────────────────────────
 
@@ -55,13 +54,9 @@ export class StubProvider implements StepUpAuthProvider {
 export function useStepUpAuth(): { verify: () => Promise<boolean> } {
   const { reauthenticate, getLastAuthTime } = useAuth();
 
-  const firebaseAvailable =
-    getApps().length > 0 &&
-    !!import.meta.env.VITE_FIREBASE_API_KEY &&
-    import.meta.env.VITE_FIREBASE_API_KEY !== 'placeholder' &&
-    !import.meta.env.VITE_FIREBASE_API_KEY?.includes('your-');
+  const googleAvailable = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-  const provider: StepUpAuthProvider = firebaseAvailable
+  const provider: StepUpAuthProvider = googleAvailable
     ? new GoogleReauthProvider(reauthenticate, getLastAuthTime)
     : new StubProvider();
 

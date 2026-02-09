@@ -16,41 +16,20 @@ import settlementRouter from './routes/settlement.js';
 import coinbaseRouter from './routes/coinbase.js';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { connect as connectBus, subscribe } from './lib/event-bus.js';
-import admin from 'firebase-admin';
+import { OAuth2Client } from 'google-auth-library';
 import persistence from './lib/gcs-persistence.js';
 import config from './config/env-config.js';
 
 // =============================================================================
-// Firebase Admin Initialization (using config module)
+// Google ID Token Verification (replaces Firebase Admin)
 // =============================================================================
-const initFirebase = () => {
-  const { GOOGLE_AUTH } = config;
-
-  if (GOOGLE_AUTH.FIREBASE_SERVICE_ACCOUNT) {
-    try {
-      const serviceAccount = typeof GOOGLE_AUTH.FIREBASE_SERVICE_ACCOUNT === 'string'
-        ? JSON.parse(GOOGLE_AUTH.FIREBASE_SERVICE_ACCOUNT)
-        : GOOGLE_AUTH.FIREBASE_SERVICE_ACCOUNT;
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-      });
-      console.info("[GOOGLE_AUTH] Firebase Admin initialized with service account");
-    } catch (e) {
-      console.error("[GOOGLE_AUTH] Failed to parse FIREBASE_SERVICE_ACCOUNT:", e.message);
-      // Fall through to ADC
-      admin.initializeApp();
-      console.info("[GOOGLE_AUTH] Firebase Admin initialized with Application Default Credentials");
-    }
-  } else {
-    // Fallback to Application Default Credentials (ADC)
-    // In Cloud Run, this uses the service account attached to the revision
-    admin.initializeApp();
-    console.info("[GOOGLE_AUTH] Firebase Admin initialized with Application Default Credentials");
-  }
-};
-
-// Initialize Firebase
-initFirebase();
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || config.GOOGLE_AUTH.GOOGLE_CLIENT_ID || '';
+const oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+if (GOOGLE_CLIENT_ID) {
+  console.info("[GOOGLE_AUTH] Google OAuth2 client initialized with client ID");
+} else {
+  console.warn("[GOOGLE_AUTH] No GOOGLE_CLIENT_ID set — token verification will fail in production");
+}
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -107,13 +86,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 interface AuthenticatedRequest extends Request {
-  user?: any; // Replace 'any' with a more specific Firebase user type if available
+  user?: { uid: string; email?: string };
 }
 
 /**
- * Middleware to verify Firebase ID Token
+ * Middleware to verify Google ID Token
  */
-const verifyFirebaseToken = async (req: Request, res: Response, next: NextFunction) => {
+const verifyGoogleToken = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'unauthorized', message: 'No ID token provided' });
@@ -121,11 +100,15 @@ const verifyFirebaseToken = async (req: Request, res: Response, next: NextFuncti
 
   const idToken = authHeader.split('Bearer ')[1];
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    (req as AuthenticatedRequest).user = decodedToken;
+    const ticket = await oauthClient.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    (req as AuthenticatedRequest).user = { uid: payload!.sub, email: payload?.email };
     next();
   } catch (error) {
-    logger.error('Firebase token verification failed:', error.message);
+    logger.error('Google token verification failed:', error.message);
     res.status(403).json({ error: 'forbidden', message: 'Invalid ID token' });
   }
 };
@@ -160,25 +143,25 @@ app.use('/api/iris', irisOAuthRouter);
 
 
 // Protected Routes
-app.use('/api/audit', verifyFirebaseToken, auditRouter);
+app.use('/api/audit', verifyGoogleToken, auditRouter);
 
 // ============================================================================
 // Banking API Routes
 // ============================================================================
 
 // Mount banking router at /api/banking
-app.use('/api/banking', verifyFirebaseToken, bankingRouter);
+app.use('/api/banking', verifyGoogleToken, bankingRouter);
 
 // Mount BSO router at /api/bso
-app.use('/api/bso', verifyFirebaseToken, bsoRouter);
+app.use('/api/bso', verifyGoogleToken, bsoRouter);
 
 // Mount Settlement router (Payment Orders)
-app.use('/api/settlement', verifyFirebaseToken, settlementRouter);
+app.use('/api/settlement', verifyGoogleToken, settlementRouter);
 
 // Mount Ledger router
 if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'ledger-service') {
-  // For demo, we skip auth on this specific route for easier testing, or use verifyFirebaseToken
-  app.use('/api/ledger', verifyFirebaseToken, ledgerRouter);
+  // For demo, we skip auth on this specific route for easier testing, or use verifyGoogleToken
+  app.use('/api/ledger', verifyGoogleToken, ledgerRouter);
 } else if (process.env.SERVICE_NAME === 'api-gateway' && process.env.LEDGER_SERVICE_URL) {
   // Proxy to Ledger Service
   app.use('/api/ledger', createProxyMiddleware({
@@ -198,7 +181,7 @@ if (process.env.SERVICE_NAME === 'api-gateway' && process.env.AUDIT_SERVICE_URL)
 }
 
 // Mount Coinbase router (crypto rail)
-app.use('/api/coinbase', verifyFirebaseToken, coinbaseRouter);
+app.use('/api/coinbase', verifyGoogleToken, coinbaseRouter);
 
 
 /**
@@ -336,7 +319,7 @@ app.get('/api/health', (req, res) => {
  * POST /api/irs/submissions
  * Submit information return batch
  */
-app.post('/api/irs/submissions', verifyFirebaseToken, async (req: Request, res: Response) => {
+app.post('/api/irs/submissions', verifyGoogleToken, async (req: Request, res: Response) => {
   try {
     const uid = (req as AuthenticatedRequest).user.uid;
     const submission = req.body;
@@ -458,7 +441,7 @@ app.post('/api/irs/submissions', verifyFirebaseToken, async (req: Request, res: 
  * GET /api/irs/submissions/:receiptId/status
  * Get submission status
  */
-app.get('/api/irs/submissions/:receiptId/status', verifyFirebaseToken, async (req: Request, res: Response) => {
+app.get('/api/irs/submissions/:receiptId/status', verifyGoogleToken, async (req: Request, res: Response) => {
   const { receiptId } = req.params;
   const uid = (req as AuthenticatedRequest).user.uid;
 
@@ -509,7 +492,7 @@ app.get('/api/irs/submissions/:receiptId/status', verifyFirebaseToken, async (re
  * POST /api/irs/tin-validation
  * Interactive TIN matching
  */
-app.post('/api/irs/tin-validation', verifyFirebaseToken, async (req: Request, res: Response) => {
+app.post('/api/irs/tin-validation', verifyGoogleToken, async (req: Request, res: Response) => {
   try {
     const uid = (req as AuthenticatedRequest).user.uid;
     const { tin, name, requests } = req.body;

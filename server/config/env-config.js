@@ -3,7 +3,7 @@
  * Fail-fast validation for all required environment variables
  * 
  * Sections:
- * - GOOGLE_AUTH: Firebase/Gmail OAuth configuration
+ * - GOOGLE_AUTH: Google Identity Services configuration
  * - GCP_CORE: Google Cloud Platform project settings
  * - GCS_STORAGE: Google Cloud Storage bucket configuration
  * - GEMINI_AI: Gemini API configuration
@@ -64,33 +64,14 @@ function envBool(name, options = {}) {
 }
 
 // ============================================================================
-// GOOGLE_AUTH: Firebase/Gmail OAuth Configuration
+// GOOGLE_AUTH: Google Identity Services Configuration
 // ============================================================================
 const GOOGLE_AUTH = {
-    // Firebase Admin SDK service account (JSON string or path)
-    FIREBASE_SERVICE_ACCOUNT: env('FIREBASE_SERVICE_ACCOUNT', {
-        section: 'GOOGLE_AUTH',
-        required: false, // Falls back to ADC in production
-        default: ''
-    }),
-
-    // Gmail OAuth Client ID for frontend (optional - frontend handles this)
-    VITE_GMAIL_CLIENT_ID: env('VITE_GMAIL_CLIENT_ID', {
+    // Google OAuth Client ID for server-side token verification
+    GOOGLE_CLIENT_ID: env('GOOGLE_CLIENT_ID', {
         section: 'GOOGLE_AUTH',
         required: false,
         default: ''
-    }),
-
-    // Enable Firebase Auth
-    VITE_FIREBASE_ENABLED: envBool('VITE_FIREBASE_ENABLED', {
-        section: 'GOOGLE_AUTH',
-        default: 'true'
-    }),
-
-    // Enable Gmail OAuth
-    VITE_GMAIL_AUTH_ENABLED: envBool('VITE_GMAIL_AUTH_ENABLED', {
-        section: 'GOOGLE_AUTH',
-        default: 'true'
     }),
 
     // Gemini API Key (for AI features)
@@ -367,8 +348,8 @@ function validateConfig() {
     // (most things can use defaults in Cloud Run)
 
     // Warnings for optional but recommended
-    if (!GOOGLE_AUTH.VITE_GMAIL_CLIENT_ID) {
-        warnings.push('VITE_GMAIL_CLIENT_ID not set - Gmail OAuth will not work on frontend');
+    if (!GOOGLE_AUTH.GOOGLE_CLIENT_ID) {
+        warnings.push('GOOGLE_CLIENT_ID not set - Google token verification will not work');
     }
 
     if (!GOOGLE_AUTH.GEMINI_API_KEY) {

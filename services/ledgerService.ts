@@ -5,8 +5,6 @@ import * as types from '../types';
 import { simulateTransmission, searchIRSManual } from './irsApiService';
 import { UseCaseLogger } from './useCaseLogger';
 import { GoogleGenAI } from "@google/genai";
-import { initFirebase, getDb, batchUpload } from './firebase';
-import { collection, onSnapshot, setDoc, doc } from 'firebase/firestore';
 
 // Unified State Interface to reduce useState bloat
 interface LedgerDb {
@@ -173,12 +171,9 @@ type LedgerContextType = LedgerDb & {
   settings: types.SystemSettings;
   changeGraph: types.ChangeSet[];
   canResume: boolean;
-  isCloudEnabled: boolean;
   is2FAOpen: boolean;
 
   // Methods
-  connectToFirebase: (config: any) => Promise<boolean>;
-  pushLocalToCloud: () => Promise<void>;
   requestAuthorization: (callback: () => void) => void;
   verify2FA: (code: string) => boolean;
   cancel2FA: () => void;
@@ -297,26 +292,16 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [changeGraph, setChangeGraph] = useState<types.ChangeSet[]>([]);
   const [canResume, setCanResume] = useState(!!initialData.user.name);
-  const [isCloudEnabled, setIsCloudEnabled] = useState(false);
   const [is2FAOpen, setIs2FAOpen] = useState(false);
   const [pendingCallback, setPendingCallback] = useState<(() => void) | null>(null);
 
   // --- Persistence & Sync ---
-  const syncDoc = (collectionName: keyof LedgerDb | string, data: any) => {
-    if (isCloudEnabled) {
-      const fb = getDb();
-      if (fb && data.id) setDoc(doc(fb, collectionName, data.id), data).catch(console.error);
-    }
-  };
-
   const addItem = (key: keyof LedgerDb, item: any) => {
     setDb(prev => ({ ...prev, [key]: [...prev[key], item] }));
-    syncDoc(key, item);
   };
 
   const updateItem = (key: keyof LedgerDb, item: any) => {
     setDb(prev => ({ ...prev, [key]: prev[key].map((i: any) => i.id === item.id ? { ...i, ...item } : i) }));
-    syncDoc(key, item);
   };
 
   const deleteItem = (key: keyof LedgerDb, id: string) => {
@@ -335,7 +320,6 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       let change = 0;
       relLines.forEach(l => change += (acc.type === 'Asset' || acc.type === 'Expense') ? (l.dc === types.DCFlag.Debit ? l.amount : -l.amount) : (l.dc === types.DCFlag.Credit ? l.amount : -l.amount));
       const updatedAcc = { ...acc, balance: acc.balance + change };
-      syncDoc('accounts', updatedAcc);
       return updatedAcc;
     });
     setDb(prev => ({ ...prev, accounts: newAccounts }));
@@ -357,13 +341,6 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }, 1000);
     return () => clearTimeout(handler);
   }, [db, currentUser, secrets, settings]);
-
-  useEffect(() => {
-    // Connect to firebase if config exists in loaded settings
-    if (settings.firebaseConfig) {
-      connectToFirebase(settings.firebaseConfig);
-    }
-  }, []);
 
   // --- Context Methods ---
   const importData = (json: string) => {
@@ -388,35 +365,12 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const resetData = () => {
     setDb(EMPTY_DB);
     setCurrentUser({} as types.User);
-    setIsCloudEnabled(false);
     UseCaseLogger.log('SYSTEM', 'Reset System Data');
-  };
-
-  const connectToFirebase = async (config: any): Promise<boolean> => {
-    const success = initFirebase(config);
-    if (success) {
-      setIsCloudEnabled(true);
-      setSettings(prev => ({ ...prev, firebaseConfig: config }));
-
-      // Setup Listeners
-      const fb = getDb();
-      if (fb) {
-        ['entities', 'accounts', 'journals'].forEach(col => {
-          onSnapshot(collection(fb, col), (snap) => {
-            const items = snap.docs.map(d => d.data());
-            if (items.length > 0) setDb(prev => ({ ...prev, [col]: items }));
-          });
-        });
-      }
-    }
-    return success;
   };
 
   const contextValue: LedgerContextType = {
     ...db,
-    currentUser, apiSystemStatus, searchResults, isSearching, secrets, settings, changeGraph, canResume, isCloudEnabled, is2FAOpen,
-    connectToFirebase,
-    pushLocalToCloud: async () => { if (isCloudEnabled) { await batchUpload('entities', db.entities); await batchUpload('accounts', db.accounts); await batchUpload('journals', db.journals); } },
+    currentUser, apiSystemStatus, searchResults, isSearching, secrets, settings, changeGraph, canResume, is2FAOpen,
     requestAuthorization: (cb) => { setPendingCallback(() => cb); setIs2FAOpen(true); },
     verify2FA: (code) => { if (code.length === 6 && !isNaN(Number(code))) { pendingCallback?.(); setIs2FAOpen(false); return true; } return false; },
     cancel2FA: () => { setIs2FAOpen(false); setPendingCallback(null); },

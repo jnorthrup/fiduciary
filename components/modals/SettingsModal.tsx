@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Download, Upload, Trash2, Database, HardDrive, RefreshCw, X, AlertTriangle, FileJson, CheckCircle, AlertOctagon, Key, Shield, Calendar, Plus, Cloud, Server, Code, Clipboard } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, Upload, Trash2, Database, HardDrive, RefreshCw, X, AlertTriangle, FileJson, CheckCircle, AlertOctagon, Key, Shield, Calendar, Plus, Cloud } from 'lucide-react';
 import { useLedgerStore } from '../../services/ledgerService';
 import { IRSAPICredential } from '../../types';
 
@@ -12,51 +12,11 @@ interface Props {
 }
 
 export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, onReset }) => {
-  const { irsCreds, entities, updateIrsCredential, addIrsCredential, deleteIrsCredential, isCloudEnabled, connectToFirebase, pushLocalToCloud, settings } = useLedgerStore();
-  const [activeTab, setActiveTab] = useState<'Storage' | 'Backup' | 'Cloud' | 'Credentials' | 'Reset'>('Cloud'); // Default to Cloud tab for setup
+  const { irsCreds, entities, updateIrsCredential, addIrsCredential, deleteIrsCredential } = useLedgerStore();
+  const [activeTab, setActiveTab] = useState<'Storage' | 'Backup' | 'Cloud' | 'Credentials' | 'Reset'>('Storage');
   const [importStatus, setImportStatus] = useState<string>('');
   const [confirmReset, setConfirmReset] = useState(false);
   const [isWiping, setIsWiping] = useState(false);
-  const [showJsonPaste, setShowJsonPaste] = useState(false);
-  const [pastedJson, setPastedJson] = useState('');
-  
-  // Cloud Config
-  const [fbConfig, setFbConfig] = useState({
-      apiKey: '',
-      authDomain: '',
-      projectId: '',
-      storageBucket: '',
-      messagingSenderId: '',
-      appId: ''
-  });
-  const [cloudConnecting, setCloudConnecting] = useState(false);
-  const [cloudError, setCloudError] = useState<string | null>(null);
-
-  // Initialize config from saved settings or environment
-  useEffect(() => {
-      if (settings.firebaseConfig && settings.firebaseConfig.apiKey) {
-          setFbConfig(settings.firebaseConfig);
-          setShowJsonPaste(false);
-      } else {
-          // Attempt inference from environment variables
-          const envConfig = {
-              apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-              authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-              projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-              storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-              messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-              appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
-          };
-          
-          if (envConfig.apiKey) {
-              setFbConfig(envConfig);
-              setShowJsonPaste(false);
-          } else {
-              // If no config found, default to JSON paste mode for immediate manual entry
-              setShowJsonPaste(true);
-          }
-      }
-  }, [settings.firebaseConfig]);
 
   // Calculate mock storage stats
   const storageUsed = (JSON.stringify(localStorage).length / 1024).toFixed(2);
@@ -110,21 +70,6 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
       }, 500);
   };
 
-  const handleConnectCloud = async () => {
-      setCloudError(null);
-      if (!fbConfig.apiKey || !fbConfig.projectId || !fbConfig.authDomain) {
-          setCloudError("Missing required fields (API Key, Project ID, Auth Domain).");
-          return;
-      }
-
-      setCloudConnecting(true);
-      const success = await connectToFirebase(fbConfig);
-      if (!success) {
-          setCloudError("Failed to connect. Check console for details.");
-      }
-      setCloudConnecting(false);
-  };
-
   const handleManualAdd = () => {
       const newCred: IRSAPICredential = {
           id: `CRE-${Date.now()}`,
@@ -138,28 +83,6 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
           secretKey: ''
       };
       addIrsCredential(newCred);
-  };
-
-  const handleParseJson = () => {
-      try {
-          // Allow for loose JSON (e.g. just the object without const firebaseConfig =)
-          const cleanJson = pastedJson.replace(/const firebaseConfig = /g, '').replace(/;/g, '');
-          const parsed = JSON.parse(cleanJson);
-          
-          setFbConfig({
-              apiKey: parsed.apiKey || '',
-              authDomain: parsed.authDomain || '',
-              projectId: parsed.projectId || '',
-              storageBucket: parsed.storageBucket || '',
-              messagingSenderId: parsed.messagingSenderId || '',
-              appId: parsed.appId || ''
-          });
-          setShowJsonPaste(false);
-          setPastedJson('');
-          setCloudError(null);
-      } catch (e) {
-          setCloudError("Invalid JSON format. Please paste the full configuration object (e.g., {'apiKey': '...', ...}).");
-      }
   };
 
   return (
@@ -276,108 +199,20 @@ export const SettingsModal: React.FC<Props> = ({ onClose, onExport, onImport, on
             {activeTab === 'Cloud' && (
                 <div className="space-y-6">
                     <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-lg border ${isCloudEnabled ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
+                        <div className="p-3 rounded-lg border bg-emerald-50 text-emerald-600 border-emerald-200">
                             <Cloud size={32} />
                         </div>
                         <div>
-                            <h3 className="font-bold text-slate-700">Firebase Firestore Integration</h3>
-                            <p className="text-sm text-slate-500">Sync local ledger state to cloud for multi-device access.</p>
+                            <h3 className="font-bold text-slate-700">Google Cloud Storage</h3>
+                            <p className="text-sm text-slate-500">Data is persisted to GCS via server API. Sign-in is handled by Google Identity Services.</p>
                         </div>
                     </div>
 
-                    {isCloudEnabled ? (
-                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
-                            <div className="flex justify-center mb-2"><CheckCircle className="text-emerald-500" size={32} /></div>
-                            <h4 className="font-bold text-emerald-800">Cloud Sync Active</h4>
-                            <p className="text-xs text-emerald-600 mb-4">Your ledger is synchronizing with Firestore in real-time.</p>
-                            <button 
-                                onClick={pushLocalToCloud}
-                                className="px-6 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors text-xs flex items-center justify-center gap-2 mx-auto"
-                            >
-                                <Upload size={14} /> Force Push Local to Cloud
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {!showJsonPaste ? (
-                                <>
-                                    <div className="flex justify-end">
-                                        <button 
-                                            onClick={() => setShowJsonPaste(true)}
-                                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-                                        >
-                                            <Code size={12} /> Paste Config JSON
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">API Key</label>
-                                            <input value={fbConfig.apiKey} onChange={e => setFbConfig({...fbConfig, apiKey: e.target.value})} className="w-full border rounded p-2 text-xs" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Project ID</label>
-                                            <input value={fbConfig.projectId} onChange={e => setFbConfig({...fbConfig, projectId: e.target.value})} className="w-full border rounded p-2 text-xs" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Auth Domain</label>
-                                            <input value={fbConfig.authDomain} onChange={e => setFbConfig({...fbConfig, authDomain: e.target.value})} className="w-full border rounded p-2 text-xs" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Storage Bucket</label>
-                                            <input value={fbConfig.storageBucket} onChange={e => setFbConfig({...fbConfig, storageBucket: e.target.value})} className="w-full border rounded p-2 text-xs" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Messaging Sender ID</label>
-                                            <input value={fbConfig.messagingSenderId} onChange={e => setFbConfig({...fbConfig, messagingSenderId: e.target.value})} className="w-full border rounded p-2 text-xs" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">App ID</label>
-                                            <input value={fbConfig.appId} onChange={e => setFbConfig({...fbConfig, appId: e.target.value})} className="w-full border rounded p-2 text-xs" />
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <label className="block text-xs font-bold text-slate-500 uppercase">Paste Firebase Config Object</label>
-                                        <button onClick={() => setShowJsonPaste(false)} className="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
-                                    </div>
-                                    <textarea 
-                                        value={pastedJson}
-                                        onChange={e => setPastedJson(e.target.value)}
-                                        className="w-full h-40 border rounded p-4 text-xs font-mono bg-slate-50"
-                                        placeholder='{
-  "apiKey": "...",
-  "authDomain": "...",
-  "projectId": "..."
-}'
-                                    />
-                                    <button 
-                                        onClick={handleParseJson}
-                                        className="w-full py-3 bg-slate-800 border border-slate-700 text-white rounded-lg font-bold text-xs hover:bg-slate-700 flex items-center justify-center gap-2"
-                                    >
-                                        <Code size={14} /> Parse & Apply Configuration
-                                    </button>
-                                </div>
-                            )}
-                            
-                            {cloudError && (
-                                <div className="text-red-500 text-xs font-bold bg-red-50 p-2 rounded flex items-center gap-2">
-                                    <AlertTriangle size={12} /> {cloudError}
-                                </div>
-                            )}
-
-                            {!showJsonPaste && (
-                                <button 
-                                    onClick={handleConnectCloud}
-                                    disabled={cloudConnecting}
-                                    className="w-full py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg mt-4"
-                                >
-                                    {cloudConnecting ? 'Connecting...' : <><Server size={16} /> Initialize Connection</>}
-                                </button>
-                            )}
-                        </div>
-                    )}
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
+                        <div className="flex justify-center mb-2"><CheckCircle className="text-emerald-500" size={32} /></div>
+                        <h4 className="font-bold text-emerald-800">Cloud Persistence Active</h4>
+                        <p className="text-xs text-emerald-600">Your data is stored in Google Cloud Storage, keyed to your Google identity.</p>
+                    </div>
                 </div>
             )}
 

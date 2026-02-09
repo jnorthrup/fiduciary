@@ -6,16 +6,9 @@ steps:
       - '-c'
       - |
         npm ci
-        export VITE_FIREBASE_ENABLED=true
-        export VITE_GMAIL_AUTH_ENABLED=true
+        export VITE_GOOGLE_CLIENT_ID=959947902296-cs2e5ls49q4osbbouv9nfhi4os70ke8j.apps.googleusercontent.com
         export VITE_IRS_API_URL=/api
         export VITE_DEMO_MODE=false
-        export VITE_FIREBASE_API_KEY=AIzaSyD8u9yYG1q0p4Wfa3fONeDhx9u6rKzTsec
-        export VITE_FIREBASE_AUTH_DOMAIN=fiduciary-prod.firebaseapp.com
-        export VITE_FIREBASE_PROJECT_ID=fiduciary-prod
-        export VITE_FIREBASE_STORAGE_BUCKET=fiduciary-prod.firebasestorage.app
-        export VITE_FIREBASE_MESSAGING_SENDER_ID=959947902296
-        export VITE_FIREBASE_APP_ID=1:959947902296:web:a1b2c3d4e5f6g7h8
         npm run build
 
   # 2. Prepare Server Directory & Assert Build Artifacts

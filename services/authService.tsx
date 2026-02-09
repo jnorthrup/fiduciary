@@ -1,16 +1,28 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import {
-    getAuth,
-    signInWithPopup,
-    reauthenticateWithPopup,
-    signOut as firebaseSignOut,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    User
-} from 'firebase/auth';
-import { initializeApp, getApps } from 'firebase/app';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { cryptoService } from './cryptoService';
 import { logger } from './logger';
+
+// ─── GSI type shim ──────────────────────────────────────────────────────────
+declare global {
+    interface Window {
+        google?: {
+            accounts: {
+                id: {
+                    initialize: (config: any) => void;
+                    prompt: (callback?: (notification: any) => void) => void;
+                    disableAutoSelect: () => void;
+                    revoke: (hint: string, callback?: () => void) => void;
+                };
+            };
+        };
+    }
+}
+
+// ─── Minimal JWT decode (no dependency needed for header.payload.sig) ────────
+function decodeJwt(token: string): Record<string, any> {
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+}
 
 interface AuthUser {
     uid: string;
@@ -34,53 +46,52 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Firebase config from environment
-const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
-// Initialize Firebase (singleton)
-const initFirebaseApp = () => {
-    // Check if config is present and valid (not placeholder)
-    const isConfigValid = firebaseConfig.apiKey &&
-        firebaseConfig.projectId &&
-        firebaseConfig.apiKey !== 'placeholder' &&
-        !firebaseConfig.apiKey.includes('your-');
-
-    if (getApps().length === 0) {
-        if (!isConfigValid) {
-            logger.warn('Firebase config missing or invalid (placeholder detected). Skipping real Firebase init.');
-            return null;
-        }
-        try {
-            return initializeApp(firebaseConfig);
-        } catch (e) {
-            logger.error('Firebase initialization failed', e);
-            return null;
-        }
-    }
-
-    // If app exists but config is invalid (e.g. hot reload with bad env), return null
-    if (!isConfigValid) return null;
-
-    return getApps()[0];
-};
+const SESSION_KEY = 'google_id_token';
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [encryptionKey, setEncryptionKey] = useState<CryptoKey | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isInitialized, setIsInitialized] = useState(false);
-    const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+    const signInResolveRef = useRef<(() => void) | null>(null);
+    const signInRejectRef = useRef<((err: Error) => void) | null>(null);
 
+    // ─── Credential handler (shared by auto-select and prompt) ──────────
+    const handleCredential = useCallback(async (credential: string) => {
+        const claims = decodeJwt(credential);
+
+        const authUser: AuthUser = {
+            uid: claims.sub,
+            displayName: claims.name ?? null,
+            email: claims.email ?? null,
+            photoURL: claims.picture ?? null,
+            emailVerified: !!claims.email_verified,
+        };
+
+        sessionStorage.setItem(SESSION_KEY, credential);
+        setUser(authUser);
+
+        // Derive encryption key from uid
+        const salt = new TextEncoder().encode('ledger-static-salt-' + authUser.uid);
+        const key = await cryptoService.deriveKey(authUser.uid, salt);
+        setEncryptionKey(key);
+
+        logger.info('User authenticated', {
+            uid: authUser.uid,
+            email: authUser.email,
+            photoURL: authUser.photoURL ? 'present' : 'none'
+        });
+
+        // Resolve pending signIn() promise if any
+        signInResolveRef.current?.();
+        signInResolveRef.current = null;
+        signInRejectRef.current = null;
+    }, []);
+
+    // ─── Initialize GSI + restore session ───────────────────────────────
     useEffect(() => {
         // BACKDOOR FOR AUTOMATED TESTING
-        // Allows Playwright to simulate a logged-in user without GUI interaction
         const params = new URLSearchParams(window.location.search);
         const testUser = params.get('__test_user');
 
@@ -95,59 +106,90 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
             setIsLoading(false);
             setIsInitialized(true);
-            return; // Skip firebase init
+            return;
         }
 
-        const app = initFirebaseApp();
-        if (!app) {
+        if (!CLIENT_ID) {
+            // No Google client ID configured — dev/mock mode
             setIsLoading(false);
             setIsInitialized(true);
             return;
         }
 
-        const auth = getAuth(app);
-
-        // Listen for auth state changes (handles page refresh, session restore)
-        const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-            if (fbUser) {
-                // Real Google profile data from the wire
-                const authUser: AuthUser = {
-                    uid: fbUser.uid,
-                    displayName: fbUser.displayName,
-                    email: fbUser.email,
-                    photoURL: fbUser.photoURL,
-                    emailVerified: fbUser.emailVerified,
-                };
-                setUser(authUser);
-                setFirebaseUser(fbUser);
-
-                // Derive encryption key from uid
-                const salt = new TextEncoder().encode('ledger-static-salt-' + fbUser.uid);
-                const key = await cryptoService.deriveKey(fbUser.uid, salt);
-                setEncryptionKey(key);
-
-                logger.info('User authenticated', {
-                    uid: fbUser.uid,
-                    email: fbUser.email,
-                    photoURL: fbUser.photoURL ? 'present' : 'none'
-                });
-            } else {
-                setUser(null);
-                setFirebaseUser(null);
-                setEncryptionKey(null);
+        // Try restoring session from stored JWT
+        const stored = sessionStorage.getItem(SESSION_KEY);
+        if (stored) {
+            try {
+                const claims = decodeJwt(stored);
+                const expiry = claims.exp * 1000;
+                if (Date.now() < expiry) {
+                    // Token still valid — restore without re-prompting
+                    handleCredential(stored).finally(() => {
+                        setIsLoading(false);
+                        setIsInitialized(true);
+                    });
+                    return;
+                }
+                // Expired — clear it
+                sessionStorage.removeItem(SESSION_KEY);
+            } catch {
+                sessionStorage.removeItem(SESSION_KEY);
             }
-            setIsLoading(false);
-            setIsInitialized(true);
-        });
+        }
 
-        return () => unsubscribe();
-    }, []);
+        // Initialize GSI
+        const initGsi = () => {
+            window.google?.accounts.id.initialize({
+                client_id: CLIENT_ID,
+                callback: (response: any) => {
+                    if (response.credential) {
+                        handleCredential(response.credential).finally(() => {
+                            setIsLoading(false);
+                            setIsInitialized(true);
+                        });
+                    }
+                },
+                auto_select: true,
+            });
 
+            // Try silent auto-select on page load
+            window.google?.accounts.id.prompt((notification: any) => {
+                // If auto-select didn't fire (user dismissed, or no session), just finish loading
+                if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
+                    setIsLoading(false);
+                    setIsInitialized(true);
+                }
+            });
+        };
+
+        // GSI script may still be loading
+        if (window.google?.accounts?.id) {
+            initGsi();
+        } else {
+            // Wait for the script to load
+            const interval = setInterval(() => {
+                if (window.google?.accounts?.id) {
+                    clearInterval(interval);
+                    initGsi();
+                }
+            }, 100);
+            // Timeout: if GSI script never loads, proceed without auth
+            const timeout = setTimeout(() => {
+                clearInterval(interval);
+                if (!isInitialized) {
+                    logger.warn('GSI script did not load in time');
+                    setIsLoading(false);
+                    setIsInitialized(true);
+                }
+            }, 5000);
+            return () => { clearInterval(interval); clearTimeout(timeout); };
+        }
+    }, [handleCredential]);
+
+    // ─── signIn ─────────────────────────────────────────────────────────
     const signIn = async () => {
-        const app = initFirebaseApp();
-        if (!app) {
-            logger.warn('Firebase config missing. Falling back to Mock Auth.');
-            // Simulate network delay
+        if (!CLIENT_ID) {
+            logger.warn('Google Client ID missing. Falling back to Mock Auth.');
             await new Promise(resolve => setTimeout(resolve, 800));
 
             const mockUser: AuthUser = {
@@ -160,7 +202,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             setUser(mockUser);
 
-            // Derive encryption key for mock user
             const salt = new TextEncoder().encode('ledger-static-salt-' + mockUser.uid);
             const key = await cryptoService.deriveKey(mockUser.uid, salt);
             setEncryptionKey(key);
@@ -170,68 +211,92 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         setIsLoading(true);
-        try {
-            const auth = getAuth(app);
-            const provider = new GoogleAuthProvider();
 
-            // Request profile scope to ensure we get photo/name
-            provider.addScope('profile');
-            provider.addScope('email');
+        return new Promise<void>((resolve, reject) => {
+            signInResolveRef.current = resolve;
+            signInRejectRef.current = reject;
 
-            await signInWithPopup(auth, provider);
-            // onAuthStateChanged will handle the user state update
-        } catch (error: any) {
-            logger.error('Sign in failed', { error: error.message, code: error.code });
-            setIsLoading(false);
-            throw error;
-        }
+            window.google?.accounts.id.initialize({
+                client_id: CLIENT_ID,
+                callback: (response: any) => {
+                    if (response.credential) {
+                        handleCredential(response.credential).finally(() => {
+                            setIsLoading(false);
+                        });
+                    } else {
+                        setIsLoading(false);
+                        reject(new Error('No credential received'));
+                    }
+                },
+            });
+            window.google?.accounts.id.prompt((notification: any) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                    setIsLoading(false);
+                    reject(new Error('Sign-in prompt was not displayed or was skipped'));
+                }
+            });
+        });
     };
 
+    // ─── signOut ────────────────────────────────────────────────────────
     const signOut = async () => {
-        const app = initFirebaseApp();
-        if (!app) return;
+        sessionStorage.removeItem(SESSION_KEY);
+        window.google?.accounts.id.disableAutoSelect();
 
-        try {
-            const auth = getAuth(app);
-            await firebaseSignOut(auth);
-            // onAuthStateChanged will handle clearing user state
-        } catch (error: any) {
-            logger.error('Sign out failed', { error: error.message });
+        // Revoke if we have an email hint
+        if (user?.email) {
+            window.google?.accounts.id.revoke(user.email, () => {
+                logger.info('Google session revoked');
+            });
         }
+
+        setUser(null);
+        setEncryptionKey(null);
     };
 
+    // ─── getIdToken ─────────────────────────────────────────────────────
     const getIdToken = async (): Promise<string | null> => {
-        if (!firebaseUser) return null;
-        try {
-            return await firebaseUser.getIdToken();
-        } catch (error) {
-            logger.error('Failed to get ID token', { error });
-            return null;
-        }
+        return sessionStorage.getItem(SESSION_KEY);
     };
 
+    // ─── reauthenticate ─────────────────────────────────────────────────
     const reauthenticate = async (): Promise<string> => {
-        const app = initFirebaseApp();
-        if (!app || !firebaseUser) {
-            logger.warn('reauthenticate: Firebase not available, returning mock token');
+        if (!CLIENT_ID) {
+            logger.warn('reauthenticate: Google Client ID not available, returning mock token');
             return 'mock-reauth-token';
         }
-        try {
-            const provider = new GoogleAuthProvider();
-            const result = await reauthenticateWithPopup(firebaseUser, provider);
-            const token = await result.user.getIdToken(true);
-            logger.info('User re-authenticated successfully');
-            return token;
-        } catch (error: any) {
-            logger.error('Re-authentication failed', { error: error.message, code: error.code });
-            throw error;
-        }
+
+        return new Promise<string>((resolve, reject) => {
+            window.google?.accounts.id.initialize({
+                client_id: CLIENT_ID,
+                callback: (response: any) => {
+                    if (response.credential) {
+                        sessionStorage.setItem(SESSION_KEY, response.credential);
+                        logger.info('User re-authenticated successfully');
+                        resolve(response.credential);
+                    } else {
+                        reject(new Error('Re-authentication failed'));
+                    }
+                },
+            });
+            window.google?.accounts.id.prompt((notification: any) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                    reject(new Error('Re-auth prompt was not displayed'));
+                }
+            });
+        });
     };
 
+    // ─── getLastAuthTime ────────────────────────────────────────────────
     const getLastAuthTime = (): Date | null => {
-        if (!firebaseUser) return null;
-        const lastSignIn = firebaseUser.metadata.lastSignInTime;
-        return lastSignIn ? new Date(lastSignIn) : null;
+        const token = sessionStorage.getItem(SESSION_KEY);
+        if (!token) return null;
+        try {
+            const claims = decodeJwt(token);
+            return claims.iat ? new Date(claims.iat * 1000) : null;
+        } catch {
+            return null;
+        }
     };
 
     return (
