@@ -20,7 +20,7 @@ fi
 
 PROJECT_ID=$1
 REGION=${2:-us-central1}
-SERVICE_NAME="trust-ledger-fullstack"
+SERVICE_NAME="trust-ledger-fullstack-v2"
 IMAGE_NAME="gcr.io/$PROJECT_ID/$SERVICE_NAME"
 # Use a timestamp or short sha tag
 TAG=$(git rev-parse --short HEAD)

@@ -12,7 +12,7 @@
 import { Plugin } from 'vite';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import { relative } from 'path';
 
 interface FeedbackLoopOptions {

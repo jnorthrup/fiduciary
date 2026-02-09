@@ -2,7 +2,6 @@
 .gitignore
 
 node_modules
-dist
 generated
 server/node_modules
 .DS_Store

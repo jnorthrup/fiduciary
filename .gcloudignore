@@ -5,3 +5,4 @@ test-results/
 test-artifacts/
 server/node_modules/
 server/public/
+vite-plugin-feedback-loop.ts
