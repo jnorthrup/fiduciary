@@ -72,6 +72,24 @@ Primary scope: **NACHA posting client + Account ledger**
 
 ---
 
+## [BACKLOG] Track: UI Test Coverage Audit
+
+*Examine current UI test coverage across both skins. Identify untested components, user flows, and interaction paths. Map coverage gaps against critical paths (auth, ledger CRUD, rail operations, Coinbase crypto, reconciliation). Produce a coverage report with prioritized remediation plan.*
+
+---
+
+## [BACKLOG] Track: UI Code Self-Annotation & Build Profiles
+
+*Self-annotate UI code with semantic markers — component responsibility, data flow direction, service dependencies, skin membership. Document build handling (Vite chunk splitting, lazy loading boundaries, tree-shaking). Profile dependency graph to identify heavy/unused deps and optimize bundle composition.*
+
+---
+
+## [BACKLOG] Track: Universal Document Ingest via Gemini
+
+*Generalize the CSV import + Gemini scanner pattern to accept any file extension. Use file magic checks to detect format (PDF, PostScript, Markdown, images, ffmpeg-decodable media, spreadsheets, etc.) and route to appropriate Gemini API processing from the existing ledger scanner code. Apply common GCS persistence to all entity types with attribute schemas — unified document→entity extraction pipeline.*
+
+---
+
 ## [RETIRED] Incomplete Tracks
 
 The following tracks are retired incomplete to focus on core NACHA + ledger functionality:

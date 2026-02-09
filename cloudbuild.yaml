@@ -18,9 +18,40 @@ steps:
         export VITE_FIREBASE_APP_ID=1:959947902296:web:a1b2c3d4e5f6g7h8
         npm run build
 
-  # 2. Prepare Server Directory
+  # 2. Prepare Server Directory & Assert Build Artifacts
   - name: 'alpine'
     script: |
+      set -e
+      echo "=== Pre-deploy assertions ==="
+
+      # Assert index.html exists and contains our app markers
+      test -f dist/index.html || { echo "FAIL: dist/index.html missing"; exit 1; }
+      grep -q "Trust Ledger" dist/index.html || { echo "FAIL: index.html missing app title"; exit 1; }
+
+      # Assert no stale entry points leaked through
+      test ! -f dist/index-unified.html || { echo "FAIL: stale index-unified.html in build"; exit 1; }
+      test ! -f dist/index-lastrust.html || { echo "FAIL: stale index-lastrust.html in build"; exit 1; }
+
+      # Assert key JS chunks exist (skin bundles + main)
+      ls dist/assets/main-*.js >/dev/null 2>&1 || { echo "FAIL: main chunk missing"; exit 1; }
+      ls dist/assets/App-lastrust-*.js >/dev/null 2>&1 || { echo "FAIL: Clear.Flow skin chunk missing"; exit 1; }
+      ls dist/assets/App-*.js >/dev/null 2>&1 || { echo "FAIL: Trust skin chunk missing"; exit 1; }
+
+      # Assert no login/password page in build output
+      if grep -r "password.*Login\|Create an account\|EMAIL.*PASSWORD" dist/assets/*.js 2>/dev/null; then
+        echo "FAIL: legacy login page found in build output"
+        exit 1
+      fi
+
+      # Assert server catch-all serves index.html (not index-unified)
+      grep -q "index.html" server/index.ts || { echo "FAIL: server SPA catch-all not pointing to index.html"; exit 1; }
+      if grep -q "index-unified" server/index.ts; then
+        echo "FAIL: server still references deleted index-unified.html"
+        exit 1
+      fi
+
+      echo "=== All assertions passed ==="
+
       rm -rf server/public
       mkdir -p server/public
       cp -r dist/* server/public/
@@ -53,5 +84,39 @@ steps:
       - '512Mi'
       - '--set-env-vars'
       - 'NODE_ENV=production'
+
+  # 5. Post-deploy smoke test
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -e
+        URL="https://trust-ledger-fullstack-959947902296.us-central1.run.app"
+        echo "=== Post-deploy smoke test ==="
+
+        # Health endpoint
+        STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/health")
+        [ "$STATUS" = "200" ] || { echo "FAIL: /api/health returned $STATUS"; exit 1; }
+        echo "PASS: /api/health → 200"
+
+        # SPA serves correct index.html
+        BODY=$(curl -s "$URL/")
+        echo "$BODY" | grep -q "Trust Ledger" || { echo "FAIL: root page missing app title"; exit 1; }
+        echo "PASS: root serves Trust Ledger"
+
+        # No stale login page
+        if echo "$BODY" | grep -q "Create an account"; then
+          echo "FAIL: stale login page still served"
+          exit 1
+        fi
+        echo "PASS: no stale login page"
+
+        # Coinbase API proxy is mounted
+        CB_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/coinbase/health")
+        [ "$CB_STATUS" = "401" ] || [ "$CB_STATUS" = "200" ] || { echo "FAIL: /api/coinbase/health returned $CB_STATUS"; exit 1; }
+        echo "PASS: /api/coinbase/health → $CB_STATUS (auth-gated)"
+
+        echo "=== All smoke tests passed ==="
 
 # NOTE: No 'images:' section needed - buildpacks publish directly via --publish flag
