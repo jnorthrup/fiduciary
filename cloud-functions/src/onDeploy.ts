@@ -30,8 +30,8 @@ interface HealthCheckResult {
  */
 export const onDeploy = functions.pubsub
   .topic('deploy.signal')
-  .onRun(async (context) => {
-    const projectId = process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT;
+  .onPublish(async (message, context) => {
+    const projectId = process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'unknown-project';
     const region = process.env.GCP_REGION || 'us-central1';
     const clusterName = process.env.GKE_CLUSTER || 'ledger-pwa-cluster';
     const namespace = process.env.K8S_NAMESPACE || 'ledger-pwa';

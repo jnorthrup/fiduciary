@@ -233,6 +233,7 @@ export const App = () => {
             currentUser={store.currentUser}
             onSave={(u) => { store.updateUser(u); setEditingUser(null); }}
             onDelete={(id) => { store.deleteUser(id); setEditingUser(null); }}
+            onSignOut={() => { auth.signOut(); setEditingUser(null); }}
             onClose={() => setEditingUser(null)}
           />
         )}

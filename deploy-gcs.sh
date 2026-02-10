@@ -42,7 +42,7 @@ gsutil -m setmeta -h "Cache-Control:public, max-age=31536000, immutable" \
   gs://${BUCKET_NAME}/assets/*.css \
   gs://${BUCKET_NAME}/assets/*.woff* 2>/dev/null || true
 
-gsutil setmeta -h "Cache-Control:public, max-age=3600" \
+gsutil setmeta -h "Cache-Control:no-cache, no-store, must-revalidate" \
   gs://${BUCKET_NAME}/index.html 2>/dev/null || true
 
 # 6. Make bucket public

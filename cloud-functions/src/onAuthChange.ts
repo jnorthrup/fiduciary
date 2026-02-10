@@ -4,7 +4,7 @@
  * Provisions user-specific storage (IndexedDB encryption keys, FoundationDB namespaces)
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { Firestore } from '@google-cloud/firestore';
 
@@ -33,13 +33,13 @@ interface UserStorageConfig {
 }
 
 /**
- * Triggered when a user is created in Firebase Auth
+ * Core provisioning logic extracted for reuse
  */
-export const onUserCreate = functions.auth.user().onCreate(async (user) => {
+async function provisionUserStorage(user: admin.auth.UserRecord) {
   const userId = user.uid;
   const email = user.email;
   const emailVerified = user.emailVerified || false;
-  const createdAt = user.metadata.createdAt || new Date().toISOString();
+  const createdAt = user.metadata.creationTime || new Date().toISOString();
 
   functions.logger.info(`Provisioning storage for new user: ${userId}`);
 
@@ -94,20 +94,32 @@ export const onUserCreate = functions.auth.user().onCreate(async (user) => {
     // Publish to Pub/Sub for monitoring
     await publishStorageEvent('user.provisioned', result);
 
-    return null;
+    return result;
   } catch (error) {
     functions.logger.error('Failed to provision user storage:', error);
     throw error;
   }
+}
+
+/**
+ * Triggered when a user is created in Firebase Auth
+ */
+export const onUserCreate = functions.auth.user().onCreate(async (user) => {
+  await provisionUserStorage(user);
+  return null;
 });
 
 /**
  * Triggered when a user signs in
  * Updates last sign-in time and re-validates storage
+ * NOTE: onSignIn is not supported in Firebase Functions v1 background triggers.
+ * To implement this, we would need to use Blocking Functions (v2) or client-side triggering.
+ * Commenting out for now to fix build.
  */
+/*
 export const onUserSignIn = functions.auth.user().onSignIn(async (user) => {
   const userId = user.uid;
-  const lastSignInAt = user.metadata.lastSignInAt || new Date().toISOString();
+  const lastSignInAt = user.metadata.lastSignInTime || new Date().toISOString();
 
   functions.logger.info(`User sign-in: ${userId}`);
 
@@ -124,8 +136,8 @@ export const onUserSignIn = functions.auth.user().onSignIn(async (user) => {
 
     if (!userDoc.exists || !userDoc.data()?.storageConfig) {
       functions.logger.warn(`User ${userId} missing storage config, reprovisioning`);
-      // Trigger re-provisioning
-      await onUserCreate(user);
+      // Trigger re-provisioning using extracted function
+      await provisionUserStorage(user);
     }
 
     return null;
@@ -134,6 +146,7 @@ export const onUserSignIn = functions.auth.user().onSignIn(async (user) => {
     throw error;
   }
 });
+*/
 
 /**
  * Triggered when a user is deleted
@@ -223,9 +236,9 @@ async function publishStorageEvent(
 // Export for testing
 export const AuthChangeHandlers = {
   onUserCreate,
-  onUserSignIn,
   onUserDelete,
   generateSalt,
   initializeUserNamespace,
   publishStorageEvent,
+  provisionUserStorage
 };

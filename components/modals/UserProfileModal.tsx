@@ -8,10 +8,11 @@ interface Props {
     currentUser: User;
     onSave: (user: User) => void;
     onDelete: (id: string) => void;
+    onSignOut: () => void;
     onClose: () => void;
 }
 
-export const UserProfileModal: React.FC<Props> = ({ user, currentUser, onSave, onDelete, onClose }) => {
+export const UserProfileModal: React.FC<Props> = ({ user, currentUser, onSave, onDelete, onSignOut, onClose }) => {
     const [formData, setFormData] = useState<User>({ ...user });
     const [isSaving, setIsSaving] = useState(false);
 
@@ -248,6 +249,12 @@ export const UserProfileModal: React.FC<Props> = ({ user, currentUser, onSave, o
                             className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
                         >
                             Cancel
+                        </button>
+                        <button
+                            onClick={onSignOut}
+                            className="px-4 py-2 text-sm font-bold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                            Sign Out
                         </button>
                         <button
                             onClick={handleSave}

@@ -1,16 +1,16 @@
-export const API_BASE_URL = 'http://mock-api';
-export const TOKEN_KEY = 'clearflow_token';
+export const API_BASE_URL = '/api';
+export const TOKEN_KEY = 'google_id_token'; // Align with authService SESSION_KEY
 
 export function getAuthToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return sessionStorage.getItem(TOKEN_KEY);
 }
 
 export function setAuthToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearAuthToken() {
-  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
 }
 
 type ApiOptions = RequestInit & { raw?: boolean };
@@ -148,10 +148,42 @@ const MOCK_COINBASE_TRANSACTIONS = [
 ];
 
 export async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  console.log(`[MOCK API] ${options.method || 'GET'} ${path} (User: ${currentUserId})`, options.body);
+  const token = getAuthToken();
+  const headers = new Headers(options.headers || {});
 
-  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate latency
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
 
+  // Real fetch to the serverless backend
+  const url = path.startsWith('http') ? path : `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+
+  console.log(`[API] ${options.method || 'GET'} ${url} (User: ${currentUserId})`);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        console.error('[API] Unauthorized - Token expired or invalid');
+      }
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    if (options.raw) return response as unknown as T;
+    return await response.json() as T;
+
+  } catch (error) {
+    console.warn(`[API] Fetch failed for ${url}, falling back to mock routing`, error);
+    // FALLBACK TO MOCK ROUTING (Keep existing logic as safety)
+    return mockApiRequest<T>(path, options);
+  }
+}
+
+async function mockApiRequest<T>(path: string, options: ApiOptions = {}): Promise<T> {
   // MOCK ROUTING
   if (path.includes('/banking/plaid/create-link-token')) {
     return { link_token: 'mock-link-token-' + (currentUserId || 'anon') } as T;

@@ -808,7 +808,7 @@ const startServer = async () => {
     }
   }
 
-  app.listen(PORT, async () => {
+  app.listen(PORT, '0.0.0.0', async () => {
     try {
       await persistence.ensureBucket();
       logger.info("GCS bucket verified");

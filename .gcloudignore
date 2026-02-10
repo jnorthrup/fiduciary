@@ -1,6 +1,5 @@
 .git/
 node_modules/
-dist/
 test-results/
 test-artifacts/
 server/node_modules/

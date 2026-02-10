@@ -29,8 +29,11 @@ echo -e "${GREEN}Deploying Fullstack App to Cloud Run ($PROJECT_ID)...${NC}"
 
 # 1. Build & Push Image
 echo -e "${BLUE}Building Docker image (Frontend + Backend)...${NC}"
+# Enable BuildKit for multi-platform builds
+export DOCKER_BUILDKIT=1
+
 # Use root context because Dockerfile needs root package.json and server/
-docker build -f server/Dockerfile -t $IMAGE_NAME:$TAG -t $IMAGE_NAME:latest .
+docker build --platform linux/amd64 -f server/Dockerfile -t $IMAGE_NAME:$TAG -t $IMAGE_NAME:latest .
 
 echo -e "${BLUE}Pushing Docker image...${NC}"
 docker push $IMAGE_NAME:$TAG

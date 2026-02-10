@@ -1,0 +1,28 @@
+steps:
+  # Build the container image.
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'server/Dockerfile', '-t', 'gcr.io/$PROJECT_ID/trust-ledger-fullstack-v2:latest', '.']
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/trust-ledger-fullstack-v2:latest']
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'trust-ledger-fullstack-v2'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/trust-ledger-fullstack-v2:latest'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '1024Mi'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,RABBITMQ_HOST=""'
+timeout: 1200s
+images:
+  - 'gcr.io/$PROJECT_ID/trust-ledger-fullstack-v2:latest'
