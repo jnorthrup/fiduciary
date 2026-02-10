@@ -5,7 +5,7 @@ import { logger } from './logger';
 // ─── GSI type shim ──────────────────────────────────────────────────────────
 declare global {
     interface Window {
-        google?: {
+        google: {
             accounts: {
                 id: {
                     initialize: (config: any) => void;
@@ -179,11 +179,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // ─── requestCredential: shared plumbing for signIn / reauthenticate ─
     const requestCredential = useCallback((): Promise<string> => {
         return new Promise<string>((resolve, reject) => {
+            if (!window.google?.accounts?.id) {
+                return reject(new Error('Google Identity Services not loaded'));
+            }
+
             pendingRef.current = { resolve, reject };
 
-            // prompt() shows One Tap; credential arrives via the initialize callback (FedCM clean)
-            window.google?.accounts.id.prompt();
+            // prompt() shows One Tap; credential arrives via the initialize callback
+            window.google.accounts.id.prompt((notification) => {
+                if (notification.isSkippedMoment()) {
+                    const reason = notification.getSkippedReason();
+                    logger.warn('GSI prompt skipped', { reason });
 
+                    // If skipped because for example user is not signed in or origin mismatch
+                    // we should probably fail the promise so the UI can show a fallback
+                    if (reason !== 'tap_outside') {
+                        if (pendingRef.current) {
+                            pendingRef.current = null;
+                            reject(new Error(`Sign-in challenged: ${reason}`));
+                        }
+                    }
+                }
+                if (notification.isDismissedMoment()) {
+                    logger.info('GSI prompt dismissed', { reason: notification.getDismissedReason() });
+                }
+            });
+
+            // Safety timeout
             setTimeout(() => {
                 if (pendingRef.current) {
                     pendingRef.current = null;

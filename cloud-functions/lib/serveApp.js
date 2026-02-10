@@ -55,6 +55,9 @@ app.use(express_1.default.json());
 const verifyToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (req.path.startsWith('/api/')) {
+            console.log(`[AUTH] No Bearer token for API request: ${req.path}`);
+        }
         return next();
     }
     if (!GOOGLE_CLIENT_ID) {
@@ -69,6 +72,7 @@ const verifyToken = async (req, res, next) => {
         });
         const payload = ticket.getPayload();
         req.user = { uid: payload.sub, email: payload?.email };
+        console.log(`[AUTH] Verified token for user: ${payload?.email} (${payload?.sub})`);
         next();
     }
     catch (error) {
@@ -88,6 +92,8 @@ const streamFromGCS = (filePath, res, cacheControl) => {
         }
         res.setHeader('Cache-Control', cacheControl);
         res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+        res.setHeader('Referrer-Policy', 'no-referrer-when-downgrade');
         const ext = path.extname(filePath).toLowerCase();
         const mimeTypes = {
             '.html': 'text/html',
@@ -143,6 +149,17 @@ app.get('/api/wal/replay', async (req, res) => {
     catch (error) {
         res.status(500).json({ error: 'Replay failure', message: error.message });
     }
+});
+app.post('/api/telemetry', (req, res) => {
+    const { level, message, details } = req.body;
+    const logBatch = `[TELEMETRY] [${level || 'INFO'}] ${message} ${details ? JSON.stringify(details) : ''}`;
+    if (level === 'error')
+        console.error(logBatch);
+    else if (level === 'warn')
+        console.warn(logBatch);
+    else
+        console.log(logBatch);
+    res.status(204).send();
 });
 app.get(/^.*$/, (req, res) => {
     let filePath = req.path === '/' ? 'index.html' : req.path.substring(1);

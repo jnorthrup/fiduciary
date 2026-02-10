@@ -5,7 +5,19 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 
 /**
  * Structured logger to replace console.log
+ * Relays production logs to backend telemetry
  */
+const sendRemoteLog = (level: LogLevel, message: string, details?: any) => {
+    if (!IS_PROD) return;
+
+    // Fire and forget to avoid blocking UI
+    fetch('/api/telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ level, message, details: details || null })
+    }).catch(() => { /* Silent failure for telemetry */ });
+};
+
 export const logger = {
     debug: (message: string, ...args: any[]) => {
         if (!IS_PROD) {
@@ -15,14 +27,17 @@ export const logger = {
 
     info: (message: string, ...args: any[]) => {
         console.info(`[INFO] ${message}`, ...args);
+        sendRemoteLog('info', message, args[0]);
     },
 
     warn: (message: string, ...args: any[]) => {
         console.warn(`[WARN] ${message}`, ...args);
+        sendRemoteLog('warn', message, args[0]);
     },
 
     error: (message: string, ...args: any[]) => {
         console.error(`[ERROR] ${message}`, ...args);
+        sendRemoteLog('error', message, args[0]);
     }
 };
 
