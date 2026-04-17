@@ -72,18 +72,18 @@
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.1 Template System' (Protocol in workflow.md)
 
 ### 2.2 Affidavit Editor UI
-- [x] Task: Build affidavit editor component
-  - [x] Sub-task: Write failing tests for AffidavitEditor component
-  - [x] Sub-task: Implement rich text editor with citation insertion
-  - [x] Sub-task: Write failing tests for CitationPicker component
-  - [x] Sub-task: Implement citation picker with statute/case search
-  - [x] Sub-task: Write failing tests for PreviewPane component
-  - [x] Sub-task: Implement live preview with notary seal placeholder
-- [x] Task: Add validation and feedback
-  - [x] Sub-task: Write failing tests for affidavit completeness validation
-  - [x] Sub-task: Implement validation (affiant info, claims, notary section)
-  - [x] Sub-task: Write failing tests for legal basis requirement check
-  - [x] Sub-task: Implement citation requirement validator
+- [ ] Task: Build affidavit editor component
+  - [ ] Sub-task: Write failing tests for AffidavitEditor component
+  - [ ] Sub-task: Implement rich text editor with citation insertion
+  - [ ] Sub-task: Write failing tests for CitationPicker component
+  - [ ] Sub-task: Implement citation picker with statute/case search
+  - [ ] Sub-task: Write failing tests for PreviewPane component
+  - [ ] Sub-task: Implement live preview with notary seal placeholder
+- [ ] Task: Add validation and feedback
+  - [ ] Sub-task: Write failing tests for affidavit completeness validation
+  - [ ] Sub-task: Implement validation (affiant info, claims, notary section)
+  - [ ] Sub-task: Write failing tests for legal basis requirement check
+  - [ ] Sub-task: Implement citation requirement validator
 - [ ] Task: Conductor - User Manual Verification 'Phase 2.2 Affidavit Editor UI' (Protocol in workflow.md)
 
 ### 2.3 Export & Formatting

@@ -1,28 +1,31 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import {
+    getAuth,
+    signInWithPopup,
+    GoogleAuthProvider,
+    signOut as firebaseSignOut,
+    onAuthStateChanged,
+    User as FirebaseUser,
+    IdTokenResult
+} from 'firebase/auth';
 import { cryptoService } from './cryptoService';
 import { logger } from './logger';
 
-// ─── GSI type shim ──────────────────────────────────────────────────────────
-declare global {
-    interface Window {
-        google: {
-            accounts: {
-                id: {
-                    initialize: (config: any) => void;
-                    prompt: (callback?: (notification: any) => void) => void;
-                    disableAutoSelect: () => void;
-                    revoke: (hint: string, callback?: () => void) => void;
-                };
-            };
-        };
-    }
-}
+// ─── Firebase Config ─────────────────────────────────────────────────────
+const firebaseConfig = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKeyForDev",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "fiduciary-prod.firebaseapp.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "fiduciary-prod",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "fiduciary-prod.appspot.com",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789:web:abcdef"
+};
 
-// ─── Minimal JWT decode (no dependency needed for header.payload.sig) ────────
-function decodeJwt(token: string): Record<string, any> {
-    const payload = token.split('.')[1];
-    return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-}
+// Initialize Firebase (singleton)
+const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(firebaseApp);
+auth.useDeviceLanguage();
 
 interface AuthUser {
     uid: string;
@@ -46,55 +49,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const SESSION_KEY = 'google_id_token';
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+// Convert Firebase User to AuthUser
+const firebaseUserToAuthUser = (fbUser: FirebaseUser | null): AuthUser | null => {
+    if (!fbUser) return null;
+    return {
+        uid: fbUser.uid,
+        displayName: fbUser.displayName,
+        email: fbUser.email,
+        photoURL: fbUser.photoURL,
+        emailVerified: fbUser.emailVerified,
+    };
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [encryptionKey, setEncryptionKey] = useState<CryptoKey | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isInitialized, setIsInitialized] = useState(false);
-    const gsiReadyRef = useRef(false);
 
-    // Pending credential promise — signIn() and reauthenticate() store their
-    // resolve/reject here so the GSI callback (set once in initialize) can
-    // fulfill them.
-    const pendingRef = useRef<{
-        resolve: (credential: string) => void;
-        reject: (err: Error) => void;
-    } | null>(null);
-
-    // ─── Credential handler (single callback given to GSI initialize) ───
-    const handleCredential = useCallback(async (credential: string) => {
-        const claims = decodeJwt(credential);
-
-        const authUser: AuthUser = {
-            uid: claims.sub,
-            displayName: claims.name ?? null,
-            email: claims.email ?? null,
-            photoURL: claims.picture ?? null,
-            emailVerified: !!claims.email_verified,
-        };
-
-        sessionStorage.setItem(SESSION_KEY, credential);
-        setUser(authUser);
-
-        const salt = new TextEncoder().encode('ledger-static-salt-' + authUser.uid);
-        const key = await cryptoService.deriveKey(authUser.uid, salt);
-        setEncryptionKey(key);
-
-        logger.info('User authenticated', {
-            uid: authUser.uid,
-            email: authUser.email,
-            photoURL: authUser.photoURL ? 'present' : 'none'
-        });
-
-        // Resolve any pending signIn / reauthenticate promise
-        pendingRef.current?.resolve(credential);
-        pendingRef.current = null;
-    }, []);
-
-    // ─── Initialize GSI exactly once + restore session ──────────────────
+    // ─── Initialize Firebase Auth listener ─────────────────────────────
     useEffect(() => {
         // BACKDOOR FOR AUTOMATED TESTING
         const params = new URLSearchParams(window.location.search);
@@ -113,195 +86,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
         }
 
-        // Don't block on auth — let anonymous users straight in.
-        // If there's a stored session, restore it synchronously-ish.
-        // GSI initializes in background; auto-select upgrades silently.
+        // Firebase Auth state listener
+        const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+            if (fbUser) {
+                const authUser = firebaseUserToAuthUser(fbUser);
+                setUser(authUser);
 
-        // Try restoring session from stored JWT
-        const stored = sessionStorage.getItem(SESSION_KEY);
-        if (stored) {
-            try {
-                const claims = decodeJwt(stored);
-                if (Date.now() < claims.exp * 1000) {
-                    handleCredential(stored).finally(() => {
-                        setIsLoading(false);
-                        setIsInitialized(true);
-                    });
-                    // Still init GSI below so signIn/reauthenticate work
-                } else {
-                    sessionStorage.removeItem(SESSION_KEY);
-                    setIsLoading(false);
-                    setIsInitialized(true);
-                }
-            } catch {
-                sessionStorage.removeItem(SESSION_KEY);
-                setIsLoading(false);
-                setIsInitialized(true);
+                // Derive encryption key from UID
+                const salt = new TextEncoder().encode('ledger-static-salt-' + fbUser.uid);
+                const key = await cryptoService.deriveKey(fbUser.uid, salt);
+                setEncryptionKey(key);
+
+                logger.info('User authenticated via Firebase', {
+                    uid: fbUser.uid,
+                    email: fbUser.email,
+                    emailVerified: fbUser.emailVerified
+                });
+            } else {
+                setUser(null);
+                setEncryptionKey(null);
             }
-        } else {
-            // No stored session — immediately ready (anonymous)
+
             setIsLoading(false);
             setIsInitialized(true);
-        }
-
-        if (!CLIENT_ID) return;
-
-        // Initialize GSI in background. Credential callback upgrades
-        // anonymous → authenticated seamlessly.
-        const doInit = () => {
-            window.google!.accounts.id.initialize({
-                client_id: CLIENT_ID,
-                callback: (response: any) => {
-                    if (response.credential) {
-                        handleCredential(response.credential);
-                    }
-                },
-                auto_select: true,
-                use_fedcm_for_prompt: true,
-            });
-            gsiReadyRef.current = true;
-        };
-
-        if (window.google?.accounts?.id) {
-            doInit();
-        } else {
-            const interval = setInterval(() => {
-                if (window.google?.accounts?.id) {
-                    clearInterval(interval);
-                    doInit();
-                }
-            }, 100);
-            const timeout = setTimeout(() => clearInterval(interval), 5000);
-            return () => { clearInterval(interval); clearTimeout(timeout); };
-        }
-    }, [handleCredential]);
-
-    // ─── requestCredential: shared plumbing for signIn / reauthenticate ─
-    const requestCredential = useCallback((): Promise<string> => {
-        return new Promise<string>((resolve, reject) => {
-            if (!window.google?.accounts?.id) {
-                return reject(new Error('Google Identity Services not loaded'));
-            }
-
-            pendingRef.current = { resolve, reject };
-
-            // prompt() shows One Tap; credential arrives via the initialize callback
-            window.google.accounts.id.prompt((notification) => {
-                if (notification.isSkippedMoment()) {
-                    const reason = notification.getSkippedReason();
-                    logger.warn('GSI prompt skipped', { reason });
-
-                    // If skipped because for example user is not signed in or origin mismatch
-                    // we should probably fail the promise so the UI can show a fallback
-                    if (reason !== 'tap_outside') {
-                        if (pendingRef.current) {
-                            pendingRef.current = null;
-                            reject(new Error(`Sign-in challenged: ${reason}`));
-                        }
-                    }
-                }
-                if (notification.isDismissedMoment()) {
-                    logger.info('GSI prompt dismissed', { reason: notification.getDismissedReason() });
-                }
-            });
-
-            // Safety timeout
-            setTimeout(() => {
-                if (pendingRef.current) {
-                    pendingRef.current = null;
-                    reject(new Error('Sign-in timed out'));
-                }
-            }, 30000);
         });
+
+        return () => unsubscribe();
     }, []);
 
-    // ─── signIn ─────────────────────────────────────────────────────────
+    // ─── signIn with Google Popup ───────────────────────────────────────
     const signIn = useCallback(async () => {
-        if (!CLIENT_ID) {
-            logger.warn('Google Client ID missing. Falling back to Mock Auth.');
-            await new Promise(resolve => setTimeout(resolve, 800));
+        const provider = new GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
 
-            const mockUser: AuthUser = {
-                uid: 'mock-user-' + Math.floor(Math.random() * 1000),
-                displayName: 'Dev User',
-                email: 'dev@local.test',
-                photoURL: null,
-                emailVerified: true
-            };
-
-            setUser(mockUser);
-            const salt = new TextEncoder().encode('ledger-static-salt-' + mockUser.uid);
-            const key = await cryptoService.deriveKey(mockUser.uid, salt);
-            setEncryptionKey(key);
-            setIsLoading(false);
-            return;
-        }
-
-        // Check stored JWT first
-        const stored = sessionStorage.getItem(SESSION_KEY);
-        if (stored) {
-            try {
-                const claims = decodeJwt(stored);
-                if (Date.now() < claims.exp * 1000) {
-                    await handleCredential(stored);
-                    setIsLoading(false);
-                    return;
-                }
-                sessionStorage.removeItem(SESSION_KEY);
-            } catch {
-                sessionStorage.removeItem(SESSION_KEY);
-            }
-        }
-
-        setIsLoading(true);
         try {
-            await requestCredential();
-        } finally {
-            setIsLoading(false);
+            const result = await signInWithPopup(auth, provider);
+            logger.info('Signed in with Google', { uid: result.user.uid });
+        } catch (error: any) {
+            logger.error('Sign-in error', { code: error.code, message: error.message });
+            throw error;
         }
-    }, [handleCredential, requestCredential]);
+    }, []);
 
     // ─── signOut ────────────────────────────────────────────────────────
     const signOut = useCallback(async () => {
-        sessionStorage.removeItem(SESSION_KEY);
-        window.google?.accounts.id.disableAutoSelect();
-
-        if (user?.email) {
-            window.google?.accounts.id.revoke(user.email, () => {
-                logger.info('Google session revoked');
-            });
-        }
-
+        await firebaseSignOut(auth);
+        logger.info('User signed out');
         setUser(null);
         setEncryptionKey(null);
-    }, [user?.email]);
+    }, []);
 
     // ─── getIdToken ─────────────────────────────────────────────────────
     const getIdToken = useCallback(async (): Promise<string | null> => {
-        return sessionStorage.getItem(SESSION_KEY);
+        const currentUser = auth.currentUser;
+        if (!currentUser) return null;
+
+        try {
+            const idTokenResult: IdTokenResult = await currentUser.getIdToken(true);
+            return idTokenResult.token;
+        } catch (error) {
+            logger.error('Error getting ID token', error);
+            return null;
+        }
     }, []);
 
     // ─── reauthenticate ─────────────────────────────────────────────────
     const reauthenticate = useCallback(async (): Promise<string> => {
-        if (!CLIENT_ID) {
-            logger.warn('reauthenticate: Google Client ID not available, returning mock token');
-            return 'mock-reauth-token';
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            throw new Error('No user to reauthenticate');
         }
-        // Same flow as signIn — just call prompt(), credential comes via
-        // the single initialize callback → handleCredential → resolves pendingRef
-        return requestCredential();
-    }, [requestCredential]);
+
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+
+        const idTokenResult: IdTokenResult = await result.user.getIdToken(true);
+        logger.info('User reauthenticated');
+        return idTokenResult.token;
+    }, []);
 
     // ─── getLastAuthTime ────────────────────────────────────────────────
     const getLastAuthTime = useCallback((): Date | null => {
-        const token = sessionStorage.getItem(SESSION_KEY);
-        if (!token) return null;
-        try {
-            const claims = decodeJwt(token);
-            return claims.iat ? new Date(claims.iat * 1000) : null;
-        } catch {
-            return null;
-        }
+        const currentUser = auth.currentUser;
+        if (!currentUser) return null;
+
+        // Firebase doesn't expose auth time directly, use metadata.lastSignInTime
+        return currentUser.metadata.lastSignInTime ? new Date(currentUser.metadata.lastSignInTime) : null;
     }, []);
 
     return (
@@ -323,6 +194,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (!context) throw new Error('useAuth must be used within AuthProvider');
+    if (context) throw new Error('useAuth must be used within AuthProvider');
     return context;
 };

@@ -7,11 +7,17 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:gh-pages": "node scripts/test-gh-pages-setup.js",
+    "test:server": "node scripts/test-express-server.js",
+    "verify:deployment": "node scripts/verify-deployment.js",
+    "deploy:docs": "node scripts/deploy-gh-pages.js",
+    "deploy:docs:force": "node scripts/deploy-gh-pages.js --force"
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
     "d3": "7.8.5",
+    "firebase": "^10.14.1",
     "lucide-react": "^0.561.0",
     "mammoth": "1.6.0",
     "mermaid": "10.6.1",
@@ -31,6 +37,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.24",
+    "gh-pages": "^6.3.0",
     "jsdom": "^28.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",

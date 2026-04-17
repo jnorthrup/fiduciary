@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiduciary - Documentation</title>
+    <meta name="description" content="Fiduciary - Financial management and documentation">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Fiduciary</h1>
+            <p class="tagline">Financial Management Documentation</p>
+        </header>
+
+        <nav class="nav">
+            <a href="#overview" class="nav-link active">Overview</a>
+            <a href="#architecture" class="nav-link">Architecture</a>
+            <a href="#api" class="nav-link">API</a>
+            <a href="#guides" class="nav-link">User Guides</a>
+        </nav>
+
+        <main class="main">
+            <section id="overview" class="section">
+                <h2>Overview</h2>
+                <p>Welcome to the Fiduciary documentation. This system provides comprehensive financial management capabilities including:</p>
+                <ul>
+                    <li>ACH Settlement Flow</li>
+                    <li>IRS Portal Integration</li>
+                    <li>Serverless Architecture</li>
+                    <li>Cloud Storage Deployment</li>
+                </ul>
+            </section>
+
+            <section id="architecture" class="section">
+                <h2>Architecture</h2>
+                <p>The system is built on a modern serverless architecture with:</p>
+                <ul>
+                    <li><a href="architecture-serverless.md">Serverless Architecture Overview</a></li>
+                    <li><a href="GCS_DEPLOYMENT.md">GCS Deployment Guide</a></li>
+                    <li><a href="FEEDBACK_LOOP.md">Feedback Loop System</a></li>
+                </ul>
+            </section>
+
+            <section id="api" class="section">
+                <h2>API Documentation</h2>
+                <p>Explore our API documentation:</p>
+                <ul>
+                    <li><a href="api/">API Reference</a></li>
+                    <li><a href="1099-cross-reference.md">1099 Cross Reference</a></li>
+                    <li><a href="ach-settlement-flow.md">ACH Settlement Flow</a></li>
+                    <li><a href="iris-direct-api-setup.md">IRIS Direct API Setup</a></li>
+                    <li><a href="irs-portal-authentication.md">IRS Portal Authentication</a></li>
+                    <li><a href="notice-transport-grammar.md">Notice Transport Grammar</a></li>
+                </ul>
+            </section>
+
+            <section id="guides" class="section">
+                <h2>User Guides</h2>
+                <p>Detailed guides for working with the system:</p>
+                <ul>
+                    <li><a href="user-guides/">User Guides</a></li>
+                    <li><a href="research/">Research Documentation</a></li>
+                </ul>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 Fiduciary. Built with modern serverless architecture.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Smooth scrolling for navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                target.scrollIntoView({ behavior: 'smooth' });
+                
+                // Update active state
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Update active link on scroll
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
