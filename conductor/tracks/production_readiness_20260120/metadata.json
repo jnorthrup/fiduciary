@@ -1,8 +1,0 @@
-{
-  "track_id": "production_readiness_20260120",
-  "type": "feature",
-  "status": "in_progress",
-  "created_at": "2025-01-20T15:30:00Z",
-  "updated_at": "2025-01-20T15:30:00Z",
-  "description": "Remove demo code from production, fix Vite config, setup testing infrastructure, and deliver NACHA commerce thin slice with real bank APIs"
-}

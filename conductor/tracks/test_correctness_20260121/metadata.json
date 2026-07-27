@@ -1,8 +1,0 @@
-{
-  "track_id": "test_correctness_20260121",
-  "type": "improvement",
-  "status": "new",
-  "created_at": "2026-01-21T04:50:00Z",
-  "updated_at": "2026-01-21T04:50:00Z",
-  "description": "Use Case Correctness & Test Adjustments - Fix AccountTable test failures and establish use case testing standards"
-}

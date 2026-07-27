@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: fiduciary-system
-  labels:
-    name: fiduciary-system
-    project: trust-ledger

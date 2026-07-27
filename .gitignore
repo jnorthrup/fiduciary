@@ -6,10 +6,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-firebase-debug.log
 
 node_modules
-dist/
+dist
 dist-ssr
 *.local
 
@@ -23,41 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Terraform
-infra/gcp/.terraform/
-*.tfstate
-*.tfstate.backup
-
-# Build outputs (generated at deploy time)
-server/public/
-html/
-generated/
-
-# Test artifacts
-test-results/
-test-artifacts/
-test_failure_log.txt
-test_output.txt
-test_report_*.txt
-test_result_*.txt
-coverage/
-playwright-report/
-
-# Large generated/binary files
-*.map
-*.png
-*.pdf
-*.zip
-*.tar
-*.gz
-
-# Lock files in subdirs (root package-lock is fine)
-server/package-lock.json
-cloud-functions/package-lock.json
-
-# Obsolete directories
-old/
-
-# Firebase
-.firebase/
